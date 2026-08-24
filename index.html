@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f1319">
+<meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="익순이">
+<script>
+// 화면이 그려지기 전에 테마를 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
+(function(){
+  var t = 'dark';
+  try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
+  var d = document.documentElement;
+  d.setAttribute('data-theme', t);
+  d.style.colorScheme = t;
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
+  // 아이폰 앱 모드 상태바.
+  // black-translucent 는 화면을 상태바 높이만큼 깎아 아래에 빈 띠를 남긴다. 쓰지 않는다.
+  // 다크는 black(검정 바 + 흰 글씨), 라이트는 default(밝은 바 + 검은 글씨).
+  var b = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (b) b.content = (t === 'light') ? 'default' : 'black';
+})();
+</script>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<title>익순이</title>
+<style>
+  :root{
+    --radius:14px;
+    /* 바탕 */
+    --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
+    --line:#252c36;     --press:#26313d;
+    --text:#f0f3f6;     --dim:#8792a0;      --off:#5a657a;
+    --ph:#7b8695;       --disTx:#626d7c;
+    --headBg:rgba(15,19,25,.96);
+    --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
+    /* 대기 — 금색. 칠할 때와 글자일 때를 나눈다 (밝은 테마에서 대비가 달라서) */
+    --wait:#e8b757;     --waitTx:#e8b757;   --waitBig:#e8b757;
+    --onWait:#241a05;   --mark:#463a13;
+    /* 방문 — 초록 */
+    --go:#5fb08a;       --goTx:#5fb08a;     --onGo:#08241a;
+    --goBg:#141d19;     --goLine:#26382f;   --goTag:#1b2f27;
+    --goTagTx:#7fc9a5;  --goName:#94a49c;
+    /* 취소·경고 — 붉은색 */
+    --warn:#c9736a;     --warnBg:#1a1618;   --warnTag:#332323;  --warnTagTx:#d2938c;
+    --warnName:#b8938e; --warnPax:#a8837e;  --warnPaxBg:#241c1d;
+    /* 붙여넣기 오류 */
+    --errBg:#1e1618;    --errLine:#4a2e2c;  --errTx:#e0a49d;
+    --errRow:rgba(201,115,106,.16);
+  }
+  html[data-theme="light"]{
+    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
+    --line:#dfe4ec;     --press:#e2e7ef;
+    --text:#161a20;     --dim:#5c6772;      --off:#a9b3c0;
+    --ph:#a3acb9;       --disTx:#a8b0bb;
+    --headBg:rgba(244,246,249,.96);
+    --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
+    /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
+    --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
+    --onWait:#2a1d02;   --mark:#fdf1d8;
+    --go:#2f9c6e;       --goTx:#1d7a54;     --onGo:#ffffff;
+    --goBg:#eefaf3;     --goLine:#b9e3ce;   --goTag:#d9f2e5;
+    --goTagTx:#1c7853;  --goName:#4a6a5b;
+    --warn:#b43f36;     --warnBg:#fdf1ef;   --warnTag:#fadedb;  --warnTagTx:#a2463c;
+    --warnName:#855c55; --warnPax:#7a4f48;  --warnPaxBg:#f6e7e5;
+    --errBg:#fdf0ee;    --errLine:#f0c8c2;  --errTx:#9e4438;
+    --errRow:rgba(192,72,60,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--ink)}
+  html{min-height:100%;overscroll-behavior:none}
+  body{
+    overscroll-behavior:none;
+    background:var(--ink);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR",system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.4;
+    display:flex;flex-direction:column;
+    /* 실제 높이는 아래 fitHeight() 가 픽셀로 다시 잡아준다.
+       아이폰이 CSS 높이 단위를 상태바만큼 짧게 주는 경우가 있어서다. */
+    min-height:100vh;min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+    touch-action:manipulation;        /* 두 번 탭 확대 방지 */
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{flex:1 0 auto;width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+  /* header */
+  header{
+    position:sticky;top:0;z-index:20;
+    background:var(--ink);
+    border-bottom:1px solid var(--line);
+    padding:calc(env(safe-area-inset-top) + 12px) 0 8px;
+  }
+  .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
+  .nav{display:flex;align-items:center;gap:0;margin-left:-10px;min-width:0}
+  .nav button{
+    width:40px;height:40px;flex:0 0 auto;padding:0;
+    display:grid;place-items:center;
+    background:none;border:0;color:var(--dim);
+    line-height:0;cursor:pointer;border-radius:9px;
+  }
+  .nav button svg{display:block}
+  .nav button:active{background:var(--panel2)}
+  .nav button:disabled{opacity:.22}
+  .date{
+    display:flex;min-width:0;
+    font-size:15px;color:var(--text);font-weight:600;letter-spacing:.01em;
+  }
+  /* 자리가 모자라면 날짜 숫자만 줄이고 「· 오늘」은 끝까지 남긴다 */
+  .dmain{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dtail{flex:0 0 auto;white-space:pre}
+  .offday .date{color:var(--waitTx);font-weight:700}
+  .offday .nav button{color:var(--waitTx)}
+  .dayprog{
+    display:flex;align-items:center;line-height:1;
+    font-size:14px;font-weight:800;color:var(--text);
+    background:var(--panel);border:1px solid var(--line);
+    padding:5px 10px;border-radius:8px;
+  }
+  .dayprog.full{color:var(--goTx);border-color:var(--goLine)}
+  .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .tools button.off{visibility:hidden;pointer-events:none}
+  .tools button{
+    width:40px;height:40px;flex:0 0 auto;
+    display:grid;place-items:center;
+    background:none;border:0;border-radius:9px;
+    color:var(--dim);cursor:pointer;margin-right:-8px;
+  }
+  .tools button:active{background:var(--panel2)}
+  .tools button.on{color:var(--waitTx);background:var(--panel2)}
+  /* 연결 끊김 표시는 날짜 옆(왼쪽 묶음)에 둔다.
+     오른쪽 묶음(진행도·검색)은 오른쪽 정렬이라 이게 나타나도 자리가 밀리지 않는다.
+     좁아지면 날짜가 «...» 로 줄어들 뿐이다. */
+  .devtag{
+    flex:0 0 auto;padding:4px 8px;border-radius:8px;
+    background:var(--wait);color:var(--onWait);
+    font-size:11px;font-weight:800;letter-spacing:.04em;line-height:1.2;
+  }
+  .offtag{
+    display:none;align-items:center;flex:0 0 auto;
+    padding:4px 9px;border-radius:8px;
+    background:var(--warnBg);border:1px solid var(--warnTag);
+    color:var(--warn);font-size:12px;font-weight:700;white-space:nowrap;line-height:1.2;
+  }
+  html[data-off] .offtag{display:inline-flex}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
+  .dot.stale{background:var(--warn)}
+
+  /* 인라인 흐름 — 자리가 모자란 조각만 다음 줄로 넘어간다 */
+  .lead{display:block;margin-top:8px;line-height:1.5}
+  .lead.hide{display:none}
+  /* 「12:00 예약」과 「3팀 2인 1팀…」 두 덩어리로 읽히게 여백을 나눈다 */
+  .slotlab{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-right:14px}
+  .slottime{font-size:22px;font-weight:800;color:var(--waitBig);letter-spacing:-.03em;margin-right:2px}
+  .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-right:1px}
+  /* 「남은 예약 없음」은 상태 설명이라 본문색. 초록은 옆의 방문 집계에만 쓴다 */
+  .leadmain.done{font-size:16px;font-weight:600;color:var(--text)}
+  /* 인원 요약은 자리가 모자란 조각만 다음 줄로 내린다 */
+  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:inline}
+  .leadsub .pc{white-space:nowrap}
+  .leadsub.tally{margin-left:11px}
+  .leadsub .tally-go{color:var(--goTx);font-weight:700}
+  .leadsub .tally-off{color:var(--warn);font-weight:700}
+  .leadsub .pcsep{color:var(--off)}
+
+  /* search */
+  .searchbar{position:relative;margin-top:12px}
+  .searchbar.hide{display:none}
+  .searchbar input{
+    width:100%;background:var(--panel);color:var(--text);
+    border:1px solid var(--line);border-radius:11px;
+    padding:11px 74px 11px 42px;font-family:inherit;font-size:16px;
+    -webkit-appearance:none;appearance:none;
+  }
+  #qBack{
+    position:absolute;left:3px;top:50%;transform:translateY(-50%);
+    width:36px;height:36px;display:grid;place-items:center;
+    background:none;border:0;color:var(--dim);cursor:pointer;
+  }
+  #qBack:active{color:var(--text)}
+  .qcount{
+    position:absolute;right:40px;top:50%;transform:translateY(-50%);
+    font-size:12px;font-weight:700;color:var(--dim);
+    font-variant-numeric:tabular-nums;pointer-events:none;
+  }
+  .qcount.zero{color:var(--warn)}
+  .searchbar input::placeholder{color:var(--dim)}
+  .searchbar input:focus{outline:2px solid var(--wait);outline-offset:-1px}
+  .searchbar input::-webkit-search-cancel-button{display:none}
+  .searchbar button{
+    position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    width:34px;height:34px;border:0;border-radius:9px;
+    background:none;color:var(--dim);cursor:pointer;
+    display:grid;place-items:center;line-height:0;padding:0;
+  }
+  .searchbar button svg{display:block}
+  .searchbar button:active{background:var(--panel2)}
+  mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
+
+  /* time group */
+  .group{margin-top:10px}
+  .ghead{
+    position:sticky;top:var(--hh,84px);z-index:10;
+    background:var(--ink);
+    display:flex;align-items:center;gap:7px;
+    width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 8px;
+    border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
+  }
+  .ghead:active{background:var(--panel2)}
+  .chev{
+    color:var(--dim);flex:0 0 auto;
+    display:grid;place-items:center;width:14px;height:14px;line-height:0;
+    transform:rotate(90deg);transition:transform .15s;
+  }
+  .chev svg{display:block}
+  .group.shut .chev{transform:rotate(0)}
+  /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
+  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
+  .gline{flex:1;height:1px;background:var(--line)}
+  .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
+  .gmeta b{font-weight:800;color:var(--text)}
+  .gbreak{color:var(--dim);font-size:12px}
+  .group.now .gtime{color:var(--waitBig)}
+  .group.now .row{border-left-color:var(--wait)}
+  .group.done .gtime{opacity:.6}
+  .group.done .gmeta b{color:var(--goTx)}
+
+  /* row */
+  .row{
+    display:flex;align-items:stretch;gap:0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:8px;
+    overflow:hidden;
+    transition:border-color .15s,opacity .15s,background .15s;
+  }
+  /* 눌리는 곳은 여기뿐. 60x60 이라 손가락에 넉넉하다 */
+  .main{
+    width:60px;flex:0 0 auto;display:grid;place-items:center;
+    min-height:60px;cursor:pointer;padding:0;
+    background:none;border:0;border-right:1px solid var(--line);
+    color:inherit;font:inherit;
+  }
+  .main:active{background:var(--panel2)}
+  .info{
+    flex:1;min-width:0;display:flex;align-items:center;gap:12px;
+    padding:14px 12px;
+  }
+  /* min-width:0 이 없으면 긴 이름이 있을 때 행이 화면 밖으로 넘친다 */
+  .rbody{flex:1;min-width:0;display:flex;flex-direction:column}
+  .rtop{display:flex;align-items:stretch;min-width:0}
+  .check{
+    width:28px;height:28px;border-radius:9px;flex:0 0 auto;
+    border:2.5px solid var(--off);
+    display:grid;place-items:center;line-height:0;color:transparent;
+    transition:.15s;
+  }
+  .check svg{display:block}
+  /* 누르는 요소에는 직접 지정한다. body 에만 걸면 아이폰에서 두 번 탭 판정이 남는다 */
+  .main, .more, .ghead, .foot button, .menu button, .tools button, .nav button{
+    touch-action:manipulation;
+  }
+  /* stretch 로 두어야 이름이 칸 폭에 맞춰 «...» 로 줄어든다.
+     flex-start 면 글자 길이만큼 늘어나 인원칸이 화면 밖으로 밀려난다 */
+  .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
+  .memo{
+    margin-top:2px;font-size:12px;font-weight:600;line-height:1.3;
+    color:var(--waitTx);opacity:.85;text-align:left;
+    word-break:break-all;
+  }
+  .row.arrived .memo, .row.cancelled .memo{color:var(--dim);opacity:1}
+  .erow.memorow{margin-top:6px}
+  #addPanel .edit{padding:0}
+  #addPanel h2{margin-bottom:12px}
+  .name{
+    display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;
+    color:var(--text);-webkit-text-fill-color:var(--text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  /* 태그·인원칸·체크박스를 28px 한 줄에 맞춘다 */
+  .tag{
+    height:28px;display:inline-flex;align-items:center;
+    font-size:12px;font-weight:800;letter-spacing:.04em;
+    padding:0 9px;border-radius:8px;flex:0 0 auto;white-space:nowrap;
+  }
+  .tag.arrived{background:var(--goTag);color:var(--goTagTx);-webkit-text-fill-color:var(--goTagTx)}
+  .tag.cancelled{background:var(--warnTag);color:var(--warnTagTx);-webkit-text-fill-color:var(--warnTagTx)}
+  .pax{
+    height:28px;display:inline-flex;align-items:center;
+    font-size:15px;font-weight:700;color:var(--text);
+    background:var(--panel2);border-radius:8px;padding:0 10px;flex:0 0 auto;
+  }
+  .more{
+    width:44px;flex:0 0 auto;border:0;border-left:1px solid var(--line);
+    background:none;color:var(--dim);cursor:pointer;
+    display:grid;place-items:center;line-height:0;padding:0;
+  }
+  .more svg{display:block}
+  .more:active{background:var(--panel2)}
+
+  .row.arrived{border-left-color:var(--go);background:var(--goBg)}
+  .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
+  .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
+  .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
+
+  .row.cancelled{border-left-color:var(--warn);background:var(--warnBg)}
+  .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600}
+  .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax);background:var(--warnPaxBg)}
+  .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
+
+
+  .edit{padding:0 10px 11px}
+  .erow{display:flex;gap:6px}
+  .erow label{
+    display:flex;flex-direction:column;gap:4px;
+    font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--dim);
+  }
+  .erow label.grow{flex:1;min-width:0}
+  .erow input, .erow select{
+    background:var(--ink);color:var(--text);
+    border:1px solid var(--line);border-radius:9px;
+    padding:10px 9px;font-family:inherit;font-size:16px;font-weight:600;
+    font-variant-numeric:tabular-nums;width:100%;min-width:0;height:44px;
+    -webkit-appearance:none;appearance:none;
+  }
+  .erow input:focus, .erow select:focus{outline:2px solid var(--wait);outline-offset:-1px}
+  .erow select{
+    text-align:center;text-align-last:center;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+    background-position:calc(100% - 14px) 20px, calc(100% - 9px) 20px;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+    padding-right:22px;
+  }
+  .erow #e-hour, .erow #e-min{width:64px}
+  .erow #e-pax{width:80px}
+  .ebtn{display:flex;gap:6px;margin-top:7px}
+  .ebtn button{
+    flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .ebtn #e-ok{background:var(--wait);color:var(--onWait);border-color:var(--wait)}
+  .ebtn button:active{filter:brightness(.9)}
+
+  .menu{display:flex;gap:6px;padding:0 10px 10px}
+  .menu button{
+    flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .menu button:active{background:var(--press)}
+  .menu .del{color:var(--warn)}
+
+  /* paste panel */
+  /* --kb = 키보드가 가리는 높이. 키보드가 올라오면 그만큼 시트를 띄운다 */
+  .panel.asSheet{
+    position:fixed;left:50%;bottom:0;
+    transform:translateX(-50%) translateY(calc(-1 * var(--kb, 0px)));
+    transition:transform .16s ease;
+    z-index:71;width:100%;max-width:520px;margin:0;
+    border-radius:18px 18px 0 0;border-bottom:0;
+    max-height:calc(86vh - var(--kb, 0px));overflow-y:auto;
+    padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
+  }
+  .panel.asSheet.kb{ padding-bottom:14px }
+  .panelScrim{position:fixed;inset:0;z-index:70;background:var(--scrim)}
+  .panelScrim.hide{display:none}
+  .panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;margin-top:10px;overflow:hidden;
+  }
+  .panel h2{margin:0 0 4px;font-size:16px;font-weight:700}
+  .panel p{margin:0 0 10px;font-size:12px;color:var(--dim);line-height:1.5}
+  .tawrap{position:relative}
+  .tawrap textarea, .hl{
+    font-family:inherit;font-size:16px;line-height:1.65;
+    font-variant-numeric:tabular-nums;
+    padding:11px;border:1px solid transparent;border-radius:10px;
+    letter-spacing:0;
+    white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;
+  }
+  textarea{
+    position:relative;z-index:1;
+    display:block;width:100%;box-sizing:border-box;
+    resize:none;overflow:hidden;
+    background:transparent;color:var(--text);
+    border-color:var(--line);
+    -webkit-appearance:none;appearance:none;
+  }
+  .hl{
+    position:absolute;inset:0;z-index:0;
+    background:var(--ink);border-radius:10px;
+    color:transparent;-webkit-text-fill-color:transparent;
+    overflow:hidden;pointer-events:none;
+    padding:11px 0;
+  }
+  .hl .ln{display:block;padding:0 11px 0 11px}
+  .hl .ln.err{
+    background:var(--errRow);
+    box-shadow:inset 3px 0 0 var(--warn);
+  }
+  textarea:focus{outline:2px solid var(--wait);outline-offset:-1px}
+  .badbox{
+    margin-top:9px;padding:9px 11px;
+    background:var(--errBg);border:1px solid var(--errLine);border-radius:9px;
+    font-size:13px;line-height:1.5;color:var(--errTx);font-weight:600;
+  }
+  /* 오류가 사라져도 자리를 비워둔다 — 등록 버튼이 튀어오르면 오타 수정 중에 잘못 눌린다 */
+  .badbox.off{visibility:hidden}
+  .badbox.gone{display:none}
+
+  .btns{display:flex;gap:8px;margin-top:12px}
+  .btn{
+    flex:1;padding:13px 0;border-radius:11px;border:0;
+    font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;
+  }
+  .btn.primary{background:var(--wait);color:var(--onWait)}
+  .btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+  .btn:active{filter:brightness(.9)}
+  textarea::placeholder{ color:var(--ph) }
+
+  /* footer */
+  .foot.hide{display:none}
+  /* 화면에 붙여두되 문서 흐름 안에 둔다.
+     position:fixed 는 아이폰에서 자리를 못 잡아 하단 바가 떠 있는 문제가 반복됐다.
+     sticky 는 내용이 짧으면 흐름 맨 끝(= 화면 바닥), 길면 스크롤 중 화면 바닥에 붙는다. */
+  .foot{
+    position:sticky;bottom:0;z-index:30;
+    /* 반투명 + 흐림 처리를 쓰면 아이폰에서 위치가 어긋난다. 불투명하게 둔다 */
+    background:var(--ink);
+    border-top:1px solid var(--line);
+    padding:9px 14px calc(9px + env(safe-area-inset-bottom));
+  }
+  /* 스크롤이 없는 화면에서는 sticky 를 쓰지 않는다.
+     아이폰이 목록이 짧아진 뒤 sticky 위치를 다시 계산하지 않아 하단 바가 떠 있었다.
+     스크롤이 없으면 흐름 맨 끝 = 화면 바닥이라 sticky 가 할 일도 없다. */
+  .foot.flow{position:static}
+  .foot .inner{max-width:640px;margin:0 auto}
+  .frow{display:flex;gap:7px}
+  .frow + .frow{margin-top:6px}
+  .foot button{
+    flex:1;padding:12px 0;border-radius:11px;
+    border:1px solid var(--line);background:var(--panel);
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+  }
+  .foot .frow.sub button{
+    padding:9px 0;font-size:12px;font-weight:600;
+    background:none;color:var(--dim);border-color:transparent;
+  }
+  .foot button:active{background:var(--panel2)}
+
+  .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
+  /* ---------- 메뉴 서랍 ---------- */
+  .drawerScrim{
+    position:fixed;inset:0;z-index:60;background:var(--scrimLite);
+    opacity:1;transition:opacity .2s;
+  }
+  /* 전역 .hide는 display:none이라 페이드가 안 된다 — 서랍 막은 따로 둔다 */
+  .drawerScrim.off{opacity:0;pointer-events:none}
+  .drawer{
+    position:fixed;top:0;left:0;bottom:0;z-index:61;
+    width:min(68vw, 258px);
+    background:var(--panel);border-right:1px solid var(--line);
+    padding:calc(env(safe-area-inset-top) + 18px) 0 calc(env(safe-area-inset-bottom) + 14px);
+    transform:translateX(-101%);transition:transform .22s ease;
+    display:flex;flex-direction:column;overflow-y:auto;
+  }
+  .drawer.open{transform:translateX(0)}
+  .dwtitle{display:flex;align-items:center;gap:11px;padding:0 18px 16px}
+  .dwico{
+    width:36px;height:36px;flex:0 0 auto;border-radius:10px;
+    border:1px solid var(--line);background:var(--panel2);
+  }
+  .dwnames{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .dwname{font-size:17px;font-weight:800;letter-spacing:-.02em}
+  .dwsubtitle{font-size:12px;font-weight:600;color:var(--dim)}
+  .dwdays{display:flex;flex-direction:column}
+  .dwday{
+    display:flex;align-items:center;gap:10px;
+    padding:13px 18px;border:0;background:none;cursor:pointer;
+    color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
+  }
+  .dwday:active{background:var(--panel2)}
+  .dwday .d1{flex:1;min-width:0;white-space:nowrap}
+  .dwday .d2{font-size:12px;font-variant-numeric:tabular-nums}
+  .dwday.on{color:var(--text)}
+  .dwday.on .d1{font-weight:800}
+  .dwday .tick{width:14px;flex:0 0 auto;color:var(--waitTx)}
+  .dwsep{height:1px;background:var(--line);margin:10px 18px}
+  .dwitem{
+    display:flex;align-items:center;gap:8px;
+    padding:13px 18px;border:0;background:none;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
+  }
+  .dwitem:active{background:var(--panel2)}
+  .dwval{margin-left:auto;font-size:13px;font-weight:600;color:var(--dim)}
+  .dwchev{flex:0 0 auto;color:var(--off);transition:transform .18s;margin-right:-2px}
+  .dwitem.open .dwchev{transform:rotate(90deg);color:var(--waitTx)}
+  /* 서랍 안에서 펼쳐지는 하위 목록 */
+  .dwsub{display:flex;flex-direction:column;background:var(--panel2)}
+  .dwsub button{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 18px;border:0;background:none;cursor:pointer;
+    color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
+  }
+  .dwsub button:active{background:var(--press)}
+  /* 달 / 해 — 두 줄이 한눈에 갈리게 */
+  .dwsub .tico{
+    width:27px;height:27px;flex:0 0 auto;display:grid;place-items:center;
+    border-radius:9px;border:1px solid var(--line);
+    background:none;color:var(--off);
+  }
+  /* 고른 줄은 강조색으로 칠한다.
+     회색 계열로 칠하면 테마에 따라 밝기가 뒤집혀 반대쪽이 켜진 것처럼 보인다.
+     강조색은 두 테마 모두 「켜짐」으로 읽힌다. */
+  .dwsub button.on{
+    background:var(--mark);color:var(--text);font-weight:700;
+    box-shadow:inset 3px 0 0 var(--wait);
+  }
+  .dwsub button.on .tico{
+    background:var(--wait);border-color:transparent;color:var(--onWait);
+  }
+  .dwsub .chk{margin-left:auto;color:var(--waitTx);font-weight:800;opacity:0}
+  .dwsub button.on .chk{opacity:1}
+  .dwsep.push{margin-top:auto}
+  .dwfoot{
+    padding:12px 18px 0;
+    font-size:12px;font-weight:600;color:var(--dim);
+    display:flex;align-items:center;gap:6px;
+  }
+  .dwfoot.off{color:var(--warn)}
+
+  /* ---------- 안내 시트 ---------- */
+  .sheetScrim{
+    position:fixed;inset:0;z-index:70;background:var(--scrim);
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .sheetScrim.hide{display:none}
+  .sheet{
+    width:100%;max-width:520px;
+    background:var(--panel);border:1px solid var(--line);border-bottom:0;
+    border-radius:18px 18px 0 0;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 16px);
+    max-height:82vh;overflow-y:auto;
+  }
+  .sheet h3{margin:0 0 14px;font-size:17px;font-weight:800;letter-spacing:-.02em}
+  .sheetBtns{display:flex;gap:8px}
+  .sheetBtns .sheetClose{flex:1}
+  .sheetNever{
+    flex:1;padding:13px 0;border-radius:12px;
+    border:1px solid var(--line);background:none;
+    color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .sheetNever:active{color:var(--text)}
+  .faq{margin:-6px 0 14px}
+  .qa{border-bottom:1px solid var(--line)}
+  .qa:last-child{border-bottom:0}
+  .qa .q{
+    display:flex;align-items:center;gap:8px;width:100%;
+    padding:14px 2px;background:none;border:0;cursor:pointer;
+    font-family:inherit;font-size:14px;font-weight:700;color:var(--text);
+    text-align:left;letter-spacing:-.02em;line-height:1.35;
+  }
+  .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .18s}
+  .qa.open .q{color:var(--waitTx)}
+  .qa.open .qchev{transform:rotate(90deg);color:var(--waitTx)}
+  .qa .a{
+    display:none;padding:0 2px 15px;
+    font-size:13px;line-height:1.7;color:var(--dim);white-space:pre-line;
+  }
+  .qa.open .a{display:block}
+  .qa .a em{font-style:normal;color:var(--text);font-weight:600}
+  .qnew{
+    flex:0 0 auto;font-size:10px;font-weight:800;color:var(--ink);
+    background:var(--go);padding:2px 5px;border-radius:4px;letter-spacing:.02em;
+  }
+  /* 설치 안내 — 기기별 카드 */
+  .plat{
+    background:var(--panel2);border:1px solid var(--line);
+    border-left:3px solid var(--off);border-radius:12px;
+    padding:12px 14px 11px;margin:0 0 10px;
+  }
+  .plat.ios{border-left-color:var(--wait)}
+  .plat.and{border-left-color:var(--go)}
+  .plat .ph{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+  .plat .pn{font-size:14px;font-weight:800;letter-spacing:-.02em}
+  .plat.ios .pn{color:var(--waitTx)}
+  .plat.and .pn{color:var(--goTx)}
+  .step{
+    display:flex;align-items:center;gap:9px;min-height:30px;
+    padding:3px 0;font-size:13px;color:var(--dim);line-height:1.35;
+  }
+  .step .n{
+    width:17px;height:17px;flex:0 0 auto;border-radius:50%;
+    background:var(--line);color:var(--dim);
+    font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;
+  }
+  .step b{color:var(--text);font-weight:700}
+  .key{
+    display:inline-grid;place-items:center;
+    min-width:25px;height:22px;padding:0 5px;margin:0 1px;
+    border:1px solid var(--line);border-radius:6px;background:var(--ink);
+    color:var(--text);line-height:0;
+    vertical-align:middle;
+  }
+  .key svg{display:block}
+  .sheetNote{font-size:13px;line-height:1.6;color:var(--goTx);margin:0 0 14px;white-space:pre-line}
+  .sheetNote.plain{color:var(--dim)}
+  /* Wi-Fi 안내 */
+  .wtab{display:flex;gap:8px;margin:-2px 0 14px}
+  .wtab button{
+    flex:1;padding:11px 0;border-radius:11px;
+    border:1px solid var(--line);background:var(--panel2);
+    color:var(--dim);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .wtab button.on{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
+  /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
+  .qrcard{
+    background:#fff;border-radius:16px;padding:16px;margin:0 auto 16px;
+    width:236px;box-sizing:border-box;
+  }
+  .qrcard svg{display:block;width:100%;height:auto}
+  .wnet{
+    display:flex;align-items:center;gap:10px;padding:11px 13px;margin-bottom:8px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  }
+  .wnet .k{font-size:12px;font-weight:700;color:var(--dim);flex:0 0 52px}
+  .wnet .v{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
+  .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
+  .about:last-of-type{margin-bottom:16px}
+  .about b{color:var(--text);font-weight:700}
+  .credit{
+    border-top:1px solid var(--line);padding-top:12px;margin:16px 0 14px;
+    font-size:12px;line-height:1.6;color:var(--off);letter-spacing:.01em;
+  }
+  .sheetClose{
+    width:100%;padding:13px 0;margin-top:2px;border-radius:11px;
+    border:1px solid var(--line);background:var(--panel2);
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+  }
+
+  .scrim{
+    position:fixed;inset:0;z-index:50;
+    background:var(--scrim);
+    display:grid;place-items:center;
+    padding:22px 22px calc(22px + var(--kb, 0px));
+  }
+  .scrim.hide{display:none}
+  .dialog{
+    width:100%;max-width:330px;
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;padding:19px 18px 15px;
+  }
+  .dialog h3{margin:0 0 13px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
+  .dialog input{
+    width:100%;background:var(--ink);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;
+    padding:12px 13px;font-family:inherit;font-size:16px;font-weight:600;
+    text-align:center;-webkit-appearance:none;appearance:none;
+  }
+  .dialog input::placeholder{color:var(--ph);font-weight:400}
+  .dialog input:focus{outline:2px solid var(--wait);outline-offset:-1px}
+  .dbtn{display:flex;gap:8px;margin-top:11px}
+  .dbtn button{
+    flex:1;padding:12px 0;border-radius:11px;
+    border:1px solid var(--line);background:var(--panel2);
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+  }
+  .dbtn #dlgYes{background:var(--wait);color:var(--onWait);border-color:var(--wait)}
+  .dbtn #dlgYes:disabled{background:var(--panel2);color:var(--disTx);border-color:var(--line);cursor:default}
+  .dbtn button:active{filter:brightness(.9)}
+
+  .toast{
+    position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(8px);
+    background:var(--panel2);border:1px solid var(--line);
+    padding:9px 15px;border-radius:99px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.2s;z-index:40;white-space:nowrap;
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hide{display:none !important}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="toprow">
+      <div class="nav">
+        <button type="button" id="menuBtn" aria-label="메뉴"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <span class="date num" id="dateLabel"></span>
+      </div>
+      <div class="tools">
+        <span class="dayprog num hide" id="dayProg"></span>
+        <span class="offtag">연결 안 됨</span>
+        <span class="devtag hide" id="devTag">TEST</span>
+        <button type="button" id="searchBtn" class="off" aria-label="이름 검색">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="lead hide">
+      <span class="slottime num" id="slotTime"></span>
+      <span class="slotlab"></span>
+      <span class="leadmain num" id="leadMain"></span>
+      <span class="leadsub num" id="leadSub"></span>
+    </div>
+  </header>
+
+  <div class="searchbar hide" id="searchbar">
+    <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
+    <input type="search" id="q" placeholder="이름 검색" autocomplete="off" autocorrect="off" spellcheck="false">
+    <span class="qcount hide" id="qCount"></span>
+    <button type="button" id="qClear" class="hide" aria-label="검색어 지우기"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="panel hide" id="pastePanel">
+    <h2 id="pasteTitle">오늘 예약 명단 붙여넣기</h2>
+    <p>양식에 맞게 붙여넣어 주세요.</p>
+    <div class="tawrap">
+      <div class="hl" id="hl" aria-hidden="true"></div>
+      <textarea id="ta" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" placeholder="14:00 임동현 2명&#10;15:00 김동현 4명 방문&#10;15:00 박동현 2명&#10;17:00 Donghyun Lee 3명 취소&#10;19:00 송동현 5명"></textarea>
+    </div>
+    <div class="badbox off gone" id="badBox">&nbsp;</div>
+    <div class="btns">
+      <button class="btn primary" id="loadBtn">명단 등록</button>
+      <button class="btn ghost hide" id="cancelPaste">취소</button>
+    </div>
+  </div>
+
+  <div class="panel asSheet hide" id="addPanel">
+    <h2>예약 추가</h2>
+    <div class="edit">
+      <div class="erow">
+        <label>시<select id="a-hour"></select></label>
+        <label>분<select id="a-min"></select></label>
+        <label class="grow">이름<input type="text" id="a-name" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+        <label>인원<select id="a-pax"></select></label>
+      </div>
+      <div class="erow memorow">
+        <label class="grow">메모<input type="text" id="a-memo" autocomplete="off" placeholder="창가석 요청, 인플루언서 …"></label>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="addOk">추가</button>
+      <button class="btn ghost" id="addNo">취소</button>
+    </div>
+  </div>
+
+  <div class="empty hide" id="emptyMsg"></div>
+</div>
+
+<div class="foot hide">
+  <div class="inner">
+    <div class="frow">
+      <button id="refreshBtn">새로고침</button>
+      <button id="copyBtn">명단 복사</button>
+    </div>
+    <div class="frow sub">
+      <button id="resetBtn">명단 초기화</button>
+      <button id="addBtn">예약 추가</button>
+      <button id="foldBtn">전체 접기</button>
+    </div>
+  </div>
+</div>
+
+<div class="panelScrim hide" id="panelScrim"></div>
+<div class="drawerScrim off" id="drawerScrim"></div>
+<aside class="drawer" id="drawer" aria-label="메뉴">
+  <div class="dwtitle">
+    <img class="dwico" src="apple-touch-icon.png" alt="" width="36" height="36">
+    <span class="dwnames"><span class="dwname">익순이</span><span class="dwsubtitle">익선취향 예약 매니저</span></span>
+  </div>
+  <div class="dwdays" id="dwDays"></div>
+  <div class="dwsep"></div>
+  <button type="button" class="dwitem" id="themeBtn">테마 설정
+    <span class="dwval" id="themeVal"></span>
+    <span class="dwchev"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>
+  </button>
+  <div class="dwsub hide" id="themeSub">
+    <button type="button" data-theme-set="dark"><span class="tico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.4A8.5 8.5 0 1 1 9.6 4a7 7 0 0 0 10.4 10.4Z"/></svg></span>다크<span class="chk">✓</span></button>
+    <button type="button" data-theme-set="light"><span class="tico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.6 5.6l1.5 1.5M16.9 16.9l1.5 1.5M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5"/></svg></span>라이트<span class="chk">✓</span></button>
+  </div>
+  <button type="button" class="dwitem" id="wifiBtn">Wi-Fi 안내</button>
+  <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
+  <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
+  <button type="button" class="dwitem" id="installBtn">앱으로 설치하기</button>
+  <div class="dwsep push"></div>
+  <div class="dwfoot" id="dwConn"></div>
+</aside>
+
+<div class="sheetScrim hide" id="sheetScrim">
+  <div class="sheet">
+    <h3 id="sheetTitle"></h3>
+    <div id="sheetBody"></div>
+    <div class="sheetBtns">
+      <button type="button" class="sheetClose" id="sheetClose">닫기</button>
+      <button type="button" class="sheetNever hide" id="sheetNever">다시 보지 않기</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim hide" id="scrim">
+  <div class="dialog">
+    <h3 id="dlgTitle">명단을 초기화할까요?</h3>
+    <input type="text" id="dlgInput" placeholder="예" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="dbtn">
+      <button type="button" id="dlgNo">취소</button>
+      <button type="button" id="dlgYes" disabled>초기화</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// ---------- Firebase 연결 ----------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import { getDatabase, ref, get, set, remove, onValue, off, goOffline, goOnline }
+  from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA62A2jtIE77DgOcJ17Jb6S9gH4oTeNeKw",
+  authDomain: "ikseon-reserve.firebaseapp.com",
+  databaseURL: "https://ikseon-reserve-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ikseon-reserve",
+  storageBucket: "ikseon-reserve.firebasestorage.app",
+  messagingSenderId: "456621961785",
+  appId: "1:456621961785:web:a2ba82fb70d6f198b5d3e8"
+};
+
+const db = getDatabase(initializeApp(firebaseConfig));
+// 주소에 -dev 가 들어 있으면 개발용. 명단 저장 위치를 따로 써서 실제 명단을 건드리지 않는다.
+const DEV = /-dev(\/|$)/.test(location.pathname);
+const ROOT = DEV ? 'roster-dev' : 'roster';
+const path = k => ROOT + '/' + String(k).replace('roster:', '');
+
+window.__fb = {
+  get: k => get(ref(db, path(k))).then(s => s.exists() ? s.val() : null),
+  set: (k, v) => set(ref(db, path(k)), v),
+  remove: ds => remove(ref(db, ROOT + '/' + ds)),
+  list: () => get(ref(db, ROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
+  watch: (k, cb) => {
+    const r = ref(db, path(k));
+    const h = onValue(r, s => cb(s.exists() ? s.val() : null));
+    return () => off(r, 'value', h);
+  },
+  // Firebase가 알려주는 실제 연결 상태
+  onConnected: cb => onValue(ref(db, '.info/connected'), s => cb(s.val() === true)),
+  // 연결이 죽었을 때 소켓을 끊었다 다시 붙인다
+  reconnect: () => { try { goOffline(db); } catch(e){} setTimeout(() => { try { goOnline(db); } catch(e){} }, 150); }
+};
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<script>
+(function(){
+  'use strict';
+
+  var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
+  var state = null;      // {date, rosterTs, items:[]}
+  var openMenu = null;
+  var editing = null;
+  var collapsed = {}; // 시간대별 수동 접기 상태 (미설정이면 자동)
+  var touched = {};   // 시간대별 마지막 체크 시각
+  var COLLAPSE_DELAY = 5000;
+  var query = '';
+
+  // 접힘 규칙은 하나뿐이다 — 대기 중인 팀이 있으면 펼침, 없으면 접힘.
+  // 시계는 관여하지 않는다. 보고 있는데 시간이 지났다는 이유로 접히면 곤란하니까.
+  // 손으로 접거나 편 것은 그대로 두되, 대기 여부가 바뀌면 기본 규칙으로 돌아간다.
+  // collapsed[time] = { v: 접힘여부, done: 그때 대기가 비어 있었나 }
+  function isCollapsed(time, pendCount){
+    var done = (pendCount === 0);
+    var o = collapsed[time];
+    if (o){
+      if (o.done === done) return o.v;   // 대기 상태가 그대로면 손으로 정한 대로
+      delete collapsed[time];            // 대기가 생기거나 사라지면 기본 규칙으로
+    }
+    if (!done) return false;
+    // 마지막 하나를 체크한 직후에는 손가락 밑에서 사라지지 않게 잠깐 둔다
+    return Date.now() - (touched[time] || 0) > COLLAPSE_DELAY;
+  }
+  function setCollapsed(time, v, done){ collapsed[time] = { v: v, done: done }; }
+  var saving = false, dirty = false;
+
+  /* ---------- 날짜 ---------- */
+  var KEEP_DAYS = 2; // 오늘 기준 이보다 오래된 날짜는 삭제
+
+  function pad(n){ return (n<10?'0':'') + n; }
+  function ymd(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+
+  // 오늘의 영업일 (새벽 5시 이전은 전날로 취급)
+  function bizDate(){
+    var d = new Date();
+    if (d.getHours() < DAY_ROLLOVER) d.setDate(d.getDate() - 1);
+    return ymd(d);
+  }
+  function shiftDate(ds, n){
+    var p = ds.split('-');
+    var d = new Date(+p[0], +p[1]-1, +p[2]);
+    d.setDate(d.getDate() + n);
+    return ymd(d);
+  }
+  function dayGap(ds){ // viewDate가 오늘로부터 며칠 떨어져 있나
+    var a = bizDate().split('-'), b = ds.split('-');
+    var t1 = new Date(+a[0], +a[1]-1, +a[2]).getTime();
+    var t2 = new Date(+b[0], +b[1]-1, +b[2]).getTime();
+    return Math.round((t2 - t1) / 86400000);
+  }
+
+  var viewDate = bizDate();
+  function key(){ return 'roster:' + viewDate; }
+
+  function prettyDate(){
+    var p = viewDate.split('-');
+    var d = new Date(+p[0], +p[1]-1, +p[2]);
+    var w = ['일','월','화','수','목','금','토'][d.getDay()];
+    var g = dayGap(viewDate);
+    var label = g === 0 ? '오늘' : g === -1 ? '어제' : g === 1 ? '내일' : '';
+    return { full: (+p[1]) + '월 ' + (+p[2]) + '일 (' + w + ')', tail: label ? ' · ' + label : '' };
+  }
+  function paintDate(){
+    var d = prettyDate();
+    var el = document.getElementById('dateLabel');
+    el.innerHTML = '';
+    var a = document.createElement('span'); a.className = 'dmain'; a.textContent = d.full;
+    var b = document.createElement('span'); b.className = 'dtail'; b.textContent = d.tail;
+    el.appendChild(a); el.appendChild(b);
+  }
+
+  // 오래된 날짜 정리
+  function purgeOld(){
+    if (!hasStore()) return;
+    var limit = shiftDate(bizDate(), -KEEP_DAYS);
+    fb().list().then(function(keys){
+      (keys || []).forEach(function(ds){
+        if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().remove(ds).catch(function(){});
+      });
+    }).catch(function(){});
+  }
+
+  /* ---------- 파싱 ---------- */
+  function parse(text){
+    var lines = String(text).split(/\r?\n/);
+    var out = [], bad = [], seen = {};
+    for (var i=0;i<lines.length;i++){
+      var line = lines[i].replace(/\s+/g,' ').trim();
+      if (!line) continue;
+      var m = line.match(/^(\d{1,2})\s*[:.시]\s*(\d{1,2})?\s*분?\s+(.+?)\s+(\d+)\s*명\s*(.*)$/);
+      if (!m){ bad.push({ no: i+1, text: line }); continue; }
+      var time = pad(+m[1]) + ':' + pad(+(m[2]||0));
+      var name = m[3].trim();
+      var pax  = parseInt(m[4],10);
+      var tail = (m[5]||'').trim();
+      var memo = '';
+      var mm2 = tail.match(/^(.*?)\s*\((.+)\)$/);   // 뒤에 붙은 (메모)
+      if (mm2){ tail = mm2[1].trim(); memo = mm2[2].trim(); }
+      var status = 'pending';
+      if (tail === '취소') status = 'cancelled';
+      else if (tail === '방문') status = 'arrived';
+      else if (tail){ bad.push({ no: i+1, text: line }); continue; }  // 뒤에 붙은 알 수 없는 말
+      var hh = +m[1], mm = +(m[2]||0);
+      if (hh > 23 || mm > 59 || pax < 1){ bad.push({ no: i+1, text: line }); continue; }
+      var base = time + '|' + name + '|' + pax;
+      seen[base] = (seen[base]||0) + 1;
+      out.push({ id: base + '|' + seen[base], time:time, name:name, pax:pax, memo:memo, status:status, ts:0, seq: out.length });
+    }
+    out.bad = bad;
+    return out;
+  }
+
+  function sortItems(a,b){
+    if (a.time !== b.time) return a.time < b.time ? -1 : 1;
+    return (a.seq||0) - (b.seq||0);
+  }
+
+  /* ---------- 저장소 (Firebase Realtime Database) ---------- */
+  function fb(){ return window.__fb; }
+  function hasStore(){ return !!fb(); }
+
+  function loadRemote(){
+    if (!hasStore()) return Promise.resolve(null);
+    return fb().get(key()).catch(function(){ return null; });
+  }
+
+  function writeRemote(data){
+    if (!hasStore()) return Promise.resolve(data);
+    return fb().set(key(), data).then(function(){ return data; });
+  }
+
+  // 다른 기기의 변경을 즉시 받아온다
+  var unwatch = null;
+  function watchRemote(){
+    if (unwatch){ unwatch(); unwatch = null; }
+    if (!hasStore()) return;
+    unwatch = fb().watch(key(), function(remote){
+      if (saving) return;
+      // remote가 비어 있어도(명단 초기화) 그대로 반영해야 한다
+      var merged = merge(remote || { date: viewDate, rosterTs: 0, items: [] }, state);
+      if (JSON.stringify(merged) === JSON.stringify(state)) return;
+      state = merged;
+      if (!editing) render();
+    });
+  }
+
+  // Firebase는 빈 배열·빈 객체를 저장하지 않으므로 items가 사라져서 돌아올 수 있다.
+  function norm(d){
+    if (!d) return null;
+    return { date: d.date, rosterTs: d.rosterTs || 0, items: Array.isArray(d.items) ? d.items : [] };
+  }
+
+  function merge(a, b){
+    a = norm(a); b = norm(b);
+    if (!a) return b;
+    if (!b) return a;
+    var base  = (a.rosterTs||0) >= (b.rosterTs||0) ? a : b;
+    var other = base === a ? b : a;
+    var map = {};
+    other.items.forEach(function(it){ map[it.id] = it; });
+    var items = base.items.map(function(it){
+      var o = map[it.id];
+      if (o && (o.ts||0) > (it.ts||0)) {
+        var next = {};
+        for (var k in it) if (Object.prototype.hasOwnProperty.call(it, k)) next[k] = it[k];
+        next.status = o.status;
+        next.ts = o.ts;
+        return next;
+      }
+      return it;
+    });
+    return { date: base.date, rosterTs: base.rosterTs, items: items };
+  }
+
+  function sync(){
+    return loadRemote().then(function(remote){
+      var merged = merge(remote, state);
+      var changed = JSON.stringify(merged) !== JSON.stringify(state);
+      state = merged;
+      if (changed && !editing) render();
+    }).catch(function(){});
+  }
+
+  var saveTimer = null;
+  function save(){
+    dirty = true;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 250);
+  }
+  function flush(){
+    if (saving || !state) return;
+    saving = true; dirty = false;
+    var before = JSON.stringify(state);
+    loadRemote().then(function(remote){
+      var merged = merge(remote, state);
+      state = merged;
+      return writeRemote(merged);
+    }).then(function(){
+      saving = false;
+      // 저장 결과가 화면과 같으면 다시 그리지 않는다
+      if (JSON.stringify(state) !== before) render();
+      if (dirty) flush();
+    }).catch(function(){
+      saving = false;
+      toast('저장 실패 — 잠시 뒤 다시 시도합니다');
+      setTimeout(flush, 3000);
+    });
+  }
+
+  // 연결 표시는 Firebase가 알려주는 실제 상태만 반영한다.
+  // 개별 읽기·쓰기 실패로는 켜지 않는다 — 잠깐 끊겼다 붙는 동안 계속 떠 있게 되므로.
+  var online = false;
+  function setSync(ok){
+    if (ok !== undefined) online = ok;
+    var ready = online && hasStore();
+    if (ready) document.documentElement.removeAttribute('data-off');
+    else document.documentElement.setAttribute('data-off', '');
+    var cf = document.getElementById('dwConn');
+    if (cf){
+      cf.className = 'dwfoot' + (ready ? '' : ' off');
+      cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
+        + (ready ? '연결됨' : '연결 안 됨');
+    }
+  }
+
+  /* ---------- 렌더 ---------- */
+  // 상단 시간이 다음으로 넘어가는 기준
+  //  - 정각(00분) 예약: 11분 지나면
+  //  - 비정각 예약   : 그 시각이 되면 (5초)
+  // 어느 쪽이든 그 시간대를 다 체크하면 그 즉시 넘어간다.
+  var GRACE_ON_HOUR = 11, GRACE_OFF_HOUR = 5/60;
+
+  function nowMin(){
+    var d = new Date();
+    return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60 + d.getMilliseconds()/60000;
+  }
+  function slotMin(hm){
+    var p = hm.split(':');
+    return (+p[0])*60 + (+p[1]);
+  }
+  function slotLive(hm, now){
+    var m = slotMin(hm);
+    var grace = (m % 60 === 0) ? GRACE_ON_HOUR : GRACE_OFF_HOUR;
+    return now < m + grace;
+  }
+
+  // 하루가 끝났을 때 방문 / 취소가 각각 몇 팀이었는지.
+  // 「17/17」만으로는 몇 팀이 실제로 왔는지 알 수 없다.
+  function dayTally(items){
+    var came = 0, off = 0;
+    items.forEach(function(x){
+      if (x.status === 'arrived') came++;
+      else if (x.status === 'cancelled') off++;
+    });
+    var out = ['<span class="pc tally-go">방문 ' + came + '</span>'];
+    if (off) out.push('<span class="pc tally-off">취소 ' + off + '</span>');
+    return out.join('<span class="pcsep"> · </span>');
+  }
+
+  function render(){
+    paintDate();
+    var list = document.getElementById('list');
+    var all = state ? state.items.slice().sort(sortItems) : [];
+    var q = (query || '').trim().toLowerCase();
+    var items = q
+      ? all.filter(function(it){ return it.name.toLowerCase().indexOf(q) !== -1; })
+      : all;
+
+    var qc = document.getElementById('qCount');
+    if (q){
+      qc.classList.remove('hide');
+      qc.className = 'qcount' + (items.length ? '' : ' zero');
+      qc.textContent = items.length + '건';
+    } else {
+      qc.classList.add('hide');
+    }
+
+    // 시간대 묶기 — 표시용은 검색 결과, 계산용(allGroups)은 전체
+    function groupBy(arr){
+      var gs = [], gi = {};
+      arr.forEach(function(it){
+        if (gi[it.time] === undefined){ gi[it.time] = gs.length; gs.push({time:it.time, items:[]}); }
+        gs[gi[it.time]].items.push(it);
+      });
+      return gs;
+    }
+    var groups = groupBy(items);
+    var allGroups = q ? groupBy(all) : groups;
+
+    // 다음 시간대 — 아직 마감되지 않았고 남은 팀이 있는 첫 시간대 (오늘일 때만)
+    var now = nowMin(), nowTime = null;
+    if (dayGap(viewDate) === 0){
+      for (var i=0;i<allGroups.length;i++){
+        if (!slotLive(allGroups[i].time, now)) continue;
+        if (allGroups[i].items.some(function(x){ return x.status==='pending'; })){ nowTime = allGroups[i].time; break; }
+      }
+    }
+
+    // 헤더 — 검색과 무관하게 항상 전체 기준
+    var gap = dayGap(viewDate);
+    var slotPend = [];
+    if (nowTime){
+      allGroups.forEach(function(g){
+        if (g.time === nowTime) slotPend = g.items.filter(function(x){ return x.status==='pending'; });
+      });
+    }
+    var leadRow = document.querySelector('.lead');
+    var st = document.getElementById('slotTime');
+    var lb = document.querySelector('.slotlab');
+    var lm = document.getElementById('leadMain');
+    var ls = document.getElementById('leadSub');
+
+    if (slotPend.length){
+      st.textContent = nowTime;
+      lb.textContent = '예약';
+      lm.className = 'leadmain num';
+      lm.textContent = slotPend.length + '팀';
+      var byPax = {};
+      slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax]||0) + 1; });
+      ls.className = 'leadsub num';
+      ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a,b){ return a-b; })
+        .map(function(p){ return '<span class="pc">' + p + '인 ' + byPax[p] + '팀</span>'; })
+        .join('<span class="pcsep"> · </span>');
+    } else if (gap !== 0 && all.length){
+      // 어제/내일 — 시간대 강조 대신 하루 총 팀수
+      st.textContent = '';
+      lb.textContent = '';
+      lm.className = 'leadmain num';
+      lm.textContent = all.length + '팀';
+      ls.className = 'leadsub num tally';
+      ls.innerHTML = dayTally(all);
+    } else {
+      st.textContent = '';
+      lb.textContent = '';
+      lm.className = 'leadmain num done';
+      lm.textContent = all.length ? '남은 예약 없음' : '';
+      ls.className = 'leadsub num tally';
+      ls.innerHTML = all.length ? dayTally(all) : '';
+    }
+
+    if (leadRow) leadRow.classList.toggle('hide', !st.textContent && !lm.textContent);
+
+    // 명단이 없으면 하단 메뉴와 검색은 할 일이 없다
+    var footEl = document.querySelector('.foot');
+    if (footEl) footEl.classList.toggle('hide', !all.length);
+    document.body.style.paddingBottom = all.length ? '' : '24px';
+    searchBtn.classList.toggle('off', !all.length);
+    if (!all.length && !searchbar.classList.contains('hide')) closeSearch(false);
+
+    // 날짜 / 하루 진행 (분모는 취소 포함 전체)
+    var doneN = 0, offN = 0;
+    all.forEach(function(it){
+      if (it.status === 'arrived') doneN++;
+      else if (it.status === 'cancelled') offN++;
+    });
+    paintDate();
+    var dp = document.getElementById('dayProg');
+    dp.textContent = (doneN + offN) + '/' + all.length;
+    dp.className = 'dayprog num' + (all.length ? '' : ' hide')
+      + (all.length && doneN + offN === all.length ? ' full' : '');
+
+    // 날짜 표시 / 이동 버튼
+    document.body.classList.toggle('offday', gap !== 0);
+    renderDrawerDays();
+
+    // 목록
+    list.innerHTML = '';
+    var em = document.getElementById('emptyMsg');
+    if (!items.length){
+      if (q){
+        em.classList.remove('hide');
+        em.textContent = '「' + query.trim() + '」 검색 결과가 없습니다';
+      } else {
+        em.classList.add('hide');
+        if (state && panel.classList.contains('hide')) openPaste(true);
+      }
+      return;
+    }
+    em.classList.add('hide');
+
+    // 다른 기기에서 명단이 들어오면 이쪽 붙여넣기 창은 닫는다.
+    // 단, 내가 직접 입력하던 중이면 건드리지 않는다.
+    if (!panel.classList.contains('hide') && !ta.value.trim()) closePaste();
+
+    var openCount = 0;
+    groups.forEach(function(g, idx){
+      var pend = g.items.filter(function(x){ return x.status==='pending'; });
+      var came = g.items.filter(function(x){ return x.status==='arrived'; }).length;
+      var off  = g.items.filter(function(x){ return x.status==='cancelled'; }).length;
+      var tot  = g.items.length;
+      var shut = q ? false : isCollapsed(g.time, pend.length);
+
+      var wrap = document.createElement('section');
+      wrap.className = 'group' + (g.time === nowTime ? ' now' : (pend.length ? '' : ' done')) + (shut ? ' shut' : '');
+
+      var head = document.createElement('button');
+      head.className = 'ghead';
+      head.type = 'button';
+      head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
+        + '<span class="gtime num">' + g.time + '</span>'
+        + '<span class="gline"></span>'
+        + '<span class="gmeta num">'
+        +   '<b>' + (came + off) + '/' + tot + '</b>'
+        +   '<span class="gbreak">방문 ' + came + (off ? ' · 취소 ' + off : '') + '</span>'
+        + '</span>';
+      head.addEventListener('click', function(){
+        var willShut = !shut;
+        // 접을 때는 그 시간대에서 열려 있던 수정 폼·메뉴를 닫는다
+        if (willShut){
+          var inHere = function(id){
+            return g.items.some(function(x){ return x.id === id; });
+          };
+          if (editing && inHere(editing)) editing = null;
+          if (openMenu && inHere(openMenu)) openMenu = null;
+        }
+        setCollapsed(g.time, willShut, pend.length === 0);
+        render();
+      });
+      wrap.appendChild(head);
+
+      if (!shut) g.items.forEach(function(it){ wrap.appendChild(rowEl(it)); });
+      list.appendChild(wrap);
+      openCount += shut ? 0 : 1;
+    });
+
+    var fb = document.getElementById('foldBtn');
+    if (fb) fb.textContent = openCount ? '전체 접기' : '전체 펼치기';
+
+    var hd = document.querySelector('header');
+    if (hd) document.documentElement.style.setProperty('--hh', hd.offsetHeight + 'px');
+
+    if (typeof footMode === 'function') requestAnimationFrame(footMode);
+  }
+
+  // 행이 아래로 펼쳐질 때 화면 밖으로 밀려나면 그만큼 스크롤을 내려준다.
+  // 하단 바에 가려 잘리는 걸 막는다.
+  function ensureVisible(id){
+    requestAnimationFrame(function(){
+      var row = null;
+      var rows = document.querySelectorAll('.row');
+      for (var i = 0; i < rows.length; i++){
+        if (rows[i].getAttribute('data-id') === id){ row = rows[i]; break; }
+      }
+      if (!row) return;
+      var r = row.getBoundingClientRect();
+      var hd = document.querySelector('header');
+      var headBottom = hd ? hd.getBoundingClientRect().bottom : 0;
+      var footTop = (footEl && !footEl.classList.contains('hide'))
+        ? footEl.getBoundingClientRect().top : window.innerHeight;
+      var move;
+      if (r.height > footTop - headBottom - 16){
+        move = r.top - headBottom - 8;          // 한 화면에 다 안 들어가면 위를 맞춘다
+      } else {
+        move = r.bottom - (footTop - 10);       // 아래가 잘리는 만큼만
+      }
+      if (move > 1) window.scrollBy({ top: move, behavior: 'smooth' });
+    });
+  }
+
+  function rowEl(it){
+    var row = document.createElement('div');
+    row.setAttribute('data-id', it.id);
+    row.className = 'row ' + it.status;
+
+    var body = document.createElement('div');
+    body.className = 'rbody';
+
+    var top = document.createElement('div');
+    top.className = 'rtop';
+
+    // 방문 체크는 왼쪽 체크 칸에서만 된다.
+    // 행 전체가 버튼이면 목록을 훑다가 잘못 눌리는 일이 생긴다.
+    var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
+      + ' stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
+    var ICON_OFF = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
+      + ' stroke-width="3.4" stroke-linecap="round"><path d="M7 7 L17 17M17 7 L7 17"/></svg>';
+    var mark = it.status === 'arrived' ? ICON_GO
+             : it.status === 'cancelled' ? ICON_OFF : '';
+    var tag = it.status === 'arrived' ? '<span class="tag arrived">방문</span>'
+            : it.status === 'cancelled' ? '<span class="tag cancelled">취소</span>'
+            : '';
+    var main = document.createElement('button');
+    main.className = 'main';
+    main.type = 'button';
+    main.setAttribute('aria-label', it.name + ' 방문 체크');
+    main.innerHTML = '<span class="check">' + mark + '</span>';
+
+    var info = document.createElement('div');
+    info.className = 'info';
+    info.innerHTML = '<span class="who"><span class="name"></span>'
+      +   (it.memo ? '<span class="memo"></span>' : '') + '</span>'
+      + tag
+      + '<span class="pax num">' + it.pax + '명</span>';
+    var memoEl = info.querySelector('.memo');
+    if (memoEl) memoEl.textContent = it.memo;
+    var nameEl = info.querySelector('.name');
+    var qq = (query||'').trim().toLowerCase();
+    var hit = qq ? it.name.toLowerCase().indexOf(qq) : -1;
+    if (hit >= 0){
+      nameEl.appendChild(document.createTextNode(it.name.slice(0, hit)));
+      var mk = document.createElement('mark');
+      mk.textContent = it.name.slice(hit, hit + qq.length);
+      nameEl.appendChild(mk);
+      nameEl.appendChild(document.createTextNode(it.name.slice(hit + qq.length)));
+    } else {
+      nameEl.textContent = it.name;
+    }
+    main.addEventListener('click', function(){ toggle(it.id); });
+
+    var more = document.createElement('button');
+    more.className = 'more';
+    more.type = 'button';
+    more.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">'
+      + '<circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
+    more.addEventListener('click', function(e){
+      e.stopPropagation();
+      if (editing === it.id){          // 수정 중이면 저장하지 않고 접는다
+        editing = null; openMenu = null; render();
+        return;
+      }
+      openMenu = (openMenu === it.id) ? null : it.id;
+      render();
+      if (openMenu) ensureVisible(it.id);
+    });
+
+    top.appendChild(main); top.appendChild(info); top.appendChild(more);
+    body.appendChild(top);
+
+    if (editing === it.id){
+      var form = document.createElement('div');
+      form.className = 'edit';
+      var paxOpts = '';
+      for (var pn = 1; pn <= 12; pn++) paxOpts += '<option value="' + pn + '">' + pn + '명</option>';
+      var hOpts = '';
+      for (var hh = 12; hh <= 20; hh++) hOpts += '<option value="' + pad(hh) + '">' + pad(hh) + '</option>';
+      var mOpts = '';
+      for (var mm = 0; mm < 60; mm += 5) mOpts += '<option value="' + pad(mm) + '">' + pad(mm) + '</option>';
+      form.innerHTML = '<div class="erow">'
+        + '<label>시<select id="e-hour">' + hOpts + '</select></label>'
+        + '<label>분<select id="e-min">' + mOpts + '</select></label>'
+        + '<label class="grow">이름<input type="text" id="e-name"></label>'
+        + '<label>인원<select id="e-pax">' + paxOpts + '</select></label>'
+        + '</div>'
+        + '<div class="erow memorow">'
+        + '<label class="grow">메모<input type="text" id="e-memo" autocomplete="off" placeholder="창가석 요청, 인플루언서 …"></label>'
+        + '</div>'
+        + '<div class="ebtn"><button type="button" id="e-ok">저장</button>'
+        + '<button type="button" id="e-no">취소</button></div>';
+      body.appendChild(form);
+      // 영업시간 밖이거나 5분 단위가 아닌 예약이면 그 값도 목록에 넣어준다
+      var curH = it.time.slice(0,2), curM = it.time.slice(3,5);
+      var hSel = form.querySelector('#e-hour'), mSel = form.querySelector('#e-min');
+      function ensureOpt(sel, v){
+        if ([].some.call(sel.options, function(o){ return o.value === v; })) return;
+        var o = document.createElement('option');
+        o.value = v; o.textContent = v;
+        sel.insertBefore(o, sel.firstChild);
+      }
+      ensureOpt(hSel, curH); ensureOpt(mSel, curM);
+      hSel.value = curH; mSel.value = curM;
+      form.querySelector('#e-name').value = it.name;
+      form.querySelector('#e-memo').value = it.memo || '';
+      var paxSel = form.querySelector('#e-pax');
+      if (it.pax > 12){
+        var extra = document.createElement('option');
+        extra.value = it.pax; extra.textContent = it.pax + '명';
+        paxSel.appendChild(extra);
+      }
+      paxSel.value = it.pax;
+      form.addEventListener('click', function(e){ e.stopPropagation(); });
+      form.querySelector('#e-no').addEventListener('click', function(){ editing = null; render(); });
+      form.querySelector('#e-ok').addEventListener('click', function(){
+        applyEdit(it.id,
+          form.querySelector('#e-hour').value + ':' + form.querySelector('#e-min').value,
+          form.querySelector('#e-name').value,
+          form.querySelector('#e-pax').value,
+          form.querySelector('#e-memo').value);
+      });
+      form.querySelector('#e-name').addEventListener('keydown', function(e){
+        if (e.key === 'Enter') form.querySelector('#e-ok').click();
+      });
+      form.querySelector('#e-memo').addEventListener('keydown', function(e){
+        if (e.key === 'Enter') form.querySelector('#e-ok').click();
+      });
+    } else if (openMenu === it.id){
+      var menu = document.createElement('div');
+      menu.className = 'menu';
+      [['방문','arrived'],['취소','cancelled']].forEach(function(p){
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = p[0];
+        b.addEventListener('click', function(e){ e.stopPropagation(); setStatus(it.id, p[1]); });
+        menu.appendChild(b);
+      });
+      var ed = document.createElement('button');
+      ed.type = 'button'; ed.textContent = '수정';
+      ed.addEventListener('click', function(e){
+        e.stopPropagation();
+        editing = it.id; openMenu = null; render();
+        ensureVisible(it.id);
+      });
+      menu.appendChild(ed);
+      var del = document.createElement('button');
+      del.type = 'button'; del.className = 'del'; del.textContent = '삭제';
+      del.addEventListener('click', function(e){
+        e.stopPropagation();
+        state.items = state.items.filter(function(x){ return x.id !== it.id; });
+        state.rosterTs = Date.now();
+        openMenu = null; render(); save();
+      });
+      menu.appendChild(del);
+      body.appendChild(menu);
+    }
+
+    row.appendChild(body);
+    return row;
+  }
+
+  // "1530" "15:30" "15시30분" "15.30" → "15:30"
+  function normTime(v){
+    var s = String(v).replace(/\s/g,'');
+    var m = s.match(/^(\d{1,2})[:.시]?(\d{1,2})?분?$/);
+    if (!m) return null;
+    var h = +m[1], mi = m[2] === undefined ? 0 : +m[2];
+    if (m[2] === undefined && s.length === 4){ h = +s.slice(0,2); mi = +s.slice(2); }
+    if (h > 23 || mi > 59) return null;
+    return pad(h) + ':' + pad(mi);
+  }
+
+  function uniqueId(time, name, pax, skipId){
+    var base = time + '|' + name + '|' + pax, n = 0, id;
+    do { n++; id = base + '|' + n; }
+    while (state.items.some(function(x){ return x.id === id && x.id !== skipId; }));
+    return id;
+  }
+
+  function applyEdit(id, timeV, nameV, paxV, memoV){
+    var it = find(id);
+    if (!it) return;
+    var time = normTime(timeV);
+    var name = String(nameV).replace(/\s+/g,' ').trim();
+    var pax = parseInt(paxV, 10);
+    if (!time){ toast('시간을 확인해 주세요'); return; }
+    if (!name){ toast('이름을 입력해 주세요'); return; }
+    if (!(pax > 0)){ toast('인원을 확인해 주세요'); return; }
+
+    var memo = String(memoV == null ? (it.memo || '') : memoV).replace(/\s+/g,' ').trim();
+
+    if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
+      editing = null; render(); return;
+    }
+
+    // 시간이 바뀌면 옮겨간 시간대의 맨 뒤로
+    if (time !== it.time){
+      var maxSeq = 0;
+      state.items.forEach(function(x){ if ((x.seq||0) > maxSeq) maxSeq = x.seq||0; });
+      it.seq = maxSeq + 1;
+    }
+
+    it.time = time; it.name = name; it.pax = pax; it.memo = memo;
+    it.id = uniqueId(time, name, pax, id);
+    state.items.sort(sortItems);
+    state.rosterTs = Date.now();
+    editing = null;
+    render();
+    save();
+    toast('수정됨');
+  }
+
+  function find(id){
+    for (var i=0;i<state.items.length;i++) if (state.items[i].id === id) return state.items[i];
+    return null;
+  }
+  function toggle(id){
+    var it = find(id);
+    if (!it) return;
+    setStatus(id, it.status === 'arrived' ? 'pending' : 'arrived');
+  }
+  function setStatus(id, st){
+    var it = find(id);
+    if (!it) return;
+    it.status = st;
+    it.ts = Date.now();
+    touched[it.time] = Date.now();
+    openMenu = null;
+    render();
+    save();
+    // 접힘 유예가 끝나는 시점에 한 번 더 그려준다
+    setTimeout(render, COLLAPSE_DELAY + 100);
+    if (st === 'arrived') toast(it.name + ' 방문 체크');
+  }
+
+  /* ---------- 명단 등록 ---------- */
+  var badBox = document.getElementById('badBox');
+  var hl = document.getElementById('hl');
+  var taEl = document.getElementById('ta');
+  var marking = false;   // 오류 표시 중인지
+
+  function esc(t){
+    return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
+  }
+  // 입력칸 높이는 내용과 무관하게 화면의 46%로 고정한다.
+  // 등록 버튼이 늘 같은 자리에 있고, 키보드가 올라올 자리도 남는다.
+  // 넘치는 줄은 안에서 스크롤하고, 오류 표시 오버레이도 같이 따라가야 줄이 안 어긋난다.
+  var taFixedH = 0;
+  function taBaseHeight(){
+    if (taFixedH) return taFixedH;
+    var vh = window.innerHeight || 700;
+    taFixedH = Math.max(260, Math.min(Math.round(vh * 0.46), 420));
+    return taFixedH;
+  }
+  function autoGrow(){
+    var h = taBaseHeight();
+    taEl.style.height = h + 'px';
+    taEl.style.overflowY = (taEl.scrollHeight > h + 2) ? 'auto' : 'hidden';
+    hl.scrollTop = taEl.scrollTop;
+  }
+  function clearBad(){
+    marking = false;
+    // 자리는 비워둔 채로. 오류 표시가 사라지며 버튼이 튀어오르면 고치는 중에 잘못 눌린다.
+    badBox.classList.add('off');
+    hl.innerHTML = '';
+    syncLoop(false);
+  }
+
+  // 7) 아이폰은 관성 스크롤 중에 scroll 이벤트를 띄엄띄엄 준다.
+  // 오류 표시가 켜져 있는 동안에는 매 프레임 입력칸 스크롤을 따라간다.
+  var syncRaf = 0;
+  function syncLoop(on){
+    if (!on){ cancelAnimationFrame(syncRaf); syncRaf = 0; return; }
+    if (syncRaf) return;
+    (function step(){
+      if (!marking){ syncRaf = 0; return; }
+      if (hl.scrollTop !== taEl.scrollTop) hl.scrollTop = taEl.scrollTop;
+      syncRaf = requestAnimationFrame(step);
+    })();
+  }
+  // 지금 커서가 있는 줄 번호 (1부터)
+  function caretLine(){
+    var pos = taEl.selectionStart;
+    if (pos === null || pos === undefined) return -1;
+    return String(taEl.value).slice(0, pos).split(/\r?\n/).length;
+  }
+  function paintBad(bad, skipLine){
+    var nos = {};
+    bad.forEach(function(b){ if (b.no !== skipLine) nos[b.no] = true; });
+    hl.innerHTML = String(taEl.value).split(/\r?\n/).map(function(line, i){
+      var t = esc(line) || ' ';
+      return '<span class="ln' + (nos[i+1] ? ' err' : '') + '">' + t + '</span>';
+    }).join('');
+    hl.scrollTop = taEl.scrollTop;   // 다시 그리면 스크롤이 풀린다 — 입력칸에 맞춘다
+  }
+  function showBad(bad){
+    marking = true;
+    paintBad(bad, -1);
+    badBox.textContent = '표시된 줄을 양식에 맞게 고쳐 주세요';
+    badBox.classList.remove('off', 'gone');
+    syncLoop(true);
+    autoGrow();
+  }
+  // 표시 중일 때는 입력할 때마다 다시 검사한다.
+  // 고친 줄만 표시가 사라지고, 나머지는 그대로 남는다.
+  var recheckTimer = null;
+  function recheck(skipCaret){
+    if (!marking) return;
+    var bad = parse(taEl.value).bad;
+    if (!bad.length){ clearBad(); return; }
+    paintBad(bad, skipCaret ? caretLine() : -1);
+  }
+  taEl.addEventListener('input', function(){
+    autoGrow();
+    clearTimeout(recheckTimer);
+    recheckTimer = setTimeout(function(){ recheck(true); }, 180);
+  });
+  // 입력칸을 벗어나면 치던 줄도 다시 검사한다
+  taEl.addEventListener('scroll', function(){ hl.scrollTop = taEl.scrollTop; });
+
+  // 붙여넣은 자리에 커서를 그대로 둔다. 화면(페이지)은 움직이지 않는다.
+  taEl.addEventListener('paste', function(){
+    setTimeout(function(){
+      autoGrow();
+      hl.scrollTop = taEl.scrollTop;
+      requestAnimationFrame(function(){ hl.scrollTop = taEl.scrollTop; });
+    }, 0);
+  });
+  taEl.addEventListener('blur', function(){
+    clearTimeout(recheckTimer);
+    recheck(false);
+  });
+
+  function applyPaste(text){
+    var fresh = parse(text);
+    if (fresh.bad.length){ showBad(fresh.bad); return false; }
+    clearBad();
+    if (!fresh.length){ toast('등록할 예약이 없습니다'); return false; }
+    state = { date: viewDate, rosterTs: Date.now(), items: fresh.sort(sortItems) };
+    render();
+    flush();
+    toast(fresh.length + '건 등록');
+    return true;
+  }
+
+  /* ---------- UI 연결 ---------- */
+  var panel = document.getElementById('pastePanel');
+  var panelScrim = document.getElementById('panelScrim');
+  panelScrim.addEventListener('click', function(){
+    if (!document.getElementById('addPanel').classList.contains('hide')) closeAdd();
+    else closePaste();
+  });
+  var ta = document.getElementById('ta');
+  // 하루치 명단을 통째로 받는 창. 한 건 추가는 「예약 추가」 폼이 맡는다.
+  function openPaste(silent){
+    var g = dayGap(viewDate);
+    var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
+    document.getElementById('pasteTitle').textContent = day + ' 예약 명단 붙여넣기';
+    // 명단이 아예 없을 땐 돌아갈 화면이 없으므로 취소 버튼을 숨긴다
+    var hasItems = !!(state && state.items && state.items.length);
+    document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
+    ta.value = '';
+    clearBad();
+    badBox.classList.add('gone');
+    taFixedH = 0;                    // 창을 열 때 한 번만 계산한다
+    autoGrow();
+    panel.classList.remove('hide');
+    if (silent) return;
+    panel.scrollIntoView({ behavior:'smooth', block:'center' });
+    setTimeout(function(){ ta.focus(); }, 200);
+  }
+  function closePaste(){ panel.classList.add('hide'); }
+
+  /* ---------- 예약 추가 ---------- */
+  var addPanel = document.getElementById('addPanel');
+  var aHour = document.getElementById('a-hour');
+  var aMin  = document.getElementById('a-min');
+  var aName = document.getElementById('a-name');
+  var aPax  = document.getElementById('a-pax');
+  var aMemo = document.getElementById('a-memo');
+
+  (function fillAddOpts(){
+    var h = '';
+    for (var i = 12; i <= 23; i++) h += '<option value="' + pad(i) + '">' + pad(i) + '</option>';
+    aHour.innerHTML = h;
+    var m = '';
+    for (var j = 0; j < 60; j += 5) m += '<option value="' + pad(j) + '">' + pad(j) + '</option>';
+    aMin.innerHTML = m;
+    var pp = '';
+    for (var k = 1; k <= 12; k++) pp += '<option value="' + k + '">' + k + '명</option>';
+    aPax.innerHTML = pp;
+  })();
+
+  function openAdd(){
+    if (!panel.classList.contains('hide')) closePaste();
+    // 기본값 — 정각 기준. 상단 시간이 넘어가는 규칙(정각 11분)과 같이 움직인다.
+    var t = new Date(), hh = t.getHours();
+    if (t.getMinutes() >= GRACE_ON_HOUR) hh += 1;
+    if (hh < 12) hh = 12;
+    if (hh > 23) hh = 23;
+    aHour.value = pad(hh); aMin.value = '00';
+    aName.value = ''; aMemo.value = ''; aPax.value = '2';
+    addPanel.classList.remove('hide');
+    panelScrim.classList.remove('hide');
+    backOpen(hideAdd);
+    setTimeout(function(){ aName.focus(); }, 200);
+  }
+  function hideAdd(){
+    addPanel.classList.add('hide');
+    if (panel.classList.contains('hide')) panelScrim.classList.add('hide');
+  }
+  function closeAdd(){ hideAdd(); backDone(); }
+
+  function addOne(){
+    var name = aName.value.replace(/\s+/g,' ').trim();
+    if (!name){ toast('이름을 입력해 주세요'); aName.focus(); return; }
+    var time = aHour.value + ':' + aMin.value;
+    var pax = parseInt(aPax.value, 10);
+    var memo = aMemo.value.replace(/\s+/g,' ').trim();
+    if (!state) state = { date: viewDate, rosterTs: 0, items: [] };
+    var maxSeq = 0;
+    state.items.forEach(function(x){ if ((x.seq||0) > maxSeq) maxSeq = x.seq||0; });
+    state.items.push({
+      id: uniqueId(time, name, pax), time: time, name: name, pax: pax,
+      memo: memo, status: 'pending', ts: Date.now(), seq: maxSeq + 1
+    });
+    state.items.sort(sortItems);
+    state.rosterTs = Date.now();
+    delete collapsed[time];        // 방금 넣은 예약은 보이게
+    closeAdd();
+    render();
+    save();
+    toast(time + ' ' + name + ' 추가됨');
+  }
+  document.getElementById('addOk').addEventListener('click', addOne);
+  document.getElementById('addNo').addEventListener('click', closeAdd);
+  aName.addEventListener('keydown', function(e){ if (e.key === 'Enter') aMemo.focus(); });
+  aMemo.addEventListener('keydown', function(e){ if (e.key === 'Enter') addOne(); });
+
+  /* ---------- 키보드 ---------- */
+  // 키보드가 올라오면 화면 아래쪽이 가려진다.
+  // 시트와 확인창을 가려진 높이만큼 위로 올려 버튼이 늘 보이게 한다.
+  var vv = window.visualViewport;
+  function kbFit(){
+    if (!vv) return;
+    var kb = window.innerHeight - vv.height - vv.offsetTop;
+    if (!(kb > 80)) kb = 0;            // 주소창이 접히는 정도의 변화는 무시
+    document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
+    addPanel.classList.toggle('kb', kb > 0);
+  }
+  if (vv){
+    vv.addEventListener('resize', kbFit);
+    vv.addEventListener('scroll', kbFit);
+  }
+
+  /* ---------- 뒤로가기 ---------- */
+  // 앱 모드에서는 뒤로가기를 누르면 앱이 그대로 꺼진다.
+  // 서랍·시트·팝업이 열려 있으면 그것부터 닫는다. (아이폰의 화면 끝 쓸기도 같다)
+  var backClose = null;
+  function backOpen(fn){
+    if (backClose){ backClose = fn; return; }   // 서랍 → 시트처럼 갈아탈 땐 기록을 늘리지 않는다
+    backClose = fn;
+    try { history.pushState({ ov: 1 }, ''); } catch(e){}
+  }
+  function backDone(){                           // 화면에서 직접 닫았을 때
+    if (!backClose) return;
+    backClose = null;
+    if (history.state && history.state.ov){ try { history.back(); } catch(e){} }
+  }
+  window.addEventListener('popstate', function(){
+    if (!backClose) return;
+    var fn = backClose; backClose = null;
+    fn();
+  });
+
+  var scrim = document.getElementById('scrim');
+  function confirmDlg(title, onYes){
+    var yes = document.getElementById('dlgYes');
+    var no  = document.getElementById('dlgNo');
+    var inp = document.getElementById('dlgInput');
+    document.getElementById('dlgTitle').textContent = title;
+    inp.value = '';
+    yes.disabled = true;
+    scrim.classList.remove('hide');
+    setTimeout(function(){ inp.focus(); }, 150);
+
+    function ok(){ return inp.value.trim() === '예'; }
+    function hide(){
+      scrim.classList.add('hide');
+      yes.onclick = null; no.onclick = null; scrim.onclick = null;
+      inp.oninput = null; inp.onkeydown = null;
+    }
+    function done(){ hide(); backDone(); }
+    backOpen(hide);
+    inp.oninput = function(){ yes.disabled = !ok(); };
+    inp.onkeydown = function(e){ if (e.key === 'Enter' && ok()){ done(); onYes(); } };
+    yes.onclick = function(){ if (ok()){ done(); onYes(); } };
+    no.onclick  = done;
+    scrim.onclick = function(e){ if (e.target === scrim) done(); };
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
+    var g = dayGap(viewDate);
+    var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
+    confirmDlg(day + ' 명단을 초기화할까요?\n「예」를 입력해 주세요', function(){
+      state = { date: viewDate, rosterTs: Date.now(), items: [] };
+      collapsed = {};
+      closeSearch(false);
+      window.scrollTo(0, 0);
+      render();
+      flush();
+    });
+  });
+
+  document.getElementById('loadBtn').addEventListener('click', function(){
+    if (applyPaste(ta.value)) closePaste();
+  });
+  document.getElementById('cancelPaste').addEventListener('click', closePaste);
+  document.getElementById('addBtn').addEventListener('click', openAdd);
+
+  // ⋯ 메뉴는 바깥을 누르면 닫힌다.
+  // 그 탭은 닫는 데만 쓰고 넘기지 않는다 — 메뉴를 치우려다 옆 사람이 체크되면 안 된다.
+  // click 단계에서 처리해야 스크롤은 막히지 않는다.
+  document.addEventListener('click', function(e){
+    if (!openMenu) return;
+    var t = e.target;
+    if (t.closest && (t.closest('.menu') || t.closest('.more'))) return;
+    if (!document.querySelector('.menu')){   // 화면에 없는 메뉴 때문에 탭을 버리지 않는다
+      openMenu = null;
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    openMenu = null;
+    render();
+  }, true);
+
+  /* ---------- 검색 ---------- */
+  var qEl = document.getElementById('q');
+  var qClear = document.getElementById('qClear');
+  var searchbar = document.getElementById('searchbar');
+  var searchBtn = document.getElementById('searchBtn');
+
+  var scrollBeforeSearch = 0;
+
+  function closeSearch(restore){
+    var wasOpen = !searchbar.classList.contains('hide');
+    searchbar.classList.add('hide');
+    searchBtn.classList.remove('on');
+    qEl.value = ''; query = '';
+    qClear.classList.add('hide');
+    if (wasOpen && restore){
+      requestAnimationFrame(function(){ window.scrollTo(0, scrollBeforeSearch); });
+    }
+  }
+  function openSearch(){
+    scrollBeforeSearch = window.pageYOffset || document.documentElement.scrollTop || 0;
+    searchbar.classList.remove('hide');
+    searchBtn.classList.add('on');
+    window.scrollTo(0, 0);
+    qEl.focus();
+    backOpen(function(){ closeSearch(true); render(); });
+    render();
+  }
+  searchBtn.addEventListener('click', function(){
+    if (searchbar.classList.contains('hide')) openSearch();
+    else { closeSearch(true); backDone(); render(); }
+  });
+  document.getElementById('qBack').addEventListener('click', function(){
+    closeSearch(true); backDone(); render();
+  });
+  qEl.addEventListener('input', function(){
+    query = qEl.value;
+    qClear.classList.toggle('hide', !query);
+    render();
+  });
+  qClear.addEventListener('click', function(){
+    qEl.value = ''; query = '';
+    qClear.classList.add('hide');
+    render();
+    qEl.focus();
+  });
+
+  /* ---------- 날짜 이동 ---------- */
+  function goDate(ds){
+    var g = dayGap(ds);
+    if (g < -1 || g > 1) return;
+    viewDate = ds;
+    editing = null; openMenu = null; collapsed = {}; touched = {};
+    closeSearch(false);
+    state = null;
+    closePaste();
+    window.scrollTo(0, 0);
+    render();
+    loadRemote().then(function(remote){
+      state = (remote && remote.items) ? remote : { date: viewDate, rosterTs: 0, items: [] };
+      render();
+      watchRemote();
+    }).catch(function(){
+      state = { date: viewDate, rosterTs: 0, items: [] };
+      render();
+    });
+  }
+  var foldBtn = document.getElementById('foldBtn');
+  foldBtn.addEventListener('click', function(){
+    if (!state || !state.items.length) return;
+    if (!panel.classList.contains('hide')) closePaste();
+    var times = {}, anyOpen = false;
+    state.items.forEach(function(it){
+      if (times[it.time] !== undefined) return;
+      var pend = state.items.some(function(x){ return x.time===it.time && x.status==='pending'; });
+      times[it.time] = !pend;              // 대기가 비어 있는 시간대인지 기록
+      if (!isCollapsed(it.time, pend ? 1 : 0)) anyOpen = true;
+    });
+    Object.keys(times).forEach(function(t){ setCollapsed(t, anyOpen, times[t]); });
+    if (anyOpen){ editing = null; openMenu = null; }   // 전부 접을 땐 열린 폼도 닫는다
+    render();
+  });
+
+  /* ---------- 하단 바 ---------- */
+  var footEl = document.querySelector('.foot');
+  var footHidden = true;
+  function footMode(){
+    if (!footEl) return;
+    var hidden = footEl.classList.contains('hide');
+    if (!hidden && footHidden) setBodyHeight();      // 하단 바가 처음 나타날 때만 높이 재측정
+    footHidden = hidden;
+    if (hidden) return;
+    var scrollable = document.documentElement.scrollHeight > viewportH() + 1;
+    footEl.classList.toggle('flow', !scrollable);
+  }
+  /* ---------- 화면 높이 ---------- */
+  // CSS 단위(dvh)가 틀리게 나오는 기기가 있어 실제 뷰포트 높이로 한 번 더 맞춘다.
+  // 아이폰은 실행마다 화면 높이를 다르게 준다 (상태바 59pt 를 빼기도 하고 안 빼기도 한다).
+  // 여러 측정값 중 가장 큰 것을 쓰고, 화면을 다시 그릴 때마다 확인한다.
+  // 하단 바가 나타나는 시점이 곧 다시 그리는 시점이라 어긋난 높이로 보일 틈이 없다.
+  function viewportH(){
+    var vv = window.visualViewport;
+    return Math.max(
+      window.innerHeight || 0,
+      document.documentElement.clientHeight || 0,
+      vv ? Math.round(vv.height + vv.offsetTop) : 0
+    );
+  }
+  function setBodyHeight(){
+    var h = viewportH();
+    if (h > 0) document.body.style.minHeight = h + 'px';
+  }
+  function fitHeight(){
+    setBodyHeight();
+    footMode();
+  }
+  fitHeight();
+  // 입력칸 높이는 창을 열 때 정해두므로 여기서 다시 계산할 게 없다
+  window.addEventListener('resize', fitHeight);    // 안에서 footMode 까지 부른다
+  window.addEventListener('orientationchange', function(){ setTimeout(fitHeight, 250); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', fitHeight);
+
+  // 개발용 폴더에서 열렸으면 표시해 둔다. 실제 앱과 헷갈리지 않게.
+  if (/-dev(\/|$)/.test(location.pathname)){
+    var dt = document.getElementById('devTag');
+    if (dt) dt.classList.remove('hide');
+  }
+
+  /* ---------- 테마 ---------- */
+  // 다크가 기본. 라이트를 고른 사람만 저장값이 남는다.
+  var THEME_KEY = 'theme';
+  var THEMES = { dark: '다크', light: '라이트' };
+
+  function theme(){
+    try { return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; }
+    catch(e){ return 'dark'; }
+  }
+  function applyTheme(){
+    var t = theme();
+    var d = document.documentElement;
+    d.setAttribute('data-theme', t);
+    d.style.colorScheme = t;
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
+    var v = document.getElementById('themeVal');
+    if (v) v.textContent = THEMES[t];
+    [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
+      btn.classList.toggle('on', btn.getAttribute('data-theme-set') === t);
+    });
+  }
+  // 서랍 안에서 바로 고른다. 서랍을 열어둔 채라 바뀌는 색이 그 자리에서 보인다.
+  var themeBtn = document.getElementById('themeBtn');
+  var themeSub = document.getElementById('themeSub');
+  themeBtn.addEventListener('click', function(){
+    var open = themeSub.classList.toggle('hide');
+    themeBtn.classList.toggle('open', !open);
+  });
+  [].forEach.call(themeSub.querySelectorAll('[data-theme-set]'), function(btn){
+    btn.addEventListener('click', function(){
+      try { localStorage.setItem(THEME_KEY, btn.getAttribute('data-theme-set')); } catch(e){}
+      applyTheme();
+    });
+  });
+  applyTheme();
+
+  /* ---------- 메뉴 서랍 ---------- */
+  var drawer = document.getElementById('drawer');
+  var drawerScrim = document.getElementById('drawerScrim');
+
+  function hideDrawer(){
+    drawer.classList.remove('open');
+    drawerScrim.classList.add('off');
+    var sub = document.getElementById('themeSub');
+    if (sub){ sub.classList.add('hide'); document.getElementById('themeBtn').classList.remove('open'); }
+  }
+  function openDrawer(){
+    renderDrawerDays();
+    drawerScrim.classList.remove('off');
+    drawer.classList.add('open');
+    backOpen(hideDrawer);
+  }
+  function closeDrawer(){ hideDrawer(); backDone(); }
+
+  // 왼쪽으로 밀어서 닫기. 세로로 그으면 목록 스크롤이므로 손대지 않는다.
+  (function swipeClose(){
+    var x0 = 0, y0 = 0, dx = 0, w = 0, axis = null, dragging = false;
+    drawer.addEventListener('touchstart', function(e){
+      if (!drawer.classList.contains('open') || e.touches.length !== 1) return;
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+      dx = 0; axis = null; dragging = true; w = drawer.offsetWidth || 1;
+      drawer.style.transition = 'none';
+    }, { passive: true });
+    drawer.addEventListener('touchmove', function(e){
+      if (!dragging) return;
+      var mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+      if (!axis){
+        if (Math.abs(mx) < 6 && Math.abs(my) < 6) return;
+        axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
+        if (axis === 'y'){ endDrag(false); return; }
+      }
+      dx = Math.min(0, mx);                       // 오른쪽으로는 안 끌린다
+      drawer.style.transform = 'translateX(' + dx + 'px)';
+      drawerScrim.style.opacity = String(Math.max(0, 1 + dx / w));
+    }, { passive: true });
+    function endDrag(commit){
+      dragging = false; axis = null;
+      drawer.style.transition = '';
+      if (commit) closeDrawer();
+      drawer.style.transform = '';
+      drawerScrim.style.opacity = '';
+    }
+    drawer.addEventListener('touchend', function(){
+      if (dragging) endDrag(dx < -Math.min(70, w * 0.3));
+    });
+    drawer.addEventListener('touchcancel', function(){ if (dragging) endDrag(false); });
+  })();
+  document.getElementById('menuBtn').addEventListener('click', openDrawer);
+  drawerScrim.addEventListener('click', closeDrawer);
+
+  // 어제 / 오늘 / 내일 — 건수와 함께
+  var dayCount = {};                 // 날짜별 건수를 기억해 둔다
+  function renderDrawerDays(){
+    var box = document.getElementById('dwDays');
+    if (!box) return;
+    box.innerHTML = '';
+    [-1, 0, 1].forEach(function(off){
+      var ds = shiftDate(bizDate(), off);
+      var p = ds.split('-');
+      var d = new Date(+p[0], +p[1]-1, +p[2]);
+      var w = ['일','월','화','수','목','금','토'][d.getDay()];
+      var label = off === -1 ? '어제' : off === 0 ? '오늘' : '내일';
+      var cur = (ds === viewDate);
+
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'dwday' + (cur ? ' on' : '');
+      b.innerHTML = '<span class="tick">' + (cur ? '✓' : '') + '</span>'
+        + '<span class="d1">' + (+p[1]) + '/' + (+p[2]) + ' (' + w + ') · ' + label + '</span>'
+        + '<span class="d2" data-c></span>';
+      b.addEventListener('click', function(){ closeDrawer(); if (!cur) goDate(ds); });
+      box.appendChild(b);
+
+      var slot = b.querySelector('[data-c]');
+      if (cur){
+        slot.textContent = (state && state.items.length) ? state.items.length + '건' : '—';
+        dayCount[ds] = slot.textContent;
+      } else if (hasStore()) {
+        slot.textContent = dayCount[ds] || '';   // 받아오는 동안 이전 값을 그대로 둔다
+        fb().get('roster:' + ds).then(function(r){
+          dayCount[ds] = (r && r.items && r.items.length) ? r.items.length + '건' : '—';
+          slot.textContent = dayCount[ds];
+        }).catch(function(){ slot.textContent = dayCount[ds] || '—'; });
+      } else {
+        slot.textContent = '—';
+      }
+    });
+    var cf = document.getElementById('dwConn');
+    if (cf){
+      cf.className = 'dwfoot' + (online && hasStore() ? '' : ' off');
+      cf.innerHTML = '<span class="dot' + (online && hasStore() ? '' : ' stale') + '"></span>'
+        + (online && hasStore() ? '연결됨' : '연결 안 됨');
+    }
+  }
+
+  /* ---------- 안내 시트 ---------- */
+  var sheetScrim = document.getElementById('sheetScrim');
+  function openSheet(title, html){
+    document.getElementById('sheetTitle').textContent = title;
+    document.getElementById('sheetBody').innerHTML = html;
+    sheetScrim.classList.remove('hide');
+    backOpen(hideSheet);
+  }
+  function hideSheet(){
+    sheetScrim.classList.add('hide');
+    var nv = document.getElementById('sheetNever');
+    if (nv) nv.classList.add('hide');
+  }
+  function closeSheet(){ hideSheet(); backDone(); }
+  document.getElementById('sheetClose').addEventListener('click', closeSheet);
+  sheetScrim.addEventListener('click', function(e){ if (e.target === sheetScrim) closeSheet(); });
+
+  var FAQ = [
+    ['메모는 어떻게 다나요?', 1,
+      '예약 추가할 때 <em>메모</em> 칸에 적거나, 이름 오른쪽 ⋯ → <em>수정</em>에서 넣습니다.\n'
+      + '이름 아래에 노란 글씨로 보이고, 명단 복사에는 들어가지 않습니다.'],
+    ['예약을 고치거나 지우려면?', 0,
+      '이름 오른쪽 ⋯ 에 <em>방문 · 취소 · 수정 · 삭제</em>가 있습니다.\n'
+      + '시간을 고치면 그 시간대로 옮겨갑니다.'],
+    ['시간대는 언제 접히나요?', 0,
+      '남은 팀이 없으면 5초 뒤에 접히고, 체크를 풀면 다시 펼쳐집니다.\n'
+      + '직접 접거나 편 것은 그대로 둡니다.'],
+    ['맨 위 시간은 언제 넘어가나요?', 0,
+      '그 시간대를 다 체크하면 바로 넘어갑니다.\n'
+      + '아니면 정각 예약은 11분 뒤에(15:00은 15:11에), 그 외에는 그 시각이 되면 넘어갑니다.'],
+    ['다른 사람이 체크한 게 바로 보이나요?', 0,
+      '1초 안에 보입니다.'],
+    ['연결이 끊기면 어떻게 되나요?', 0,
+      '맨 위에 <em>연결 안 됨</em>이 표시됩니다.\n'
+      + '그동안 체크하거나 고친 내용은 폰에 남아 있다가, 다시 연결되면 자동으로 올라갑니다.\n'
+      + '앱을 계속 쓰셔도 됩니다.'],
+    ['날짜는 언제 바뀌나요?', 0,
+      '자정에 바뀝니다.\n'
+      + '어제 명단은 왼쪽 위 메뉴에서 볼 수 있고, 이틀 지나면 지워집니다.']
+  ];
+  var CHEV = '<span class="qchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>';
+
+  document.getElementById('faqBtn').addEventListener('click', function(){
+    hideDrawer();
+    openSheet('자주 묻는 질문', '<div class="faq">'
+      + FAQ.map(function(f){
+          return '<div class="qa"><button type="button" class="q">'
+            + '<span>' + f[0] + '</span>'
+            + (f[1] ? '<span class="qnew">NEW</span>' : '')
+            + CHEV + '</button>'
+            + '<div class="a">' + f[2] + '</div></div>';
+        }).join('')
+      + '</div>');
+  });
+  // 한 번에 하나만 펼친다
+  document.getElementById('sheetBody').addEventListener('click', function(e){
+    var q = e.target.closest && e.target.closest('.q');
+    if (!q) return;
+    var box = q.parentNode, was = box.classList.contains('open');
+    [].forEach.call(this.querySelectorAll('.qa.open'), function(x){ x.classList.remove('open'); });
+    if (!was) box.classList.add('open');
+  });
+
+  // 기기 한 칸 = 이름 + 번호 붙은 세 단계
+  function plat(cls, name, steps){
+    return '<div class="plat ' + cls + '">'
+      + '<div class="ph"><span class="pn">' + name + '</span></div>'
+      + steps.map(function(t, i){
+          return '<div class="step"><span class="n">' + (i + 1) + '</span><span>' + t + '</span></div>';
+        }).join('')
+      + '</div>';
+  }
+  function isStandalone(){
+    try {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+    } catch(e){ return false; }
+  }
+  function installHtml(){
+    return plat('ios', '아이폰 (사파리)', [
+        '화면 <b>아래 오른쪽</b> <span class="key">'
+          + '<svg viewBox="0 0 22 8" width="20" height="8" fill="currentColor" aria-hidden="true">'
+          + '<circle cx="3.4" cy="4" r="1.7"/><circle cx="11" cy="4" r="1.7"/><circle cx="18.6" cy="4" r="1.7"/></svg>'
+          + '</span>',
+        '<b>공유</b>',
+        '<b>홈 화면에 추가</b>'
+      ])
+      + plat('and', '갤럭시 (크롬)', [
+        '화면 <b>위 오른쪽</b> <span class="key">'
+          + '<svg viewBox="0 0 8 22" width="8" height="20" fill="currentColor" aria-hidden="true">'
+          + '<circle cx="4" cy="3.4" r="1.7"/><circle cx="4" cy="11" r="1.7"/><circle cx="4" cy="18.6" r="1.7"/></svg>'
+          + '</span>',
+        '<b>설치 및 바로가기 만들기</b>',
+        '<b>설치</b>'
+      ]);
+  }
+  var INSTALL_NOTE = '<p class="sheetNote plain" style="margin:-4px 0 14px">'
+    + '익선취향 예약 매니저 「익순이」는 홈 화면 앱에 최적화되어 있습니다.</p>';
+
+  document.getElementById('installBtn').addEventListener('click', function(){
+    hideDrawer();
+    openSheet('앱으로 설치하기', INSTALL_NOTE + installHtml());
+  });
+
+  // 4) 앱 소개
+  /* ---------- Wi-Fi 안내 ---------- */
+  // QR 은 미리 그려 넣는다. 손님 폰 카메라로 찍으면 바로 접속된다.
+  var WIFI = {"main": {"label": "본관", "ssid": "KT_GiGA_5G_25BD", "pw": "6dfc00ge34", "vb": "0 0 37 37", "d": "M2 2.5h7m2 0h1m2 0h1m2 0h1m2 0h2m1 0h3m2 0h7m-33 1h1m5 0h1m1 0h1m1 0h1m1 0h3m1 0h2m3 0h2m3 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m2 0h2m3 0h3m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m3 0h1m2 0h1m4 0h2m2 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h3m3 0h1m2 0h1m2 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h1m2 0h1m3 0h1m7 0h1m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h2m1 0h1m6 0h1m3 0h3m-25 1h1m5 0h1m1 0h3m1 0h2m1 0h4m2 0h6m2 0h3m-32 1h1m1 0h1m6 0h2m1 0h1m2 0h2m9 0h3m-28 1h1m3 0h2m3 0h1m4 0h2m1 0h1m1 0h2m3 0h1m1 0h5m-30 1h3m2 0h3m1 0h1m2 0h1m5 0h1m1 0h1m1 0h2m2 0h3m-28 1h1m2 0h4m1 0h1m1 0h8m4 0h3m1 0h2m1 0h1m-33 1h1m1 0h2m1 0h1m2 0h3m1 0h1m1 0h1m1 0h2m3 0h1m1 0h5m1 0h2m-29 1h2m2 0h1m1 0h1m3 0h1m1 0h1m2 0h2m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m2 0h1m-30 1h4m1 0h1m4 0h2m1 0h1m3 0h2m3 0h2m1 0h5m-32 1h2m1 0h1m2 0h1m2 0h1m2 0h2m5 0h2m2 0h3m2 0h1m2 0h1m-32 1h2m1 0h1m3 0h2m1 0h2m4 0h2m1 0h1m1 0h3m1 0h1m3 0h2m1 0h1m-33 1h1m1 0h2m2 0h2m3 0h2m2 0h2m2 0h3m1 0h1m1 0h2m2 0h1m2 0h1m-33 1h3m1 0h2m1 0h3m3 0h1m3 0h3m3 0h1m1 0h2m2 0h2m1 0h1m-33 1h1m1 0h7m1 0h2m2 0h3m3 0h1m1 0h1m1 0h1m2 0h2m1 0h2m-32 1h1m1 0h1m4 0h1m1 0h4m3 0h1m1 0h3m4 0h1m1 0h2m1 0h3m-33 1h1m1 0h5m1 0h1m2 0h1m1 0h1m1 0h2m3 0h3m2 0h1m1 0h1m1 0h1m1 0h1m-32 1h1m1 0h3m2 0h2m3 0h3m3 0h2m2 0h3m5 0h3m-33 1h3m2 0h4m2 0h5m2 0h1m2 0h1m2 0h5m2 0h2m-25 1h1m1 0h2m1 0h2m1 0h1m2 0h1m4 0h1m3 0h1m2 0h2m-33 1h7m2 0h2m1 0h5m1 0h1m1 0h1m3 0h1m1 0h1m1 0h3m-31 1h1m5 0h1m2 0h1m4 0h2m3 0h1m3 0h2m3 0h1m1 0h1m-31 1h1m1 0h3m1 0h1m5 0h4m2 0h3m1 0h1m1 0h6m2 0h1m-33 1h1m1 0h3m1 0h1m2 0h1m1 0h2m3 0h2m1 0h1m3 0h1m1 0h1m1 0h1m2 0h3m-33 1h1m1 0h3m1 0h1m2 0h1m3 0h2m1 0h1m1 0h2m6 0h1m1 0h5m-33 1h1m5 0h1m2 0h3m3 0h2m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h1m-31 1h7m1 0h2m1 0h2m3 0h1m3 0h3m1 0h1m2 0h3m1 0h1"}, "annex": {"label": "별관", "ssid": "KT_GiGA_5G_5275", "pw": "8ddb9gf944", "vb": "0 0 37 37", "d": "M2 2.5h7m4 0h2m2 0h1m4 0h4m2 0h7m-33 1h1m5 0h1m1 0h1m3 0h3m1 0h2m2 0h3m3 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m3 0h5m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h4m3 0h1m4 0h2m2 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h1m5 0h1m2 0h1m2 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m4 0h1m4 0h1m7 0h1m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h2m12 0h3m-25 1h1m5 0h1m1 0h1m1 0h4m1 0h4m1 0h7m2 0h3m-32 1h1m1 0h3m3 0h3m1 0h1m2 0h2m2 0h2m5 0h3m-26 1h1m1 0h2m1 0h2m5 0h2m1 0h1m2 0h1m4 0h6m-32 1h1m8 0h3m2 0h1m4 0h1m2 0h1m1 0h2m2 0h3m-31 1h1m1 0h1m2 0h2m2 0h12m4 0h2m2 0h2m1 0h1m-33 1h3m1 0h1m3 0h1m2 0h1m1 0h2m1 0h2m3 0h1m1 0h4m2 0h2m-31 1h1m4 0h5m2 0h3m2 0h2m1 0h1m1 0h1m1 0h1m1 0h3m1 0h2m-32 1h1m3 0h2m3 0h3m3 0h1m3 0h2m3 0h2m1 0h5m-32 1h1m1 0h3m1 0h1m2 0h2m1 0h2m5 0h2m2 0h3m2 0h1m2 0h1m-32 1h4m1 0h1m3 0h2m1 0h2m2 0h2m1 0h1m1 0h3m1 0h1m3 0h2m1 0h1m-31 1h3m1 0h2m1 0h2m1 0h5m2 0h1m1 0h1m1 0h1m2 0h1m2 0h1m2 0h1m-33 1h2m8 0h1m1 0h1m1 0h1m2 0h2m1 0h1m2 0h1m5 0h2m-31 1h1m4 0h6m3 0h3m3 0h1m1 0h1m1 0h1m2 0h2m1 0h1m1 0h1m-33 1h2m12 0h1m1 0h1m1 0h3m4 0h1m1 0h2m1 0h3m-33 1h1m3 0h4m2 0h4m1 0h2m3 0h3m2 0h1m2 0h1m2 0h1m-32 1h1m2 0h2m2 0h2m2 0h1m1 0h1m4 0h2m2 0h3m2 0h1m2 0h3m-33 1h3m1 0h1m1 0h1m3 0h1m4 0h1m2 0h1m2 0h1m2 0h5m2 0h2m-25 1h5m3 0h1m2 0h1m4 0h1m3 0h1m2 0h2m-33 1h7m4 0h1m1 0h1m1 0h2m1 0h1m1 0h1m3 0h1m1 0h1m1 0h3m-31 1h1m5 0h1m2 0h1m2 0h2m1 0h1m3 0h1m3 0h2m3 0h1m1 0h1m-31 1h1m1 0h3m1 0h1m5 0h1m1 0h2m2 0h3m1 0h1m1 0h6m2 0h1m-33 1h1m1 0h3m1 0h1m3 0h3m1 0h1m1 0h2m1 0h1m3 0h1m1 0h1m1 0h1m3 0h2m-33 1h1m1 0h3m1 0h1m3 0h1m2 0h2m1 0h1m1 0h2m6 0h1m1 0h1m1 0h3m-33 1h1m5 0h1m2 0h3m1 0h4m1 0h1m1 0h1m1 0h2m1 0h1m2 0h3m-31 1h7m1 0h1m1 0h1m1 0h3m1 0h1m3 0h3m1 0h1m2 0h2m2 0h1"}};
+  var wifiPick = 'main';
+  function wifiHtml(){
+    var n = WIFI[wifiPick];
+    return '<div class="wtab">'
+      + Object.keys(WIFI).map(function(k){
+          return '<button type="button" data-wifi="' + k + '"'
+            + (k === wifiPick ? ' class="on"' : '') + '>' + WIFI[k].label + '</button>';
+        }).join('')
+      + '</div>'
+      + '<div class="qrcard"><svg viewBox="' + n.vb + '" shape-rendering="crispEdges">'
+      +   '<path d="' + n.d + '" stroke="#000" stroke-width="1" fill="none"/></svg></div>'
+      + '<div class="wnet"><span class="k">네트워크</span><span class="v">' + n.ssid + '</span></div>'
+      + '<div class="wnet"><span class="k">비밀번호</span><span class="v">' + n.pw + '</span></div>';
+  }
+  document.getElementById('wifiBtn').addEventListener('click', function(){
+    hideDrawer();
+    openSheet('Wi-Fi 안내', wifiHtml());
+  });
+  document.getElementById('sheetBody').addEventListener('click', function(e){
+    var t = e.target.closest && e.target.closest('[data-wifi]');
+    if (t){ wifiPick = t.getAttribute('data-wifi'); this.innerHTML = wifiHtml(); return; }
+  });
+
+  document.getElementById('aboutBtn').addEventListener('click', function(){
+    hideDrawer();
+    openSheet('익순이란?',
+      '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
+      + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
+      + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
+      + '<p class="credit">익순이 v1.2.1<br>© 2026 Jumin Labs</p>');
+  });
+
+  // 브라우저로 처음 들어온 사람에게 한 번 권한다
+  var HINT_KEY = 'installHintOff';
+  function hintOff(){
+    try { return localStorage.getItem(HINT_KEY) === '1'; } catch(e){ return true; }
+  }
+  function maybeInstallHint(){
+    if (isStandalone() || hintOff()) return;
+    setTimeout(function(){
+      if (!sheetScrim.classList.contains('hide')) return;   // 다른 안내가 떠 있으면 건너뛴다
+      openSheet('앱으로 설치하기',
+        INSTALL_NOTE + installHtml());
+      sheetNever.classList.remove('hide');
+    }, 1200);
+  }
+  var sheetNever = document.getElementById('sheetNever');
+  sheetNever.addEventListener('click', function(){
+    try { localStorage.setItem(HINT_KEY, '1'); } catch(e){}
+    closeSheet();
+  });
+
+  // 화면을 새로 불러오면 입력 중이던 글이 날아간다. 쓰던 게 있으면 하지 않는다.
+  function typingNow(){
+    var pnl = document.getElementById('pastePanel');
+    if (pnl && !pnl.classList.contains('hide') && ta.value.trim()) return true;
+    if (addPanel && !addPanel.classList.contains('hide')
+        && (aName.value.trim() || aMemo.value.trim())) return true;
+    if (editing) return true;
+    return false;
+  }
+  function reloadPage(){
+    if (typingNow()){ toast('입력 중이라 새로 불러오지 않았습니다'); return; }
+    try { window.location.reload(); } catch(e){}
+  }
+
+  var refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.addEventListener('click', function(){
+    // 연결이 끊긴 상태면 데이터를 다시 읽어봐야 소용없다. 연결 자체를 되살린다.
+    if (!online && hasStore() && fb().reconnect){
+      toast('다시 연결 중…');
+      fb().reconnect();
+      watchRemote();
+      // 그래도 안 붙으면 페이지를 새로 띄우는 수밖에 없다
+      setTimeout(function(){
+        if (online){ sync(); return; }
+        toast('연결 실패 — 화면을 새로 불러옵니다');
+        setTimeout(function(){ reloadPage(); }, 900);
+      }, 5000);
+      return;
+    }
+    if (!state){ toast('명단이 없습니다'); return; }
+    sync().then(function(){ toast('최신 명단입니다'); });
+  });
+
+  // 보고용 텍스트 — 체크 안 된 건 뒤에 아무것도 안 붙임
+  function reportText(){
+    if (!state || !state.items.length) return '';
+    var prev = null, out = [];
+    state.items.slice().sort(sortItems).forEach(function(it){
+      if (prev !== null && it.time !== prev) out.push('');
+      prev = it.time;
+      var tail = it.status === 'arrived' ? ' 방문'
+               : it.status === 'cancelled' ? ' 취소' : '';
+      out.push(it.time + ' ' + it.name + ' ' + it.pax + '명' + tail);
+    });
+    return out.join('\n');
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    var txt = reportText();
+    if (!txt){ toast('명단이 없습니다'); return; }
+    var done = function(){ toast(state.items.length + '건 복사됨'); };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done).catch(function(){ fallbackCopy(txt, done); });
+    } else {
+      fallbackCopy(txt, done);
+    }
+  });
+
+  function fallbackCopy(txt, done){
+    var t = document.createElement('textarea');
+    t.value = txt;
+    t.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(t);
+    t.focus(); t.select(); t.setSelectionRange(0, txt.length);
+    try { document.execCommand('copy'); done(); }
+    catch(e){ toast('복사 실패 — 다시 시도해 주세요'); }
+    document.body.removeChild(t);
+  }
+
+  var toastTimer;
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('on'); }, 1600);
+  }
+
+  /* ---------- 시작 ---------- */
+  function boot(){
+    if (hasStore() && fb().onConnected && !boot._watched){
+      boot._watched = true;
+      fb().onConnected(function(ok){ setSync(ok); });
+    }
+    setSync(hasStore());
+    purgeOld();
+    loadRemote().then(function(remote){
+      state = (remote && remote.items) ? remote : { date: viewDate, rosterTs: 0, items: [] };
+      render();
+      watchRemote();
+      if (!boot._hinted){ boot._hinted = true; maybeInstallHint(); }
+    }).catch(function(){
+      state = { date: viewDate, rosterTs: 0, items: [] };
+      render();
+    });
+  }
+
+  /* ---------- 자동 업데이트 ---------- */
+  // 파일이 새로 올라갔는지는 하루에 한 번, 날짜가 바뀌는 순간에만 확인한다.
+  // 영업 중에는 절대 화면이 새로 뜨지 않는다.
+  var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
+  var lastTouchAt = Date.now(); // 마지막으로 화면을 만진 시각
+  ['pointerdown', 'keydown'].forEach(function(ev){
+    document.addEventListener(ev, function(){ lastTouchAt = Date.now(); },
+      { capture: true, passive: true });
+  });
+
+  // 서버가 표식을 오락가락 주면 새로고침이 반복될 수 있다. 1분에 한 번으로 묶는다.
+  var RELOAD_GAP = 60000;
+  function reloadedRecently(){
+    try {
+      var t = +sessionStorage.getItem('lastAutoReload') || 0;
+      return Date.now() - t < RELOAD_GAP;
+    } catch(e){ return false; }
+  }
+  function doReload(){
+    if (reloadedRecently()) return false;
+    try { sessionStorage.setItem('lastAutoReload', String(Date.now())); } catch(e){}
+    window.location.reload();
+    return true;
+  }
+
+  function fetchTag(){
+    if (!window.fetch) return Promise.resolve(null);
+    return fetch(location.href, { method: 'HEAD', cache: 'no-store' })
+      .then(function(r){
+        if (!r.ok) return null;
+        return r.headers.get('etag') || r.headers.get('last-modified') || null;
+      })
+      .catch(function(){ return null; });
+  }
+
+  // 새로 불러도 잃을 게 없는 상태인가
+  function safeToReload(){
+    if (document.hidden || !online) return false;
+    if (typingNow() || dirty || saving || openMenu) return false;
+    if (Date.now() - lastTouchAt < 20000) return false;   // 방금 만졌으면 기다린다
+    var busy = ['pastePanel', 'addPanel', 'panelScrim', 'sheetScrim', 'scrim'].some(function(id){
+      var el = document.getElementById(id);
+      return el && !el.classList.contains('hide');
+    });
+    if (busy) return false;
+    if (drawer.classList.contains('open')) return false;
+    if (!document.getElementById('searchbar').classList.contains('hide')) return false;
+    return true;
+  }
+
+  function checkUpdate(){
+    return fetchTag().then(function(tag){
+      if (!tag) return false;
+      if (!buildTag){ buildTag = tag; return false; }
+      if (tag === buildTag) return false;
+      if (!safeToReload()) return true;          // 새 판은 있는데 지금은 때가 아니다
+      doReload();
+      return true;
+    });
+  }
+  fetchTag().then(function(tag){ buildTag = tag; });
+
+  // 화면으로 돌아오면 한 번 확인 (실시간 수신은 watchRemote가 담당)
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) return;
+    document.documentElement.style.setProperty('--kb', '0px');
+    fitHeight();     // 화면 높이가 달라졌을 수 있다
+    // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
+    // 먼저 확인하지 않으면 어제 명단을 「오늘」로 띄운 채 체크하게 된다.
+    if (rolloverIfNeeded()) return;
+    if (!state) return;
+    sync();          // 즉시 최신 상태 확인
+    watchRemote();   // 백그라운드에서 끊겼을 수 있으니 실시간 수신도 다시 건다
+    // 3초 안에 연결이 안 돌아오면 소켓을 강제로 다시 붙인다
+    setTimeout(function(){
+      if (!online && hasStore() && fb().reconnect){ fb().reconnect(); watchRemote(); }
+    }, 3000);
+  });
+
+  // 영업일이 바뀌었으면 오늘로 옮겨가고 명단을 다시 불러온다.
+  // 옮겨갔으면 true. (불러오는 중이라 호출한 쪽은 더 할 일이 없다)
+  var lastBiz = bizDate();
+  function rolloverIfNeeded(){
+    var b = bizDate();
+    if (b === lastBiz) return false;
+    var wasToday = (viewDate === lastBiz);   // 오늘을 보고 있었나
+    lastBiz = b;
+    purgeOld();
+    // 어제·내일을 일부러 보고 있었다면 그대로 둔다. 보던 화면을 뺏지 않는다.
+    if (!wasToday){ renderDrawerDays(); render(); return false; }
+    viewDate = b;
+    collapsed = {}; touched = {};
+    boot();
+    // 하루가 바뀌는 이 순간이 화면을 새로 띄우기에 가장 안전하다.
+    // 마침 누가 쓰고 있으면 미루고, 1분 간격으로 몇 번만 다시 본다.
+    var tries = 0;
+    (function attempt(){
+      setTimeout(function(){
+        checkUpdate().then(function(pending){
+          if (pending && ++tries < 5) attempt();   // 새 판은 있는데 때가 아니었다
+        });
+      }, tries === 0 ? 1500 : 60000);
+    })();
+    return true;
+  }
+
+  // 시간대 자동 전환 + 날짜 넘어감 확인
+  var lastPaint = '';
+  setInterval(function(){
+    if (editing || openMenu) return;
+    if (rolloverIfNeeded()) return;
+    // 화면에 나올 내용이 그대로면 다시 그리지 않는다 (시간대 표시는 분 단위라 분까지 본다)
+    var sig = JSON.stringify(state) + '|' + viewDate + '|' + nowMin();
+    if (sig === lastPaint) return;
+    lastPaint = sig;
+    render();
+  }, 5000);
+
+  // Firebase 모듈이 먼저 준비되면 바로, 아니면 준비 신호를 기다린다
+  if (window.__fb) boot();
+  else {
+    window.addEventListener('fb-ready', boot, { once: true });
+    setTimeout(function(){ if (!state) boot(); }, 4000);  // 로딩 실패 시에도 화면은 뜨게
+  }
+})();
+</script>
+</body>
+</html>

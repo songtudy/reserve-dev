@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "익순이 TEST (익선취향 예약 매니저)",
+  "short_name": "익순이 T",
+  "description": "익순이 개발·시험용. 실제 명단과 분리되어 있습니다",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1319",
+  "theme_color": "#0f1319",
+  "lang": "ko",
+  "dir": "ltr",
+  "icons": [
+    { "src": "icon-192.png",          "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png",          "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
