@@ -137,13 +137,11 @@
   }
   .tools button:active{background:var(--panel2)}
   .tools button.on{color:var(--waitTx);background:var(--panel2)}
-  /* 연결 끊김 표시는 날짜 옆(왼쪽 묶음)에 둔다.
-     오른쪽 묶음(진행도·검색)은 오른쪽 정렬이라 이게 나타나도 자리가 밀리지 않는다.
-     좁아지면 날짜가 «...» 로 줄어들 뿐이다. */
+  /* 개발용 주소에서만 뜨는 표시 */
   .devtag{
     flex:0 0 auto;padding:4px 8px;border-radius:8px;
     background:var(--wait);color:var(--onWait);
-    font-size:11px;font-weight:800;letter-spacing:.04em;line-height:1.2;
+    font-size:12px;font-weight:800;letter-spacing:.04em;line-height:1.2;
   }
   .offtag{
     display:none;align-items:center;flex:0 0 auto;
@@ -208,15 +206,7 @@
 
   /* time group */
   .group{margin-top:10px}
-  /* 접히기 직전에 옅어졌다 사라진다.
-     높이를 애니메이션하면 매 프레임 배치를 다시 계산해야 해서 폰에서 끊긴다.
-     투명도만 바꾸면 화면 합성만으로 처리돼 부드럽다. */
-  .glist{overflow:hidden}
-  .glist.closing{
-    transition:opacity .18s ease, transform .18s ease;
-    opacity:0;transform:translateY(-10px);
-  }
-  @media (prefers-reduced-motion: reduce){ .glist.closing{transition:none} }
+
   .ghead{
     position:sticky;top:var(--hh,84px);z-index:10;
     background:var(--ink);
@@ -892,20 +882,6 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시계는 관여하지 않는다. 보고 있는데 시간이 지났다는 이유로 접히면 곤란하니까.
   // 손으로 접거나 편 것은 그대로 두되, 대기 여부가 바뀌면 기본 규칙으로 돌아간다.
   // collapsed[time] = { v: 접힘여부, done: 그때 대기가 비어 있었나 }
-  // 시간대가 접히기 직전에 높이를 줄여 보여준다
-  var closing = {};
-  function animateClose(time, after){
-    var wrap = null, gs = document.querySelectorAll('.group');
-    for (var i = 0; i < gs.length; i++){
-      if (gs[i].getAttribute('data-time') === time){ wrap = gs[i]; break; }
-    }
-    var box = wrap && wrap.querySelector('.glist');
-    if (!box || !box.children.length || closing[time]){ after(); return; }
-    closing[time] = true;
-    box.classList.add('closing');
-    setTimeout(function(){ delete closing[time]; after(); }, 170);
-  }
-
   function isCollapsed(time, pendCount){
     var done = (pendCount === 0);
     var o = collapsed[time];
@@ -1219,39 +1195,7 @@ window.dispatchEvent(new Event('fb-ready'));
       + (all.length && doneN + offN === all.length ? ' full' : '');
   }
 
-  var closingNow = false, justClosed = {};
   function render(){
-    // 접는 연출이 도는 중에 다시 그리면 목록이 갈려서 연출이 끊긴다. 끝날 때까지 미룬다.
-    if (closingNow) return;
-
-    // 열려 있던 시간대가 접혀야 하면 높이를 줄여 보여준 뒤에 다시 그린다.
-    // 그리기 경로가 여럿이라 여기 한 곳에서만 처리한다.
-    if (state && !query && !editing && !openMenu){
-      var toClose = [];
-      var open = document.querySelectorAll('.group:not(.shut)');
-      for (var oi = 0; oi < open.length; oi++){
-        var w = open[oi];
-        var t = w.getAttribute('data-time');
-        var box = w.querySelector('.glist');
-        if (!t || !box || !box.children.length) continue;
-        var mine = state.items.filter(function(x){ return x.time === t; });
-        if (!mine.length) continue;
-        var pend = mine.filter(function(x){ return x.status === 'pending'; }).length;
-        if (isCollapsed(t, pend) && !justClosed[t]) toClose.push(t);
-      }
-      if (toClose.length){
-        closingNow = true;
-        var left = toClose.length;
-        toClose.forEach(function(t){
-          animateClose(t, function(){
-            justClosed[t] = true;        // 같은 시간대를 두 번 접지 않는다
-            if (--left === 0){ closingNow = false; render(); }
-          });
-        });
-        return;
-      }
-    }
-
     paintDate();
     var list = document.getElementById('list');
     var all = state ? state.items.slice().sort(sortItems) : [];
@@ -1361,10 +1305,7 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       wrap.appendChild(head);
 
-      var glist = document.createElement('div');
-      glist.className = 'glist';
-      if (!shut) g.items.forEach(function(it){ glist.appendChild(rowEl(it)); });
-      wrap.appendChild(glist);
+      if (!shut) g.items.forEach(function(it){ wrap.appendChild(rowEl(it)); });
       list.appendChild(wrap);
       openCount += shut ? 0 : 1;
     });
@@ -1374,7 +1315,6 @@ window.dispatchEvent(new Event('fb-ready'));
 
     var hd = document.querySelector('header');
     if (hd) document.documentElement.style.setProperty('--hh', hd.offsetHeight + 'px');
-    justClosed = {};                     // 다 그렸으면 기록을 비운다
 
     if (typeof footMode === 'function') requestAnimationFrame(footMode);
   }
@@ -1471,7 +1411,6 @@ window.dispatchEvent(new Event('fb-ready'));
     more.type = 'button';
     more.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">'
       + '<circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
-    more.addEventListener('click', function(e){ e.stopPropagation(); });
 
     top.appendChild(main); top.appendChild(info); top.appendChild(more);
     body.appendChild(top);
@@ -1989,7 +1928,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // click 에 맡기면 누른 뒤 화면이 다시 그려졌을 때 브라우저가 탭을 없던 일로 만든다.
   // 대신 손가락이 밀렸으면(스크롤) 무시해서 잘못 눌리는 건 오히려 더 엄격하다.
   var SLOP = 12, HOLD = 900;
-  var tapInfo = null;
+  var tapInfo = null, lastPointerAct = 0;
   var listEl = document.getElementById('list');
 
   listEl.addEventListener('pointerdown', function(e){
@@ -2016,8 +1955,23 @@ window.dispatchEvent(new Event('fb-ready'));
     if (openMenu && openMenu !== t.id && document.querySelector('.menu')){
       openMenu = null; render(); return;
     }
+    lastPointerAct = Date.now();
     if (t.kind === 'more') tapMore(t.id);
     else toggle(t.id);
+  });
+
+  // 손가락이 아닌 경로(키보드 Enter, 보이스오버 등)는 여전히 click 으로 들어온다.
+  // 방금 손가락으로 처리한 건 건너뛰어 두 번 실행되지 않게 한다.
+  listEl.addEventListener('click', function(e){
+    if (Date.now() - lastPointerAct < 700) return;
+    var m = e.target.closest && e.target.closest('.main, .more');
+    if (!m) return;
+    var row = m.closest('.row');
+    if (!row) return;
+    var id = row.getAttribute('data-id');
+    if (!find(id)) return;
+    if (m.classList.contains('more')) tapMore(id);
+    else toggle(id);
   });
 
   ['pointercancel', 'pointerleave'].forEach(function(ev){
@@ -2424,7 +2378,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.2.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.2.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
