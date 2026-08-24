@@ -208,6 +208,10 @@
 
   /* time group */
   .group{margin-top:10px}
+  /* 접힐 때 높이를 줄여 보여준다. 갑자기 사라지면 화면이 튄 것처럼 느껴진다 */
+  .glist{overflow:hidden}
+  .glist.closing{transition:height .24s ease, opacity .2s ease;opacity:.35}
+  @media (prefers-reduced-motion: reduce){ .glist.closing{transition:none} }
   .ghead{
     position:sticky;top:var(--hh,84px);z-index:10;
     background:var(--ink);
@@ -883,6 +887,23 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시계는 관여하지 않는다. 보고 있는데 시간이 지났다는 이유로 접히면 곤란하니까.
   // 손으로 접거나 편 것은 그대로 두되, 대기 여부가 바뀌면 기본 규칙으로 돌아간다.
   // collapsed[time] = { v: 접힘여부, done: 그때 대기가 비어 있었나 }
+  // 시간대가 접히기 직전에 높이를 줄여 보여준다
+  var closing = {};
+  function animateClose(time, after){
+    var wrap = null, gs = document.querySelectorAll('.group');
+    for (var i = 0; i < gs.length; i++){
+      if (gs[i].getAttribute('data-time') === time){ wrap = gs[i]; break; }
+    }
+    var box = wrap && wrap.querySelector('.glist');
+    if (!box || !box.children.length || closing[time]){ after(); return; }
+    closing[time] = true;
+    box.style.height = box.offsetHeight + 'px';
+    void box.offsetHeight;
+    box.classList.add('closing');
+    box.style.height = '0px';
+    setTimeout(function(){ delete closing[time]; after(); }, 260);
+  }
+
   function isCollapsed(time, pendCount){
     var done = (pendCount === 0);
     var o = collapsed[time];
@@ -1130,6 +1151,72 @@ window.dispatchEvent(new Event('fb-ready'));
     return out.join('<span class="pcsep"> · </span>');
   }
 
+  // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
+  function paintHead(){
+    paintDate();
+    var all = state ? state.items.slice().sort(sortItems) : [];
+    var gap = dayGap(viewDate);
+    var gs = [], gi = {};
+    all.forEach(function(it){
+      if (gi[it.time] === undefined){ gi[it.time] = gs.length; gs.push({ time: it.time, items: [] }); }
+      gs[gi[it.time]].items.push(it);
+    });
+    var now = nowMin(), nowTime = null;
+    if (gap === 0){
+      for (var i = 0; i < gs.length; i++){
+        if (!slotLive(gs[i].time, now)) continue;
+        if (gs[i].items.some(function(x){ return x.status === 'pending'; })){ nowTime = gs[i].time; break; }
+      }
+    }
+    var slotPend = [];
+    if (nowTime){
+      gs.forEach(function(g){
+        if (g.time === nowTime) slotPend = g.items.filter(function(x){ return x.status === 'pending'; });
+      });
+    }
+    var leadRow = document.querySelector('.lead');
+    var st = document.getElementById('slotTime');
+    var lb = document.querySelector('.slotlab');
+    var lm = document.getElementById('leadMain');
+    var ls = document.getElementById('leadSub');
+
+    if (slotPend.length){
+      st.textContent = nowTime;
+      lb.textContent = '예약';
+      lm.className = 'leadmain num';
+      lm.textContent = slotPend.length + '팀';
+      var byPax = {};
+      slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
+      ls.className = 'leadsub num';
+      ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
+        .map(function(p){ return '<span class="pc">' + p + '인 ' + byPax[p] + '팀</span>'; })
+        .join('<span class="pcsep"> · </span>');
+    } else if (gap !== 0 && all.length){
+      st.textContent = ''; lb.textContent = '';
+      lm.className = 'leadmain num';
+      lm.textContent = all.length + '팀';
+      ls.className = 'leadsub num tally';
+      ls.innerHTML = dayTally(all);
+    } else {
+      st.textContent = ''; lb.textContent = '';
+      lm.className = 'leadmain num done';
+      lm.textContent = all.length ? '남은 예약 없음' : '';
+      ls.className = 'leadsub num tally';
+      ls.innerHTML = all.length ? dayTally(all) : '';
+    }
+    if (leadRow) leadRow.classList.toggle('hide', !st.textContent && !lm.textContent);
+
+    var doneN = 0, offN = 0;
+    all.forEach(function(it){
+      if (it.status === 'arrived') doneN++;
+      else if (it.status === 'cancelled') offN++;
+    });
+    var dp = document.getElementById('dayProg');
+    dp.textContent = (doneN + offN) + '/' + all.length;
+    dp.className = 'dayprog num' + (all.length ? '' : ' hide')
+      + (all.length && doneN + offN === all.length ? ' full' : '');
+  }
+
   function render(){
     paintDate();
     var list = document.getElementById('list');
@@ -1169,68 +1256,16 @@ window.dispatchEvent(new Event('fb-ready'));
       }
     }
 
-    // 헤더 — 검색과 무관하게 항상 전체 기준
+    paintHead();
     var gap = dayGap(viewDate);
-    var slotPend = [];
-    if (nowTime){
-      allGroups.forEach(function(g){
-        if (g.time === nowTime) slotPend = g.items.filter(function(x){ return x.status==='pending'; });
-      });
-    }
-    var leadRow = document.querySelector('.lead');
-    var st = document.getElementById('slotTime');
-    var lb = document.querySelector('.slotlab');
-    var lm = document.getElementById('leadMain');
-    var ls = document.getElementById('leadSub');
-
-    if (slotPend.length){
-      st.textContent = nowTime;
-      lb.textContent = '예약';
-      lm.className = 'leadmain num';
-      lm.textContent = slotPend.length + '팀';
-      var byPax = {};
-      slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax]||0) + 1; });
-      ls.className = 'leadsub num';
-      ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a,b){ return a-b; })
-        .map(function(p){ return '<span class="pc">' + p + '인 ' + byPax[p] + '팀</span>'; })
-        .join('<span class="pcsep"> · </span>');
-    } else if (gap !== 0 && all.length){
-      // 어제/내일 — 시간대 강조 대신 하루 총 팀수
-      st.textContent = '';
-      lb.textContent = '';
-      lm.className = 'leadmain num';
-      lm.textContent = all.length + '팀';
-      ls.className = 'leadsub num tally';
-      ls.innerHTML = dayTally(all);
-    } else {
-      st.textContent = '';
-      lb.textContent = '';
-      lm.className = 'leadmain num done';
-      lm.textContent = all.length ? '남은 예약 없음' : '';
-      ls.className = 'leadsub num tally';
-      ls.innerHTML = all.length ? dayTally(all) : '';
-    }
-
-    if (leadRow) leadRow.classList.toggle('hide', !st.textContent && !lm.textContent);
 
     // 명단이 없으면 하단 메뉴와 검색은 할 일이 없다
-    var footEl = document.querySelector('.foot');
-    if (footEl) footEl.classList.toggle('hide', !all.length);
-    document.body.style.paddingBottom = all.length ? '' : '24px';
-    searchBtn.classList.toggle('off', !all.length);
-    if (!all.length && !searchbar.classList.contains('hide')) closeSearch(false);
-
-    // 날짜 / 하루 진행 (분모는 취소 포함 전체)
-    var doneN = 0, offN = 0;
-    all.forEach(function(it){
-      if (it.status === 'arrived') doneN++;
-      else if (it.status === 'cancelled') offN++;
-    });
-    paintDate();
-    var dp = document.getElementById('dayProg');
-    dp.textContent = (doneN + offN) + '/' + all.length;
-    dp.className = 'dayprog num' + (all.length ? '' : ' hide')
-      + (all.length && doneN + offN === all.length ? ' full' : '');
+    var allCount = all.length;
+    var footEl2 = document.querySelector('.foot');
+    if (footEl2) footEl2.classList.toggle('hide', !allCount);
+    document.body.style.paddingBottom = allCount ? '' : '24px';
+    searchBtn.classList.toggle('off', !allCount);
+    if (!allCount && !searchbar.classList.contains('hide')) closeSearch(false);
 
     // 날짜 표시 / 이동 버튼
     document.body.classList.toggle('offday', gap !== 0);
@@ -1265,6 +1300,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
       var wrap = document.createElement('section');
       wrap.className = 'group' + (g.time === nowTime ? ' now' : (pend.length ? '' : ' done')) + (shut ? ' shut' : '');
+      wrap.setAttribute('data-time', g.time);
 
       var head = document.createElement('button');
       head.className = 'ghead';
@@ -1291,7 +1327,10 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       wrap.appendChild(head);
 
-      if (!shut) g.items.forEach(function(it){ wrap.appendChild(rowEl(it)); });
+      var glist = document.createElement('div');
+      glist.className = 'glist';
+      if (!shut) g.items.forEach(function(it){ glist.appendChild(rowEl(it)); });
+      wrap.appendChild(glist);
       list.appendChild(wrap);
       openCount += shut ? 0 : 1;
     });
@@ -1330,6 +1369,15 @@ window.dispatchEvent(new Event('fb-ready'));
     });
   }
 
+  var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
+    + ' stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
+  var ICON_OFF = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
+    + ' stroke-width="3.4" stroke-linecap="round"><path d="M7 7 L17 17M17 7 L7 17"/></svg>';
+  function statusTag(st){
+    return st === 'arrived' ? '<span class="tag arrived">방문</span>'
+         : st === 'cancelled' ? '<span class="tag cancelled">취소</span>' : '';
+  }
+
   function rowEl(it){
     var row = document.createElement('div');
     row.setAttribute('data-id', it.id);
@@ -1343,15 +1391,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
     // 방문 체크는 왼쪽 체크 칸에서만 된다.
     // 행 전체가 버튼이면 목록을 훑다가 잘못 눌리는 일이 생긴다.
-    var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
-      + ' stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
-    var ICON_OFF = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
-      + ' stroke-width="3.4" stroke-linecap="round"><path d="M7 7 L17 17M17 7 L7 17"/></svg>';
     var mark = it.status === 'arrived' ? ICON_GO
              : it.status === 'cancelled' ? ICON_OFF : '';
-    var tag = it.status === 'arrived' ? '<span class="tag arrived">방문</span>'
-            : it.status === 'cancelled' ? '<span class="tag cancelled">취소</span>'
-            : '';
+    var tag = statusTag(it.status);
     var main = document.createElement('button');
     main.className = 'main';
     main.type = 'button';
@@ -1549,6 +1591,48 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!it) return;
     setStatus(id, it.status === 'arrived' ? 'pending' : 'arrived');
   }
+  // 바뀐 행과 그 시간대 머리글만 손본다. 요소를 새로 만들지 않고 내용만 고친다.
+  // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
+  function patchStatus(it){
+    var row = null, groups = document.querySelectorAll('.row');
+    for (var i = 0; i < groups.length; i++){
+      if (groups[i].getAttribute('data-id') === it.id){ row = groups[i]; break; }
+    }
+    if (!row) return false;
+
+    row.className = 'row ' + it.status;
+    var chk = row.querySelector('.check');
+    if (chk) chk.innerHTML = it.status === 'arrived' ? ICON_GO
+                           : it.status === 'cancelled' ? ICON_OFF : '';
+    var info = row.querySelector('.info');
+    var old = info.querySelector('.tag');
+    if (old) old.parentNode.removeChild(old);
+    var html = statusTag(it.status);
+    if (html){
+      var box = document.createElement('div');
+      box.innerHTML = html;
+      info.insertBefore(box.firstChild, info.querySelector('.pax'));
+    }
+
+    // 시간대 머리글 숫자
+    var wrap = row.closest('.group');
+    if (wrap && state){
+      var mine = state.items.filter(function(x){ return x.time === it.time; });
+      var came = mine.filter(function(x){ return x.status === 'arrived'; }).length;
+      var off  = mine.filter(function(x){ return x.status === 'cancelled'; }).length;
+      var pend = mine.length - came - off;
+      var meta = wrap.querySelector('.gmeta');
+      if (meta){
+        meta.innerHTML = '<b>' + (came + off) + '/' + mine.length + '</b>'
+          + '<span class="gbreak">방문 ' + came + (off ? ' · 취소 ' + off : '') + '</span>';
+      }
+      wrap.className = 'group' + (wrap.classList.contains('now') ? ' now' : (pend ? '' : ' done'));
+      wrap.setAttribute('data-time', it.time);
+    }
+    paintHead();
+    return true;
+  }
+
   function setStatus(id, st){
     var it = find(id);
     if (!it) return;
@@ -1556,10 +1640,21 @@ window.dispatchEvent(new Event('fb-ready'));
     it.ts = Date.now();
     touched[it.time] = Date.now();
     openMenu = null;
-    render();
+    if (!patchStatus(it)) render();     // 부분 갱신이 안 되면 통째로
     save();
-    // 접힘 유예가 끝나는 시점에 한 번 더 그려준다
-    setTimeout(render, COLLAPSE_DELAY + 100);
+    // 접힘 유예가 끝나면 부드럽게 접고 다시 그린다
+    var t = it.time;
+    setTimeout(function(){
+      if (!state) return;
+      var mine = state.items.filter(function(x){ return x.time === t; });
+      var stillOpen = document.querySelector('.group[data-time="' + t + '"]:not(.shut)');
+      if (stillOpen && mine.length && !mine.some(function(x){ return x.status === 'pending'; })
+          && !editing && !openMenu && !query){
+        animateClose(t, render);
+      } else {
+        render();
+      }
+    }, COLLAPSE_DELAY + 100);
     if (st === 'arrived') toast(it.name + ' 방문 체크');
   }
 
