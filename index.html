@@ -74,7 +74,10 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--ink)}
-  html{min-height:100%;overscroll-behavior:none}
+  /* 스크롤 막대를 감춘다. 페이지 전체가 스크롤되는 구조라
+     막대가 상단·하단 바 위를 지나가서 지저분했다. 스크롤 자체는 그대로다 */
+  html{min-height:100%;overscroll-behavior:none;scrollbar-width:none}
+  html::-webkit-scrollbar{display:none}
   body{
     overscroll-behavior:none;
     background:var(--ink);
@@ -614,6 +617,20 @@
   .key svg{display:block}
   .sheetNote{font-size:13px;line-height:1.6;color:var(--goTx);margin:0 0 14px;white-space:pre-line}
   .sheetNote.plain{color:var(--dim)}
+  /* 변경 내역 */
+  .lgrow{
+    display:flex;align-items:baseline;gap:10px;padding:9px 0;
+    border-top:1px solid var(--line);font-size:14px;
+  }
+  .lgrow:first-child{border-top:0}
+  .lgt{flex:0 0 42px;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
+  .lgk{flex:0 0 auto;font-weight:700;color:var(--text)}
+  .lgk.go{color:var(--goTx)}
+  .lgk.off{color:var(--warn)}
+  .lgs{flex:1;min-width:0;color:var(--dim);font-size:13px;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lgempty{font-size:14px;color:var(--dim);padding:6px 0 14px}
+
   /* Wi-Fi 안내 */
   .wtab{display:flex;gap:8px;margin:-2px 0 14px}
   .wtab button{
@@ -793,6 +810,7 @@
     <button type="button" data-theme-set="dark"><span class="tico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.4A8.5 8.5 0 1 1 9.6 4a7 7 0 0 0 10.4 10.4Z"/></svg></span>다크<span class="chk">✓</span></button>
     <button type="button" data-theme-set="light"><span class="tico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.6 5.6l1.5 1.5M16.9 16.9l1.5 1.5M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5"/></svg></span>라이트<span class="chk">✓</span></button>
   </div>
+  <button type="button" class="dwitem" id="logBtn">최근 변경 내역</button>
   <button type="button" class="dwitem" id="wifiBtn">Wi-Fi 안내</button>
   <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
   <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
@@ -828,7 +846,7 @@
 <script type="module">
 // ---------- Firebase 연결 ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import { getDatabase, ref, get, set, remove, onValue, off, goOffline, goOnline }
+import { getDatabase, ref, get, set, push, remove, onValue, off, goOffline, goOnline }
   from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -845,6 +863,7 @@ const db = getDatabase(initializeApp(firebaseConfig));
 // 주소에 -dev 가 들어 있으면 개발용. 명단 저장 위치를 따로 써서 실제 명단을 건드리지 않는다.
 const DEV = /-dev(\/|$)/.test(location.pathname);
 const ROOT = DEV ? 'roster-dev' : 'roster';
+const LOGROOT = DEV ? 'log-dev' : 'log';
 const path = k => ROOT + '/' + String(k).replace('roster:', '');
 
 window.__fb = {
@@ -857,6 +876,11 @@ window.__fb = {
     const h = onValue(r, s => cb(s.exists() ? s.val() : null));
     return () => off(r, 'value', h);
   },
+  // 변경 내역 — 날짜별로 따로 쌓는다. push 라 여러 대가 동시에 써도 안 겹친다
+  logPush: (ds, entry) => push(ref(db, LOGROOT + '/' + ds), entry),
+  logGet: ds => get(ref(db, LOGROOT + '/' + ds)).then(s => s.exists() ? Object.values(s.val()) : []),
+  logList: () => get(ref(db, LOGROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
+  logRemove: ds => remove(ref(db, LOGROOT + '/' + ds)),
   // Firebase가 알려주는 실제 연결 상태
   onConnected: cb => onValue(ref(db, '.info/connected'), s => cb(s.val() === true)),
   // 연결이 죽었을 때 소켓을 끊었다 다시 붙인다
@@ -950,6 +974,13 @@ window.dispatchEvent(new Event('fb-ready'));
         if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().remove(ds).catch(function(){});
       });
     }).catch(function(){});
+    if (fb().logList){
+      fb().logList().then(function(keys){
+        (keys || []).forEach(function(ds){
+          if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().logRemove(ds).catch(function(){});
+        });
+      }).catch(function(){});
+    }
   }
 
   /* ---------- 파싱 ---------- */
@@ -1101,6 +1132,8 @@ window.dispatchEvent(new Event('fb-ready'));
   //  - 비정각 예약   : 그 시각이 되면 (5초)
   // 어느 쪽이든 그 시간대를 다 체크하면 그 즉시 넘어간다.
   var GRACE_ON_HOUR = 11, GRACE_OFF_HOUR = 5/60;
+  var AUTO_CANCEL_MIN = 20;    // 예약 시각에서 이만큼 지나도 체크가 없으면 취소
+  var AUTO_CANCEL_WINDOW = 60; // 다만 이보다 오래 지난 시간대는 손대지 않는다
 
   function nowMin(){
     var d = new Date();
@@ -1290,22 +1323,10 @@ window.dispatchEvent(new Event('fb-ready'));
         +   '<b>' + (came + off) + '/' + tot + '</b>'
         +   '<span class="gbreak">방문 ' + came + (off ? ' · 취소 ' + off : '') + '</span>'
         + '</span>';
+      head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(){
-        var willShut = !shut;
-        // 접을 때는 그 시간대에서 열려 있던 수정 폼·메뉴를 닫는다
-        if (willShut){
-          var inHere = function(id){
-            return g.items.some(function(x){ return x.id === id; });
-          };
-          if (editing && inHere(editing)) editing = null;
-          if (openMenu && inHere(openMenu)) openMenu = null;
-        }
-        setCollapsed(g.time, willShut, pend.length === 0);
-        render();
-        if (!willShut){                       // 펼친 내용이 아래로 잘리면 그만큼 올려준다
-          var wrapNow = document.querySelector('.group[data-time="' + g.time + '"]');
-          scrollIntoRoom(wrapNow);
-        }
+        if (Date.now() - lastPointerAct < 700) return;   // 손가락으로 이미 처리됨
+        toggleSlot(g.time);
       });
       wrap.appendChild(head);
 
@@ -1502,6 +1523,7 @@ window.dispatchEvent(new Event('fb-ready'));
       del.type = 'button'; del.className = 'del'; del.textContent = '삭제';
       del.addEventListener('click', function(e){
         e.stopPropagation();
+        logAdd('삭제', it.time + ' ' + it.name);
         state.items = state.items.filter(function(x){ return x.id !== it.id; });
         state.rosterTs = Date.now();
         openMenu = null; render(); save();
@@ -1555,6 +1577,10 @@ window.dispatchEvent(new Event('fb-ready'));
       it.seq = maxSeq + 1;
     }
 
+    var memoOnly = (time === it.time && name === it.name && pax === it.pax);
+    logAdd(memoOnly ? '메모' : '수정',
+      memoOnly ? (it.time + ' ' + it.name + (memo ? ' · ' + memo : ' · 메모 지움'))
+               : (it.time + ' ' + it.name + ' → ' + time + ' ' + name + ' ' + pax + '명'));
     it.time = time; it.name = name; it.pax = pax; it.memo = memo;
     it.id = uniqueId(time, name, pax, id);
     state.items.sort(sortItems);
@@ -1569,6 +1595,47 @@ window.dispatchEvent(new Event('fb-ready'));
     for (var i=0;i<state.items.length;i++) if (state.items[i].id === id) return state.items[i];
     return null;
   }
+  // 변경 내역 — 무슨 일이 있었는지만 남긴다 (되돌리기는 없다)
+  var LOG_SHOW = 10;
+  var logLocal = {};            // 이 폰에서 한 것 — 연결이 끊겨도 보여주기 위해
+  function logAdd(kind, what){
+    if (dayGap(viewDate) !== 0) return;      // 오늘 명단만 기록한다
+    var d = new Date();
+    var entry = {
+      at: Date.now(),
+      t: pad(d.getHours()) + ':' + pad(d.getMinutes()),
+      k: kind,
+      s: what || ''
+    };
+    var box = logLocal[viewDate] || (logLocal[viewDate] = []);
+    box.push(entry);
+    if (box.length > 40) box.shift();
+    if (hasStore() && fb().logPush) fb().logPush(viewDate, entry).catch(function(){});
+  }
+
+  function logRows(fetched){
+    var mine = logLocal[viewDate] || [];
+    var seen = {}, all = [];
+    (fetched || []).concat(mine).forEach(function(r){
+      var key = r.at + '|' + r.k + '|' + r.s;
+      if (seen[key]) return;
+      seen[key] = 1; all.push(r);
+    });
+    all.sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
+    return all.slice(0, LOG_SHOW);
+  }
+
+  function logHtml(rows){
+    if (!rows.length) return '<p class="lgempty">아직 바뀐 내용이 없습니다.</p>';
+    return rows.map(function(r){
+      var cls = r.k === '방문' ? ' go'
+              : (r.k === '취소' || r.k === '자동 취소' || r.k === '삭제' || r.k === '명단 초기화') ? ' off' : '';
+      return '<div class="lgrow"><span class="lgt">' + esc(r.t) + '</span>'
+        + '<span class="lgk' + cls + '">' + esc(r.k) + '</span>'
+        + '<span class="lgs">' + esc(r.s || '') + '</span></div>';
+    }).join('');
+  }
+
   function toggle(id){
     var it = find(id);
     if (!it) return;
@@ -1604,21 +1671,71 @@ window.dispatchEvent(new Event('fb-ready'));
       var came = mine.filter(function(x){ return x.status === 'arrived'; }).length;
       var off  = mine.filter(function(x){ return x.status === 'cancelled'; }).length;
       var pend = mine.length - came - off;
+      var man = collapsed[it.time];
+      if (man && man.done !== (pend === 0)) delete collapsed[it.time];
       var meta = wrap.querySelector('.gmeta');
       if (meta){
         meta.innerHTML = '<b>' + (came + off) + '/' + mine.length + '</b>'
           + '<span class="gbreak">방문 ' + came + (off ? ' · 취소 ' + off : '') + '</span>';
       }
-      wrap.className = 'group' + (wrap.classList.contains('now') ? ' now' : (pend ? '' : ' done'));
       wrap.setAttribute('data-time', it.time);
     }
+    repaintNow();
     paintHead();
     return true;
   }
 
-  function setStatus(id, st){
+  // 시간대 접기 / 펼치기
+  function toggleSlot(time){
+    if (!state) return;
+    var mine = state.items.filter(function(x){ return x.time === time; });
+    if (!mine.length) return;
+    var wrap = document.querySelector('.group[data-time="' + time + '"]');
+    var willShut = !(wrap && wrap.classList.contains('shut'));
+    if (willShut){        // 접을 때는 그 시간대에서 열려 있던 수정 폼·메뉴를 닫는다
+      var inHere = function(id){ return mine.some(function(x){ return x.id === id; }); };
+      if (editing && inHere(editing)) editing = null;
+      if (openMenu && inHere(openMenu)) openMenu = null;
+    }
+    var pend = mine.filter(function(x){ return x.status === 'pending'; }).length;
+    setCollapsed(time, willShut, pend === 0);
+    render();
+    if (!willShut) scrollIntoRoom(document.querySelector('.group[data-time="' + time + '"]'));
+  }
+
+  // 「지금 시간대」가 어디인지 다시 계산해서 시간대 색과 왼쪽 막대를 맞춘다
+  function repaintNow(){
+    if (!state) return;
+    var all = state.items.slice().sort(sortItems);
+    var gs = [], gi = {};
+    all.forEach(function(it){
+      if (gi[it.time] === undefined){ gi[it.time] = gs.length; gs.push({ time: it.time, items: [] }); }
+      gs[gi[it.time]].items.push(it);
+    });
+    var now = nowMin(), nowTime = null;
+    if (dayGap(viewDate) === 0){
+      for (var i = 0; i < gs.length; i++){
+        if (!slotLive(gs[i].time, now)) continue;
+        if (gs[i].items.some(function(x){ return x.status === 'pending'; })){ nowTime = gs[i].time; break; }
+      }
+    }
+    gs.forEach(function(g){
+      var w = document.querySelector('.group[data-time="' + g.time + '"]');
+      if (!w) return;
+      var pend = g.items.some(function(x){ return x.status === 'pending'; });
+      var shut = w.classList.contains('shut');
+      w.className = 'group' + (g.time === nowTime ? ' now' : (pend ? '' : ' done')) + (shut ? ' shut' : '');
+    });
+  }
+
+  function setStatus(id, st, auto){
     var it = find(id);
     if (!it) return;
+    if (it.status !== st){
+      logAdd(auto ? '자동 취소'
+           : st === 'arrived' ? '방문'
+           : st === 'cancelled' ? '취소' : '체크 해제', it.time + ' ' + it.name);
+    }
     it.status = st;
     it.ts = Date.now();
     touched[it.time] = Date.now();
@@ -1733,6 +1850,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (fresh.bad.length){ showBad(fresh.bad); return false; }
     clearBad();
     if (!fresh.length){ toast('등록할 예약이 없습니다'); return false; }
+    logAdd('명단 등록', fresh.length + '건');
     state = { date: viewDate, rosterTs: Date.now(), items: fresh.sort(sortItems) };
     render();
     flush();
@@ -1823,6 +1941,7 @@ window.dispatchEvent(new Event('fb-ready'));
     });
     state.items.sort(sortItems);
     state.rosterTs = Date.now();
+    logAdd('예약 추가', time + ' ' + name + ' ' + pax + '명');
     delete collapsed[time];        // 방금 넣은 예약은 보이게
     closeAdd();
     render();
@@ -1901,6 +2020,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var g = dayGap(viewDate);
     var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
     confirmDlg(day + ' 명단을 초기화할까요?\n「예」를 입력해 주세요', function(){
+      logAdd('명단 초기화', state.items.length + '건 지움');
       state = { date: viewDate, rosterTs: Date.now(), items: [] };
       collapsed = {};
       closeSearch(false);
@@ -1943,8 +2063,13 @@ window.dispatchEvent(new Event('fb-ready'));
   listEl.addEventListener('pointerdown', function(e){
     tapInfo = null;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    var m = e.target.closest && e.target.closest('.main, .more');
+    var m = e.target.closest && e.target.closest('.main, .more, .ghead');
     if (!m) return;
+    if (m.classList.contains('ghead')){
+      tapInfo = { slot: m.getAttribute('data-time'), kind: 'slot',
+                  x: e.clientX, y: e.clientY, at: Date.now(), pid: e.pointerId };
+      return;
+    }
     var row = m.closest('.row');
     if (!row) return;
     tapInfo = {
@@ -1959,6 +2084,12 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!t || e.pointerId !== t.pid) return;
     if (Math.abs(e.clientX - t.x) > SLOP || Math.abs(e.clientY - t.y) > SLOP) return;  // 밀었으면 취소
     if (Date.now() - t.at > HOLD) return;                                              // 오래 눌렀으면 취소
+    if (t.kind === 'slot'){
+      lastPointerAct = Date.now();
+      if (openMenu && document.querySelector('.menu')){ openMenu = null; render(); return; }
+      toggleSlot(t.slot);
+      return;
+    }
     if (!find(t.id)) return;
     // 다른 행의 메뉴가 열려 있으면 그것부터 닫는다
     if (openMenu && openMenu !== t.id && document.querySelector('.menu')){
@@ -1982,6 +2113,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (m.classList.contains('more')) tapMore(id);
     else toggle(id);
   });
+
 
   ['pointercancel', 'pointerleave'].forEach(function(ev){
     listEl.addEventListener(ev, function(){ tapInfo = null; });
@@ -2286,6 +2418,12 @@ window.dispatchEvent(new Event('fb-ready'));
       '맨 위에 <em>연결 안 됨</em>이 표시됩니다.\n'
       + '그동안 체크하거나 고친 내용은 폰에 남아 있다가, 다시 연결되면 자동으로 올라갑니다.\n'
       + '앱을 계속 쓰셔도 됩니다.'],
+    ['안 온 손님은 어떻게 되나요?', 1,
+      '예약 시각에서 <em>20분</em>이 지나도 체크가 없으면 자동으로 취소됩니다.\n'
+      + '늦게 오시면 체크 칸을 한 번 누르면 방문으로 바뀝니다.'],
+    ['누가 뭘 바꿨는지 볼 수 있나요?', 1,
+      '왼쪽 위 메뉴 → <em>변경 내역</em>에서 오늘 바뀐 내용을 볼 수 있습니다.\n'
+      + '체크·취소·메모·삭제·명단 등록까지 최근 10건이 나옵니다.'],
     ['날짜는 언제 바뀌나요?', 0,
       '자정에 바뀝니다.\n'
       + '어제 명단은 왼쪽 위 메뉴에서 볼 수 있고, 이틀 지나면 지워집니다.']
@@ -2372,6 +2510,23 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<div class="wnet"><span class="k">네트워크</span><span class="v">' + n.ssid + '</span></div>'
       + '<div class="wnet"><span class="k">비밀번호</span><span class="v">' + n.pw + '</span></div>';
   }
+  document.getElementById('logBtn').addEventListener('click', function(){
+    hideDrawer();
+    var mine = logRows(null);
+    // 연결이 끊겨 있어도 이 폰에서 한 것은 바로 보여준다
+    openSheet('최근 변경 내역', mine.length ? logHtml(mine) : '<p class="lgempty">불러오는 중…</p>');
+    if (!hasStore() || !fb().logGet) return;
+    var forDate = viewDate;
+    fb().logGet(forDate).then(function(rows){
+      var body = document.getElementById('sheetBody');
+      if (!body || viewDate !== forDate) return;
+      body.innerHTML = logHtml(logRows(rows));
+    }).catch(function(){
+      var body = document.getElementById('sheetBody');
+      if (body && !mine.length) body.innerHTML = '<p class="lgempty">연결되면 볼 수 있습니다.</p>';
+    });
+  });
+
   document.getElementById('wifiBtn').addEventListener('click', function(){
     hideDrawer();
     openSheet('Wi-Fi 안내', wifiHtml());
@@ -2387,7 +2542,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -2614,13 +2769,36 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   // 시간대 자동 전환 + 날짜 넘어감 확인
+  // 예약 시각에서 20분이 지나도 체크가 없으면 취소로 넘긴다.
+  // 노쇼도 취소로 처리하는 운영이라 직원이 어차피 누를 것을 대신 눌러주는 셈이다.
+  function autoCancel(){
+    if (!state || dayGap(viewDate) !== 0) return false;   // 오늘 명단에서만
+    var now = nowMin(), hit = [];
+    state.items.forEach(function(it){
+      if (it.status !== 'pending') return;
+      var late = now - (slotMin(it.time) + AUTO_CANCEL_MIN);
+      // 한참 전 시간대까지 무더기로 취소하지 않는다.
+      // (저녁에 하루치 명단을 한꺼번에 넣는 경우 등)
+      if (late >= 0 && late <= AUTO_CANCEL_WINDOW) hit.push(it);
+    });
+    if (!hit.length) return false;
+    hit.forEach(function(it){
+      logAdd('자동 취소', it.time + ' ' + it.name);
+      it.status = 'cancelled';
+      it.ts = Date.now();
+    });
+    save();
+    return true;
+  }
+
   var lastPaint = '';
   setInterval(function(){
     if (editing || openMenu) return;
     if (rolloverIfNeeded()) return;
-    // 화면에 나올 내용이 그대로면 다시 그리지 않는다 (시간대 표시는 분 단위라 분까지 본다)
-    var sig = JSON.stringify(state) + '|' + viewDate + '|' + nowMin();
-    if (sig === lastPaint) return;
+    var changed = autoCancel();
+    // 화면에 나올 내용이 그대로면 다시 그리지 않는다 (시간대 표시는 분 단위면 충분하다)
+    var sig = JSON.stringify(state) + '|' + viewDate + '|' + Math.floor(nowMin());
+    if (!changed && sig === lastPaint) return;
     lastPaint = sig;
     render();
   }, 5000);
