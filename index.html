@@ -1217,7 +1217,39 @@ window.dispatchEvent(new Event('fb-ready'));
       + (all.length && doneN + offN === all.length ? ' full' : '');
   }
 
+  var closingNow = false, justClosed = {};
   function render(){
+    // 접는 연출이 도는 중에 다시 그리면 목록이 갈려서 연출이 끊긴다. 끝날 때까지 미룬다.
+    if (closingNow) return;
+
+    // 열려 있던 시간대가 접혀야 하면 높이를 줄여 보여준 뒤에 다시 그린다.
+    // 그리기 경로가 여럿이라 여기 한 곳에서만 처리한다.
+    if (state && !query && !editing && !openMenu){
+      var toClose = [];
+      var open = document.querySelectorAll('.group:not(.shut)');
+      for (var oi = 0; oi < open.length; oi++){
+        var w = open[oi];
+        var t = w.getAttribute('data-time');
+        var box = w.querySelector('.glist');
+        if (!t || !box || !box.children.length) continue;
+        var mine = state.items.filter(function(x){ return x.time === t; });
+        if (!mine.length) continue;
+        var pend = mine.filter(function(x){ return x.status === 'pending'; }).length;
+        if (isCollapsed(t, pend) && !justClosed[t]) toClose.push(t);
+      }
+      if (toClose.length){
+        closingNow = true;
+        var left = toClose.length;
+        toClose.forEach(function(t){
+          animateClose(t, function(){
+            justClosed[t] = true;        // 같은 시간대를 두 번 접지 않는다
+            if (--left === 0){ closingNow = false; render(); }
+          });
+        });
+        return;
+      }
+    }
+
     paintDate();
     var list = document.getElementById('list');
     var all = state ? state.items.slice().sort(sortItems) : [];
@@ -1340,6 +1372,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     var hd = document.querySelector('header');
     if (hd) document.documentElement.style.setProperty('--hh', hd.offsetHeight + 'px');
+    justClosed = {};                     // 다 그렸으면 기록을 비운다
 
     if (typeof footMode === 'function') requestAnimationFrame(footMode);
   }
@@ -1642,19 +1675,8 @@ window.dispatchEvent(new Event('fb-ready'));
     openMenu = null;
     if (!patchStatus(it)) render();     // 부분 갱신이 안 되면 통째로
     save();
-    // 접힘 유예가 끝나면 부드럽게 접고 다시 그린다
-    var t = it.time;
-    setTimeout(function(){
-      if (!state) return;
-      var mine = state.items.filter(function(x){ return x.time === t; });
-      var stillOpen = document.querySelector('.group[data-time="' + t + '"]:not(.shut)');
-      if (stillOpen && mine.length && !mine.some(function(x){ return x.status === 'pending'; })
-          && !editing && !openMenu && !query){
-        animateClose(t, render);
-      } else {
-        render();
-      }
-    }, COLLAPSE_DELAY + 100);
+    // 접힘 유예가 끝나는 시점에 한 번 더 그려준다 (접는 연출은 render 가 맡는다)
+    setTimeout(render, COLLAPSE_DELAY + 100);
     if (st === 'arrived') toast(it.name + ' 방문 체크');
   }
 
