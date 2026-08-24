@@ -208,9 +208,11 @@
 
   /* time group */
   .group{margin-top:10px}
-  /* 접힐 때 높이를 줄여 보여준다. 갑자기 사라지면 화면이 튄 것처럼 느껴진다 */
+  /* 접히기 직전에 옅어졌다 사라진다.
+     높이를 애니메이션하면 매 프레임 배치를 다시 계산해야 해서 폰에서 끊긴다.
+     투명도만 바꾸면 화면 합성만으로 처리돼 부드럽다. */
   .glist{overflow:hidden}
-  .glist.closing{transition:height .24s ease, opacity .2s ease;opacity:.35}
+  .glist.closing{transition:opacity .16s ease;opacity:0}
   @media (prefers-reduced-motion: reduce){ .glist.closing{transition:none} }
   .ghead{
     position:sticky;top:var(--hh,84px);z-index:10;
@@ -897,11 +899,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var box = wrap && wrap.querySelector('.glist');
     if (!box || !box.children.length || closing[time]){ after(); return; }
     closing[time] = true;
-    box.style.height = box.offsetHeight + 'px';
-    void box.offsetHeight;
     box.classList.add('closing');
-    box.style.height = '0px';
-    setTimeout(function(){ delete closing[time]; after(); }, 260);
+    setTimeout(function(){ delete closing[time]; after(); }, 170);
   }
 
   function isCollapsed(time, pendCount){
@@ -1411,6 +1410,16 @@ window.dispatchEvent(new Event('fb-ready'));
          : st === 'cancelled' ? '<span class="tag cancelled">취소</span>' : '';
   }
 
+  function tapMore(id){
+    if (editing === id){               // 수정 중이면 저장하지 않고 접는다
+      editing = null; openMenu = null; render();
+      return;
+    }
+    openMenu = (openMenu === id) ? null : id;
+    render();
+    if (openMenu) ensureVisible(id);
+  }
+
   function rowEl(it){
     var row = document.createElement('div');
     row.setAttribute('data-id', it.id);
@@ -1453,7 +1462,7 @@ window.dispatchEvent(new Event('fb-ready'));
     } else {
       nameEl.textContent = it.name;
     }
-    main.addEventListener('click', function(){ toggle(it.id); });
+    main.addEventListener('click', function(e){ e.__rowDone = true; toggle(it.id); });
 
     var more = document.createElement('button');
     more.className = 'more';
@@ -1462,13 +1471,8 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
     more.addEventListener('click', function(e){
       e.stopPropagation();
-      if (editing === it.id){          // 수정 중이면 저장하지 않고 접는다
-        editing = null; openMenu = null; render();
-        return;
-      }
-      openMenu = (openMenu === it.id) ? null : it.id;
-      render();
-      if (openMenu) ensureVisible(it.id);
+      e.__rowDone = true;
+      tapMore(it.id);
     });
 
     top.appendChild(main); top.appendChild(info); top.appendChild(more);
@@ -1982,6 +1986,34 @@ window.dispatchEvent(new Event('fb-ready'));
     openMenu = null;
     render();
   }, true);
+
+  // 손가락을 대고 떼는 사이에 행이 다시 그려지면, 브라우저는 click 을
+  // 버튼이 아니라 두 요소의 공통 부모로 보낸다. 그 경우를 여기서 받아 처리한다.
+  // (이게 아이폰에서 탭이 씹히는 것처럼 보이던 정체다)
+  var downId = null, downKind = null;
+  var listEl = document.getElementById('list');
+  listEl.addEventListener('pointerdown', function(e){
+    downId = null; downKind = null;
+    var m = e.target.closest && e.target.closest('.main, .more');
+    if (!m) return;
+    var row = m.closest('.row');
+    if (!row) return;
+    downId = row.getAttribute('data-id');
+    downKind = m.classList.contains('more') ? 'more' : 'main';
+  }, true);
+  listEl.addEventListener('click', function(e){
+    if (!downId) return;
+    // 버튼이 이미 처리한 탭은 건너뛴다.
+    // (버튼은 살아 있어도 그 안의 아이콘이 갈리면서 e.target 이 문서에서 떨어져 나가므로
+    //  closest 로는 판별이 안 된다. 처리 여부를 표시로 남긴다)
+    if (e.__rowDone){ downId = null; return; }
+    if (e.target.closest && e.target.closest('.main, .more')){ downId = null; return; }
+    var id = downId, kind = downKind;
+    downId = null; downKind = null;
+    if (!find(id)) return;
+    if (kind === 'more') tapMore(id);
+    else toggle(id);
+  });
 
   /* ---------- 검색 ---------- */
   var qEl = document.getElementById('q');
