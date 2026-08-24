@@ -1384,10 +1384,11 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function tapMore(id){
-    if (editing === id){               // 수정 중이면 저장하지 않고 접는다
+    if (editing === id){               // 같은 행이면 저장하지 않고 접는다
       editing = null; openMenu = null; render();
       return;
     }
+    if (editing) editing = null;       // 다른 행의 수정 창은 닫는다
     openMenu = (openMenu === id) ? null : id;
     render();
     if (openMenu) ensureVisible(id);
@@ -1654,6 +1655,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var chk = row.querySelector('.check');
     if (chk) chk.innerHTML = it.status === 'arrived' ? ICON_GO
                            : it.status === 'cancelled' ? ICON_OFF : '';
+    var stale = row.querySelector('.menu');
+    if (stale) stale.parentNode.removeChild(stale);
     var info = row.querySelector('.info');
     var old = info.querySelector('.tag');
     if (old) old.parentNode.removeChild(old);
@@ -1697,6 +1700,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (editing && inHere(editing)) editing = null;
       if (openMenu && inHere(openMenu)) openMenu = null;
     }
+    openMenu = null;
     var pend = mine.filter(function(x){ return x.status === 'pending'; }).length;
     setCollapsed(time, willShut, pend === 0);
     render();
@@ -2039,25 +2043,32 @@ window.dispatchEvent(new Event('fb-ready'));
   // ⋯ 메뉴는 바깥을 누르면 닫힌다.
   // 그 탭은 닫는 데만 쓰고 넘기지 않는다 — 메뉴를 치우려다 옆 사람이 체크되면 안 된다.
   // click 단계에서 처리해야 스크롤은 막히지 않는다.
+  // 메뉴 바깥을 누르면 닫힌다. 다만 그 터치를 삼키지는 않는다 —
+  // 체크·시간대 접기·하단 버튼은 한 번에 눌려야 한다.
   document.addEventListener('click', function(e){
     if (!openMenu) return;
     var t = e.target;
     if (t.closest && (t.closest('.menu') || t.closest('.more'))) return;
-    if (!document.querySelector('.menu')){   // 화면에 없는 메뉴 때문에 탭을 버리지 않는다
-      openMenu = null;
-      return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
     openMenu = null;
-    render();
+    setTimeout(render, 0);        // 누른 동작이 먼저 처리된 뒤에 지운다
   }, true);
 
   // 체크와 ⋯ 는 손을 뗄 때(pointerup) 직접 처리한다.
   // click 에 맡기면 누른 뒤 화면이 다시 그려졌을 때 브라우저가 탭을 없던 일로 만든다.
   // 대신 손가락이 밀렸으면(스크롤) 무시해서 잘못 눌리는 건 오히려 더 엄격하다.
   var SLOP = 12, HOLD = 900;
-  var tapInfo = null, lastPointerAct = 0;
+  var tapInfo = null, lastPointerAct = 0, swallowUntil = 0;
+
+  // 손 뗄 때 처리하면 브라우저가 곧이어 click 을 한 번 더 보낸다.
+  // 그 사이에 화면이 바뀌면 엉뚱한 버튼(예: 삭제) 위에 손가락이 놓여 눌릴 수 있다.
+  // 우리가 이미 처리한 탭이므로 뒤따르는 click 은 버린다.
+  document.addEventListener('click', function(e){
+    if (!swallowUntil || Date.now() > swallowUntil) return;
+    if (!e.target.closest || !e.target.closest('#list')) return;
+    swallowUntil = 0;              // 뒤따라온 그 한 번만 버린다
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
   var listEl = document.getElementById('list');
 
   listEl.addEventListener('pointerdown', function(e){
@@ -2086,16 +2097,13 @@ window.dispatchEvent(new Event('fb-ready'));
     if (Date.now() - t.at > HOLD) return;                                              // 오래 눌렀으면 취소
     if (t.kind === 'slot'){
       lastPointerAct = Date.now();
-      if (openMenu && document.querySelector('.menu')){ openMenu = null; render(); return; }
+      swallowUntil = Date.now() + 600;
       toggleSlot(t.slot);
       return;
     }
     if (!find(t.id)) return;
-    // 다른 행의 메뉴가 열려 있으면 그것부터 닫는다
-    if (openMenu && openMenu !== t.id && document.querySelector('.menu')){
-      openMenu = null; render(); return;
-    }
     lastPointerAct = Date.now();
+    swallowUntil = Date.now() + 600;
     if (t.kind === 'more') tapMore(t.id);
     else toggle(t.id);
   });
@@ -2542,7 +2550,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.1<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
