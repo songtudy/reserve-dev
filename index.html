@@ -1302,6 +1302,10 @@ window.dispatchEvent(new Event('fb-ready'));
         }
         setCollapsed(g.time, willShut, pend.length === 0);
         render();
+        if (!willShut){                       // 펼친 내용이 아래로 잘리면 그만큼 올려준다
+          var wrapNow = document.querySelector('.group[data-time="' + g.time + '"]');
+          scrollIntoRoom(wrapNow);
+        }
       });
       wrap.appendChild(head);
 
@@ -1321,15 +1325,13 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 행이 아래로 펼쳐질 때 화면 밖으로 밀려나면 그만큼 스크롤을 내려준다.
   // 하단 바에 가려 잘리는 걸 막는다.
-  function ensureVisible(id){
+  // 펼쳐진 내용이 아래로 잘리면 그만큼만 스크롤한다.
+  // 한 화면에 다 안 들어가면 위쪽을 헤더 밑에 맞춘다 —
+  // 시간대 제목은 sticky 라 더 내려도 화면에 계속 붙어 있다.
+  function scrollIntoRoom(el){
+    if (!el) return;
     requestAnimationFrame(function(){
-      var row = null;
-      var rows = document.querySelectorAll('.row');
-      for (var i = 0; i < rows.length; i++){
-        if (rows[i].getAttribute('data-id') === id){ row = rows[i]; break; }
-      }
-      if (!row) return;
-      var r = row.getBoundingClientRect();
+      var r = el.getBoundingClientRect();
       var hd = document.querySelector('header');
       var headBottom = hd ? hd.getBoundingClientRect().bottom : 0;
       var footTop = (footEl && !footEl.classList.contains('hide'))
@@ -1342,6 +1344,13 @@ window.dispatchEvent(new Event('fb-ready'));
       }
       if (move > 1) window.scrollBy({ top: move, behavior: 'smooth' });
     });
+  }
+
+  function ensureVisible(id){
+    var rows = document.querySelectorAll('.row');
+    for (var i = 0; i < rows.length; i++){
+      if (rows[i].getAttribute('data-id') === id){ scrollIntoRoom(rows[i]); return; }
+    }
   }
 
   var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
