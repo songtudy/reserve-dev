@@ -871,7 +871,8 @@ const db = getDatabase(initializeApp(firebaseConfig));
 // 주소에 -dev 가 들어 있으면 개발용. 명단 저장 위치를 따로 써서 실제 명단을 건드리지 않는다.
 const DEV = /-dev(\/|$)/.test(location.pathname);
 const ROOT = DEV ? 'roster-dev' : 'roster';
-const LOGROOT = DEV ? 'log-dev' : 'log';
+// Firebase 규칙이 허용하는 명단 영역 안에 변경 내역 전용 가지를 둔다.
+const LOGROOT = ROOT + '/__logs__';
 const path = k => ROOT + '/' + String(k).replace('roster:', '');
 
 window.__fb = {
@@ -888,6 +889,7 @@ window.__fb = {
   logPush: (ds, entry) => push(ref(db, LOGROOT + '/' + ds), entry),
   logSet: (ds, id, entry) => set(ref(db, LOGROOT + '/' + ds + '/' + id), entry),
   logGet: ds => get(ref(db, LOGROOT + '/' + ds)).then(s => s.exists() ? Object.values(s.val()) : []),
+  logWatch: (ds, cb, fail) => { const r = ref(db, LOGROOT + '/' + ds); const h = onValue(r, s => cb(s.exists() ? Object.values(s.val()) : []), fail); return () => off(r, 'value', h); },
   logList: () => get(ref(db, LOGROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
   logRemove: ds => remove(ref(db, LOGROOT + '/' + ds)),
   // Firebase가 알려주는 실제 연결 상태
@@ -1908,6 +1910,8 @@ window.dispatchEvent(new Event('fb-ready'));
   var logRetryTimer = null;
   var logRetryDelay = 3000;
   var logRetryAttempts = 0;
+  var logUnwatch = null;
+  var logWatchSerial = 0;
 
   function logEventId(){
     try {
@@ -1932,7 +1936,12 @@ window.dispatchEvent(new Event('fb-ready'));
         all.push(clean);
       });
     });
-    all.sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
+    all.sort(function(a, b){
+      var byTime = (b.at || 0) - (a.at || 0);
+      if (byTime) return byTime;
+      var ai = logIdentity(a), bi = logIdentity(b);
+      return ai < bi ? 1 : ai > bi ? -1 : 0;
+    });
     return all.slice(0, limit);
   }
   function pendingLogRows(ds){
@@ -2045,6 +2054,38 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function logRows(fetched){
     return mergeLogRows([fetched, logCache[viewDate], pendingLogRows(viewDate)], LOG_SHOW);
+  }
+
+  function stopLogWatch(){
+    logWatchSerial++;
+    if (logUnwatch){
+      try { logUnwatch(); } catch(e){}
+      logUnwatch = null;
+    }
+  }
+  function startLogWatch(forDate){
+    stopLogWatch();
+    if (!hasStore()) return;
+    var api = fb();
+    var serial = ++logWatchSerial;
+    function apply(rows){
+      if (serial !== logWatchSerial || viewDate !== forDate
+          || sheetScrim.classList.contains('hide')
+          || document.getElementById('sheetTitle').textContent !== '최근 변경 내역') return;
+      rememberLogRows(forDate, rows || []);
+      document.getElementById('sheetBody').innerHTML = logHtml(logRows(rows || []));
+    }
+    function failed(){
+      if (serial === logWatchSerial && !sheetScrim.classList.contains('hide')){
+        toast('변경 내역 동기화 실패 — 다시 연결되면 자동으로 재시도합니다');
+      }
+    }
+    if (api.logWatch){
+      try { logUnwatch = api.logWatch(forDate, apply, failed) || null; }
+      catch(e){ failed(); }
+      return;
+    }
+    if (api.logGet) api.logGet(forDate).then(apply).catch(failed);
   }
 
   window.addEventListener('storage', function(e){
@@ -2216,12 +2257,12 @@ window.dispatchEvent(new Event('fb-ready'));
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
   // 입력칸 높이는 내용·키보드와 무관하게 한 번만 고정한다.
-  // 원래 높이에서 42px만 줄여 등록 버튼과 보조 바 경계를 맞추고, 이후 높이나 화면을 밀지 않는다.
+  // 원래 높이보다 43px 낮춰 등록 버튼과 보조 바 경계를 맞춘다.
   // 등록 버튼이 늘 같은 자리에 있고, 키보드가 올라올 자리도 남는다.
   // 넘치는 줄은 안에서 스크롤하고, 오류 표시 오버레이도 같이 따라가야 줄이 안 어긋난다.
   var taFixedH = 0;
   function pasteTextareaBaseHeight(vh){
-    return Math.max(218, Math.min(Math.round(vh * 0.46) - 42, 378));
+    return Math.max(217, Math.min(Math.round(vh * 0.46) - 43, 377));
   }
   function taBaseHeight(){
     if (taFixedH) return taFixedH;
@@ -3151,12 +3192,14 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 안내 시트 ---------- */
   var sheetScrim = document.getElementById('sheetScrim');
   function openSheet(title, html){
+    stopLogWatch();
     document.getElementById('sheetTitle').textContent = title;
     document.getElementById('sheetBody').innerHTML = html;
     sheetScrim.classList.remove('hide');
     backOpen(hideSheet);
   }
   function hideSheet(){
+    stopLogWatch();
     sheetScrim.classList.add('hide');
     var nv = document.getElementById('sheetNever');
     if (nv) nv.classList.add('hide');
@@ -3281,17 +3324,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var mine = logRows(null);
     // 연결이 끊겨 있어도 이 폰에서 한 것은 바로 보여준다
     openSheet('최근 변경 내역', logHtml(mine));
-    if (!hasStore() || !fb().logGet) return;
-    var forDate = viewDate;
-    fb().logGet(forDate).then(function(rows){
-      var body = document.getElementById('sheetBody');
-      if (!body || viewDate !== forDate) return;
-      rememberLogRows(forDate, rows || []);
-      body.innerHTML = logHtml(logRows(rows));
-    }).catch(function(){
-      var body = document.getElementById('sheetBody');
-      if (body) body.innerHTML = logHtml(mine);
-    });
+    startLogWatch(viewDate);
   });
 
   document.getElementById('wifiBtn').addEventListener('click', function(){
