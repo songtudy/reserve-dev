@@ -95,12 +95,14 @@
   }
   body.keyboard-open{min-height:0!important}
   body.keyboard-open .wrap{flex:0 0 auto}
+  /* 키보드 중에는 Safari의 자체 화면 이동과 경쟁하지 않도록 상단 고정을 해제한다. */
+  body.keyboard-open header,body.keyboard-open .ghead{position:relative;top:auto}
   .wrap{flex:1 0 auto;width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
   header{
-    position:sticky;top:var(--vv-top, 0px);z-index:20;
+    position:sticky;top:0;z-index:20;
     background:var(--ink);
     border-bottom:1px solid var(--line);
     padding:calc(env(safe-area-inset-top) + 12px) 0 8px;
@@ -213,7 +215,7 @@
   .group{margin-top:10px}
 
   .ghead{
-    position:sticky;top:calc(var(--vv-top, 0px) + var(--hh,84px));z-index:10;
+    position:sticky;top:var(--hh,84px);z-index:10;
     background:var(--ink);
     display:flex;align-items:center;gap:7px;
     width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 8px;
@@ -1365,7 +1367,8 @@ window.dispatchEvent(new Event('fb-ready'));
       // 고정됐을 때 차지할 높이를 예약한다. 단, 시간대 자체를 맞출 때는
       // 그 제목이 목표물이므로 자신의 높이를 한 번 더 더하지 않는다.
       var groupIsTarget = el.classList && el.classList.contains('group');
-      var coveredTop = headBottom
+      var visualTop = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
+      var coveredTop = keyboardOpen ? visualTop : headBottom
         + (groupHead && !groupIsTarget ? groupHead.offsetHeight : 0);
       var visualBottom = vv
         ? Math.min(window.innerHeight, Math.round(vv.offsetTop + vv.height))
@@ -2056,7 +2059,6 @@ window.dispatchEvent(new Event('fb-ready'));
     keyboardOpen = false;
     keyboardBaseH = visibleH;
     document.documentElement.style.setProperty('--kb', '0px');
-    document.documentElement.style.setProperty('--vv-top', '0px');
     document.body.classList.remove('keyboard-open');
     addPanel.classList.remove('kb');
     if (typeof footMode === 'function') footMode();
@@ -2094,8 +2096,6 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!wasOpen) keyboardOpen = kb > KEYBOARD_DELTA
       && textKeyboardTarget(document.activeElement);
     document.documentElement.style.setProperty('--kb', keyboardLayoutInsetH() + 'px');
-    document.documentElement.style.setProperty('--vv-top',
-      (keyboardOpen ? Math.max(0, Math.round(vv.offsetTop)) : 0) + 'px');
     document.body.classList.toggle('keyboard-open', keyboardOpen);
     addPanel.classList.toggle('kb', keyboardOpen);
     if (typeof footMode === 'function') footMode();
@@ -2696,7 +2696,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3.5<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.6<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -2890,7 +2890,6 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = false;
       keyboardBaseH = visibleViewportH();
       document.documentElement.style.setProperty('--kb', '0px');
-      document.documentElement.style.setProperty('--vv-top', '0px');
       document.body.classList.remove('keyboard-open');
       addPanel.classList.remove('kb');
     }
