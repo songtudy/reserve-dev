@@ -95,6 +95,9 @@
   }
   body.keyboard-open{min-height:0!important}
   body.keyboard-open .wrap{flex:0 0 auto}
+  body.keyboard-open.paste-keyboard-open .wrap{
+    padding-bottom:calc(18px + var(--paste-room, 0px));
+  }
   /* 키보드 중에는 Safari의 자체 화면 이동과 경쟁하지 않도록 상단 고정을 해제한다. */
   body.keyboard-bars-free header,body.keyboard-bars-free .ghead{position:relative;top:auto}
   .wrap{flex:1 0 auto;width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px}
@@ -452,8 +455,8 @@
   .foot.flow{position:static}
   /* 키보드 중에는 전역 동작과 그 자리까지 제거해 목록 끝에 빈 공간을 남기지 않는다. */
   .foot.keyboard-covered{display:none}
-  /* 복귀 프레임의 위치 보정이 끝난 뒤 같은 화면 갱신에서 보이게 해 왕복 움직임을 막는다. */
-  .foot.keyboard-returning{visibility:hidden;pointer-events:none}
+  /* 복귀 보정 프레임 전까지는 레이아웃에도 넣지 않는다. */
+  .foot.keyboard-returning{display:none;pointer-events:none}
   .foot .inner{max-width:640px;margin:0 auto}
   .frow{display:flex;gap:7px}
   .frow + .frow{margin-top:6px}
@@ -886,6 +889,7 @@ window.__fb = {
   },
   // 변경 내역 — 날짜별로 따로 쌓는다. push 라 여러 대가 동시에 써도 안 겹친다
   logPush: (ds, entry) => push(ref(db, LOGROOT + '/' + ds), entry),
+  logSet: (ds, id, entry) => set(ref(db, LOGROOT + '/' + ds + '/' + id), entry),
   logGet: ds => get(ref(db, LOGROOT + '/' + ds)).then(s => s.exists() ? Object.values(s.val()) : []),
   logList: () => get(ref(db, LOGROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
   logRemove: ds => remove(ref(db, LOGROOT + '/' + ds)),
@@ -1027,8 +1031,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 오래된 날짜 정리
   function purgeOld(){
-    if (!hasStore()) return;
     var limit = shiftDate(bizDate(), -KEEP_DAYS);
+    purgeOldLocalLogs(limit);
+    if (!hasStore()) return;
     fb().list().then(function(keys){
       (keys || []).forEach(function(ds){
         if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().remove(ds).catch(function(){});
@@ -1037,7 +1042,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (fb().logList){
       fb().logList().then(function(keys){
         (keys || []).forEach(function(ds){
-          if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().logRemove(ds).catch(function(){});
+          if (!validLogDate(ds) || ds < limit || ds > bizDate()) fb().logRemove(ds).catch(function(){});
         });
       }).catch(function(){});
     }
@@ -1652,7 +1657,7 @@ window.dispatchEvent(new Event('fb-ready'));
       form.addEventListener('click', function(e){ e.stopPropagation(); });
       form.querySelector('#e-no').addEventListener('click', function(){
         keepSlotOpenForId(it.id);
-        if (keyboardOpen){ barRevealId = it.id; footerRevealId = it.id; }
+        if (deferKeyboardEditClose(it.id, it.id)) return;
         editing = null; render();
       });
       form.querySelector('#e-ok').addEventListener('click', function(){
@@ -1741,7 +1746,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
       keepSlotOpenForId(it.id);
-      if (keyboardOpen){ barRevealId = it.id; footerRevealId = it.id; }
+      if (deferKeyboardEditClose(it.id, it.id)) return;
       editing = null; render(); return;
     }
 
@@ -1763,10 +1768,15 @@ window.dispatchEvent(new Event('fb-ready'));
     touched[time] = Date.now();
     armSlotCollapse(originalTime);
     if (time !== originalTime) armSlotCollapse(time);
-    if (keyboardOpen){ barRevealId = it.id; footerRevealId = it.id; }
-    if (timeMoved) followEditId = it.id;
     state.items.sort(sortItems);
     state.rosterTs = Date.now();
+    var deferredClose = deferKeyboardEditClose(id, it.id);
+    if (timeMoved && !deferredClose) followEditId = it.id;
+    if (deferredClose){
+      save();
+      toast('수정됨');
+      return;
+    }
     editing = null;
     render();
     if (timeMoved && !keyboardOpen){ followEditId = null; ensureVisible(it.id); }
@@ -1780,33 +1790,246 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 변경 내역 — 무슨 일이 있었는지만 남긴다 (되돌리기는 없다)
   var LOG_SHOW = 10;
-  var logLocal = {};            // 이 폰에서 한 것 — 연결이 끊겨도 보여주기 위해
+  var LOG_KEEP = 40;
+  var LOG_SCOPE = /-dev(\/|$)/.test(location.pathname) ? 'dev' : 'prod';
+  var LOG_CACHE_KEY = 'ix-log-cache-v1:' + LOG_SCOPE;
+  var LOG_OUTBOX_KEY = 'ix-log-outbox-v1:' + LOG_SCOPE;
+  var LOG_OUTBOX_PREFIX = LOG_OUTBOX_KEY + ':';
+  var LOG_ID_PATTERN = /^[A-Za-z0-9_-]{8,80}$/;
+
+  function readLogStore(key){
+    try {
+      var value = JSON.parse(localStorage.getItem(key) || '{}');
+      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    } catch(e){ return {}; }
+  }
+  function writeLogStore(key, value){
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e){ return false; }
+  }
+  function removeLogStore(key){
+    try { localStorage.removeItem(key); return true; }
+    catch(e){ return false; }
+  }
+  function validLogDate(ds){
+    var m = String(ds || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return false;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return d.getFullYear() === +m[1] && d.getMonth() === +m[2] - 1 && d.getDate() === +m[3];
+  }
+  function cleanLogEntry(r, requireId){
+    if (!r || typeof r !== 'object') return null;
+    var at = Number(r.at);
+    if (!isFinite(at) || at <= 0 || typeof r.t !== 'string' || typeof r.k !== 'string') return null;
+    var id = r.id == null || r.id === '' ? '' : String(r.id);
+    if ((requireId && !id) || (id && !LOG_ID_PATTERN.test(id))) return null;
+    var clean = {
+      at: at,
+      t: r.t.slice(0, 16),
+      k: r.k.slice(0, 40),
+      s: (r.s == null ? '' : String(r.s)).slice(0, 500)
+    };
+    if (id) clean.id = id;
+    return clean;
+  }
+  function cleanOutboxItem(id, item){
+    if (!LOG_ID_PATTERN.test(id) || !item || !validLogDate(item.date)
+        || item.date < shiftDate(bizDate(), -KEEP_DAYS) || item.date > bizDate()) return null;
+    var entry = cleanLogEntry(item.entry, true);
+    if (!entry || entry.id !== id) return null;
+    return { date: item.date, entry: entry };
+  }
+  function readLogOutbox(){
+    var out = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++){
+        var key = localStorage.key(i);
+        if (!key || key.indexOf(LOG_OUTBOX_PREFIX) !== 0) continue;
+        var id = key.slice(LOG_OUTBOX_PREFIX.length), item = null;
+        try { item = cleanOutboxItem(id, JSON.parse(localStorage.getItem(key) || 'null')); } catch(e){}
+        if (item) out[id] = item;
+        else if (removeLogStore(key)) i--;
+      }
+      // v1.3.12 시험판의 한 덩어리 outbox가 남아 있으면 안전한 항목만 한 건씩 옮긴다.
+      var legacy = readLogStore(LOG_OUTBOX_KEY);
+      var remaining = {};
+      Object.keys(legacy).forEach(function(id){
+        var item = cleanOutboxItem(id, legacy[id]);
+        if (!item || out[id]) return;
+        if (writeLogStore(LOG_OUTBOX_PREFIX + id, item)) out[id] = item;
+        else remaining[id] = item;
+      });
+      if (Object.keys(remaining).length) writeLogStore(LOG_OUTBOX_KEY, remaining);
+      else removeLogStore(LOG_OUTBOX_KEY);
+    } catch(e){}
+    return out;
+  }
+  function cleanLogCache(raw){
+    var out = {};
+    Object.keys(raw || {}).forEach(function(ds){
+      if (!validLogDate(ds)) return;
+      var rows = mergeLogRows([raw[ds]], LOG_KEEP);
+      if (rows.length) out[ds] = rows;
+    });
+    return out;
+  }
+
+  var logCache = cleanLogCache(readLogStore(LOG_CACHE_KEY));
+  var logOutbox = readLogOutbox();
+  var logFlushActive = false;
+  var logRetryTimer = null;
+  var logRetryDelay = 3000;
+  var logRetryAttempts = 0;
+
+  function logEventId(){
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    } catch(e){}
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12)
+      + '-' + Math.random().toString(36).slice(2, 8);
+  }
+  function logIdentity(r){
+    return r && r.id ? 'id:' + r.id
+      : 'legacy:' + ((r && r.at) || 0) + '|' + ((r && r.k) || '') + '|' + ((r && r.s) || '');
+  }
+  function mergeLogRows(groups, limit){
+    var seen = {}, all = [];
+    (groups || []).forEach(function(rows){
+      (Array.isArray(rows) ? rows : []).forEach(function(r){
+        var clean = cleanLogEntry(r, false);
+        if (!clean) return;
+        var id = logIdentity(clean);
+        if (seen[id]) return;
+        seen[id] = 1;
+        all.push(clean);
+      });
+    });
+    all.sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
+    return all.slice(0, limit);
+  }
+  function pendingLogRows(ds){
+    return Object.keys(logOutbox).map(function(id){ return logOutbox[id]; })
+      .filter(function(item){ return item && item.date === ds && item.entry; })
+      .map(function(item){ return item.entry; });
+  }
+  function rememberLogRows(ds, rows){
+    logCache[ds] = mergeLogRows([rows, logCache[ds], pendingLogRows(ds)], LOG_KEEP);
+    writeLogStore(LOG_CACHE_KEY, logCache);
+  }
+  function persistLogOutboxItem(id, item){
+    return !!cleanOutboxItem(id, item) && writeLogStore(LOG_OUTBOX_PREFIX + id, item);
+  }
+  function removeLogOutboxItem(id, expected){
+    if (!expected || logOutbox[id] === expected){
+      delete logOutbox[id];
+      removeLogStore(LOG_OUTBOX_PREFIX + id);
+    }
+  }
+  function warnLogPersistence(){
+    setTimeout(function(){ toast('변경 내역을 이 기기에 저장하지 못했습니다'); }, 0);
+  }
+  function scheduleLogRetry(){
+    if (logRetryTimer || !Object.keys(logOutbox).length || document.hidden || !online
+        || logRetryAttempts >= 5) return;
+    var wait = logRetryDelay;
+    logRetryDelay = Math.min(logRetryDelay * 2, 60000);
+    logRetryAttempts++;
+    logRetryTimer = setTimeout(function(){
+      logRetryTimer = null;
+      flushLogOutbox();
+    }, wait);
+  }
+  function wakeLogOutbox(){
+    if (logRetryTimer){ clearTimeout(logRetryTimer); logRetryTimer = null; }
+    logRetryDelay = 3000;
+    logRetryAttempts = 0;
+    flushLogOutbox();
+  }
+  function flushLogOutbox(){
+    if (logFlushActive || !hasStore() || !fb().logSet) return;
+    var ids = Object.keys(logOutbox);
+    if (!ids.length) return;
+    logFlushActive = true;
+    var succeeded = 0;
+    Promise.all(ids.map(function(id){
+      var original = logOutbox[id];
+      var item = cleanOutboxItem(id, original);
+      var limit = shiftDate(bizDate(), -KEEP_DAYS);
+      if (!item || item.date < limit){
+        removeLogOutboxItem(id, original);
+        return Promise.resolve();
+      }
+      return Promise.resolve().then(function(){
+        return fb().logSet(item.date, id, item.entry);
+      }).then(function(){
+        removeLogOutboxItem(id, original);
+        succeeded++;
+      }).catch(function(){});
+    })).then(function(){
+      logFlushActive = false;
+      if (succeeded){ logRetryDelay = 3000; logRetryAttempts = 0; }
+      if (Object.keys(logOutbox).length) scheduleLogRetry();
+    }).catch(function(){
+      logFlushActive = false;
+      scheduleLogRetry();
+    });
+  }
+  function purgeOldLocalLogs(limit){
+    var cacheChanged = false, outboxChanged = false;
+    Object.keys(logCache).forEach(function(ds){
+      if (!validLogDate(ds) || ds < limit || ds > bizDate()){
+        delete logCache[ds]; cacheChanged = true;
+      }
+    });
+    Object.keys(logOutbox).forEach(function(id){
+      var item = logOutbox[id];
+      if (!cleanOutboxItem(id, item) || item.date < limit){
+        removeLogOutboxItem(id, item); outboxChanged = true;
+      }
+    });
+    if (cacheChanged) writeLogStore(LOG_CACHE_KEY, logCache);
+    if (outboxChanged) removeLogStore(LOG_OUTBOX_KEY);
+  }
+
   function logAdd(kind, what){
     if (dayGap(viewDate) !== 0) return;      // 오늘 명단만 기록한다
     var d = new Date();
-    var entry = {
+    var entry = cleanLogEntry({
+      id: logEventId(),
       at: Date.now(),
       t: pad(d.getHours()) + ':' + pad(d.getMinutes()),
       k: kind,
       s: what || ''
-    };
-    var box = logLocal[viewDate] || (logLocal[viewDate] = []);
-    box.push(entry);
-    if (box.length > 40) box.shift();
-    if (hasStore() && fb().logPush) fb().logPush(viewDate, entry).catch(function(){});
+    }, true);
+    var item = { date: viewDate, entry: entry };
+    logOutbox[entry.id] = item;
+    var durable = persistLogOutboxItem(entry.id, item);
+    if (!durable){
+      removeLogStore(LOG_CACHE_KEY);             // 로그 캐시만 비워 공간을 만든 뒤 한 번 더
+      durable = persistLogOutboxItem(entry.id, item);
+    }
+    rememberLogRows(viewDate, [entry]);
+    if (!durable) warnLogPersistence();
+    logRetryDelay = 3000;
+    logRetryAttempts = 0;
+    flushLogOutbox();
   }
 
   function logRows(fetched){
-    var mine = logLocal[viewDate] || [];
-    var seen = {}, all = [];
-    (fetched || []).concat(mine).forEach(function(r){
-      var key = r.at + '|' + r.k + '|' + r.s;
-      if (seen[key]) return;
-      seen[key] = 1; all.push(r);
-    });
-    all.sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
-    return all.slice(0, LOG_SHOW);
+    return mergeLogRows([fetched, logCache[viewDate], pendingLogRows(viewDate)], LOG_SHOW);
   }
+
+  window.addEventListener('storage', function(e){
+    if (!e.key || e.key.indexOf(LOG_OUTBOX_PREFIX) !== 0) return;
+    var id = e.key.slice(LOG_OUTBOX_PREFIX.length);
+    if (!e.newValue){ delete logOutbox[id]; return; }
+    var item = null;
+    try { item = cleanOutboxItem(id, JSON.parse(e.newValue)); } catch(error){}
+    if (!item){ removeLogStore(e.key); return; }
+    logOutbox[id] = item;
+    rememberLogRows(item.date, [item.entry]);
+    wakeLogOutbox();
+  });
 
   function logHtml(rows){
     if (!rows.length) return '<p class="lgempty">변경 내역이 없습니다.</p>';
@@ -1874,10 +2097,18 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 시간대 접기 / 펼치기
   function toggleSlot(time){
-    if (blockWhileEditing()) return;
+    if (pendingKeyboardEditClose) return;
     if (!state) return;
     var mine = state.items.filter(function(x){ return x.time === time; });
     if (!mine.length) return;
+    var editDraft = null;
+    var editedRow = editing && rowForId(editing);
+    if (editedRow){
+      editDraft = ['e-hour','e-min','e-name','e-pax','e-memo'].map(function(fieldId){
+        var field = editedRow.querySelector('#' + fieldId);
+        return field ? field.value : null;
+      });
+    }
     var wrap = document.querySelector('.group[data-time="' + time + '"]');
     var willShut = !(wrap && wrap.classList.contains('shut'));
     if (willShut){        // 접을 때는 그 시간대에서 열려 있던 수정 폼·메뉴를 닫는다
@@ -1889,6 +2120,15 @@ window.dispatchEvent(new Event('fb-ready'));
     var pend = mine.filter(function(x){ return x.status === 'pending'; }).length;
     setCollapsed(time, willShut, pend === 0);
     render();
+    if (editing && editDraft){
+      var restoredRow = rowForId(editing);
+      if (restoredRow){
+        ['e-hour','e-min','e-name','e-pax','e-memo'].forEach(function(fieldId, index){
+          var field = restoredRow.querySelector('#' + fieldId);
+          if (field && editDraft[index] !== null) field.value = editDraft[index];
+        });
+      }
+    }
     if (!willShut) scrollIntoRoom(document.querySelector('.group[data-time="' + time + '"]'));
   }
 
@@ -2076,7 +2316,7 @@ window.dispatchEvent(new Event('fb-ready'));
     panel.scrollIntoView({ behavior:'smooth', block:'center' });
     setTimeout(function(){ ta.focus(); }, 200);
   }
-  function closePaste(){ panel.classList.add('hide'); }
+  function closePaste(){ panel.classList.add('hide'); clearPasteKeyboardRoom(); }
 
   /* ---------- 예약 추가 ---------- */
   var addPanel = document.getElementById('addPanel');
@@ -2156,10 +2396,12 @@ window.dispatchEvent(new Event('fb-ready'));
   var barRevealId = null;
   var footerRevealId = null;
   var barRevealApplied = false;
+  var pendingKeyboardEditClose = null;
   var keyboardUserScrolled = false;
   var keyboardTouch = null;
   var keyboardTouchCandidate = null;
   var keyboardTouchCandidateTimer = null;
+  var pasteRevealFrame = null;
   function visibleViewportH(){
     // offsetTop은 iOS가 입력칸으로 화면을 팬한 거리라 키보드 높이에 더하면 안 된다.
     return vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
@@ -2175,7 +2417,94 @@ window.dispatchEvent(new Event('fb-ready'));
   function textKeyboardTarget(el){
     return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
   }
+  function revealPasteActions(){
+    if (!keyboardOpen || !vv || !panel || panel.classList.contains('hide')
+        || !ta || !panel.contains(document.activeElement)) return;
+    if (pasteRevealFrame) cancelAnimationFrame(pasteRevealFrame);
+    pasteRevealFrame = requestAnimationFrame(function(){
+      pasteRevealFrame = null;
+      if (!keyboardOpen || panel.classList.contains('hide')) return;
+      var buttons = panel.querySelector('.btns');
+      if (!buttons) return;
+      var visualBottom = Math.min(window.innerHeight,
+        Math.round(vv.offsetTop + vv.height));
+      var move = buttons.getBoundingClientRect().bottom - (visualBottom - 10);
+      if (move > 1){
+        // 짧은 첫 화면은 layout viewport 자체가 스크롤되지 않을 수 있다.
+        // 키보드가 실제로 가린 만큼만 문서 끝에 스크롤 여유를 만든다.
+        document.body.classList.add('paste-keyboard-open');
+        document.documentElement.style.setProperty('--paste-room',
+          Math.max(0, window.innerHeight - visualBottom + 24) + 'px');
+        requestAnimationFrame(function(){
+          var nextMove = buttons.getBoundingClientRect().bottom - (visualBottom - 10);
+          if (nextMove > 1) window.scrollBy(0, nextMove);
+        });
+      }
+    });
+  }
+  function clearPasteKeyboardRoom(){
+    document.body.classList.remove('paste-keyboard-open');
+    document.documentElement.style.removeProperty('--paste-room');
+  }
+  // 저장·취소 버튼으로 키보드를 닫을 때는 큰 수정 폼을 먼저 없애지 않는다.
+  // iOS가 키보드 종료 중 붙잡고 있던 스크롤 기준을 잃으면 짧아진 행을 따라
+  // 화면이 튄다. 종료가 확정된 프레임까지 기존 폼을 앵커로 보존한다.
+  function deferKeyboardEditClose(domId, targetId){
+    if (!keyboardOpen) return false;
+    // 첫 저장/취소가 정한 DOM 앵커와 대상 ID를 종료까지 바꾸지 않는다.
+    if (pendingKeyboardEditClose) return true;
+    var row = rowForId(domId);
+    pendingKeyboardEditClose = {
+      domId: domId,
+      targetId: targetId,
+      top: row ? row.getBoundingClientRect().top : null
+    };
+    barRevealId = domId;
+    footerRevealId = targetId;
+    var form = row && row.querySelector('.edit');
+    if (form){
+      form.setAttribute('aria-busy', 'true');
+      [].forEach.call(form.querySelectorAll('input,select,button'), function(control){
+        control.disabled = true;
+      });
+    }
+    var active = document.activeElement;
+    if (textKeyboardTarget(active) && active.blur) active.blur();
+    return true;
+  }
+  function finishPendingKeyboardEditClose(){
+    var pending = pendingKeyboardEditClose;
+    if (!pending) return null;
+    pendingKeyboardEditClose = null;
+    // 돌아온 상단바가 시작한 부드러운 최소 보정이 남아 있다면 현재 위치에서
+    // 끝낸 뒤 DOM을 바꾼다. 사라진 폼을 향해 스크롤이 계속되는 일을 막는다.
+    if (barRevealApplied) window.scrollTo(0, window.scrollY);
+    var anchor = rowForId(pending.domId);
+    var anchorTop = anchor ? anchor.getBoundingClientRect().top : pending.top;
+    editing = null;
+    openMenu = null;
+    render();
+    var target = rowForId(pending.targetId);
+    if (target && anchorTop !== null){
+      var move = target.getBoundingClientRect().top - anchorTop;
+      if (Math.abs(move) > 1) window.scrollBy(0, move);
+    }
+    barRevealId = pending.targetId;
+    footerRevealId = pending.targetId;
+    followEditId = null;
+    // 폼을 기준으로 시작한 상단 보정은 DOM 교체 시점에 아직 진행 중일 수 있다.
+    // 저장된 짧은 행을 기준으로 상·하단 가림을 마지막 한 번 다시 판정한다.
+    barRevealApplied = false;
+    return pending.targetId;
+  }
   document.addEventListener('focusin', function(e){
+    if (pendingKeyboardEditClose){
+      var closingRow = rowForId(pendingKeyboardEditClose.domId);
+      if (closingRow && closingRow.contains(e.target)){
+        if (e.target.blur) e.target.blur();
+        return;
+      }
+    }
     if (!keyboardOpen && textKeyboardTarget(e.target)) keyboardBaseH = visibleViewportH();
   }, true);
   document.addEventListener('pointerdown', function(e){
@@ -2264,7 +2593,10 @@ window.dispatchEvent(new Event('fb-ready'));
     if (changed && !finalClose) revealEditedAfterBars();
   }
   function showReturnedFooter(){
-    if (footEl) footEl.classList.remove('keyboard-returning');
+    if (!footEl) return;
+    var returning = footEl.classList.contains('keyboard-returning');
+    footEl.classList.remove('keyboard-returning');
+    if (returning && typeof footMode === 'function') footMode();
   }
   function revealEditedAfterKeyboardClose(){
     var explicitId = footerRevealId || barRevealId;
@@ -2272,11 +2604,13 @@ window.dispatchEvent(new Event('fb-ready'));
     footerRevealId = null;
     barRevealId = null;
     requestAnimationFrame(function(){
+      // 이 프레임 안에서 하단바를 레이아웃에 넣고 새 좌표로 즉시 보정한다.
+      // 다음 paint 전에 둘 다 끝나므로 키보드가 닫힌 뒤 목록을 미는 중간 화면이 없다.
+      showReturnedFooter();
       var row = rowForId(id);
       if (!row || !footEl || footEl.classList.contains('hide')
           || footEl.classList.contains('keyboard-covered')
           || (keyboardUserScrolled && !explicitId) || barRevealApplied){
-        showReturnedFooter();
         return;
       }
       var r = row.getBoundingClientRect();
@@ -2293,7 +2627,6 @@ window.dispatchEvent(new Event('fb-ready'));
       var footTop = Math.min(footEl.getBoundingClientRect().top, visualBottom);
       var bottomEdge = footTop - 10;
       if (r.top >= visualBottom || r.bottom <= visualTop){
-        showReturnedFooter();
         return;
       }
       var move = 0;
@@ -2303,7 +2636,6 @@ window.dispatchEvent(new Event('fb-ready'));
         move = r.bottom - bottomEdge;
       // 하단 바가 그려지는 프레임에 즉시 보정해, 먼저 내려갔다 다시 올라오는 왕복을 없앤다.
       if (move) window.scrollBy(0, move);
-      showReturnedFooter();
     });
   }
   function finishKeyboardClose(){
@@ -2318,10 +2650,15 @@ window.dispatchEvent(new Event('fb-ready'));
     keyboardBaseH = visibleH;
     document.documentElement.style.setProperty('--kb', '0px');
     document.body.classList.remove('keyboard-open');
+    clearPasteKeyboardRoom();
     addPanel.classList.remove('kb');
+    var closedEditId = finishPendingKeyboardEditClose();
     if (typeof footMode === 'function') footMode();
     if (wasOpen){
-      if (followEditId || followMenuId){
+      if (closedEditId){
+        followMenuId = null;
+        revealEditedAfterKeyboardClose();
+      } else if (followEditId || followMenuId){
         // 시간 변경 저장과 키보드 중 다른 ⋯ 선택만 명시적인 새 기준이다.
         // 그 밖의 키보드 종료에서는 사용자가 만든 스크롤을 그대로 둔다.
         // 새 메뉴가 아직 열려 있을 때는 더 최근 선택인 메뉴가 우선한다.
@@ -2373,6 +2710,7 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.toggle('keyboard-open', keyboardOpen);
     addPanel.classList.toggle('kb', keyboardOpen);
     if (typeof footMode === 'function') footMode();
+    if (keyboardOpen) revealPasteActions();
   }
   if (vv){
     vv.addEventListener('resize', kbFit);
@@ -2426,12 +2764,16 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   document.getElementById('resetBtn').addEventListener('click', function(){
-    if (blockWhileEditing()) return;
     if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
     var g = dayGap(viewDate);
     var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
     confirmDlg(day + ' 명단을 초기화할까요?\n「예」를 입력해 주세요', function(){
       logAdd('명단 초기화', state.items.length + '건 지움');
+      editing = null; openMenu = null;
+      pendingKeyboardEditClose = null;
+      followEditId = null; followMenuId = null;
+      barRevealId = null; footerRevealId = null; barRevealApplied = false;
+      deferredState = null; backgroundRenderPending = false;
       state = { date: viewDate, rosterTs: Date.now(), items: [] };
       collapsed = {};
       closeSearch(false);
@@ -2487,6 +2829,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   listEl.addEventListener('pointerdown', function(e){
     tapInfo = null;
+    if (pendingKeyboardEditClose) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     var m = e.target.closest && e.target.closest('.main, .more, .ghead, .menu button');
     if (!m) return;
@@ -2508,6 +2851,7 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   listEl.addEventListener('pointerup', function(e){
+    if (pendingKeyboardEditClose){ tapInfo = null; return; }
     var t = tapInfo; tapInfo = null;
     if (!t || e.pointerId !== t.pid) return;
     if (Math.abs(e.clientX - t.x) > SLOP || Math.abs(e.clientY - t.y) > SLOP) return;  // 밀었으면 취소
@@ -2526,6 +2870,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 손가락이 아닌 경로(키보드 Enter, 보이스오버 등)는 여전히 click 으로 들어온다.
   // 손가락에서 뒤따르는 중복 click 은 위의 좌표 판정에서 이미 걸러진다.
   listEl.addEventListener('click', function(e){
+    if (pendingKeyboardEditClose) return;
     var m = e.target.closest && e.target.closest('.main, .more');
     if (!m) return;
     var row = m.closest('.row');
@@ -2602,6 +2947,7 @@ window.dispatchEvent(new Event('fb-ready'));
     collapseTimers = {};
     followEditId = null; followMenuId = null;
     barRevealId = null; footerRevealId = null; barRevealApplied = false;
+    pendingKeyboardEditClose = null;
   }
   function goDate(ds){
     if (blockWhileEditing()) return;
@@ -2629,7 +2975,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   var foldBtn = document.getElementById('foldBtn');
   foldBtn.addEventListener('click', function(){
-    if (blockWhileEditing()) return;
     if (!state || !state.items.length) return;
     if (!panel.classList.contains('hide')) closePaste();
     var times = {}, anyOpen = false;
@@ -2971,6 +3316,7 @@ window.dispatchEvent(new Event('fb-ready'));
     fb().logGet(forDate).then(function(rows){
       var body = document.getElementById('sheetBody');
       if (!body || viewDate !== forDate) return;
+      rememberLogRows(forDate, rows || []);
       body.innerHTML = logHtml(logRows(rows));
     }).catch(function(){
       var body = document.getElementById('sheetBody');
@@ -2993,7 +3339,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3.9<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.12<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3098,10 +3444,14 @@ window.dispatchEvent(new Event('fb-ready'));
   function boot(){
     if (hasStore() && fb().onConnected && !boot._watched){
       boot._watched = true;
-      fb().onConnected(function(ok){ setSync(ok); });
+      fb().onConnected(function(ok){
+        setSync(ok);
+        if (ok) wakeLogOutbox();
+      });
     }
     setSync(hasStore());
     purgeOld();
+    wakeLogOutbox();
     var ticket = loadTicket();
     loadRemote(ticket.date).then(function(remote){
       if (!ticketCurrent(ticket)) return;
@@ -3184,6 +3534,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 화면으로 돌아오면 한 번 확인 (실시간 수신은 watchRemote가 담당)
   document.addEventListener('visibilitychange', function(){
     if (document.hidden) return;
+    wakeLogOutbox();
     if (vv){
       // 키보드가 열린 채 복귀했을 수 있으므로 현재 높이로 다시 판정한다.
       // 줄어든 화면을 새 기준 높이로 저장하면 이후에도 키보드를 놓치게 된다.
