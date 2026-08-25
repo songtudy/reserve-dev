@@ -452,6 +452,8 @@
   .foot.flow{position:static}
   /* 키보드 중에는 전역 동작과 그 자리까지 제거해 목록 끝에 빈 공간을 남기지 않는다. */
   .foot.keyboard-covered{display:none}
+  /* 복귀 프레임의 위치 보정이 끝난 뒤 같은 화면 갱신에서 보이게 해 왕복 움직임을 막는다. */
+  .foot.keyboard-returning{visibility:hidden;pointer-events:none}
   .foot .inner{max-width:640px;margin:0 auto}
   .frow{display:flex;gap:7px}
   .frow + .frow{margin-top:6px}
@@ -908,6 +910,35 @@ window.dispatchEvent(new Event('fb-ready'));
   var collapseTimers = {};
   var COLLAPSE_DELAY = 5000;
   var query = '';
+  var backgroundRenderPending = false;
+  var deferredState = null;
+
+  function interactionActive(){ return !!(editing || openMenu); }
+  function renderWhenIdle(){
+    if (interactionActive()){
+      backgroundRenderPending = true;
+      return false;
+    }
+    backgroundRenderPending = false;
+    render();
+    return true;
+  }
+  function stageBackgroundState(next){
+    if (interactionActive()){
+      deferredState = deferredState ? merge(next, deferredState) : next;
+      backgroundRenderPending = true;
+      return false;
+    }
+    state = next;
+    renderWhenIdle();
+    return true;
+  }
+  function blockWhileEditing(){
+    if (!editing) return false;
+    toast('수정을 먼저 저장하거나 취소해 주세요');
+    ensureVisible(editing);
+    return true;
+  }
 
   // 접힘 규칙은 하나뿐이다 — 대기 중인 팀이 있으면 펼침, 없으면 접힘.
   // 시계는 관여하지 않는다. 보고 있는데 시간이 지났다는 이유로 접히면 곤란하니까.
@@ -918,7 +949,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (collapseTimers[time]) clearTimeout(collapseTimers[time]);
     collapseTimers[time] = setTimeout(function(){
       delete collapseTimers[time];
-      if (!slotHasWork(time)) render();
+      if (!slotHasWork(time)) renderWhenIdle();
     }, COLLAPSE_DELAY + 100);
   }
   function keepSlotOpenForId(id){
@@ -975,7 +1006,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   var viewDate = bizDate();
-  function key(){ return 'roster:' + viewDate; }
+  function key(ds){ return 'roster:' + (ds || viewDate); }
 
   function prettyDate(){
     var p = viewDate.split('-');
@@ -1051,28 +1082,37 @@ window.dispatchEvent(new Event('fb-ready'));
   function fb(){ return window.__fb; }
   function hasStore(){ return !!fb(); }
 
-  function loadRemote(){
+  function loadRemote(ds){
     if (!hasStore()) return Promise.resolve(null);
-    return fb().get(key()).catch(function(){ return null; });
+    return fb().get(key(ds)).catch(function(){ return null; });
   }
 
-  function writeRemote(data){
+  function writeRemote(data, ds){
     if (!hasStore()) return Promise.resolve(data);
-    return fb().set(key(), data).then(function(){ return data; });
+    return fb().set(key(ds), data).then(function(){ return data; });
   }
 
   // 다른 기기의 변경을 즉시 받아온다
   var unwatch = null;
-  function watchRemote(){
+  var rosterLoadEpoch = 0;
+  function loadTicket(){ return { epoch: ++rosterLoadEpoch, date: viewDate }; }
+  function ticketCurrent(ticket){
+    return ticket.epoch === rosterLoadEpoch && ticket.date === viewDate;
+  }
+  function stopWatch(){
     if (unwatch){ unwatch(); unwatch = null; }
+  }
+  function watchRemote(){
+    stopWatch();
     if (!hasStore()) return;
-    unwatch = fb().watch(key(), function(remote){
+    var watchDate = viewDate;
+    unwatch = fb().watch(key(watchDate), function(remote){
+      if (watchDate !== viewDate) return;
       if (saving) return;
       // remote가 비어 있어도(명단 초기화) 그대로 반영해야 한다
       var merged = merge(remote || { date: viewDate, rosterTs: 0, items: [] }, state);
       if (JSON.stringify(merged) === JSON.stringify(state)) return;
-      state = merged;
-      if (!editing) render();
+      stageBackgroundState(merged);
     });
   }
 
@@ -1105,35 +1145,56 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function sync(){
-    return loadRemote().then(function(remote){
+    var syncDate = viewDate;
+    return loadRemote(syncDate).then(function(remote){
+      if (syncDate !== viewDate) return;
       var merged = merge(remote, state);
       var changed = JSON.stringify(merged) !== JSON.stringify(state);
-      state = merged;
-      if (changed && !editing) render();
+      if (changed) stageBackgroundState(merged);
     }).catch(function(){});
   }
 
   var saveTimer = null;
+  var pendingWrites = {};
+  var localDrafts = {};
+  function copyState(data){ return JSON.parse(JSON.stringify(data)); }
   function save(){
+    if (!state) return;
+    var snapshot = copyState(state);
+    localDrafts[viewDate] = snapshot;
+    pendingWrites[viewDate] = snapshot;
     dirty = true;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(flush, 250);
   }
   function flush(){
-    if (saving || !state) return;
-    saving = true; dirty = false;
-    var before = JSON.stringify(state);
-    loadRemote().then(function(remote){
-      var merged = merge(remote, state);
-      state = merged;
-      return writeRemote(merged);
-    }).then(function(){
+    clearTimeout(saveTimer); saveTimer = null;
+    if (saving) return;
+    var dates = Object.keys(pendingWrites);
+    if (!dates.length){ dirty = false; return; }
+    var flushDate = dates[0];
+    var localState = pendingWrites[flushDate];
+    delete pendingWrites[flushDate];
+    saving = true; dirty = true;
+    var before = JSON.stringify(localState);
+    loadRemote(flushDate).then(function(remote){
+      var merged = merge(remote, localState);
+      return writeRemote(merged, flushDate);
+    }).then(function(merged){
       saving = false;
-      // 저장 결과가 화면과 같으면 다시 그리지 않는다
-      if (JSON.stringify(state) !== before) render();
+      // 같은 날짜의 더 최신 스냅샷이 기다리면 오래된 완료값은 화면에 적용하지 않는다.
+      if (flushDate === viewDate && !pendingWrites[flushDate]
+          && JSON.stringify(merged) !== before){
+        stageBackgroundState(merged);
+      }
+      if (!pendingWrites[flushDate]) delete localDrafts[flushDate];
+      dirty = Object.keys(pendingWrites).length > 0;
       if (dirty) flush();
     }).catch(function(){
       saving = false;
+      // 성공하기 전까지 보존한 날짜별 최신 로컬본을 재시도해 날짜 왕복 중에도 앞선 변경을 잃지 않는다.
+      pendingWrites[flushDate] = localDrafts[flushDate] || localState;
+      dirty = true;
       toast('저장 실패 — 잠시 뒤 다시 시도합니다');
       setTimeout(flush, 3000);
     });
@@ -1258,6 +1319,11 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function render(){
+    if (!interactionActive() && deferredState){
+      state = merge(deferredState, state);
+      deferredState = null;
+    }
+    backgroundRenderPending = !!deferredState;
     paintDate();
     var list = document.getElementById('list');
     var all = state ? state.items.slice().sort(sortItems) : [];
@@ -1474,6 +1540,10 @@ window.dispatchEvent(new Event('fb-ready'));
       return;
     }
     if (action === 'edit'){
+      if (typeof searchbar !== 'undefined' && !searchbar.classList.contains('hide')){
+        closeSearch(false);
+        backDone();
+      }
       editing = id; openMenu = null; render();
       ensureVisible(id);
       return;
@@ -1804,6 +1874,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 시간대 접기 / 펼치기
   function toggleSlot(time){
+    if (blockWhileEditing()) return;
     if (!state) return;
     var mine = state.items.filter(function(x){ return x.time === time; });
     if (!mine.length) return;
@@ -1858,7 +1929,11 @@ window.dispatchEvent(new Event('fb-ready'));
     it.ts = Date.now();
     keepSlotOpenForId(id);
     openMenu = null;
-    if (!patchStatus(it)) render();     // 부분 갱신이 안 되면 통째로
+    var patched = patchStatus(it);
+    if (!patched){
+      if (interactionActive()) backgroundRenderPending = true;
+      else render();
+    } else if (backgroundRenderPending && !interactionActive()) render();
     save();
     if (st === 'arrived') toast(it.name + ' 방문 체크');
   }
@@ -1969,7 +2044,7 @@ window.dispatchEvent(new Event('fb-ready'));
     logAdd('명단 등록', fresh.length + '건');
     state = { date: viewDate, rosterTs: Date.now(), items: fresh.sort(sortItems) };
     render();
-    flush();
+    save(); flush();
     toast(fresh.length + '건 등록');
     return true;
   }
@@ -1984,6 +2059,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var ta = document.getElementById('ta');
   // 하루치 명단을 통째로 받는 창. 한 건 추가는 「예약 추가」 폼이 맡는다.
   function openPaste(silent){
+    if (blockWhileEditing()) return;
     var g = dayGap(viewDate);
     var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
     document.getElementById('pasteTitle').textContent = day + ' 예약 명단 붙여넣기';
@@ -2023,6 +2099,7 @@ window.dispatchEvent(new Event('fb-ready'));
   })();
 
   function openAdd(){
+    if (blockWhileEditing()) return;
     if (!panel.classList.contains('hide')) closePaste();
     // 기본값 — 정각 기준. 상단 시간이 넘어가는 규칙(정각 11분)과 같이 움직인다.
     var t = new Date(), hh = t.getHours();
@@ -2186,19 +2263,22 @@ window.dispatchEvent(new Event('fb-ready'));
     // 최종 프레임에는 돌아온 하단 바까지 함께 계산해 스크롤을 한 번만 요청한다.
     if (changed && !finalClose) revealEditedAfterBars();
   }
+  function showReturnedFooter(){
+    if (footEl) footEl.classList.remove('keyboard-returning');
+  }
   function revealEditedAfterKeyboardClose(){
     var explicitId = footerRevealId || barRevealId;
     var id = editing || explicitId;
     footerRevealId = null;
     barRevealId = null;
-    if (keyboardUserScrolled && !explicitId) return;
-    if (!id) return;
-    // 상단 바 복귀 때 이미 보정을 시작했다면 같은 종료 과정에서 다시 retarget하지 않는다.
-    if (barRevealApplied) return;
     requestAnimationFrame(function(){
       var row = rowForId(id);
       if (!row || !footEl || footEl.classList.contains('hide')
-          || footEl.classList.contains('keyboard-covered')) return;
+          || footEl.classList.contains('keyboard-covered')
+          || (keyboardUserScrolled && !explicitId) || barRevealApplied){
+        showReturnedFooter();
+        return;
+      }
       var r = row.getBoundingClientRect();
       var hd = document.querySelector('header');
       var group = row.closest('.group');
@@ -2212,13 +2292,18 @@ window.dispatchEvent(new Event('fb-ready'));
         groupHead ? groupHead.getBoundingClientRect().bottom : 0) + 8;
       var footTop = Math.min(footEl.getBoundingClientRect().top, visualBottom);
       var bottomEdge = footTop - 10;
-      if (r.top >= visualBottom || r.bottom <= visualTop) return;
+      if (r.top >= visualBottom || r.bottom <= visualTop){
+        showReturnedFooter();
+        return;
+      }
       var move = 0;
       // 한 화면보다 큰 수정 폼은 상단을 기준으로 두고 반대 방향 보정을 겹치지 않는다.
       if (r.top < topEdge) move = r.top - topEdge;
       else if (r.bottom > bottomEdge && r.height <= bottomEdge - topEdge)
         move = r.bottom - bottomEdge;
-      if (move) window.scrollBy({ top: move, behavior: 'smooth' });
+      // 하단 바가 그려지는 프레임에 즉시 보정해, 먼저 내려갔다 다시 올라오는 왕복을 없앤다.
+      if (move) window.scrollBy(0, move);
+      showReturnedFooter();
     });
   }
   function finishKeyboardClose(){
@@ -2227,6 +2312,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (keyboardBaseH - visibleH > KEYBOARD_DELTA) return;
     var wasOpen = keyboardOpen;
     restoreKeyboardBars(true);
+    if (wasOpen && footEl && !footEl.classList.contains('hide'))
+      footEl.classList.add('keyboard-returning');
     keyboardOpen = false;
     keyboardBaseH = visibleH;
     document.documentElement.style.setProperty('--kb', '0px');
@@ -2245,6 +2332,7 @@ window.dispatchEvent(new Event('fb-ready'));
         footerRevealId = null;
         barRevealId = null;
         if (follow) ensureVisible(follow);
+        requestAnimationFrame(showReturnedFooter);
       } else {
         revealEditedAfterKeyboardClose();
       }
@@ -2338,6 +2426,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   document.getElementById('resetBtn').addEventListener('click', function(){
+    if (blockWhileEditing()) return;
     if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
     var g = dayGap(viewDate);
     var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
@@ -2348,7 +2437,7 @@ window.dispatchEvent(new Event('fb-ready'));
       closeSearch(false);
       window.scrollTo(0, 0);
       render();
-      flush();
+      save(); flush();
     });
   });
 
@@ -2471,6 +2560,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   function openSearch(){
+    if (blockWhileEditing()) return;
     scrollBeforeSearch = window.pageYOffset || document.documentElement.scrollTop || 0;
     searchbar.classList.remove('hide');
     searchBtn.classList.add('on');
@@ -2480,18 +2570,22 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   }
   searchBtn.addEventListener('click', function(){
+    if (blockWhileEditing()) return;
     if (searchbar.classList.contains('hide')) openSearch();
     else { closeSearch(true); backDone(); render(); }
   });
   document.getElementById('qBack').addEventListener('click', function(){
+    if (blockWhileEditing()) return;
     closeSearch(true); backDone(); render();
   });
   qEl.addEventListener('input', function(){
+    if (blockWhileEditing()){ qEl.value = query; return; }
     query = qEl.value;
     qClear.classList.toggle('hide', !query);
     render();
   });
   qClear.addEventListener('click', function(){
+    if (blockWhileEditing()) return;
     qEl.value = ''; query = '';
     qClear.classList.add('hide');
     render();
@@ -2501,12 +2595,16 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 날짜 이동 ---------- */
   function resetDateScopedUi(){
     editing = null; openMenu = null; collapsed = {}; touched = {};
+    deferredState = null; backgroundRenderPending = false;
+    stopWatch();
+    rosterLoadEpoch++;
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
     collapseTimers = {};
     followEditId = null; followMenuId = null;
     barRevealId = null; footerRevealId = null; barRevealApplied = false;
   }
   function goDate(ds){
+    if (blockWhileEditing()) return;
     var g = dayGap(ds);
     if (g < -1 || g > 1) return;
     viewDate = ds;
@@ -2516,17 +2614,22 @@ window.dispatchEvent(new Event('fb-ready'));
     closePaste();
     window.scrollTo(0, 0);
     render();
-    loadRemote().then(function(remote){
-      state = (remote && remote.items) ? remote : { date: viewDate, rosterTs: 0, items: [] };
+    var ticket = loadTicket();
+    loadRemote(ticket.date).then(function(remote){
+      if (!ticketCurrent(ticket)) return;
+      state = (remote && remote.items) ? remote : { date: ticket.date, rosterTs: 0, items: [] };
+      if (localDrafts[ticket.date]) state = merge(localDrafts[ticket.date], state);
       render();
       watchRemote();
     }).catch(function(){
-      state = { date: viewDate, rosterTs: 0, items: [] };
+      if (!ticketCurrent(ticket)) return;
+      state = { date: ticket.date, rosterTs: 0, items: [] };
       render();
     });
   }
   var foldBtn = document.getElementById('foldBtn');
   foldBtn.addEventListener('click', function(){
+    if (blockWhileEditing()) return;
     if (!state || !state.items.length) return;
     if (!panel.classList.contains('hide')) closePaste();
     var times = {}, anyOpen = false;
@@ -2890,7 +2993,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3.8<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.9<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -2999,14 +3102,20 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     setSync(hasStore());
     purgeOld();
-    loadRemote().then(function(remote){
-      state = (remote && remote.items) ? remote : { date: viewDate, rosterTs: 0, items: [] };
-      render();
+    var ticket = loadTicket();
+    loadRemote(ticket.date).then(function(remote){
+      if (!ticketCurrent(ticket)) return;
+      var incoming = (remote && remote.items)
+        ? remote : { date: ticket.date, rosterTs: 0, items: [] };
+      if (localDrafts[ticket.date]) incoming = merge(localDrafts[ticket.date], incoming);
+      var next = state && state.date === ticket.date ? merge(incoming, state) : incoming;
+      stageBackgroundState(next);
       watchRemote();
       if (!boot._hinted){ boot._hinted = true; maybeInstallHint(); }
     }).catch(function(){
-      state = { date: viewDate, rosterTs: 0, items: [] };
-      render();
+      if (!ticketCurrent(ticket)) return;
+      var next = state || { date: ticket.date, rosterTs: 0, items: [] };
+      stageBackgroundState(next);
     });
   }
 
@@ -3111,7 +3220,7 @@ window.dispatchEvent(new Event('fb-ready'));
     lastBiz = b;
     purgeOld();
     // 어제·내일을 일부러 보고 있었다면 그대로 둔다. 보던 화면을 뺏지 않는다.
-    if (!wasToday){ renderDrawerDays(); render(); return false; }
+    if (!wasToday){ renderDrawerDays(); renderWhenIdle(); return false; }
     viewDate = b;
     resetDateScopedUi();
     boot();
