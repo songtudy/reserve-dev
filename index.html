@@ -2521,8 +2521,13 @@ window.dispatchEvent(new Event('fb-ready'));
     var pending = pendingKeyboardEditClose;
     if (!pending) return null;
     pendingKeyboardEditClose = null;
-    var anchor = rowForId(pending.domId);
-    var anchorTop = anchor ? anchor.getBoundingClientRect().top : pending.top;
+    // 키보드가 내려가는 동안 Safari가 행을 임시로 팬한 위치가 아니라,
+    // 저장·취소 버튼을 누른 순간의 위치를 최종 기준으로 삼는다.
+    var anchorTop = pending.top;
+    if (anchorTop === null){
+      var anchor = rowForId(pending.domId);
+      anchorTop = anchor ? anchor.getBoundingClientRect().top : null;
+    }
     editing = null;
     openMenu = null;
     render();
