@@ -2215,27 +2215,22 @@ window.dispatchEvent(new Event('fb-ready'));
   function esc(t){
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
-  // 입력칸 높이는 내용과 무관하게 화면의 46%로 고정한다.
+  // 입력칸 높이는 내용·키보드와 무관하게 원래 크기로 한 번만 고정한다.
+  // 키보드 중에는 브라우저가 커서만 자연스럽게 드러내고 앱은 높이나 화면을 밀지 않는다.
   // 등록 버튼이 늘 같은 자리에 있고, 키보드가 올라올 자리도 남는다.
   // 넘치는 줄은 안에서 스크롤하고, 오류 표시 오버레이도 같이 따라가야 줄이 안 어긋난다.
   var taFixedH = 0;
+  function pasteTextareaBaseHeight(vh){
+    return Math.max(260, Math.min(Math.round(vh * 0.46), 420));
+  }
   function taBaseHeight(){
     if (taFixedH) return taFixedH;
     var vh = window.innerHeight || 700;
-    taFixedH = Math.max(260, Math.min(Math.round(vh * 0.46), 420));
+    taFixedH = pasteTextareaBaseHeight(vh);
     return taFixedH;
-  }
-  function pasteKeyboardTextareaHeight(baseHeight, visibleHeight, chromeHeight){
-    return Math.max(150, Math.min(baseHeight,
-      Math.floor(visibleHeight - chromeHeight - 24)));
   }
   function autoGrow(){
     var h = taBaseHeight();
-    if (keyboardOpen && panel && !panel.classList.contains('hide')
-        && panel.contains(document.activeElement)){
-      var chrome = Math.max(0, panel.scrollHeight - (taEl.offsetHeight || h));
-      h = pasteKeyboardTextareaHeight(h, visibleViewportH(), chrome);
-    }
     taEl.style.height = h + 'px';
     taEl.style.overflowY = (taEl.scrollHeight > h + 2) ? 'auto' : 'hidden';
     hl.scrollTop = taEl.scrollTop;
@@ -2353,7 +2348,7 @@ window.dispatchEvent(new Event('fb-ready'));
     panel.scrollIntoView({ behavior:'smooth', block:'center' });
     setTimeout(function(){ ta.focus(); }, 200);
   }
-  function closePaste(){ panel.classList.add('hide'); clearPasteKeyboardRoom(); }
+  function closePaste(){ panel.classList.add('hide'); }
 
   /* ---------- 예약 추가 ---------- */
   var addPanel = document.getElementById('addPanel');
@@ -2436,7 +2431,6 @@ window.dispatchEvent(new Event('fb-ready'));
   var keyboardTouch = null;
   var keyboardTouchCandidate = null;
   var keyboardTouchCandidateTimer = null;
-  var pasteRevealFrame = null;
   function visibleViewportH(){
     // offsetTop은 iOS가 입력칸으로 화면을 팬한 거리라 키보드 높이에 더하면 안 된다.
     return vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
@@ -2451,27 +2445,6 @@ window.dispatchEvent(new Event('fb-ready'));
   var KEYBOARD_DELTA = 120;               // 모바일 주소창 변화와 키보드 상태를 가르는 기준
   function textKeyboardTarget(el){
     return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
-  }
-  function revealPasteActions(){
-    if (!keyboardOpen || !vv || !panel || panel.classList.contains('hide')
-        || !ta || !panel.contains(document.activeElement)) return;
-    if (pasteRevealFrame) cancelAnimationFrame(pasteRevealFrame);
-    pasteRevealFrame = requestAnimationFrame(function(){
-      pasteRevealFrame = null;
-      if (!keyboardOpen || panel.classList.contains('hide')) return;
-      autoGrow();
-      var visualTop = Math.max(0, Math.round(vv.offsetTop)) + 8;
-      var visualBottom = Math.min(window.innerHeight,
-        Math.round(vv.offsetTop + vv.height));
-      var move = roomMove(panel.getBoundingClientRect(), visualTop,
-        visualBottom - 10, 'top');
-      if (Math.abs(move) > 1) window.scrollBy(0, move);
-    });
-  }
-  function clearPasteKeyboardRoom(){
-    if (pasteRevealFrame) cancelAnimationFrame(pasteRevealFrame);
-    pasteRevealFrame = null;
-    if (taEl && taFixedH) autoGrow();
   }
   // 저장·취소 버튼으로 키보드를 닫을 때는 큰 수정 폼을 먼저 없애지 않는다.
   // iOS가 키보드 종료 중 붙잡고 있던 스크롤 기준을 잃으면 짧아진 행을 따라
@@ -2658,7 +2631,6 @@ window.dispatchEvent(new Event('fb-ready'));
     keyboardBaseH = visibleH;
     document.documentElement.style.setProperty('--kb', '0px');
     document.body.classList.remove('keyboard-open');
-    clearPasteKeyboardRoom();
     addPanel.classList.remove('kb');
     var closedEditId = finishPendingKeyboardEditClose();
     if (typeof footMode === 'function') footMode();
@@ -2713,7 +2685,6 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.toggle('keyboard-open', keyboardOpen);
     addPanel.classList.toggle('kb', keyboardOpen);
     if (typeof footMode === 'function') footMode();
-    if (keyboardOpen) revealPasteActions();
   }
   if (vv){
     vv.addEventListener('resize', kbFit);
