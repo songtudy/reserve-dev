@@ -2005,9 +2005,17 @@ window.dispatchEvent(new Event('fb-ready'));
   var keyboardOpen = false;
   var editView = null;
   function visibleViewportH(){
-    return vv ? Math.round(vv.height + vv.offsetTop) : Math.round(window.innerHeight || 0);
+    // offsetTop은 iOS가 입력칸으로 화면을 팬한 거리라 키보드 높이에 더하면 안 된다.
+    return vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
+  }
+  function keyboardLayoutInsetH(){
+    if (!vv) return 0;
+    // 감지용 높이 감소와 실제 화면 아래 가림은 다르다. iOS의 자동 팬과
+    // Android의 layout viewport 축소를 다시 더해 입력창을 이중으로 올리지 않는다.
+    return Math.max(0, Math.round((window.innerHeight || 0) - vv.height - vv.offsetTop));
   }
   var keyboardBaseH = visibleViewportH();
+  var KEYBOARD_DELTA = 120;               // 모바일 주소창 변화와 키보드 상태를 가르는 기준
   function textKeyboardTarget(el){
     return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
   }
@@ -2072,7 +2080,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function finishKeyboardClose(){
     keyboardCloseTimer = null;
     var visibleH = visibleViewportH();
-    if (keyboardBaseH - visibleH > 80) return;
+    if (keyboardBaseH - visibleH > KEYBOARD_DELTA) return;
     var wasOpen = keyboardOpen;
     keyboardOpen = false;
     keyboardBaseH = visibleH;
@@ -2087,7 +2095,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var visibleH = visibleViewportH();
     var kb = keyboardBaseH - visibleH;
     if (wasOpen){
-      if (kb > 80){
+      if (kb > KEYBOARD_DELTA){
         if (keyboardCloseTimer){ clearTimeout(keyboardCloseTimer); keyboardCloseTimer = null; }
       } else {
         // 키보드 종료 애니메이션의 마지막 프레임을 완전 종료로 오인하지 않는다.
@@ -2095,12 +2103,13 @@ window.dispatchEvent(new Event('fb-ready'));
         kb = Math.max(0, kb);
         if (!keyboardCloseTimer) keyboardCloseTimer = setTimeout(finishKeyboardClose, 160);
       }
-    } else if (!(kb > 80)){             // 주소창이 접히는 정도의 변화는 무시
+    } else if (!(kb > KEYBOARD_DELTA)){
       kb = 0;
       if (!textKeyboardTarget(document.activeElement)) keyboardBaseH = visibleH;
     }
-    if (!wasOpen) keyboardOpen = kb > 80 && textKeyboardTarget(document.activeElement);
-    document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
+    if (!wasOpen) keyboardOpen = kb > KEYBOARD_DELTA
+      && textKeyboardTarget(document.activeElement);
+    document.documentElement.style.setProperty('--kb', keyboardLayoutInsetH() + 'px');
     addPanel.classList.toggle('kb', keyboardOpen);
     if (typeof footMode === 'function') footMode();
   }
@@ -2701,7 +2710,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.4<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
