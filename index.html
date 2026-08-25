@@ -1324,8 +1324,8 @@ window.dispatchEvent(new Event('fb-ready'));
         +   '<span class="gbreak">방문 ' + came + (off ? ' · 취소 ' + off : '') + '</span>'
         + '</span>';
       head.setAttribute('data-time', g.time);
-      head.addEventListener('click', function(){
-        if (Date.now() - lastPointerAct < 700) return;   // 손가락으로 이미 처리됨
+      head.addEventListener('click', function(e){
+        if (takeGhostClick(e)) return;
         toggleSlot(g.time);
       });
       wrap.appendChild(head);
@@ -1392,6 +1392,26 @@ window.dispatchEvent(new Event('fb-ready'));
     openMenu = (openMenu === id) ? null : id;
     render();
     if (openMenu) ensureVisible(id);
+  }
+
+  function runMenuAction(id, action, status){
+    var it = find(id);
+    if (!it) return;
+    if (action === 'status'){
+      setStatus(id, status);
+      return;
+    }
+    if (action === 'edit'){
+      editing = id; openMenu = null; render();
+      ensureVisible(id);
+      return;
+    }
+    if (action === 'delete'){
+      logAdd('삭제', it.time + ' ' + it.name);
+      state.items = state.items.filter(function(x){ return x.id !== id; });
+      state.rosterTs = Date.now();
+      openMenu = null; render(); save();
+    }
   }
 
   function rowEl(it){
@@ -1509,25 +1529,30 @@ window.dispatchEvent(new Event('fb-ready'));
         var b = document.createElement('button');
         b.type = 'button';
         b.textContent = p[0];
-        b.addEventListener('click', function(e){ e.stopPropagation(); setStatus(it.id, p[1]); });
+        b.setAttribute('data-list-action', 'status');
+        b.setAttribute('data-status', p[1]);
+        b.addEventListener('click', function(e){
+          if (takeGhostClick(e)) return;
+          e.stopPropagation(); runMenuAction(it.id, 'status', p[1]);
+        });
         menu.appendChild(b);
       });
       var ed = document.createElement('button');
       ed.type = 'button'; ed.textContent = '수정';
+      ed.setAttribute('data-list-action', 'edit');
       ed.addEventListener('click', function(e){
+        if (takeGhostClick(e)) return;
         e.stopPropagation();
-        editing = it.id; openMenu = null; render();
-        ensureVisible(it.id);
+        runMenuAction(it.id, 'edit');
       });
       menu.appendChild(ed);
       var del = document.createElement('button');
       del.type = 'button'; del.className = 'del'; del.textContent = '삭제';
+      del.setAttribute('data-list-action', 'delete');
       del.addEventListener('click', function(e){
+        if (takeGhostClick(e)) return;
         e.stopPropagation();
-        logAdd('삭제', it.time + ' ' + it.name);
-        state.items = state.items.filter(function(x){ return x.id !== it.id; });
-        state.rosterTs = Date.now();
-        openMenu = null; render(); save();
+        runMenuAction(it.id, 'delete');
       });
       menu.appendChild(del);
       body.appendChild(menu);
@@ -1655,8 +1680,10 @@ window.dispatchEvent(new Event('fb-ready'));
     var chk = row.querySelector('.check');
     if (chk) chk.innerHTML = it.status === 'arrived' ? ICON_GO
                            : it.status === 'cancelled' ? ICON_OFF : '';
-    var stale = row.querySelector('.menu');
-    if (stale) stale.parentNode.removeChild(stale);
+    var stale = document.querySelectorAll('#list .menu');
+    for (var si = 0; si < stale.length; si++){
+      if (stale[si].parentNode) stale[si].parentNode.removeChild(stale[si]);
+    }
     var info = row.querySelector('.info');
     var old = info.querySelector('.tag');
     if (old) old.parentNode.removeChild(old);
@@ -2057,24 +2084,30 @@ window.dispatchEvent(new Event('fb-ready'));
   // click 에 맡기면 누른 뒤 화면이 다시 그려졌을 때 브라우저가 탭을 없던 일로 만든다.
   // 대신 손가락이 밀렸으면(스크롤) 무시해서 잘못 눌리는 건 오히려 더 엄격하다.
   var SLOP = 12, HOLD = 900;
-  var tapInfo = null, lastPointerAct = 0, swallowUntil = 0;
+  var tapInfo = null, ghostClick = null;
 
   // 손 뗄 때 처리하면 브라우저가 곧이어 click 을 한 번 더 보낸다.
   // 그 사이에 화면이 바뀌면 엉뚱한 버튼(예: 삭제) 위에 손가락이 놓여 눌릴 수 있다.
   // 우리가 이미 처리한 탭이므로 뒤따르는 click 은 버린다.
-  document.addEventListener('click', function(e){
-    if (!swallowUntil || Date.now() > swallowUntil) return;
-    if (!e.target.closest || !e.target.closest('#list')) return;
-    swallowUntil = 0;              // 뒤따라온 그 한 번만 버린다
+  function takeGhostClick(e){
+    if (!ghostClick) return;
+    if (Date.now() > ghostClick.until){ ghostClick = null; return; }
+    if (Math.abs(e.clientX - ghostClick.x) > SLOP ||
+        Math.abs(e.clientY - ghostClick.y) > SLOP) return;
+    ghostClick = null;             // 같은 손가락에서 뒤따라온 click 한 번만 버린다
     e.preventDefault();
     e.stopPropagation();
+    return true;
+  }
+  document.addEventListener('click', function(e){
+    takeGhostClick(e);
   }, true);
   var listEl = document.getElementById('list');
 
   listEl.addEventListener('pointerdown', function(e){
     tapInfo = null;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    var m = e.target.closest && e.target.closest('.main, .more, .ghead');
+    var m = e.target.closest && e.target.closest('.main, .more, .ghead, .menu button');
     if (!m) return;
     if (m.classList.contains('ghead')){
       tapInfo = { slot: m.getAttribute('data-time'), kind: 'slot',
@@ -2083,9 +2116,12 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     var row = m.closest('.row');
     if (!row) return;
+    var action = m.getAttribute('data-list-action');
     tapInfo = {
       id: row.getAttribute('data-id'),
-      kind: m.classList.contains('more') ? 'more' : 'main',
+      kind: action ? 'menu' : (m.classList.contains('more') ? 'more' : 'main'),
+      action: action,
+      status: m.getAttribute('data-status'),
       x: e.clientX, y: e.clientY, at: Date.now(), pid: e.pointerId
     };
   });
@@ -2095,23 +2131,20 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!t || e.pointerId !== t.pid) return;
     if (Math.abs(e.clientX - t.x) > SLOP || Math.abs(e.clientY - t.y) > SLOP) return;  // 밀었으면 취소
     if (Date.now() - t.at > HOLD) return;                                              // 오래 눌렀으면 취소
+    ghostClick = { x: e.clientX, y: e.clientY, until: Date.now() + 600 };
     if (t.kind === 'slot'){
-      lastPointerAct = Date.now();
-      swallowUntil = Date.now() + 600;
       toggleSlot(t.slot);
       return;
     }
     if (!find(t.id)) return;
-    lastPointerAct = Date.now();
-    swallowUntil = Date.now() + 600;
-    if (t.kind === 'more') tapMore(t.id);
+    if (t.kind === 'menu') runMenuAction(t.id, t.action, t.status);
+    else if (t.kind === 'more') tapMore(t.id);
     else toggle(t.id);
   });
 
   // 손가락이 아닌 경로(키보드 Enter, 보이스오버 등)는 여전히 click 으로 들어온다.
-  // 방금 손가락으로 처리한 건 건너뛰어 두 번 실행되지 않게 한다.
+  // 손가락에서 뒤따르는 중복 click 은 위의 좌표 판정에서 이미 걸러진다.
   listEl.addEventListener('click', function(e){
-    if (Date.now() - lastPointerAct < 700) return;
     var m = e.target.closest && e.target.closest('.main, .more');
     if (!m) return;
     var row = m.closest('.row');
