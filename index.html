@@ -2216,12 +2216,12 @@ window.dispatchEvent(new Event('fb-ready'));
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
   // 입력칸 높이는 내용·키보드와 무관하게 한 번만 고정한다.
-  // 원래 높이에서 40px만 줄여 등록 버튼 아래 여유를 확보하고, 이후 높이나 화면을 밀지 않는다.
+  // 원래 높이에서 42px만 줄여 등록 버튼과 보조 바 경계를 맞추고, 이후 높이나 화면을 밀지 않는다.
   // 등록 버튼이 늘 같은 자리에 있고, 키보드가 올라올 자리도 남는다.
   // 넘치는 줄은 안에서 스크롤하고, 오류 표시 오버레이도 같이 따라가야 줄이 안 어긋난다.
   var taFixedH = 0;
   function pasteTextareaBaseHeight(vh){
-    return Math.max(220, Math.min(Math.round(vh * 0.46) - 40, 380));
+    return Math.max(218, Math.min(Math.round(vh * 0.46) - 42, 378));
   }
   function taBaseHeight(){
     if (taFixedH) return taFixedH;
