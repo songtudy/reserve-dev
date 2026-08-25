@@ -88,17 +88,19 @@
     -webkit-text-size-adjust:100%;
   }
   .appShell{
-    --visual-top:0px;--visual-height:100dvh;
+    --visual-top:0px;--visual-height:100dvh;--footer-top:100%;--footer-visible:0px;
     position:fixed;left:0;right:0;top:var(--visual-top);height:var(--visual-height);
-    display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;
+    display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;
   }
   .mainScroll{
     min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto;
+    margin-bottom:var(--footer-visible);
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
-  .appShell.keyboard-open{grid-template-rows:auto minmax(0,1fr)}
-  .appShell.keyboard-open>.foot{display:none}
   .wrap{width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px}
+  .mainScroll>.wrap{padding-bottom:calc(18px + var(--anchor-tail, 0px))}
+  .mainScroll.anchor-tail-prep>.wrap{transition:none}
+  .mainScroll.anchor-tail-release>.wrap{transition:padding-bottom .22s ease-in-out}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -439,7 +441,7 @@
   /* footer */
   .foot.hide{display:none}
   .foot{
-    position:relative;z-index:30;
+    position:absolute;left:0;right:0;top:var(--footer-top);z-index:30;
     background:var(--ink);
     border-top:1px solid var(--line);
     padding:9px 14px calc(9px + env(safe-area-inset-bottom));
@@ -2476,9 +2478,13 @@ window.dispatchEvent(new Event('fb-ready'));
   var keyboardTouchCandidate = null;
   var keyboardTouchCandidateTimer = null;
   var pasteRevealFrame = null;
+  var keyboardCloseTimer = null;
+  var anchorTailFrame = null;
+  var anchorTailTimer = null;
+  function visualViewportTop(){ return vv ? Math.max(0, Math.round(vv.offsetTop)) : 0; }
   function applyVisualViewportFrame(){
     var height = vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
-    var top = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
+    var top = visualViewportTop();
     appShell.style.setProperty('--visual-height', height + 'px');
     appShell.style.setProperty('--visual-top', top + 'px');
   }
@@ -2493,9 +2499,53 @@ window.dispatchEvent(new Event('fb-ready'));
     return Math.max(0, Math.round((window.innerHeight || 0) - vv.height - vv.offsetTop));
   }
   var keyboardBaseH = visibleViewportH();
-  var KEYBOARD_DELTA = 120;               // 모바일 주소창 변화와 키보드 상태를 가르는 기준
+  var keyboardBaseTop = visualViewportTop();
+  var keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
+  var KEYBOARD_START_DELTA = 8;            // 첫 키보드 프레임부터 한 세션으로 묶는다
+  var KEYBOARD_CLOSE_DELTA = 24;           // 주소창의 미세한 높이 변화는 허용한다
+  var KEYBOARD_SETTLE_DELAY = 70;          // 마지막 viewport 이벤트 뒤 한 번만 닫는다
   function textKeyboardTarget(el){
     return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
+  }
+  function cancelKeyboardClose(){
+    if (!keyboardCloseTimer) return;
+    clearTimeout(keyboardCloseTimer);
+    keyboardCloseTimer = null;
+  }
+  function keyboardCloseReady(){
+    return keyboardBaseH - visibleViewportH() <= KEYBOARD_CLOSE_DELTA
+      && Math.abs(visualViewportTop() - keyboardBaseTop) <= 2;
+  }
+  function clearAnchorTail(){
+    if (anchorTailFrame) cancelAnimationFrame(anchorTailFrame);
+    if (anchorTailTimer) clearTimeout(anchorTailTimer);
+    anchorTailFrame = null; anchorTailTimer = null;
+    mainScroll.classList.remove('anchor-tail-prep', 'anchor-tail-release');
+    mainScroll.style.removeProperty('--anchor-tail');
+  }
+  function settleClosedEditAnchor(pending, target){
+    var currentTop = rowHostTop(target);
+    if (currentTop === null || pending.top === null || pending.smoothFollow) return;
+    var desiredScroll = rosterScrollTop() + currentTop - pending.top;
+    var naturalMax = Math.max(0, mainScroll.scrollHeight - mainScroll.clientHeight);
+    var deficit = Math.max(0, desiredScroll - naturalMax);
+    if (deficit <= 1){
+      rosterScrollTo(desiredScroll, 'auto');
+      return;
+    }
+    clearAnchorTail();
+    mainScroll.classList.add('anchor-tail-prep');
+    mainScroll.style.setProperty('--anchor-tail', deficit + 'px');
+    void mainScroll.offsetHeight;
+    rosterScrollTo(desiredScroll, 'auto');
+    void mainScroll.scrollTop;
+    anchorTailFrame = requestAnimationFrame(function(){
+      anchorTailFrame = null;
+      mainScroll.classList.remove('anchor-tail-prep');
+      mainScroll.classList.add('anchor-tail-release');
+      mainScroll.style.setProperty('--anchor-tail', '0px');
+      anchorTailTimer = setTimeout(clearAnchorTail, 260);
+    });
   }
   // 저장·취소 버튼으로 키보드를 닫을 때는 큰 수정 폼을 먼저 없애지 않는다.
   // iOS가 키보드 종료 중 붙잡고 있던 스크롤 기준을 잃으면 짧아진 행을 따라
@@ -2538,11 +2588,7 @@ window.dispatchEvent(new Event('fb-ready'));
     openMenu = null;
     render();
     var target = rowForId(pending.targetId);
-    var currentTop = rowHostTop(target);
-    if (currentTop !== null && pending.top !== null && !pending.smoothFollow){
-      var move = currentTop - pending.top;
-      if (Math.abs(move) > 1) rosterScrollBy(currentTop - pending.top, 'auto');
-    }
+    settleClosedEditAnchor(pending, target);
     keyboardRevealId = pending.targetId;
     keyboardRevealSmooth = !!pending.smoothFollow;
     lastEditControlId = null;
@@ -2559,7 +2605,11 @@ window.dispatchEvent(new Event('fb-ready'));
     var editRow = e.target.closest && e.target.closest('.row');
     if (editRow && editRow.querySelector('.edit') && textKeyboardTarget(e.target))
       lastEditControlId = e.target.id || null;
-    if (!keyboardOpen && textKeyboardTarget(e.target)) keyboardBaseH = visibleViewportH();
+    if (!keyboardOpen && textKeyboardTarget(e.target)){
+      keyboardBaseH = visibleViewportH();
+      keyboardBaseTop = visualViewportTop();
+      keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
+    }
   }, true);
   document.addEventListener('pointerdown', function(e){
     if (keyboardOpen && e.pointerType === 'touch'){
@@ -2661,11 +2711,14 @@ window.dispatchEvent(new Event('fb-ready'));
     else requestAnimationFrame(reveal);
   }
   function finishKeyboardClose(){
+    if (!keyboardOpen) return;
+    cancelKeyboardClose();
     var visibleH = visibleViewportH();
-    if (keyboardBaseH - visibleH > KEYBOARD_DELTA) return;
     var wasOpen = keyboardOpen;
     keyboardOpen = false;
-    keyboardBaseH = Math.max(keyboardBaseH, visibleH);
+    keyboardBaseH = visibleH;
+    keyboardBaseTop = visualViewportTop();
+    keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
     document.documentElement.style.setProperty('--kb', '0px');
     addPanel.classList.remove('kb');
     var closedEdit = finishPendingKeyboardEditClose();
@@ -2688,26 +2741,37 @@ window.dispatchEvent(new Event('fb-ready'));
       }
     }
   }
+  function scheduleKeyboardClose(){
+    cancelKeyboardClose();
+    keyboardCloseTimer = setTimeout(function(){
+      keyboardCloseTimer = null;
+      if (keyboardOpen && keyboardCloseReady()) finishKeyboardClose();
+    }, KEYBOARD_SETTLE_DELAY);
+  }
   function kbFit(){
     applyVisualViewportFrame();
     var wasOpen = keyboardOpen;
     var visibleH = visibleViewportH();
     var kb = keyboardBaseH - visibleH;
-    if (wasOpen && !(kb > KEYBOARD_DELTA)){
-      finishKeyboardClose();
-      return;
-    }
-    if (!wasOpen && !(kb > KEYBOARD_DELTA)){
-      kb = 0;
-      if (!textKeyboardTarget(document.activeElement)) keyboardBaseH = visibleH;
-    }
-    if (!wasOpen) keyboardOpen = kb > KEYBOARD_DELTA
-      && textKeyboardTarget(document.activeElement);
+    if (!wasOpen && kb > KEYBOARD_START_DELTA
+        && textKeyboardTarget(document.activeElement)) keyboardOpen = true;
     if (!wasOpen && keyboardOpen){
       keyboardUserScrolled = false;
       keyboardTouchCandidate = null;
       if (keyboardTouchCandidateTimer) clearTimeout(keyboardTouchCandidateTimer);
       keyboardTouchCandidateTimer = null;
+    }
+    if (keyboardOpen){
+      if (keyboardCloseReady()) scheduleKeyboardClose();
+      else cancelKeyboardClose();
+    } else {
+      cancelKeyboardClose();
+      kb = 0;
+      if (!textKeyboardTarget(document.activeElement)){
+        keyboardBaseH = visibleH;
+        keyboardBaseTop = visualViewportTop();
+        keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
+      }
     }
     document.documentElement.style.setProperty('--kb', keyboardLayoutInsetH() + 'px');
     addPanel.classList.toggle('kb', keyboardOpen);
@@ -2999,15 +3063,36 @@ window.dispatchEvent(new Event('fb-ready'));
 
   /* ---------- 하단 바 ---------- */
   var footEl = document.querySelector('.foot');
+  function updateFooterFrame(){
+    if (!footEl) return;
+    if (footEl.classList.contains('hide')){
+      appShell.style.setProperty('--footer-visible', '0px');
+      appShell.style.setProperty('--footer-top', visibleViewportH() + 'px');
+      return;
+    }
+    var footerHeight = footEl.offsetHeight;
+    var visualTop = visualViewportTop();
+    var visualBottom = visualTop + visibleViewportH();
+    var footerTop = keyboardBaseBottom - footerHeight;
+    var visibleFooter = Math.max(0, Math.min(footerHeight, visualBottom - footerTop));
+    appShell.style.setProperty('--footer-top', (footerTop - visualTop) + 'px');
+    appShell.style.setProperty('--footer-visible', visibleFooter + 'px');
+  }
   function footMode(){
     if (!footEl) return;
     var hidden = !state || !state.items || !state.items.length;
     footEl.classList.toggle('hide', hidden);
     appShell.classList.toggle('keyboard-open', keyboardOpen);
+    updateFooterFrame();
   }
   /* ---------- 화면 높이 ---------- */
   // 셸 자체를 Visual Viewport에 맞춘다. body/document 높이는 스크롤 기준으로 쓰지 않는다.
   function fitHeight(){
+    if (!keyboardOpen && !textKeyboardTarget(document.activeElement)){
+      keyboardBaseH = visibleViewportH();
+      keyboardBaseTop = visualViewportTop();
+      keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
+    }
     applyVisualViewportFrame();
     footMode();
   }
