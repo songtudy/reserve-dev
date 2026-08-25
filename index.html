@@ -96,7 +96,7 @@
   body.keyboard-open{min-height:0!important}
   body.keyboard-open .wrap{flex:0 0 auto}
   /* 키보드 중에는 Safari의 자체 화면 이동과 경쟁하지 않도록 상단 고정을 해제한다. */
-  body.keyboard-open header,body.keyboard-open .ghead{position:relative;top:auto}
+  body.keyboard-bars-free header,body.keyboard-bars-free .ghead{position:relative;top:auto}
   .wrap{flex:1 0 auto;width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
@@ -1368,7 +1368,8 @@ window.dispatchEvent(new Event('fb-ready'));
       // 그 제목이 목표물이므로 자신의 높이를 한 번 더 더하지 않는다.
       var groupIsTarget = el.classList && el.classList.contains('group');
       var visualTop = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
-      var coveredTop = keyboardOpen ? visualTop : headBottom
+      var barsFree = document.body.classList.contains('keyboard-bars-free');
+      var coveredTop = barsFree ? visualTop : headBottom
         + (groupHead && !groupIsTarget ? groupHead.offsetHeight : 0);
       var visualBottom = vv
         ? Math.min(window.innerHeight, Math.round(vv.offsetTop + vv.height))
@@ -1546,7 +1547,10 @@ window.dispatchEvent(new Event('fb-ready'));
       }
       paxSel.value = it.pax;
       form.addEventListener('click', function(e){ e.stopPropagation(); });
-      form.querySelector('#e-no').addEventListener('click', function(){ editing = null; render(); });
+      form.querySelector('#e-no').addEventListener('click', function(){
+        if (keyboardOpen) barRevealId = it.id;
+        editing = null; render();
+      });
       form.querySelector('#e-ok').addEventListener('click', function(){
         applyEdit(it.id,
           form.querySelector('#e-hour').value + ':' + form.querySelector('#e-min').value,
@@ -1631,6 +1635,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var memo = String(memoV == null ? (it.memo || '') : memoV).replace(/\s+/g,' ').trim();
 
     if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
+      if (keyboardOpen) barRevealId = it.id;
       editing = null; render(); return;
     }
 
@@ -1648,6 +1653,7 @@ window.dispatchEvent(new Event('fb-ready'));
                : (it.time + ' ' + it.name + ' → ' + time + ' ' + name + ' ' + pax + '명'));
     it.time = time; it.name = name; it.pax = pax; it.memo = memo;
     it.id = uniqueId(time, name, pax, id);
+    if (keyboardOpen) barRevealId = it.id;
     if (timeMoved) followEditId = it.id;
     state.items.sort(sortItems);
     state.rosterTs = Date.now();
@@ -1693,7 +1699,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function logHtml(rows){
-    if (!rows.length) return '<p class="lgempty">아직 변경 내역이 없습니다.</p>';
+    if (!rows.length) return '<p class="lgempty">변경 내역이 없습니다.</p>';
     return rows.map(function(r){
       var cls = r.k === '방문' ? ' go'
               : (r.k === '취소' || r.k === '자동 취소' || r.k === '삭제' || r.k === '명단 초기화') ? ' off' : '';
@@ -2032,6 +2038,12 @@ window.dispatchEvent(new Event('fb-ready'));
   var keyboardOpen = false;
   var followEditId = null;
   var followMenuId = null;
+  var barRevealId = null;
+  var barRevealApplied = false;
+  var keyboardUserScrolled = false;
+  var keyboardTouch = null;
+  var keyboardTouchCandidate = null;
+  var keyboardTouchCandidateTimer = null;
   function visibleViewportH(){
     // offsetTop은 iOS가 입력칸으로 화면을 팬한 거리라 키보드 높이에 더하면 안 된다.
     return vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
@@ -2050,12 +2062,100 @@ window.dispatchEvent(new Event('fb-ready'));
   document.addEventListener('focusin', function(e){
     if (!keyboardOpen && textKeyboardTarget(e.target)) keyboardBaseH = visibleViewportH();
   }, true);
+  document.addEventListener('pointerdown', function(e){
+    if (keyboardOpen && e.pointerType === 'touch'){
+      if (keyboardTouchCandidateTimer) clearTimeout(keyboardTouchCandidateTimer);
+      keyboardTouchCandidate = null; keyboardTouchCandidateTimer = null;
+      keyboardTouch = { id: e.pointerId, x: e.clientX, y: e.clientY,
+        lastX: e.clientX, lastY: e.clientY, scrollY: window.scrollY };
+    }
+  }, true);
+  document.addEventListener('pointermove', function(e){
+    if (!keyboardTouch || e.pointerId !== keyboardTouch.id) return;
+    keyboardTouch.lastX = e.clientX; keyboardTouch.lastY = e.clientY;
+    var dx = Math.abs(keyboardTouch.lastX - keyboardTouch.x);
+    var dy = Math.abs(keyboardTouch.lastY - keyboardTouch.y);
+    if (dy > 8 && dy >= dx && Math.abs(window.scrollY - keyboardTouch.scrollY) > 2){
+      keyboardUserScrolled = true;
+    }
+  }, true);
+  function endKeyboardTouch(e){
+    if (!keyboardTouch || e.pointerId !== keyboardTouch.id) return;
+    var dx = Math.abs(keyboardTouch.lastX - keyboardTouch.x);
+    var dy = Math.abs(keyboardTouch.lastY - keyboardTouch.y);
+    if (dy > 8 && dy >= dx && Math.abs(window.scrollY - keyboardTouch.scrollY) > 2){
+      keyboardUserScrolled = true;
+    } else if (e.type === 'pointercancel' && dy > 8 && dy >= dx){
+      // iOS는 스크롤을 넘겨받으며 pointercancel을 먼저 보내고 scrollY를 뒤늦게 바꿀 수 있다.
+      var candidate = { scrollY: keyboardTouch.scrollY };
+      keyboardTouchCandidate = candidate;
+      keyboardTouchCandidateTimer = setTimeout(function(){
+        if (keyboardTouchCandidate === candidate) keyboardTouchCandidate = null;
+        keyboardTouchCandidateTimer = null;
+      }, 400);
+    }
+    keyboardTouch = null;
+  }
+  document.addEventListener('pointerup', endKeyboardTouch, true);
+  document.addEventListener('pointercancel', endKeyboardTouch, true);
+  window.addEventListener('scroll', function(){
+    if (keyboardTouch){
+      var dx = Math.abs(keyboardTouch.lastX - keyboardTouch.x);
+      var dy = Math.abs(keyboardTouch.lastY - keyboardTouch.y);
+      if (dy > 8 && dy >= dx && Math.abs(window.scrollY - keyboardTouch.scrollY) > 2){
+        keyboardUserScrolled = true;
+      }
+    }
+    if (keyboardTouchCandidate
+        && Math.abs(window.scrollY - keyboardTouchCandidate.scrollY) > 2){
+      keyboardUserScrolled = true;
+      keyboardTouchCandidate = null;
+      if (keyboardTouchCandidateTimer) clearTimeout(keyboardTouchCandidateTimer);
+      keyboardTouchCandidateTimer = null;
+    }
+  }, { passive: true });
   var keyboardCloseTimer = null;
+  function revealEditedAfterBars(finalClose){
+    var explicitId = barRevealId;
+    var id = editing || explicitId;
+    if (keyboardUserScrolled && !explicitId) return;
+    if (!id) return;
+    if (barRevealApplied){
+      if (finalClose && explicitId === barRevealId) barRevealId = null;
+      return;
+    }
+    requestAnimationFrame(function(){
+      // 종료가 반전되어 키보드가 다시 커졌다면 다음 실제 복귀까지 예약을 보존한다.
+      if (document.body.classList.contains('keyboard-bars-free')) return;
+      if (finalClose && explicitId === barRevealId) barRevealId = null;
+      var row = rowForId(id);
+      if (!row) return;
+      var r = row.getBoundingClientRect();
+      var hd = document.querySelector('header');
+      var group = row.closest('.group');
+      var groupHead = group && group.querySelector('.ghead');
+      var visualTop = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
+      var topEdge = Math.max(visualTop,
+        hd ? hd.getBoundingClientRect().bottom : 0,
+        groupHead ? groupHead.getBoundingClientRect().bottom : 0) + 8;
+      // 화면 밖으로 떠난 행은 쫓아가지 않고, 돌아온 바에 가린 현재 행만 드러낸다.
+      if (r.top < topEdge && r.bottom > visualTop){
+        barRevealApplied = true;
+        window.scrollBy({ top: r.top - topEdge, behavior: 'smooth' });
+      }
+    });
+  }
+  function restoreKeyboardBars(finalClose){
+    var changed = document.body.classList.contains('keyboard-bars-free');
+    if (changed) document.body.classList.remove('keyboard-bars-free');
+    if (changed || finalClose) revealEditedAfterBars(!!finalClose);
+  }
   function finishKeyboardClose(){
     keyboardCloseTimer = null;
     var visibleH = visibleViewportH();
     if (keyboardBaseH - visibleH > KEYBOARD_DELTA) return;
     var wasOpen = keyboardOpen;
+    restoreKeyboardBars(true);
     keyboardOpen = false;
     keyboardBaseH = visibleH;
     document.documentElement.style.setProperty('--kb', '0px');
@@ -2083,10 +2183,13 @@ window.dispatchEvent(new Event('fb-ready'));
     if (wasOpen){
       if (kb > KEYBOARD_DELTA){
         if (keyboardCloseTimer){ clearTimeout(keyboardCloseTimer); keyboardCloseTimer = null; }
+        barRevealApplied = false;
+        document.body.classList.add('keyboard-bars-free');
       } else {
         // 키보드 종료 애니메이션의 마지막 프레임을 완전 종료로 오인하지 않는다.
         // 주소창 높이 정도의 차이는 잠시 안정된 뒤 새 기준 높이로 받아들인다.
         kb = Math.max(0, kb);
+        restoreKeyboardBars();
         if (!keyboardCloseTimer) keyboardCloseTimer = setTimeout(finishKeyboardClose, 160);
       }
     } else if (!(kb > KEYBOARD_DELTA)){
@@ -2095,6 +2198,14 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     if (!wasOpen) keyboardOpen = kb > KEYBOARD_DELTA
       && textKeyboardTarget(document.activeElement);
+    if (!wasOpen && keyboardOpen){
+      keyboardUserScrolled = false;
+      keyboardTouchCandidate = null;
+      if (keyboardTouchCandidateTimer) clearTimeout(keyboardTouchCandidateTimer);
+      keyboardTouchCandidateTimer = null;
+      barRevealApplied = false;
+      document.body.classList.add('keyboard-bars-free');
+    }
     document.documentElement.style.setProperty('--kb', keyboardLayoutInsetH() + 'px');
     document.body.classList.toggle('keyboard-open', keyboardOpen);
     addPanel.classList.toggle('kb', keyboardOpen);
@@ -2696,7 +2807,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3.6<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.7<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -2890,6 +3001,7 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = false;
       keyboardBaseH = visibleViewportH();
       document.documentElement.style.setProperty('--kb', '0px');
+      document.body.classList.remove('keyboard-bars-free');
       document.body.classList.remove('keyboard-open');
       addPanel.classList.remove('kb');
     }
