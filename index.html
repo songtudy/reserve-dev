@@ -1367,11 +1367,16 @@ window.dispatchEvent(new Event('fb-ready'));
     });
   }
 
-  function ensureVisible(id){
+  function rowForId(id){
     var rows = document.querySelectorAll('.row');
     for (var i = 0; i < rows.length; i++){
-      if (rows[i].getAttribute('data-id') === id){ scrollIntoRoom(rows[i]); return; }
+      if (rows[i].getAttribute('data-id') === id) return rows[i];
     }
+    return null;
+  }
+
+  function ensureVisible(id){
+    scrollIntoRoom(rowForId(id));
   }
 
   var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
@@ -1388,7 +1393,10 @@ window.dispatchEvent(new Event('fb-ready'));
       editing = null; openMenu = null; render();
       return;
     }
-    if (editing) editing = null;       // 다른 행의 수정 창은 닫는다
+    if (editing){                       // 다른 행의 수정 창은 닫고 그 행을 새 기준으로 삼는다
+      editView = null;
+      editing = null;
+    }
     openMenu = (openMenu === id) ? null : id;
     render();
     if (openMenu) ensureVisible(id);
@@ -1522,6 +1530,8 @@ window.dispatchEvent(new Event('fb-ready'));
       form.querySelector('#e-memo').addEventListener('keydown', function(e){
         if (e.key === 'Enter') form.querySelector('#e-ok').click();
       });
+      form.querySelector('#e-name').addEventListener('focus', function(){ rememberEditView(it.id); });
+      form.querySelector('#e-memo').addEventListener('focus', function(){ rememberEditView(it.id); });
     } else if (openMenu === it.id){
       var menu = document.createElement('div');
       menu.className = 'menu';
@@ -1609,6 +1619,7 @@ window.dispatchEvent(new Event('fb-ready'));
                : (it.time + ' ' + it.name + ' → ' + time + ' ' + name + ' ' + pax + '명'));
     it.time = time; it.name = name; it.pax = pax; it.memo = memo;
     it.id = uniqueId(time, name, pax, id);
+    if (editView && editView.id === id) editView.id = it.id;
     state.items.sort(sortItems);
     state.rosterTs = Date.now();
     editing = null;
@@ -1988,12 +1999,88 @@ window.dispatchEvent(new Event('fb-ready'));
   // 키보드가 올라오면 화면 아래쪽이 가려진다.
   // 시트와 확인창을 가려진 높이만큼 위로 올려 버튼이 늘 보이게 한다.
   var vv = window.visualViewport;
+  var keyboardOpen = false;
+  var editView = null;
+  function visibleViewportH(){
+    return vv ? Math.round(vv.height + vv.offsetTop) : Math.round(window.innerHeight || 0);
+  }
+  var keyboardBaseH = visibleViewportH();
+  function textKeyboardTarget(el){
+    return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
+  }
+  document.addEventListener('focusin', function(e){
+    if (!keyboardOpen && textKeyboardTarget(e.target)) keyboardBaseH = visibleViewportH();
+  }, true);
+  function rememberEditView(id){
+    if (keyboardOpen && editView && editView.id === id) return;
+    var row = rowForId(id);
+    if (!row) return;
+    editView = { id: id, top: row.getBoundingClientRect().top, manual: false };
+  }
+  // visualViewport는 키보드 애니메이션 중 여러 값을 보낸다. 같은 값이 두 프레임
+  // 이어진 뒤 움직여 중간 높이를 기준으로 복귀하지 않게 한다.
+  function afterViewportStable(fn){
+    if (!vv){ requestAnimationFrame(fn); return; }
+    var last = '', stable = 0, frames = 0;
+    (function step(){
+      var now = Math.round(vv.height) + '|' + Math.round(vv.offsetTop);
+      stable = (now === last) ? stable + 1 : 0;
+      last = now;
+      if (stable >= 2 || ++frames >= 20){ fn(); return; }
+      requestAnimationFrame(step);
+    })();
+  }
+  function restoreEditView(){
+    var saved = editView;
+    editView = null;
+    if (!saved || saved.manual) return;
+    afterViewportStable(function(){
+      var row = rowForId(saved.id);
+      if (!row) return;
+      var move = row.getBoundingClientRect().top - saved.top;
+      if (Math.abs(move) > 1) window.scrollBy({ top: move, behavior: 'smooth' });
+    });
+  }
+  var editDrag = null;
+  document.addEventListener('pointerdown', function(e){
+    if (!keyboardOpen){
+      // 앱 복귀 뒤에는 input 포커스가 남아 같은 칸을 다시 눌러도 focus가 안 뜰 수 있다.
+      // 실제 입력칸 탭을 기준으로 새 키보드 세션의 위치를 다시 잡는다.
+      if (editing && textKeyboardTarget(e.target)
+          && e.target.closest && e.target.closest('.edit')) rememberEditView(editing);
+      return;
+    }
+    if (!editView || e.pointerType !== 'touch') return;
+    editDrag = { id: e.pointerId, x: e.clientX, y: e.clientY, scroll: window.scrollY };
+  }, { capture: true, passive: true });
+  document.addEventListener('pointermove', function(e){
+    if (!editDrag || editDrag.id !== e.pointerId || !editView) return;
+    if (Math.abs(e.clientX - editDrag.x) > 8 || Math.abs(e.clientY - editDrag.y) > 8
+        || Math.abs(window.scrollY - editDrag.scroll) > 2){
+      editView.manual = true;
+    }
+  }, { capture: true, passive: true });
+  function endEditDrag(e){
+    if (editDrag && editDrag.id === e.pointerId) editDrag = null;
+  }
+  document.addEventListener('pointerup', endEditDrag, { capture: true, passive: true });
+  document.addEventListener('pointercancel', endEditDrag, { capture: true, passive: true });
   function kbFit(){
     if (!vv) return;
-    var kb = window.innerHeight - vv.height - vv.offsetTop;
-    if (!(kb > 80)) kb = 0;            // 주소창이 접히는 정도의 변화는 무시
+    var wasOpen = keyboardOpen;
+    var visibleH = visibleViewportH();
+    var kb = keyboardBaseH - visibleH;
+    if (!(kb > 80)){                    // 주소창이 접히는 정도의 변화는 무시
+      kb = 0;
+      if (!wasOpen) keyboardBaseH = visibleH;
+    }
+    // 저장 버튼이 입력칸 DOM을 먼저 없애도 키보드 종료 애니메이션은 남아 있다.
+    // 한 번 열린 뒤에는 실제 가림 높이가 사라질 때까지 keyboard 모드를 유지한다.
+    keyboardOpen = kb > 0 && (wasOpen || textKeyboardTarget(document.activeElement));
     document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
     addPanel.classList.toggle('kb', kb > 0);
+    if (typeof footMode === 'function') footMode();
+    if (wasOpen && !keyboardOpen) restoreEditView();
   }
   if (vv){
     vv.addEventListener('resize', kbFit);
@@ -2250,9 +2337,17 @@ window.dispatchEvent(new Event('fb-ready'));
     var hidden = footEl.classList.contains('hide');
     if (!hidden && footHidden) setBodyHeight();      // 하단 바가 처음 나타날 때만 높이 재측정
     footHidden = hidden;
-    if (hidden) return;
+    if (hidden){ footEl.setAttribute('data-mode', 'hidden'); return; }
+    // 키보드가 열린 동안에는 문서 흐름에 남긴다. sticky가 iOS의 보이는 화면을
+    // 따라 키보드 위로 올라오는 것을 막되, display:none처럼 문서 높이를 바꾸지 않는다.
+    if (keyboardOpen){
+      footEl.classList.add('flow');
+      footEl.setAttribute('data-mode', 'keyboard');
+      return;
+    }
     var scrollable = document.documentElement.scrollHeight > viewportH() + 1;
     footEl.classList.toggle('flow', !scrollable);
+    footEl.setAttribute('data-mode', scrollable ? 'sticky' : 'flow');
   }
   /* ---------- 화면 높이 ---------- */
   // CSS 단위(dvh)가 틀리게 나오는 기기가 있어 실제 뷰포트 높이로 한 번 더 맞춘다.
@@ -2583,7 +2678,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -2768,7 +2863,12 @@ window.dispatchEvent(new Event('fb-ready'));
   // 화면으로 돌아오면 한 번 확인 (실시간 수신은 watchRemote가 담당)
   document.addEventListener('visibilitychange', function(){
     if (document.hidden) return;
+    keyboardOpen = false;
+    editView = null;
+    editDrag = null;
+    keyboardBaseH = visibleViewportH();
     document.documentElement.style.setProperty('--kb', '0px');
+    addPanel.classList.remove('kb');
     fitHeight();     // 화면 높이가 달라졌을 수 있다
     // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
     // 먼저 확인하지 않으면 어제 명단을 「오늘」로 띄운 채 체크하게 된다.
