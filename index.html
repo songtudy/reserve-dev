@@ -446,6 +446,9 @@
      아이폰이 목록이 짧아진 뒤 sticky 위치를 다시 계산하지 않아 하단 바가 떠 있었다.
      스크롤이 없으면 흐름 맨 끝 = 화면 바닥이라 sticky 가 할 일도 없다. */
   .foot.flow{position:static}
+  /* iOS가 입력칸을 위해 문서 전체를 밀면 static 하단바도 키보드 위로 들어온다.
+     키보드가 실제로 열린 동안만 자리는 유지하고 완전히 가려 같은 이동을 막는다. */
+  .foot.keyboard-covered{visibility:hidden;pointer-events:none}
   .foot .inner{max-width:640px;margin:0 auto}
   .frow{display:flex;gap:7px}
   .frow + .frow{margin-top:6px}
@@ -2065,22 +2068,41 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   document.addEventListener('pointerup', endEditDrag, { capture: true, passive: true });
   document.addEventListener('pointercancel', endEditDrag, { capture: true, passive: true });
+  var keyboardCloseTimer = null;
+  function finishKeyboardClose(){
+    keyboardCloseTimer = null;
+    var visibleH = visibleViewportH();
+    if (keyboardBaseH - visibleH > 80) return;
+    var wasOpen = keyboardOpen;
+    keyboardOpen = false;
+    keyboardBaseH = visibleH;
+    document.documentElement.style.setProperty('--kb', '0px');
+    addPanel.classList.remove('kb');
+    if (typeof footMode === 'function') footMode();
+    if (wasOpen) restoreEditView();
+  }
   function kbFit(){
     if (!vv) return;
     var wasOpen = keyboardOpen;
     var visibleH = visibleViewportH();
     var kb = keyboardBaseH - visibleH;
-    if (!(kb > 80)){                    // 주소창이 접히는 정도의 변화는 무시
+    if (wasOpen){
+      if (kb > 80){
+        if (keyboardCloseTimer){ clearTimeout(keyboardCloseTimer); keyboardCloseTimer = null; }
+      } else {
+        // 키보드 종료 애니메이션의 마지막 프레임을 완전 종료로 오인하지 않는다.
+        // 주소창 높이 정도의 차이는 잠시 안정된 뒤 새 기준 높이로 받아들인다.
+        kb = Math.max(0, kb);
+        if (!keyboardCloseTimer) keyboardCloseTimer = setTimeout(finishKeyboardClose, 160);
+      }
+    } else if (!(kb > 80)){             // 주소창이 접히는 정도의 변화는 무시
       kb = 0;
-      if (!wasOpen) keyboardBaseH = visibleH;
+      if (!textKeyboardTarget(document.activeElement)) keyboardBaseH = visibleH;
     }
-    // 저장 버튼이 입력칸 DOM을 먼저 없애도 키보드 종료 애니메이션은 남아 있다.
-    // 한 번 열린 뒤에는 실제 가림 높이가 사라질 때까지 keyboard 모드를 유지한다.
-    keyboardOpen = kb > 0 && (wasOpen || textKeyboardTarget(document.activeElement));
+    if (!wasOpen) keyboardOpen = kb > 80 && textKeyboardTarget(document.activeElement);
     document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
-    addPanel.classList.toggle('kb', kb > 0);
+    addPanel.classList.toggle('kb', keyboardOpen);
     if (typeof footMode === 'function') footMode();
-    if (wasOpen && !keyboardOpen) restoreEditView();
   }
   if (vv){
     vv.addEventListener('resize', kbFit);
@@ -2337,9 +2359,10 @@ window.dispatchEvent(new Event('fb-ready'));
     var hidden = footEl.classList.contains('hide');
     if (!hidden && footHidden) setBodyHeight();      // 하단 바가 처음 나타날 때만 높이 재측정
     footHidden = hidden;
+    footEl.classList.toggle('keyboard-covered', !hidden && keyboardOpen);
     if (hidden){ footEl.setAttribute('data-mode', 'hidden'); return; }
-    // 키보드가 열린 동안에는 문서 흐름에 남긴다. sticky가 iOS의 보이는 화면을
-    // 따라 키보드 위로 올라오는 것을 막되, display:none처럼 문서 높이를 바꾸지 않는다.
+    // 키보드가 열린 동안에는 문서 흐름의 자리를 유지하되 화면에서는 완전히 가린다.
+    // display:none이 아니라서 문서 높이와 스크롤 기준은 바뀌지 않는다.
     if (keyboardOpen){
       footEl.classList.add('flow');
       footEl.setAttribute('data-mode', 'keyboard');
@@ -2678,7 +2701,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.3.2<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.3.3<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -2863,12 +2886,19 @@ window.dispatchEvent(new Event('fb-ready'));
   // 화면으로 돌아오면 한 번 확인 (실시간 수신은 watchRemote가 담당)
   document.addEventListener('visibilitychange', function(){
     if (document.hidden) return;
-    keyboardOpen = false;
-    editView = null;
     editDrag = null;
-    keyboardBaseH = visibleViewportH();
-    document.documentElement.style.setProperty('--kb', '0px');
-    addPanel.classList.remove('kb');
+    if (vv){
+      // 키보드가 열린 채 복귀했을 수 있으므로 현재 높이로 다시 판정한다.
+      // 줄어든 화면을 새 기준 높이로 저장하면 이후에도 키보드를 놓치게 된다.
+      kbFit();
+    } else {
+      if (keyboardCloseTimer){ clearTimeout(keyboardCloseTimer); keyboardCloseTimer = null; }
+      keyboardOpen = false;
+      editView = null;
+      keyboardBaseH = visibleViewportH();
+      document.documentElement.style.setProperty('--kb', '0px');
+      addPanel.classList.remove('kb');
+    }
     fitHeight();     // 화면 높이가 달라졌을 수 있다
     // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
     // 먼저 확인하지 않으면 어제 명단을 「오늘」로 띄운 채 체크하게 된다.
