@@ -95,6 +95,9 @@
   }
   body.keyboard-open{min-height:0!important}
   body.keyboard-open .wrap{flex:0 0 auto}
+  .keyboard-tail-adjusting,
+  .keyboard-tail-adjusting body,
+  .keyboard-tail-adjusting .wrap{overflow-anchor:none}
   /* 명단 붙여넣기는 패널 자체에 날짜 맥락이 있으므로 키보드 중에만
      앱 상단바를 치워 입력칸과 등록 버튼이 같은 화면에 남게 한다. */
   body.paste-keyboard .wrap{padding-top:calc(env(safe-area-inset-top) + 8px)}
@@ -2355,7 +2358,7 @@ window.dispatchEvent(new Event('fb-ready'));
     autoGrow();
     // 이미 오류를 보여 주는 중에는 추가 지연 없이 검사해, 수정 완료부터
     // 안내 접힘 완료까지가 CSS 전환 시간(약 180ms)만 걸리게 한다.
-    if (marking) recheck(true);
+    if (marking) recheck(false);
   });
   // 입력칸을 벗어나면 치던 줄도 다시 검사한다
   taEl.addEventListener('scroll', function(){ hl.scrollTop = taEl.scrollTop; });
@@ -2498,13 +2501,16 @@ window.dispatchEvent(new Event('fb-ready'));
   var keyboardTouchCandidate = null;
   var keyboardTouchCandidateTimer = null;
   var keyboardAlignTimer = null;
+  var keyboardAlignVerifyRaf = null;
+  var keyboardAlignScrollEndHandler = null;
+  var keyboardAlignVerifyToken = 0;
   var keyboardAlignedKey = null;
   var keyboardPendingAlignKey = null;
   var keyboardOpenedAt = 0;
   var keyboardLastMotionAt = 0;
-  var KEYBOARD_ALIGN_SETTLE_MS = 130;
-  var KEYBOARD_ALIGN_MIN_OPEN_MS = 360;
-  var KEYBOARD_ALIGN_QUIET_MS = 220;
+  var KEYBOARD_ALIGN_SETTLE_MS = 160;
+  var KEYBOARD_ALIGN_MIN_OPEN_MS = 700;
+  var KEYBOARD_ALIGN_QUIET_MS = 300;
   function visibleViewportH(){
     // offsetTop은 iOS가 입력칸으로 화면을 팬한 거리라 키보드 높이에 더하면 안 된다.
     return vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
@@ -2531,27 +2537,41 @@ window.dispatchEvent(new Event('fb-ready'));
   function syncKeyboardPresentation(){
     document.body.classList.toggle('paste-keyboard', pasteKeyboardActive());
   }
+  function cancelKeyboardAlignmentVerification(){
+    keyboardAlignVerifyToken++;
+    if (keyboardAlignVerifyRaf) cancelAnimationFrame(keyboardAlignVerifyRaf);
+    keyboardAlignVerifyRaf = null;
+    if (keyboardAlignScrollEndHandler){
+      window.removeEventListener('scrollend', keyboardAlignScrollEndHandler);
+      keyboardAlignScrollEndHandler = null;
+    }
+  }
   function cancelKeyboardAlignment(){
     if (keyboardAlignTimer) clearTimeout(keyboardAlignTimer);
+    cancelKeyboardAlignmentVerification();
     keyboardAlignTimer = null;
     keyboardPendingAlignKey = null;
   }
   function setKeyboardTail(px){
+    document.documentElement.classList.add('keyboard-tail-adjusting');
     document.documentElement.style.setProperty('--keyboard-tail',
       Math.max(0, Math.ceil(px || 0)) + 'px');
   }
   function clearKeyboardTail(){ setKeyboardTail(0); }
+  function releaseKeyboardTailAdjustment(){
+    document.documentElement.classList.remove('keyboard-tail-adjusting');
+  }
   function alignPasteKeyboardContent(){
-    var loadRect = document.getElementById('loadBtn').getBoundingClientRect();
+    var pastePanel = document.getElementById('pastePanel');
+    var panelRect = pastePanel.getBoundingClientRect();
     var visualBottom = vv
       ? Math.min(window.innerHeight, Math.round(vv.offsetTop + vv.height))
       : window.innerHeight;
-    // Safari가 첫 줄을 보이게 하려고 먼저 팬한 화면을 되돌리지 않는다.
-    // 등록 버튼이 실제 키보드 경계에 가릴 때만 필요한 만큼 위로 올린다.
-    if (loadRect.bottom > visualBottom - 8){
-      var move = loadRect.bottom - (visualBottom - 8);
-      window.scrollBy({ top: move, behavior:'smooth' });
-    }
+    // 버튼 안쪽이 아니라 패널 바깥 하단을 보조바 상단과 맞춘다.
+    // Safari가 먼저 팬한 정도와 무관하게 마지막 경계는 항상 같다.
+    var move = panelRect.bottom - visualBottom;
+    if (Math.abs(move) > 1)
+      window.scrollTo({ top: window.scrollY + move, behavior:'smooth' });
   }
   function keyboardEditTopEdge(row){
     var hd = document.querySelector('header');
@@ -2561,6 +2581,81 @@ window.dispatchEvent(new Event('fb-ready'));
     var headBottom = hd ? hd.getBoundingClientRect().bottom : visualTop;
     return Math.max(visualTop, headBottom)
       + (groupHead ? groupHead.offsetHeight : 0) + 8;
+  }
+  function verifyEditKeyboardAlignment(id){
+    if (!keyboardOpen || keyboardUserScrolled || editing !== id) return;
+    var row = rowForId(id);
+    var group = row && row.closest('.group');
+    var groupHead = group && group.querySelector('.ghead');
+    if (!row || !groupHead) return;
+    // smooth scroll 후 sticky 제목의 실제 위치로 한 번 검증한다.
+    // 모든 시간대와 문서 끝 행에 동일한 기준을 쓴다.
+    var drift = row.getBoundingClientRect().top
+      - (groupHead.getBoundingClientRect().bottom + 8);
+    if (Math.abs(drift) > 2)
+      window.scrollTo(0, window.scrollY + drift);
+  }
+  function startEditKeyboardVerification(id, startY, targetY){
+    cancelKeyboardAlignmentVerification();
+    var token = keyboardAlignVerifyToken;
+    var beganAt = (window.performance && performance.now)
+      ? performance.now() : Date.now();
+    var lastY = window.scrollY;
+    var stableFrames = 0;
+    var scrollNeeded = Math.abs(targetY - startY) > 1;
+    var motionSeen = !scrollNeeded;
+    var supportsScrollEnd = 'onscrollend' in window;
+    var scrollEnded = !scrollNeeded;
+    function cleanup(){
+      if (token !== keyboardAlignVerifyToken) return;
+      if (keyboardAlignVerifyRaf) cancelAnimationFrame(keyboardAlignVerifyRaf);
+      keyboardAlignVerifyRaf = null;
+      if (keyboardAlignScrollEndHandler === onScrollEnd){
+        window.removeEventListener('scrollend', onScrollEnd);
+        keyboardAlignScrollEndHandler = null;
+      }
+    }
+    function onScrollEnd(){
+      scrollEnded = true;
+      stableFrames = 0;
+    }
+    // scrollend가 있는 브라우저에서는 실제 종료 신호를 받고,
+    // 없는 Safari는 연속 프레임의 좌표가 멈춘 후에만 검증한다.
+    if (supportsScrollEnd){
+      keyboardAlignScrollEndHandler = onScrollEnd;
+      window.addEventListener('scrollend', onScrollEnd, { passive:true });
+    }
+    function poll(now){
+      if (token !== keyboardAlignVerifyToken) return;
+      if (!keyboardOpen || keyboardUserScrolled || editing !== id){ cleanup(); return; }
+      var elapsed = now - beganAt;
+      var currentY = window.scrollY;
+      if (Math.abs(currentY - lastY) > .5){
+        motionSeen = true;
+        stableFrames = 0;
+      } else if ((motionSeen || scrollEnded) && elapsed > 100){
+        stableFrames++;
+      }
+      lastY = currentY;
+      var targetReached = Math.abs(currentY - targetY) <= 2;
+      var completionSignaled = supportsScrollEnd ? scrollEnded : motionSeen;
+      if (stableFrames >= 5 && completionSignaled && targetReached){
+        cleanup();
+        verifyEditKeyboardAlignment(id);
+        return;
+      }
+      // 브라우저가 종료 이벤트를 주지 않아도 무한 대기하지 않는다.
+      // 다만 아직 움직이는 중이면 즉시 보정으로 끊지 않고 그냥 종료한다.
+      if (elapsed >= 1800){
+        var safelyStable = stableFrames >= 2
+          && completionSignaled && targetReached;
+        cleanup();
+        if (safelyStable) verifyEditKeyboardAlignment(id);
+        return;
+      }
+      keyboardAlignVerifyRaf = requestAnimationFrame(poll);
+    }
+    keyboardAlignVerifyRaf = requestAnimationFrame(poll);
   }
   function alignEditKeyboardContent(id){
     clearKeyboardTail();
@@ -2575,12 +2670,20 @@ window.dispatchEvent(new Event('fb-ready'));
       // 마지막 행도 다른 행과 같은 상단 기준에 닿을 만큼만 문서 끝을 연장한다.
       setKeyboardTail(Math.max(0, wantedY - maxY));
       requestAnimationFrame(function(){
-        if (!keyboardOpen || keyboardUserScrolled || editing !== id) return;
-        row = rowForId(id);
-        if (!row) return;
-        move = row.getBoundingClientRect().top - keyboardEditTopEdge(row);
-        if (Math.abs(move) > 1)
-          window.scrollBy({ top: move, behavior:'smooth' });
+        requestAnimationFrame(function(){
+          if (!keyboardOpen || keyboardUserScrolled || editing !== id) return;
+          row = rowForId(id);
+          if (!row) return;
+          // tail 적용과 sticky 제목 배치가 끝난 좌표에서 절대 목표를 한 번만 구한다.
+          // 상대 scrollBy를 쓰면 iOS의 끝 앵커 보정과 이동량이 중복될 수 있다.
+          var absoluteY = window.scrollY + row.getBoundingClientRect().top
+            - keyboardEditTopEdge(row);
+          absoluteY = Math.max(0, absoluteY);
+          var startY = window.scrollY;
+          if (Math.abs(window.scrollY - absoluteY) > 1)
+            window.scrollTo({ top: absoluteY, behavior:'smooth' });
+          startEditKeyboardVerification(id, startY, absoluteY);
+        });
       });
     });
   }
@@ -2836,6 +2939,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 먼저 키보드 세션을 닫는다. 같은 JS 프레임이라 화면에는 중간 상태가 없다.
     keyboardOpen = false;
     clearKeyboardTail();
+    requestAnimationFrame(releaseKeyboardTailAdjustment);
     restoreKeyboardBars();
     if (wasOpen && footEl && !footEl.classList.contains('hide'))
       footEl.classList.add('keyboard-returning');
