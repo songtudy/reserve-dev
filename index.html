@@ -75,15 +75,15 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{
     margin:0;padding:0;width:100%;height:100%;overflow:hidden;
-    /* iOS 키보드 보조바는 뒤 웹 캔버스를 비쳐 보일 수 있다.
-       실제 앱 배경은 .appShell이 칠하고, 키보드가 차지한 바깥 캔버스는 투명하게 둔다. */
-    background:transparent;overscroll-behavior:none;
+    /* 키보드 보조바 뒤에는 투명한 WKWebView 캔버스가 아니라 실제 앱 화면이 있어야 한다.
+       루트도 앱 배경색으로 유지하고, appShell 자체를 키보드 뒤까지 계속 그린다. */
+    background:var(--ink);overscroll-behavior:none;
   }
   html{scrollbar-width:none}
   html::-webkit-scrollbar{display:none}
   body{
     position:relative;min-height:0;
-    background:transparent;color:var(--text);
+    background:var(--ink);color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR",system-ui,sans-serif;
     font-size:16px;line-height:1.4;
     -webkit-font-smoothing:antialiased;
@@ -2520,11 +2520,20 @@ window.dispatchEvent(new Event('fb-ready'));
   function visibleViewportTop(){
     return vv ? Math.max(0, Math.round(vv.offsetTop || 0)) : 0;
   }
+  function layoutViewportH(){
+    return Math.max(1, Math.round(Math.max(
+      window.innerHeight || 0, document.documentElement.clientHeight || 0
+    )));
+  }
+  function keyboardVisibleBottom(){
+    return vv ? Math.round((vv.offsetTop || 0) + vv.height) : layoutViewportH();
+  }
   function keyboardLayoutInsetH(){
     if (!vv) return 0;
     return Math.max(0, Math.round((window.innerHeight || 0) - vv.height - vv.offsetTop));
   }
   var keyboardBaseH = visibleViewportH();
+  var keyboardBaseLayoutH = layoutViewportH();
 
   function textKeyboardTarget(el){
     return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
@@ -2541,9 +2550,12 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.toggle('paste-keyboard', pasteKeyboardActive());
   }
   function syncAppViewport(){
-    var h = Math.max(1, visibleViewportH());
+    var top = visibleViewportTop();
+    /* 셸은 visualViewport 하단에서 자르지 않는다.
+       닫힌 화면 높이까지 계속 그려 키보드/보조바 뒤에도 실제 앱 레이어가 남게 한다. */
+    var h = Math.max(1, visibleViewportH(), keyboardBaseLayoutH - top, layoutViewportH() - top);
     document.documentElement.style.setProperty('--app-h', h + 'px');
-    document.documentElement.style.setProperty('--app-top', visibleViewportTop() + 'px');
+    document.documentElement.style.setProperty('--app-top', top + 'px');
     document.documentElement.style.setProperty('--kb', keyboardLayoutInsetH() + 'px');
   }
   function setEditRoom(px){
@@ -2564,8 +2576,9 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!mainScroll || !pasteKeyboardActive()) return;
     var panelRect = panel.getBoundingClientRect();
     var viewport = mainScroll.getBoundingClientRect();
-    // 등록 패널의 바깥 하단을 실제 입력 가능 영역의 하단에 맞춘다.
-    scrollAreaBy(panelRect.bottom - viewport.bottom, 'smooth');
+    // 셸은 키보드 뒤까지 이어지므로, 정렬 기준만 실제 보이는 visualViewport 하단을 쓴다.
+    var visibleBottom = Math.min(viewport.bottom, keyboardVisibleBottom());
+    scrollAreaBy(panelRect.bottom - visibleBottom, 'smooth');
   }
   function editKeyboardTopEdge(row){
     var viewport = mainScroll.getBoundingClientRect();
@@ -2671,9 +2684,11 @@ window.dispatchEvent(new Event('fb-ready'));
     keyboardOpen = false;
     keyboardAlignedKey = null;
     keyboardBaseH = visibleViewportH();
+    keyboardBaseLayoutH = layoutViewportH();
     document.documentElement.style.setProperty('--kb', '0px');
     document.body.classList.remove('keyboard-open', 'paste-keyboard');
     addPanel.classList.remove('kb');
+    syncAppViewport();
     // 키보드용 내부 여유는 닫히는 프레임에 제거하되, 편집 행의 화면상 위치는 유지한다.
     if (liveEditRow) clearEditRoom();
     var closedEdit = finishPendingKeyboardEditClose();
@@ -2722,7 +2737,10 @@ window.dispatchEvent(new Event('fb-ready'));
     var editRow = e.target.closest && e.target.closest('.row');
     if (editRow && editRow.querySelector('.edit') && textKeyboardTarget(e.target))
       lastEditControlId = e.target.id || null;
-    if (!keyboardOpen && textKeyboardTarget(e.target)) keyboardBaseH = visibleViewportH();
+    if (!keyboardOpen && textKeyboardTarget(e.target)){
+      keyboardBaseH = visibleViewportH();
+      keyboardBaseLayoutH = layoutViewportH();
+    }
     if (keyboardOpen && textKeyboardTarget(e.target)){
       keyboardAlignedKey = null;
       scheduleKeyboardAlignment();
