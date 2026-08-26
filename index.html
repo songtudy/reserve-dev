@@ -88,19 +88,20 @@
     -webkit-text-size-adjust:100%;
   }
   .appShell{
-    --visual-top:0px;--visual-height:100dvh;--footer-top:100%;--footer-visible:0px;
-    position:fixed;left:0;right:0;top:var(--visual-top);height:var(--visual-height);
-    display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;
+    --layout-height:100dvh;--main-height:calc(100dvh - 84px);--footer-top:100%;
+    position:fixed;inset:0 0 auto 0;height:var(--layout-height);
+    display:grid;grid-template-rows:max-content minmax(0,var(--main-height));
+    align-content:start;overflow:hidden;
   }
   .mainScroll{
     min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto;
-    margin-bottom:var(--footer-visible);
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
   .wrap{width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px}
-  .mainScroll>.wrap{padding-bottom:calc(18px + var(--anchor-tail, 0px))}
-  .mainScroll.anchor-tail-prep>.wrap{transition:none}
-  .mainScroll.anchor-tail-release>.wrap{transition:padding-bottom .22s ease-in-out}
+  .mainScroll>.wrap{
+    padding-bottom:calc(18px + var(--focus-space, 0px) + var(--close-space, 0px));
+  }
+  .mainScroll.close-space-release>.wrap{transition:padding-bottom .42s linear}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -960,10 +961,9 @@ window.dispatchEvent(new Event('fb-ready'));
     editing = null;
     openMenu = null;
     pendingKeyboardEditClose = null;
-    followMenuId = null;
-    keyboardRevealId = null;
-    keyboardRevealSmooth = false;
-    lastEditControlId = null;
+    keyboardFocusRowId = null;
+    cancelRoomReveal();
+    clearCloseSpace();
     return true;
   }
 
@@ -1480,23 +1480,79 @@ window.dispatchEvent(new Event('fb-ready'));
     return 0;
   }
 
-  function pasteActionMove(actionRect, viewport){
-    if (!actionRect || !viewport) return 0;
-    return Math.max(0, actionRect.bottom - (viewport.bottom - 2));
+  function pasteViewportMove(textareaRect, actionRect, viewport, caretInset){
+    if (!textareaRect || !actionRect || !viewport) return 0;
+    var safeTop = viewport.top + 2;
+    var safeBottom = viewport.bottom - 2;
+    var caretTop = textareaRect.top + Math.max(0, Number(caretInset) || 0);
+    var minimum = actionRect.bottom - safeBottom;
+    var maximum = caretTop - safeTop;
+    if (minimum <= maximum){
+      if (minimum > 0) return minimum;
+      if (maximum < 0) return maximum;
+      return 0;
+    }
+    return maximum;
+  }
+
+  function safeBandFor(el){
+    var viewport = rosterViewportRect();
+    var group = el && el.closest ? el.closest('.group') : null;
+    var head = group && group.querySelector('.ghead');
+    var headH = head ? head.getBoundingClientRect().height : 0;
+    return { top: viewport.top + headH + 4, bottom: viewport.bottom - 10 };
+  }
+
+  function editAlignmentMove(row){
+    if (!row) return 0;
+    var viewport = rosterViewportRect();
+    var group = row.closest ? row.closest('.group') : null;
+    var head = group && group.querySelector('.ghead');
+    var headH = head ? head.getBoundingClientRect().height : 0;
+    return row.getBoundingClientRect().top - (viewport.top + headH);
+  }
+
+  function clearFocusSpace(){
+    mainScroll.style.removeProperty('--focus-space');
+  }
+  function ensureEditAlignmentRoom(row){
+    var move = editAlignmentMove(row);
+    var maximum = Math.max(0, mainScroll.scrollHeight - mainScroll.clientHeight);
+    var deficit = Math.max(0, rosterScrollTop() + move - maximum);
+    if (deficit > 1){
+      mainScroll.style.setProperty('--focus-space', Math.ceil(deficit) + 'px');
+      void mainScroll.scrollHeight;
+    }
+  }
+
+  var roomRevealFrame = null;
+  var roomRevealToken = 0;
+  function cancelRoomReveal(){
+    roomRevealToken++;
+    if (roomRevealFrame) cancelAnimationFrame(roomRevealFrame);
+    roomRevealFrame = null;
+  }
+  function scheduleRoomReveal(el, options){
+    cancelRoomReveal();
+    if (!el) return;
+    var token = roomRevealToken;
+    roomRevealFrame = requestAnimationFrame(function(){
+      roomRevealFrame = null;
+      if (token !== roomRevealToken || !el.isConnected) return;
+      var band = safeBandFor(el);
+      if (options && options.alignEdit) ensureEditAlignmentRoom(el);
+      var move = options && options.alignEdit ? editAlignmentMove(el)
+        : roomMove(el.getBoundingClientRect(), band.top, band.bottom,
+            options && options.tallPreference || 'top');
+      if (Math.abs(move) > 1)
+        rosterScrollBy(move, options && options.behavior || 'smooth');
+    });
   }
 
   // 한 화면에 다 안 들어가면 위쪽을 헤더 밑에 맞춘다 —
   // 시간대 제목은 sticky 라 더 내려도 화면에 계속 붙어 있다.
   function scrollIntoRoom(el){
-    if (!el) return;
-    requestAnimationFrame(function(){
-      var r = el.getBoundingClientRect();
-      var viewport = rosterViewportRect();
-      var topEdge = viewport.top + 8;
-      var bottomEdge = viewport.bottom - 10;
-      var move = roomMove(r, topEdge, bottomEdge, 'top');
-      if (Math.abs(move) > 1) rosterScrollBy(move, 'smooth');
-    });
+    scheduleRoomReveal(el, { behavior:'smooth', tallPreference:'top' });
   }
 
   function rowForId(id){
@@ -1510,6 +1566,24 @@ window.dispatchEvent(new Event('fb-ready'));
   function rowHostTop(row){
     if (!row) return null;
     return row.getBoundingClientRect().top - rosterViewportRect().top;
+  }
+
+  function closedRowMove(row, preferredTop){
+    if (!row || preferredTop === null) return 0;
+    var rect = row.getBoundingClientRect();
+    var band = safeBandFor(row);
+    var current = rosterScrollTop();
+    var maximum = Math.max(0, mainScroll.scrollHeight - mainScroll.clientHeight);
+    var target = Math.max(0, Math.min(maximum, current + rect.top - preferredTop));
+    var applied = target - current;
+    var predicted = {
+      top: rect.top - applied,
+      bottom: rect.bottom - applied,
+      height: rect.height
+    };
+    target = Math.max(0, Math.min(maximum,
+      target + roomMove(predicted, band.top, band.bottom, 'bottom')));
+    return target - current;
   }
 
   // Android 계열이 사라진 메뉴 버튼의 포커스를 첫 입력칸으로 넘기지 않게 한다.
@@ -1540,31 +1614,21 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function tapMore(id){
+    cancelRoomReveal();
     keepSlotOpenForId(id);
     if (editing === id){               // 같은 행이면 저장하지 않고 접는다
-      if (keyboardOpen){ keyboardRevealId = id; keyboardRevealSmooth = false; }
-      editing = null; openMenu = null; lastEditControlId = null; render();
+      editing = null; openMenu = null; keyboardFocusRowId = null; render();
       return;
     }
     if (editing){                       // 다른 행의 수정 창은 닫고 그 행을 새 기준으로 삼는다
       keepSlotOpenForId(editing);
-      if (keyboardOpen){ keyboardRevealId = editing; keyboardRevealSmooth = false; }
-      editing = null; lastEditControlId = null;
+      editing = null; keyboardFocusRowId = null;
     }
     if (openMenu && openMenu !== id) keepSlotOpenForId(openMenu);
     openMenu = (openMenu === id) ? null : id;
     render();
     if (openMenu){
-      // 수정 입력창을 없앤 직후에는 실제 키보드가 아직 내려가는 중일 수 있다.
-      // 당장은 가능한 만큼만 드러내고, 종료가 확정되면 이 새 메뉴를 한 번 더 맞춘다.
-      if (keyboardOpen){
-        followMenuId = id;
-        keyboardRevealId = null;
-        keyboardRevealSmooth = false;
-      }
       ensureVisible(id);
-    } else if (followMenuId === id){
-      followMenuId = null;
     }
   }
 
@@ -1581,7 +1645,7 @@ window.dispatchEvent(new Event('fb-ready'));
         closeSearch(false);
         backDone();
       }
-      editing = id; openMenu = null; lastEditControlId = null; render();
+      editing = id; openMenu = null; keyboardFocusRowId = null; render();
       neutralFocusEdit(id);
       ensureVisible(id);
       return;
@@ -1692,7 +1756,7 @@ window.dispatchEvent(new Event('fb-ready'));
       form.querySelector('#e-no').addEventListener('click', function(){
         keepSlotOpenForId(it.id);
         if (deferKeyboardEditClose(it.id, it.id)) return;
-        editing = null; lastEditControlId = null; render();
+        editing = null; keyboardFocusRowId = null; render();
       });
       form.querySelector('#e-ok').addEventListener('click', function(){
         applyEdit(it.id,
@@ -1781,7 +1845,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
       keepSlotOpenForId(it.id);
       if (deferKeyboardEditClose(it.id, it.id)) return;
-      editing = null; lastEditControlId = null; render(); return;
+      editing = null; keyboardFocusRowId = null; render(); return;
     }
 
     // 시간이 바뀌면 옮겨간 시간대의 맨 뒤로
@@ -1811,7 +1875,7 @@ window.dispatchEvent(new Event('fb-ready'));
       return;
     }
     editing = null;
-    lastEditControlId = null;
+    keyboardFocusRowId = null;
     render();
     if (timeMoved && !keyboardOpen) ensureVisible(it.id);
     save();
@@ -2464,105 +2528,115 @@ window.dispatchEvent(new Event('fb-ready'));
   aMemo.addEventListener('keydown', function(e){ if (e.key === 'Enter') addOne(); });
 
   /* ---------- 키보드 ---------- */
-  // 키보드가 올라오면 화면 아래쪽이 가려진다.
-  // 시트와 확인창을 가려진 높이만큼 위로 올려 버튼이 늘 보이게 한다.
   var vv = window.visualViewport;
+  var headerEl = document.querySelector('header');
+  var footEl = document.querySelector('.foot');
   var keyboardOpen = false;
-  var followMenuId = null;
-  var keyboardRevealId = null;
-  var keyboardRevealSmooth = false;
   var pendingKeyboardEditClose = null;
-  var lastEditControlId = null;
   var keyboardUserScrolled = false;
   var keyboardTouch = null;
   var keyboardTouchCandidate = null;
   var keyboardTouchCandidateTimer = null;
-  var pasteRevealFrame = null;
   var keyboardCloseTimer = null;
-  var anchorTailFrame = null;
-  var anchorTailTimer = null;
+  var keyboardSettleTimer = null;
+  var closeSpaceFrame = null;
+  var closeSpaceTimer = null;
+  var closeSpaceActive = false;
+  var lastKeyboardVisibleH = 0;
+  var keyboardSessionToken = 0;
+  var keyboardAlignedToken = -1;
+  var pasteAlignedToken = -1;
+  var keyboardFocusRowId = null;
   function visualViewportTop(){ return vv ? Math.max(0, Math.round(vv.offsetTop)) : 0; }
-  function applyVisualViewportFrame(){
-    var height = vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
-    var top = visualViewportTop();
-    appShell.style.setProperty('--visual-height', height + 'px');
-    appShell.style.setProperty('--visual-top', top + 'px');
-  }
   function visibleViewportH(){
-    // offsetTop은 iOS가 입력칸으로 화면을 팬한 거리라 키보드 높이에 더하면 안 된다.
     return vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
-  }
-  function keyboardLayoutInsetH(){
-    if (!vv) return 0;
-    // 감지용 높이 감소와 실제 화면 아래 가림은 다르다. iOS의 자동 팬과
-    // Android의 layout viewport 축소를 다시 더해 입력창을 이중으로 올리지 않는다.
-    return Math.max(0, Math.round((window.innerHeight || 0) - vv.height - vv.offsetTop));
   }
   var keyboardBaseH = visibleViewportH();
   var keyboardBaseTop = visualViewportTop();
-  var keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
   var KEYBOARD_START_DELTA = 8;            // 첫 키보드 프레임부터 한 세션으로 묶는다
   var KEYBOARD_CLOSE_DELTA = 24;           // 주소창의 미세한 높이 변화는 허용한다
-  var KEYBOARD_SETTLE_DELAY = 70;          // 마지막 viewport 이벤트 뒤 한 번만 닫는다
+  var KEYBOARD_SETTLE_DELAY = 70;          // 마지막 viewport 이벤트 뒤 한 번만 정렬한다
   function textKeyboardTarget(el){
     return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
+  }
+  function captureClosedLayout(){
+    if (keyboardOpen || textKeyboardTarget(document.activeElement)) return false;
+    var height = visibleViewportH();
+    if (height > 0) keyboardBaseH = height;
+    keyboardBaseTop = visualViewportTop();
+    return true;
+  }
+  function applyViewportGeometry(){
+    if (!appShell || !headerEl) return;
+    var layoutH = Math.max(0, keyboardBaseH || visibleViewportH());
+    var footerHidden = !footEl || footEl.classList.contains('hide');
+    var footerH = footerHidden ? 0 : footEl.offsetHeight;
+    var footerTop = layoutH - footerH;
+    var visibleBottom = keyboardOpen ? Math.min(footerTop, visibleViewportH()) : footerTop;
+    var mainH = Math.max(0, visibleBottom - headerEl.offsetHeight);
+    appShell.style.setProperty('--layout-height', layoutH + 'px');
+    appShell.style.setProperty('--footer-top', footerTop + 'px');
+    appShell.style.setProperty('--main-height', mainH + 'px');
   }
   function cancelKeyboardClose(){
     if (!keyboardCloseTimer) return;
     clearTimeout(keyboardCloseTimer);
     keyboardCloseTimer = null;
   }
+  function cancelKeyboardSettle(){
+    if (!keyboardSettleTimer) return;
+    clearTimeout(keyboardSettleTimer);
+    keyboardSettleTimer = null;
+  }
   function keyboardCloseReady(){
     return keyboardBaseH - visibleViewportH() <= KEYBOARD_CLOSE_DELTA
       && Math.abs(visualViewportTop() - keyboardBaseTop) <= 2;
   }
-  function clearAnchorTail(){
-    if (anchorTailFrame) cancelAnimationFrame(anchorTailFrame);
-    if (anchorTailTimer) clearTimeout(anchorTailTimer);
-    anchorTailFrame = null; anchorTailTimer = null;
-    mainScroll.classList.remove('anchor-tail-prep', 'anchor-tail-release');
-    mainScroll.style.removeProperty('--anchor-tail');
+  function clearCloseSpace(){
+    if (closeSpaceFrame) cancelAnimationFrame(closeSpaceFrame);
+    if (closeSpaceTimer) clearTimeout(closeSpaceTimer);
+    closeSpaceFrame = null;
+    closeSpaceTimer = null;
+    closeSpaceActive = false;
+    mainScroll.classList.remove('close-space-release');
+    mainScroll.style.removeProperty('--close-space');
+    clearFocusSpace();
   }
-  function settleClosedEditAnchor(pending, target){
-    var currentTop = rowHostTop(target);
-    if (currentTop === null || pending.top === null || pending.smoothFollow) return;
-    var desiredScroll = rosterScrollTop() + currentTop - pending.top;
-    var naturalMax = Math.max(0, mainScroll.scrollHeight - mainScroll.clientHeight);
-    var deficit = Math.max(0, desiredScroll - naturalMax);
-    if (deficit <= 1){
-      rosterScrollTo(desiredScroll, 'auto');
-      return;
-    }
-    clearAnchorTail();
-    mainScroll.classList.add('anchor-tail-prep');
-    mainScroll.style.setProperty('--anchor-tail', deficit + 'px');
-    void mainScroll.offsetHeight;
-    rosterScrollTo(desiredScroll, 'auto');
-    void mainScroll.scrollTop;
-    anchorTailFrame = requestAnimationFrame(function(){
-      anchorTailFrame = null;
-      mainScroll.classList.remove('anchor-tail-prep');
-      mainScroll.classList.add('anchor-tail-release');
-      mainScroll.style.setProperty('--anchor-tail', '0px');
-      anchorTailTimer = setTimeout(clearAnchorTail, 260);
+  function prepareCloseSpace(row){
+    if (closeSpaceActive || !row) return;
+    var footerH = footEl && !footEl.classList.contains('hide') ? footEl.offsetHeight : 0;
+    var closedMainH = Math.max(0, keyboardBaseH - headerEl.offsetHeight - footerH);
+    var growth = Math.max(0, closedMainH - mainScroll.clientHeight);
+    var space = Math.ceil(growth + row.getBoundingClientRect().height);
+    if (space <= 0) return;
+    closeSpaceActive = true;
+    mainScroll.style.setProperty('--close-space', space + 'px');
+    void mainScroll.scrollHeight;
+    clearFocusSpace();
+  }
+  function releaseCloseSpace(after){
+    if (!closeSpaceActive){ if (after) after(); return; }
+    mainScroll.classList.add('close-space-release');
+    closeSpaceFrame = requestAnimationFrame(function(){
+      closeSpaceFrame = null;
+      mainScroll.style.setProperty('--close-space', '0px');
+      closeSpaceTimer = setTimeout(function(){
+        clearCloseSpace();
+        if (after) after();
+      }, 440);
     });
   }
-  // 저장·취소 버튼으로 키보드를 닫을 때는 큰 수정 폼을 먼저 없애지 않는다.
-  // iOS가 키보드 종료 중 붙잡고 있던 스크롤 기준을 잃으면 짧아진 행을 따라
-  // 화면이 튄다. 종료가 확정된 프레임까지 기존 폼을 앵커로 보존한다.
   function deferKeyboardEditClose(domId, targetId, smoothFollow){
     if (!keyboardOpen) return false;
-    // 첫 저장/취소가 정한 DOM 앵커와 대상 ID를 종료까지 바꾸지 않는다.
     if (pendingKeyboardEditClose) return true;
     var row = rowForId(domId);
     pendingKeyboardEditClose = {
       domId: domId,
       targetId: targetId,
       smoothFollow: !!smoothFollow,
-      top: rowHostTop(row)
+      top: row ? row.getBoundingClientRect().top : null
     };
-    keyboardRevealId = targetId;
-    keyboardRevealSmooth = !!smoothFollow;
+    prepareCloseSpace(row);
     var form = row && row.querySelector('.edit');
     if (form){
       form.setAttribute('aria-busy', 'true');
@@ -2578,20 +2652,22 @@ window.dispatchEvent(new Event('fb-ready'));
     var pending = pendingKeyboardEditClose;
     if (!pending) return null;
     pendingKeyboardEditClose = null;
-    // 키보드가 내려가는 동안 Safari가 행을 임시로 팬한 위치가 아니라,
-    // 저장·취소 버튼을 누른 순간의 위치를 최종 기준으로 삼는다.
-    if (pending.top === null){
-      var anchor = rowForId(pending.domId);
-      pending.top = rowHostTop(anchor);
-    }
     editing = null;
     openMenu = null;
     render();
     var target = rowForId(pending.targetId);
-    settleClosedEditAnchor(pending, target);
-    keyboardRevealId = pending.targetId;
-    keyboardRevealSmooth = !!pending.smoothFollow;
-    lastEditControlId = null;
+    requestAnimationFrame(function(){
+      if (!target || !target.isConnected){ releaseCloseSpace(); return; }
+      if (pending.smoothFollow){
+        releaseCloseSpace(function(){
+          scheduleRoomReveal(target, { behavior:'smooth', tallPreference:'top' });
+        });
+        return;
+      }
+      var move = closedRowMove(target, pending.top);
+      if (Math.abs(move) > 1) rosterScrollBy(move, 'auto');
+      releaseCloseSpace();
+    });
     return pending;
   }
   document.addEventListener('focusin', function(e){
@@ -2604,14 +2680,15 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     var editRow = e.target.closest && e.target.closest('.row');
     if (editRow && editRow.querySelector('.edit') && textKeyboardTarget(e.target))
-      lastEditControlId = e.target.id || null;
+      keyboardFocusRowId = editRow.getAttribute('data-id');
+    else if (e.target === ta) keyboardFocusRowId = null;
     if (!keyboardOpen && textKeyboardTarget(e.target)){
       keyboardBaseH = visibleViewportH();
       keyboardBaseTop = visualViewportTop();
-      keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
     }
   }, true);
   document.addEventListener('pointerdown', function(e){
+    if (mainScroll && mainScroll.contains(e.target)) cancelRoomReveal();
     if (keyboardOpen && e.pointerType === 'touch'){
       if (keyboardTouchCandidateTimer) clearTimeout(keyboardTouchCandidateTimer);
       keyboardTouchCandidate = null; keyboardTouchCandidateTimer = null;
@@ -2626,6 +2703,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var dy = Math.abs(keyboardTouch.lastY - keyboardTouch.y);
     if (dy > 8 && dy >= dx && Math.abs(rosterScrollTop() - keyboardTouch.scrollTop) > 2){
       keyboardUserScrolled = true;
+      cancelRoomReveal();
     }
   }, true);
   function endKeyboardTouch(e){
@@ -2634,6 +2712,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var dy = Math.abs(keyboardTouch.lastY - keyboardTouch.y);
     if (dy > 8 && dy >= dx && Math.abs(rosterScrollTop() - keyboardTouch.scrollTop) > 2){
       keyboardUserScrolled = true;
+      cancelRoomReveal();
     } else if (e.type === 'pointercancel' && dy > 8 && dy >= dx){
       // iOS는 스크롤을 넘겨받으며 pointercancel을 먼저 보내고 scrollTop을 뒤늦게 바꿀 수 있다.
       var candidate = { scrollTop: keyboardTouch.scrollTop };
@@ -2653,93 +2732,60 @@ window.dispatchEvent(new Event('fb-ready'));
       var dy = Math.abs(keyboardTouch.lastY - keyboardTouch.y);
       if (dy > 8 && dy >= dx && Math.abs(rosterScrollTop() - keyboardTouch.scrollTop) > 2){
         keyboardUserScrolled = true;
+        cancelRoomReveal();
       }
     }
     if (keyboardTouchCandidate
         && Math.abs(rosterScrollTop() - keyboardTouchCandidate.scrollTop) > 2){
       keyboardUserScrolled = true;
+      cancelRoomReveal();
       keyboardTouchCandidate = null;
       if (keyboardTouchCandidateTimer) clearTimeout(keyboardTouchCandidateTimer);
       keyboardTouchCandidateTimer = null;
     }
   }
   mainScroll.addEventListener('scroll', onRosterScroll, { passive: true });
-  function joinedRect(a, b){
-    if (!a) return b;
-    if (!b) return a;
-    var top = Math.min(a.top, b.top);
-    var bottom = Math.max(a.bottom, b.bottom);
-    return { top: top, bottom: bottom, height: bottom - top };
-  }
-  function editReturnRect(row){
-    if (!row) return null;
-    var control = lastEditControlId
-      ? row.querySelector('#' + lastEditControlId) : null;
-    var actions = row.querySelector('.ebtn');
-    return joinedRect(control && control.getBoundingClientRect(),
-      actions && actions.getBoundingClientRect());
-  }
-  function revealEditedAfterKeyboardClose(immediate){
-    var explicitId = keyboardRevealId;
-    var id = editing || explicitId;
-    var smoothFollow = keyboardRevealSmooth;
-    keyboardRevealId = null;
-    keyboardRevealSmooth = false;
-    function reveal(){
-      var row = rowForId(id);
-      if (!row) return;
-      var r = row.getBoundingClientRect();
-      if (smoothFollow){
-        scrollIntoRoom(row);
-        return;
-      }
-      var viewport = rosterViewportRect();
-      var topEdge = viewport.top + 8;
-      var bottomEdge = viewport.bottom - 10;
-      var outside = r.top >= viewport.bottom || r.bottom <= viewport.top;
-      if (!explicitId && outside) return;
-      var targetRect = r;
-      if (editing === id && r.height > bottomEdge - topEdge)
-        targetRect = editReturnRect(row) || r;
-      // 사용자가 옮긴 화면은 유지하되, 현재 보이는 편집 문맥을 바가 덮는 것은 막는다.
-      if (keyboardUserScrolled && !explicitId
-          && (targetRect.top >= viewport.bottom || targetRect.bottom <= viewport.top)) return;
-      var move = roomMove(targetRect, topEdge, bottomEdge, 'bottom');
-      if (Math.abs(move) > 1) rosterScrollBy(move, 'auto');
+  mainScroll.addEventListener('wheel', cancelRoomReveal, { passive:true });
+  mainScroll.addEventListener('touchstart', cancelRoomReveal, { passive:true });
+  function alignKeyboardContent(){
+    if (!keyboardOpen || keyboardUserScrolled) return;
+    if (document.activeElement === ta && !panel.classList.contains('hide')){
+      if (pasteAlignedToken === keyboardSessionToken) return;
+      pasteAlignedToken = keyboardSessionToken;
+      var action = document.getElementById('loadBtn');
+      var style = getComputedStyle(ta);
+      var caretInset = (parseFloat(style.paddingTop) || 0)
+        + (parseFloat(style.lineHeight) || 0);
+      var pasteMove = pasteViewportMove(ta.getBoundingClientRect(),
+        action && action.getBoundingClientRect(), rosterViewportRect(), caretInset);
+      if (Math.abs(pasteMove) > 1) rosterScrollBy(pasteMove, 'smooth');
+      return;
     }
-    if (immediate) reveal();
-    else requestAnimationFrame(reveal);
+    if (keyboardAlignedToken === keyboardSessionToken) return;
+    var row = rowForId(keyboardFocusRowId);
+    if (!row) return;
+    keyboardAlignedToken = keyboardSessionToken;
+    scheduleRoomReveal(row, { alignEdit:true, behavior:'smooth' });
+  }
+  function scheduleKeyboardSettle(){
+    cancelKeyboardSettle();
+    keyboardSettleTimer = setTimeout(function(){
+      keyboardSettleTimer = null;
+      if (keyboardOpen && !keyboardCloseReady()) alignKeyboardContent();
+    }, KEYBOARD_SETTLE_DELAY);
   }
   function finishKeyboardClose(){
     if (!keyboardOpen) return;
     cancelKeyboardClose();
+    cancelKeyboardSettle();
     var visibleH = visibleViewportH();
-    var wasOpen = keyboardOpen;
     keyboardOpen = false;
     keyboardBaseH = visibleH;
     keyboardBaseTop = visualViewportTop();
-    keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
     document.documentElement.style.setProperty('--kb', '0px');
     addPanel.classList.remove('kb');
-    var closedEdit = finishPendingKeyboardEditClose();
     if (typeof footMode === 'function') footMode();
-    if (wasOpen){
-      if (closedEdit){
-        followMenuId = null;
-        revealEditedAfterKeyboardClose(true);
-      } else if (followMenuId){
-        // 시간 변경 저장과 키보드 중 다른 ⋯ 선택만 명시적인 새 기준이다.
-        // 그 밖의 키보드 종료에서는 사용자가 만든 스크롤을 그대로 둔다.
-        // 새 메뉴가 아직 열려 있을 때는 더 최근 선택인 메뉴가 우선한다.
-        var follow = openMenu === followMenuId ? followMenuId : null;
-        followMenuId = null;
-        keyboardRevealId = follow;
-        keyboardRevealSmooth = false;
-        if (follow) revealEditedAfterKeyboardClose(true);
-      } else {
-        revealEditedAfterKeyboardClose(true);
-      }
-    }
+    if (!finishPendingKeyboardEditClose()) releaseCloseSpace();
   }
   function scheduleKeyboardClose(){
     cancelKeyboardClose();
@@ -2749,45 +2795,42 @@ window.dispatchEvent(new Event('fb-ready'));
     }, KEYBOARD_SETTLE_DELAY);
   }
   function kbFit(){
-    applyVisualViewportFrame();
     var wasOpen = keyboardOpen;
     var visibleH = visibleViewportH();
     var kb = keyboardBaseH - visibleH;
     if (!wasOpen && kb > KEYBOARD_START_DELTA
         && textKeyboardTarget(document.activeElement)) keyboardOpen = true;
     if (!wasOpen && keyboardOpen){
+      keyboardSessionToken++;
       keyboardUserScrolled = false;
+      keyboardAlignedToken = -1;
+      pasteAlignedToken = -1;
+      clearFocusSpace();
       keyboardTouchCandidate = null;
       if (keyboardTouchCandidateTimer) clearTimeout(keyboardTouchCandidateTimer);
       keyboardTouchCandidateTimer = null;
+      lastKeyboardVisibleH = visibleH;
     }
     if (keyboardOpen){
+      if (visibleH > lastKeyboardVisibleH + 2 && !closeSpaceActive)
+        prepareCloseSpace(rowForId(editing));
+      lastKeyboardVisibleH = visibleH;
       if (keyboardCloseReady()) scheduleKeyboardClose();
-      else cancelKeyboardClose();
+      else {
+        cancelKeyboardClose();
+        scheduleKeyboardSettle();
+      }
     } else {
       cancelKeyboardClose();
+      cancelKeyboardSettle();
       kb = 0;
-      if (!textKeyboardTarget(document.activeElement)){
-        keyboardBaseH = visibleH;
-        keyboardBaseTop = visualViewportTop();
-        keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
-      }
+      captureClosedLayout();
     }
-    document.documentElement.style.setProperty('--kb', keyboardLayoutInsetH() + 'px');
+    document.documentElement.style.setProperty('--kb', Math.max(0, kb) + 'px');
     addPanel.classList.toggle('kb', keyboardOpen);
     if (typeof footMode === 'function') footMode();
-    if (keyboardOpen && document.activeElement === ta
-        && !panel.classList.contains('hide') && !pasteRevealFrame){
-      pasteRevealFrame = requestAnimationFrame(function(){
-        pasteRevealFrame = null;
-        if (!keyboardOpen || document.activeElement !== ta) return;
-        var action = document.getElementById('loadBtn');
-        var move = pasteActionMove(action && action.getBoundingClientRect(), rosterViewportRect());
-        if (move > 1) rosterScrollBy(move, 'auto');
-      });
-    }
   }
-  applyVisualViewportFrame();
+  applyViewportGeometry();
   if (vv){
     vv.addEventListener('resize', kbFit);
     vv.addEventListener('scroll', kbFit);
@@ -2847,8 +2890,9 @@ window.dispatchEvent(new Event('fb-ready'));
       logAdd('명단 초기화', state.items.length + '건 지움');
       editing = null; openMenu = null;
       pendingKeyboardEditClose = null;
-      followMenuId = null;
-      keyboardRevealId = null; keyboardRevealSmooth = false; lastEditControlId = null;
+      keyboardFocusRowId = null;
+      cancelRoomReveal();
+      clearCloseSpace();
       deferredState = null; backgroundRenderPending = false;
       state = { date: viewDate, rosterTs: Date.now(), items: [] };
       collapsed = {};
@@ -3017,8 +3061,9 @@ window.dispatchEvent(new Event('fb-ready'));
     rosterLoadEpoch++;
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
     collapseTimers = {};
-    followMenuId = null;
-    keyboardRevealId = null; keyboardRevealSmooth = false; lastEditControlId = null;
+    keyboardFocusRowId = null;
+    cancelRoomReveal();
+    clearCloseSpace();
     pendingKeyboardEditClose = null;
   }
   function goDate(ds){
@@ -3057,50 +3102,27 @@ window.dispatchEvent(new Event('fb-ready'));
       if (!isCollapsed(it.time, pend ? 1 : 0)) anyOpen = true;
     });
     Object.keys(times).forEach(function(t){ setCollapsed(t, anyOpen, times[t]); });
-    if (anyOpen){ editing = null; openMenu = null; lastEditControlId = null; } // 전부 접을 땐 열린 폼도 닫는다
+    if (anyOpen){ editing = null; openMenu = null; keyboardFocusRowId = null; } // 전부 접을 땐 열린 폼도 닫는다
     render();
   });
 
   /* ---------- 하단 바 ---------- */
-  var footEl = document.querySelector('.foot');
-  function updateFooterFrame(){
-    if (!footEl) return;
-    if (footEl.classList.contains('hide')){
-      appShell.style.setProperty('--footer-visible', '0px');
-      appShell.style.setProperty('--footer-top', visibleViewportH() + 'px');
-      return;
-    }
-    var footerHeight = footEl.offsetHeight;
-    var visualTop = visualViewportTop();
-    var visualBottom = visualTop + visibleViewportH();
-    var footerTop = keyboardBaseBottom - footerHeight;
-    var visibleFooter = Math.max(0, Math.min(footerHeight, visualBottom - footerTop));
-    appShell.style.setProperty('--footer-top', (footerTop - visualTop) + 'px');
-    appShell.style.setProperty('--footer-visible', visibleFooter + 'px');
-  }
   function footMode(){
     if (!footEl) return;
     var hidden = !state || !state.items || !state.items.length;
     footEl.classList.toggle('hide', hidden);
     appShell.classList.toggle('keyboard-open', keyboardOpen);
-    updateFooterFrame();
+    applyViewportGeometry();
   }
   /* ---------- 화면 높이 ---------- */
-  // 셸 자체를 Visual Viewport에 맞춘다. body/document 높이는 스크롤 기준으로 쓰지 않는다.
   function fitHeight(){
-    if (!keyboardOpen && !textKeyboardTarget(document.activeElement)){
-      keyboardBaseH = visibleViewportH();
-      keyboardBaseTop = visualViewportTop();
-      keyboardBaseBottom = keyboardBaseTop + keyboardBaseH;
-    }
-    applyVisualViewportFrame();
+    captureClosedLayout();
     footMode();
   }
   fitHeight();
   // 입력칸 높이는 창을 열 때 정해두므로 여기서 다시 계산할 게 없다
   window.addEventListener('resize', fitHeight);    // 안에서 footMode 까지 부른다
   window.addEventListener('orientationchange', function(){ setTimeout(fitHeight, 250); });
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', fitHeight);
 
   // 개발용 폴더에서 열렸으면 표시해 둔다. 실제 앱과 헷갈리지 않게.
   if (/-dev(\/|$)/.test(location.pathname)){
@@ -3602,7 +3624,7 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardBaseH = visibleViewportH();
       document.documentElement.style.setProperty('--kb', '0px');
       addPanel.classList.remove('kb');
-      applyVisualViewportFrame();
+      applyViewportGeometry();
       footMode();
     }
     fitHeight();     // 화면 높이가 달라졌을 수 있다
