@@ -411,11 +411,20 @@
   #pastePanel{ margin-top:10px }
   #pastePanel h2{font-size:17px}
 
-  .tawrap{position:relative}
+  /* .tawrap 가 스크롤 통이다. 그 안에서 .hl(빨간줄 레이어)과 <textarea>는 둘 다 내용
+     높이만큼 늘어난 채 함께 스크롤된다 → iOS 네이티브라 고무줄 튕김까지 완벽 동기화
+     (JS 로 .hl 스크롤을 따라가게 하던 코드 없음). 높이는 applyTaHeight 가 정한다. */
+  .tawrap{
+    position:relative;height:273px;
+    overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+    border:1px solid var(--line);border-radius:10px;
+    background:var(--ink);
+  }
+  .tawrap:focus-within{outline:2px solid var(--wait);outline-offset:-1px}
   .tawrap textarea, .hl{
     font-family:inherit;font-size:16px;line-height:1.65;
     font-variant-numeric:tabular-nums;
-    padding:11px;border:1px solid transparent;border-radius:10px;
+    padding:11px;border:0;
     letter-spacing:0;
     white-space:pre-wrap;word-break:break-all;overflow-wrap:break-word;
   }
@@ -423,24 +432,20 @@
     position:relative;z-index:1;
     display:block;width:100%;box-sizing:border-box;
     resize:none;overflow:hidden;
-    overscroll-behavior:none;          /* 고무줄 튕김 제거 → 뒤 .hl 오버레이와 안 어긋남 */
     background:transparent;color:var(--text);
-    border-color:var(--line);
     -webkit-appearance:none;appearance:none;
   }
   .hl{
-    position:absolute;inset:0;z-index:0;
-    background:var(--ink);border-radius:10px;
+    position:absolute;top:0;left:0;right:0;z-index:0;
     color:transparent;-webkit-text-fill-color:transparent;
-    overflow:hidden;pointer-events:none;
+    pointer-events:none;
     padding:11px 0;
   }
-  .hl .ln{display:block;padding:0 11px 0 11px}
+  .hl .ln{display:block;padding:0 11px}
   .hl .ln.err{
     background:var(--errRow);
     box-shadow:inset 3px 0 0 var(--warn);
   }
-  textarea:focus{outline:2px solid var(--wait);outline-offset:-1px}
   /* 오류 안내는 위 안내문이 빨갛게 바뀌는 것뿐. 레이아웃은 전혀 안 움직인다 */
   #pasteHint.bad{ color:var(--errTx);font-weight:700 }
 
@@ -2237,11 +2242,14 @@ window.dispatchEvent(new Event('fb-ready'));
     // 카드 전체가 그 위에 들어가도록. 작은 화면에선 화면 비율로 더 줄인다.
     return Math.min(273, Math.max(200, Math.round(vh * 0.46) - 43));
   }
+  var twEl = taEl.parentElement;   // .tawrap = 스크롤 통
   function applyTaHeight(){
     if (!taFixedH) taFixedH = pasteBaseH();
-    taEl.style.height = taFixedH + 'px';
-    taEl.style.overflowY = (taEl.scrollHeight > taFixedH + 2) ? 'auto' : 'hidden';
-    hl.scrollTop = taEl.scrollTop;
+    twEl.style.height = taFixedH + 'px';
+    // 입력칸은 내용만큼 늘어난다(자체 스크롤 안 함). 내용이 통보다 크면 .tawrap 이 스크롤하고
+    // .hl 도 같이 딸려온다. 내용이 적거나 비었으면 통 높이 그대로 (빈 칸 = 예시 문구 자리).
+    taEl.style.height = 'auto';
+    taEl.style.height = (taEl.value ? Math.max(taEl.scrollHeight, taFixedH) : taFixedH) + 'px';
   }
   function autoGrow(){ applyTaHeight(); }
 
@@ -2251,28 +2259,14 @@ window.dispatchEvent(new Event('fb-ready'));
     if (marking) return;                 // 오류 표시 중이면 paintBad 가 .hl 을 관리
     hl.innerHTML = taEl.value ? '' :
       PH_LINES.map(function(l){ return '<span class="ln ph">' + esc(l) + '</span>'; }).join('');
-    hl.scrollTop = 0;
   }
   function clearBad(){
     marking = false;
     pasteHint.textContent = HINT_OK;
     pasteHint.classList.remove('bad');
     renderHl();
-    syncLoop(false);
   }
 
-  // 7) 아이폰은 관성 스크롤 중에 scroll 이벤트를 띄엄띄엄 준다.
-  // 오류 표시가 켜져 있는 동안에는 매 프레임 입력칸 스크롤을 따라간다.
-  var syncRaf = 0;
-  function syncLoop(on){
-    if (!on){ cancelAnimationFrame(syncRaf); syncRaf = 0; return; }
-    if (syncRaf) return;
-    (function step(){
-      if (!marking){ syncRaf = 0; return; }
-      if (hl.scrollTop !== taEl.scrollTop) hl.scrollTop = taEl.scrollTop;
-      syncRaf = requestAnimationFrame(step);
-    })();
-  }
   function paintBad(bad, skipLine){
     var nos = {};
     bad.forEach(function(b){ if (b.no !== skipLine) nos[b.no] = true; });
@@ -2280,14 +2274,12 @@ window.dispatchEvent(new Event('fb-ready'));
       var t = esc(line) || ' ';
       return '<span class="ln' + (nos[i+1] ? ' err' : '') + '">' + t + '</span>';
     }).join('');
-    hl.scrollTop = taEl.scrollTop;   // 다시 그리면 스크롤이 풀린다 — 입력칸에 맞춘다
   }
   function showBad(bad){
     marking = true;
     paintBad(bad, -1);
     pasteHint.textContent = HINT_BAD;
     pasteHint.classList.add('bad');
-    syncLoop(true);
   }
   // 표시 중일 때는 입력할 때마다 다시 검사한다.
   // 그 줄이 실제로 양식에 맞아야만 빨간 표시가 사라진다 —
@@ -2305,16 +2297,11 @@ window.dispatchEvent(new Event('fb-ready'));
     clearTimeout(recheckTimer);
     recheckTimer = setTimeout(recheck, 180);
   });
-  // 입력칸을 벗어나면 치던 줄도 다시 검사한다
-  taEl.addEventListener('scroll', function(){ hl.scrollTop = taEl.scrollTop; });
-
   // 붙여넣은 자리에 커서를 그대로 둔다. 화면(페이지)은 움직이지 않는다.
   taEl.addEventListener('paste', function(){
     setTimeout(function(){
       autoGrow();
       renderHl();
-      hl.scrollTop = taEl.scrollTop;
-      requestAnimationFrame(function(){ hl.scrollTop = taEl.scrollTop; });
     }, 0);
   });
   taEl.addEventListener('blur', function(){
@@ -3041,7 +3028,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.9.5<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.9.6<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
