@@ -88,8 +88,8 @@
     -webkit-text-size-adjust:100%;
   }
   .appShell{
-    --layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
-    position:fixed;left:0;right:0;top:0;margin:0 auto;
+    --shell-top:0px;--layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
+    position:fixed;left:0;right:0;top:var(--shell-top);margin:0 auto;
     width:100%;max-width:640px;height:var(--layout-height);overflow:hidden;
     background:var(--ink);
   }
@@ -2398,7 +2398,6 @@ window.dispatchEvent(new Event('fb-ready'));
     }, 0);
   });
   taEl.addEventListener('blur', function(){
-    clearTimeout(recheckTimer);
     recheck(false);
   });
 
@@ -2438,9 +2437,16 @@ window.dispatchEvent(new Event('fb-ready'));
     taFixedH = 0;                    // 창을 열 때 한 번만 계산한다
     autoGrow();
     panel.classList.remove('hide');
-    if (silent) return;
+    cancelRoomReveal();
     rosterScrollTo(0, 'auto');
-    scheduleRoomReveal(panel, { behavior:'smooth', tallPreference:'top' });
+    // 원격 동기화로 자동으로 열리는 경우에도 이전 명단의 내부 스크롤을
+    // 물려받지 않는다. 렌더가 끝난 다음 프레임에서 한 번 더 확정한다.
+    requestAnimationFrame(function(){
+      if (panel.classList.contains('hide')) return;
+      rosterScrollTo(0, 'auto');
+      if (!silent) scheduleRoomReveal(panel, { behavior:'smooth', tallPreference:'top' });
+    });
+    if (silent) return;
     setTimeout(function(){ ta.focus(); }, 200);
   }
   function closePaste(){ panel.classList.add('hide'); }
@@ -2552,14 +2558,19 @@ window.dispatchEvent(new Event('fb-ready'));
   function applyViewportGeometry(){
     if (!appShell || !mainScroll || !headerEl) return;
     var layoutH = Math.max(1, keyboardBaseH || visibleViewportH());
+    // iOS의 키보드 자동 팬에서는 보이는 영역이 0부터 시작하지 않는다.
+    // height만 절대 좌표처럼 쓰면 offsetTop만큼 상단바가 빠지고 본문 아래가 빈다.
+    // 셸 전체를 하나의 Visual Viewport 사각형으로 옮겨 세 영역의 좌표계를 통일한다.
+    var viewportTop = keyboardOpen && vv
+      ? Math.max(0, Math.round(Number(vv.offsetTop) || 0)) : 0;
+    var shellH = keyboardOpen ? Math.max(1, visibleViewportH()) : layoutH;
     var pasteMode = pasteKeyboardActive();
     var headerH = pasteMode ? 0 : headerEl.offsetHeight;
     var footerVisible = !keyboardOpen && footEl && !footEl.classList.contains('hide');
     var footerH = footerVisible ? footEl.offsetHeight : 0;
-    var visibleBottom = keyboardOpen
-      ? Math.min(layoutH, visibleViewportH()) : layoutH - footerH;
-    var mainH = Math.max(0, visibleBottom - headerH);
-    appShell.style.setProperty('--layout-height', layoutH + 'px');
+    var mainH = Math.max(0, shellH - headerH - footerH);
+    appShell.style.setProperty('--shell-top', viewportTop + 'px');
+    appShell.style.setProperty('--layout-height', shellH + 'px');
     appShell.style.setProperty('--header-height', headerH + 'px');
     appShell.style.setProperty('--main-top', headerH + 'px');
     appShell.style.setProperty('--main-height', mainH + 'px');
@@ -2786,6 +2797,12 @@ window.dispatchEvent(new Event('fb-ready'));
   if (vv){
     vv.addEventListener('resize', kbFit);
     vv.addEventListener('scroll', kbFit);
+  }
+  // 명단 유무·검색·날짜 전환으로 상단 요약 줄의 높이가 달라져도
+  // 중앙 스크롤 시작점이 이전 높이를 물려받지 않게 한다.
+  if (window.ResizeObserver && headerEl){
+    var shellHeaderObserver = new ResizeObserver(function(){ applyViewportGeometry(); });
+    shellHeaderObserver.observe(headerEl);
   }
 
   /* ---------- 뒤로가기 ---------- */
@@ -3377,7 +3394,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
