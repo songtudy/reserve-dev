@@ -98,20 +98,29 @@
   body.keyboard-open > .foot{display:none}
   body.keyboard-open.paste-open > header{display:none}
   /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다.
-     카드를 '지금 보이는 높이'(--vh = visualViewport.height, JS 가 넘겨주는 단 하나의 값)에
-     flex 로 맞춘다. 입력칸(.tawrap)이 남는 공간을 전부 가지므로 높이를 JS 로 계산하지
-     않는다. 카드가 늘 화면 안이라 .wrap 은 스크롤할 게 없고(흰 바 없음), 아이폰도
-     포커스 칸이 이미 보이니 화면을 밀(pan) 이유가 없다.
-     28px = #pastePanel margin-top(10) + .wrap padding-bottom(18). 두 값의 합일 뿐 임의값 아님. */
-  body.paste-open > .wrap{ padding-bottom:18px; overscroll-behavior:none }
-  body.keyboard-open.paste-open > .wrap{ padding-top:env(safe-area-inset-top) }
-  body.paste-open #pastePanel{ display:flex; flex-direction:column }
-  body.paste-open #pastePanel .tawrap{ flex:1 1 auto; min-height:200px }
-  body.paste-open #pastePanel textarea{ height:100%; overflow-y:auto }
-  body.keyboard-open.paste-open #pastePanel{
-    height:calc(var(--vh, 100dvh) - env(safe-area-inset-top) - 28px);
+     .wrap 을 세로 flex 로 만들고 카드(#pastePanel)가 flex:1 로 남는 높이를 전부 채운다.
+     입력칸(.tawrap)이 다시 그 안의 남는 공간을 전부 가지므로 높이를 JS 로 계산하지 않는다.
+     - 키보드 없음: .wrap 은 헤더 아래 남는 높이(flex:1) → 카드가 그만큼 큼
+     - 키보드 있음: 헤더가 접히므로 .wrap 을 '지금 보이는 높이'(--vh = visualViewport.height,
+       JS 가 넘겨주는 단 하나의 값)로 고정 → 카드가 딱 그 안에 들어감
+     카드 아래 = env(safe)+10(margin) 위로부터 (--vh - safe - 18(pad-bottom))  → 키보드 위 18px */
+  body.paste-open > .wrap{
+    display:flex; flex-direction:column;
+    padding-bottom:18px;
+    overscroll-behavior:none;
   }
-  body.keyboard-open.paste-open #pastePanel .tawrap{ min-height:0 }
+  body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
+  body.paste-open #pastePanel{
+    flex:1 1 auto; min-height:0;
+    display:flex; flex-direction:column;
+  }
+  body.paste-open #pastePanel .tawrap{ flex:1 1 auto; min-height:0 }
+  body.paste-open #pastePanel textarea{ height:100%; overflow-y:auto }
+  body.keyboard-open.paste-open > .wrap{
+    flex:0 0 auto;
+    height:var(--vh, 100dvh);
+    padding-top:env(safe-area-inset-top);
+  }
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;
@@ -3080,7 +3089,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.6<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.7<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
