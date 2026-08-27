@@ -2486,6 +2486,38 @@ window.dispatchEvent(new Event('fb-ready'));
   });
   applyViewport();
 
+  /* ===== v1.9.3-debug: 붙여넣기 화면 키보드 실측 (스크린샷 한 장 받고 제거 예정) ===== */
+  var _dbg = document.createElement('div');
+  _dbg.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;'
+    + 'font:11px/1.4 ui-monospace,Menlo,monospace;color:#3f6;background:rgba(0,0,0,.85);'
+    + 'padding:4px 7px;white-space:pre;pointer-events:none;display:none';
+  document.body.appendChild(_dbg);
+  function measurePaste(){
+    if (!document.body.classList.contains('paste-open')){ _dbg.style.display = 'none'; return; }
+    _dbg.style.display = 'block';
+    var vvH = vv ? Math.round(vv.height) : 0;
+    var vvT = vv ? Math.round(vv.offsetTop) : 0;
+    var card = document.getElementById('pastePanel').getBoundingClientRect();
+    var btn = document.getElementById('loadBtn').getBoundingClientRect();
+    var hdr = document.querySelector('header').getBoundingClientRect();
+    var topSlack = Math.round(card.top - vvT);
+    var botSlack = Math.round((vvT + vvH) - btn.bottom);
+    _dbg.textContent =
+      'iH ' + (window.innerHeight || 0) + '   vv ' + vvH + ' / top ' + vvT + '\n' +
+      'hdr.bottom ' + Math.round(hdr.bottom) + '   card ' + Math.round(card.top) + '~' + Math.round(card.bottom) +
+        '   btn.bottom ' + Math.round(btn.bottom) + '\n' +
+      'ta ' + taFixedH + '   topSlack ' + topSlack + '   botSlack ' + botSlack +
+        '   MAX ta ' + (taFixedH + Math.min(topSlack, botSlack));
+  }
+  if (vv){ vv.addEventListener('resize', measurePaste); vv.addEventListener('scroll', measurePaste); }
+  document.addEventListener('focusin', function(e){
+    if (e.target && e.target.id === 'ta'){
+      var n = 0, id = setInterval(function(){ measurePaste(); if (++n > 50) clearInterval(id); }, 100);
+    }
+  });
+  setInterval(measurePaste, 400);
+  /* ===== /debug ===== */
+
   /* ---------- 뒤로가기 ---------- */
   // 앱 모드에서는 뒤로가기를 누르면 앱이 그대로 꺼진다.
   // 서랍·시트·팝업이 열려 있으면 그것부터 닫는다. (아이폰의 화면 끝 쓸기도 같다)
@@ -3040,7 +3072,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.9.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.9.3-debug<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
