@@ -99,13 +99,6 @@
      .wrap 을 네이티브 관성으로 스크롤해 입력칸을 드러낸다 (1.4.0 방식, iOS 에 맡김).
      입력칸 높이는 taFixedH 로 열 때 한 번만 정한다 (오류가 떠도 안 움직임 = 버튼 씹힘 방지). */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
-  /* 붙여넣기 + 키보드: 헤더를 딱 제 높이만큼 부드럽게 위로 밀어올린다 ("띡" 아님, 슬라이드).
-     카드가 화면 맨 위부터 시작 → 키보드 위에 통째로 들어감 → iOS 가 화면을 pan 하지 않음. */
-  header{ transition: margin-top .24s ease, opacity .16s ease }
-  body.keyboard-open.paste-open > header{
-    margin-top: calc(-1 * var(--hdr-h, 61px));
-    opacity: 0; pointer-events: none;
-  }
   /* 예시 문구는 .hl 오버레이에 그린다 (iOS textarea 여러 줄 placeholder 버그 회피) */
   .hl .ln.ph{ color:var(--ph); -webkit-text-fill-color:var(--ph) }
   .wrap{
@@ -2254,12 +2247,12 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 입력칸 높이는 창을 열 때 한 번만 정한다 (내용·키보드·오류와 무관).
   // → 등록 버튼이 늘 같은 자리 (버튼 씹힘 방지). 넘치는 줄은 입력칸 안에서 스크롤.
-  // 키보드 시 헤더가 밀려나므로 카드는 맨 위부터 쓴다. 화면높이 × 0.5(≈키보드 위 공간)
-  // - 165(카드 여백·제목·안내·버튼 ~154 + 여유 11) → 카드 전체가 키보드 위에 들어간다.
+  // 카드가 키보드 위 공간(≈화면높이×0.5)에 헤더 pan 후에도 통째로 들어가도록 작게 잡는다.
+  // (v1.7.0 은 이게 커서 카드 위가 잘렸다. 헤더 사라짐·부드러움은 iOS 의 pan 에 맡긴다.)
   var taFixedH = 0;
   function pasteBaseH(){
     var vh = window.innerHeight || 700;
-    return Math.max(160, Math.min(Math.round(vh * 0.5) - 165, 340));
+    return Math.max(150, Math.min(Math.round(vh * 0.5) - 180, 320));
   }
   function applyTaHeight(){
     if (!taFixedH) taFixedH = pasteBaseH();
@@ -2516,15 +2509,6 @@ window.dispatchEvent(new Event('fb-ready'));
     [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
   });
   applyViewport();
-
-  // 헤더 실제 높이를 --hdr-h 로 넘긴다 (키보드 시 헤더를 딱 그만큼 위로 밀어올리려고).
-  function setHdrH(){
-    var hd = document.querySelector('header');
-    if (hd && !document.body.classList.contains('keyboard-open'))
-      document.documentElement.style.setProperty('--hdr-h', hd.offsetHeight + 'px');
-  }
-  setHdrH();
-  window.addEventListener('resize', setHdrH);
 
   // 수정 저장 시 키보드 종료를 지연하던 로직은 없앴다 —
   // .wrap 만 스크롤되는 구조라 폼이 짧아져도 화면이 튀지 않는다.
@@ -3093,7 +3077,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.7.4<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.5<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
