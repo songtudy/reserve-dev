@@ -89,9 +89,12 @@
   }
   .appShell{
     --layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
+    --visual-offset-y:0px;
     position:fixed;left:0;right:0;top:0;margin:0 auto;
     width:100%;max-width:640px;height:var(--layout-height);overflow:hidden;
-    background:var(--ink);will-change:height;
+    background:var(--ink);
+    transform:translate3d(0,var(--visual-offset-y),0);
+    will-change:transform,height;
   }
   .mainScroll{
     position:absolute;z-index:1;left:0;right:0;top:var(--main-top);height:var(--main-height);
@@ -104,7 +107,7 @@
   body.keyboard-open .wrap{padding-bottom:var(--keyboard-room, 0px)}
   body.paste-keyboard header{visibility:hidden;pointer-events:none}
   body.paste-keyboard .wrap{
-    min-height:100%;display:flex;flex-direction:column;justify-content:flex-end;
+    min-height:0;display:block;
   }
   body.paste-keyboard #pastePanel{
     margin-top:0;padding-bottom:0;border-bottom:0;
@@ -2457,8 +2460,9 @@ window.dispatchEvent(new Event('fb-ready'));
     // 물려받지 않는다. 렌더가 끝난 다음 프레임에서 한 번 더 확정한다.
     requestAnimationFrame(function(){
       if (panel.classList.contains('hide')) return;
+      // 등록 화면 자체는 항상 같은 문서 위치에서 시작한다.
+      // 포커스 전에 smooth 이동을 걸면 키보드 진입과 겹쳐 두 단계 점프가 된다.
       rosterScrollTo(0, 'auto');
-      if (!silent) scheduleRoomReveal(panel, { behavior:'smooth', tallPreference:'top' });
     });
     if (silent) return;
     setTimeout(function(){ ta.focus(); }, 200);
@@ -2574,21 +2578,28 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function applyViewportGeometry(){
     if (!appShell || !mainScroll || !headerEl) return;
-    var layoutH = Math.max(1, keyboardBaseH || visibleViewportH());
-    var shellH = keyboardOpen ? Math.max(1, visibleViewportH()) : layoutH;
-    var pasteMode = keyboardOpen && pasteKeyboardActive();
-    var headerH = pasteMode ? 0 : headerEl.offsetHeight;
+    var visibleH = Math.max(1, visibleViewportH());
+    var viewportTop = vv ? Math.max(0, Math.round(Number(vv.offsetTop) || 0)) : 0;
+    var layoutH = Math.max(1, keyboardBaseH || visibleH);
+    var shellH = keyboardOpen ? visibleH : layoutH;
+    // 붙여넣기 중에는 상단바만 숨기고 그 자리는 그대로 둔다.
+    // 키보드 감지 순간 mainScroll.top 이 0으로 바뀌면 패널 전체가 한 번 튄다.
+    var headerH = headerEl.offsetHeight;
     var footerVisible = !keyboardOpen && footEl && !footEl.classList.contains('hide');
     var footerH = footerVisible ? footEl.offsetHeight : 0;
     var mainH = Math.max(0, shellH - headerH - footerH);
-    // 셸과 상단바의 화면 좌표는 항상 0이다. Visual Viewport offsetTop은
-    // Safari의 포커스 팬 과정일 뿐 CSS 위치로 다시 적용하지 않는다.
+    // iOS는 키보드 포커스 중 layout viewport 자체를 pan할 수 있다.
+    // 레이아웃 top을 바꾸면 Safari의 포커스 이동과 앱 레이아웃이 서로 밀어낸다.
+    // 셸의 문서 좌표는 0에 고정하고, visualViewport pan만 transform으로 상쇄한다.
+    appShell.style.top = '0px';
+    appShell.style.setProperty('--visual-offset-y', viewportTop + 'px');
     appShell.style.setProperty('--layout-height', shellH + 'px');
     appShell.style.setProperty('--header-height', headerH + 'px');
     appShell.style.setProperty('--main-top', headerH + 'px');
     appShell.style.setProperty('--main-height', mainH + 'px');
+    var visualBottom = viewportTop + visibleH;
     document.documentElement.style.setProperty('--kb',
-      keyboardOpen ? Math.max(0, layoutH - visibleViewportH()) + 'px' : '0px');
+      keyboardOpen ? Math.max(0, layoutH - visualBottom) + 'px' : '0px');
     // 내용 정렬은 키보드 세션당 한 번만 별도 스케줄러에서 실행한다.
   }
   function pasteViewportMove(textareaRect, actionRect, viewport, caretInset){
@@ -2628,19 +2639,12 @@ window.dispatchEvent(new Event('fb-ready'));
           && keyboardAlignedViewportH === viewportH)) return;
     var key = keyboardAlignmentKey();
     if (!key) return;
+    // 등록된 명단은 포커스 직전 preAnchorKeyboardTarget에서 한 번만 맞춘다.
+    // 키보드가 열린 뒤 다시 스크롤하면 iOS 포커스 pan과 경쟁해 두 번째 이동이 생긴다.
+    if (key !== 'paste') return;
     keyboardAlignedToken = token;
     keyboardAlignedViewportH = viewportH;
-    if (key === 'paste') alignPasteKeyboardContent();
-    else if (keyboardFocusedId && editing === keyboardFocusedId
-        && keyboardPreAlignedId !== keyboardFocusedId){
-      var row = rowForId(keyboardFocusedId);
-      prepareKeyboardRoom(row);
-      requestAnimationFrame(function(){
-        if (!keyboardOpen || keyboardUserScrolled || token !== keyboardSessionToken) return;
-        scheduleRoomReveal(rowForId(keyboardFocusedId),
-          { alignEdit:true, behavior:'smooth' });
-      });
-    }
+    alignPasteKeyboardContent();
   }
   function scheduleKeyboardAlignment(){
     if (!keyboardOpen || keyboardUserScrolled) return;
@@ -2736,8 +2740,15 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardUserScrolled = false;
       syncKeyboardPresentation();
       applyViewportGeometry();
+      ensureViewportGeometryGuard();
       if (keyboardOpen) scheduleKeyboardAlignment();
     }
+  }, true);
+  document.addEventListener('focusout', function(){
+    requestAnimationFrame(function(){
+      if (!keyboardOpen && !textKeyboardTarget(document.activeElement))
+        stopViewportGeometryGuard();
+    });
   }, true);
   document.addEventListener('pointerdown', function(e){
     if (textKeyboardTarget(e.target)){
@@ -2782,10 +2793,9 @@ window.dispatchEvent(new Event('fb-ready'));
   function finishKeyboardClose(){
     cancelKeyboardAlignment();
     var closeHeightDelta = Math.abs(keyboardBaseH - visibleViewportH());
-    var closeOffset = vv ? Math.abs(Math.round(Number(vv.offsetTop) || 0)) : 0;
-    if (closeHeightDelta > KEYBOARD_CLOSE_TOLERANCE || closeOffset > 2) return;
-    var openRow = editing ? rowForId(editing) : null;
-    var openRowTop = openRow ? openRow.getBoundingClientRect().top : null;
+    // iOS 26에서는 키보드가 닫힌 뒤에도 offsetTop이 잠시 또는 계속 남을 수 있다.
+    // 닫힘 판정은 높이 복원만으로 하고, 남은 pan은 applyViewportGeometry가 보상한다.
+    if (closeHeightDelta > KEYBOARD_CLOSE_TOLERANCE) return;
     keyboardOpen = false;
     keyboardAlignedToken = -1;
     keyboardAlignedViewportH = -1;
@@ -2794,19 +2804,36 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.remove('keyboard-open');
     document.body.classList.remove('paste-keyboard');
     addPanel.classList.remove('kb');
-    clearKeyboardRoom();
     var pending = finishPendingKeyboardEditClose();
+    // 키보드만 내린 경우에는 편집 행을 받치던 하단 여백을 유지한다.
+    // 여기서 즉시 0으로 만들면 하단 행의 scrollTop이 강제로 clamp되어 화면이 튄다.
+    if (!editing && !pending) clearKeyboardRoom();
     keyboardSessionMode = null;
     syncKeyboardPresentation();
     if (typeof footMode === 'function') footMode();
     else applyViewportGeometry();
-    var target = pending ? rowForId(pending.restoreTargetId)
-      : (editing ? rowForId(editing) : null);
-    if (target){
-      var preferredTop = pending ? pending.top : openRowTop;
-      var move = closedRowMove(target, preferredTop);
-      if (Math.abs(move) > 1) rosterScrollBy(move, 'auto');
+    // 닫힌 뒤에는 별도 위치 보정을 하지 않는다. 하단바·여백·본문 높이 복원과
+    // 추가 scrollTo가 연달아 실행되면 사용자는 두 단계 복귀로 보게 된다.
+  }
+  var viewportGuardFrame = 0;
+  function viewportGuardActive(){
+    return keyboardOpen || textKeyboardTarget(document.activeElement);
+  }
+  function stopViewportGeometryGuard(){
+    if (viewportGuardFrame) cancelAnimationFrame(viewportGuardFrame);
+    viewportGuardFrame = 0;
+  }
+  function ensureViewportGeometryGuard(){
+    // WebKit은 키보드가 다 올라온 뒤에도 offsetTop을 늦게 바꾸면서
+    // 별도 visualViewport 이벤트를 보내지 않는 경우가 있다.
+    // 텍스트 포커스 세션 동안에는 scrollTop을 건드리지 않고 좌표만 추적한다.
+    if (viewportGuardFrame) return;
+    function step(){
+      viewportGuardFrame = 0;
+      applyViewportGeometry();
+      if (viewportGuardActive()) viewportGuardFrame = requestAnimationFrame(step);
     }
+    viewportGuardFrame = requestAnimationFrame(step);
   }
   function kbFit(){
     if (!vv) return;
@@ -2833,6 +2860,8 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardBaseH = Math.max(keyboardBaseH, visibleH);
       applyViewportGeometry();
     }
+    // 키보드 세션 동안 늦게 들어오는 viewport pan도 계속 상쇄한다.
+    ensureViewportGeometryGuard();
   }
   if (vv){
     vv.addEventListener('resize', kbFit);
@@ -3127,7 +3156,7 @@ window.dispatchEvent(new Event('fb-ready'));
     return Math.max(
       window.innerHeight || 0,
       document.documentElement.clientHeight || 0,
-      vv ? Math.round(vv.height + vv.offsetTop) : 0
+      vv ? Math.round(vv.height) : 0
     );
   }
   function fitHeight(){
@@ -3434,7 +3463,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.4<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.5<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
