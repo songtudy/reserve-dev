@@ -97,13 +97,14 @@
      단, 붙여넣기 화면(.paste-open)은 전용 작업이라 헤더도 숨겨 입력칸 자리를 넓힌다. */
   body.keyboard-open > .foot{display:none}
   body.keyboard-open.paste-open > header{display:none}
-  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다. .wrap 이 스크롤될 이유가
-     없어야 아이폰이 키보드에 맞춰 화면을 밀거나 흰 스크롤바를 띄우지 않는다.
-     - 아래 여백에서 --kb 를 뺀다 → 스크롤 범위 자체가 사라진다
-     - overflow:hidden → 키보드 애니메이션 중 한 프레임도 스크롤바가 안 보인다
-     - 헤더가 접히는 키보드 상태에선 노치 높이만큼 위 여백 (제목이 안 가리게)
+  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다. 카드는 늘 화면보다 작으므로
+     아래 여백에서 --kb 를 빼면 .wrap 의 스크롤 범위(scrollHeight)가 clientHeight 를
+     절대 안 넘는다 → 스크롤할 게 없어 흰 스크롤바도, 아이폰의 자동 스크롤도 없다.
+     단 overflow 는 auto 로 남긴다 — .wrap 이 스크롤 컨테이너여야 아이폰이 포커스 칸을
+     드러낼 때 (범위가 0인) .wrap 을 건드리지, 화면 전체를 밀지(pan) 않는다.
+     헤더가 접히는 키보드 상태에선 노치 높이만큼 위 여백을 준다 (제목이 안 가리게).
      카드 높이는 fitPaste() 가 등록 버튼까지 키보드 위에 들어가도록 맞춘다. */
-  body.paste-open > .wrap{ padding-bottom:18px; overflow:hidden }
+  body.paste-open > .wrap{ padding-bottom:18px }
   body.keyboard-open.paste-open > .wrap{ padding-top:calc(env(safe-area-inset-top) + 8px) }
   .wrap{
     flex:1 1 auto;min-height:0;
@@ -2368,7 +2369,9 @@ window.dispatchEvent(new Event('fb-ready'));
     var hasItems = !!(state && state.items && state.items.length);
     document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
     ta.value = '';
-    taFixedH = 0;                 // 이번에 열 때 화면 높이로 한 번 다시 계산
+    // 작게 시작한다 → 키보드가 올라오는 순간에도 카드가 화면에 다 들어가므로
+    // 아이폰이 화면을 밀(pan) 이유가 없다. fitPaste() 가 키보드 위 공간에 맞게 키운다.
+    taFixedH = 150;
     clearBad();
     autoGrow();
     panel.classList.remove('hide');
@@ -3128,7 +3131,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.2-debug<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.3-debug<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
