@@ -95,9 +95,11 @@
     touch-action:manipulation;        /* 두 번 탭 확대 방지 */
     -webkit-text-size-adjust:100%;
   }
-  /* 키보드가 올라와도 상·하단 바는 접지 않는다. body 높이가 visualViewport 를 따라
-     줄어들면서 하단 바는 자연히 키보드 바로 위에 자리잡고, .wrap 만 그만큼 짧아진다.
-     바를 숨겼다 되살리면 키보드 오르내릴 때 화면이 튀어서 그 방식을 버렸다. */
+  /* 키보드가 올라오면 상단 헤더·하단 바를 접어 좁아진 화면을 명단/입력칸에 내준다.
+     (하단 바가 수정 폼을 덮거나 키보드 사이에 떠 있는 걸 막는다.)
+     JS 가 이 클래스를 켜고 끄면서 .wrap 스크롤을 헤더 높이만큼 보정해 화면이 안 튄다. */
+  body.keyboard-open > header,
+  body.keyboard-open > .foot{display:none}
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px;
@@ -1470,7 +1472,8 @@ window.dispatchEvent(new Event('fb-ready'));
       var move = 0;
       if (er.height > bottomEdge - topEdge || er.top < topEdge) move = er.top - topEdge;
       else if (er.bottom > bottomEdge) move = er.bottom - bottomEdge;
-      if (Math.abs(move) > 1) wrapEl.scrollBy({ top: move, behavior: 'smooth' });
+      // 즉시 이동한다. 키보드 오르내릴 때 부드러운 애니메이션이 겹치면 튕겨 보인다.
+      if (Math.abs(move) > 1) wrapEl.scrollTop += move;
     });
   }
 
@@ -2239,12 +2242,17 @@ window.dispatchEvent(new Event('fb-ready'));
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
   // 입력칸 높이는 창을 열 때 한 번 정하고 (taFixedH) 키보드와 무관하게 유지한다.
+  // "키보드가 올라오고 상·하단 바가 접힌 화면"에도 카드+등록 버튼이 다 들어가도록
+  // 넉넉히 작게 잡는다. 작은 아이폰(SE)에서도 버튼이 안 가리는 값.
   // 경고문이 떠 있는 동안에는 그 높이(+위 여백)만큼 입력칸을 줄여, 카드 전체 높이와
   // 등록 버튼 위치가 그대로 있게 한다. 경고문이 없으면 박스는 접히고(gone) 여백도 없다.
   var taFixedH = 0;
   function pasteBaseH(){
+    // vh*0.52 ≈ 키보드가 올라온 뒤 남는 화면 높이. 거기서 카드의 나머지(제목·안내문·
+    // 버튼·여백 ~145px)를 빼면 입력칸이 가질 수 있는 최대 높이. 작은 아이폰에서도
+    // 등록 버튼이 안 가리는 값이고, 한 번 정하면 키보드와 무관하게 유지된다.
     var vh = visibleViewportH() || 700;
-    return Math.max(200, Math.min(Math.round(vh * 0.46) - 43, 360));
+    return Math.max(170, Math.min(Math.round(vh * 0.52) - 155, 290));
   }
   function applyTaHeight(){
     if (!taFixedH) taFixedH = pasteBaseH();
@@ -2468,11 +2476,16 @@ window.dispatchEvent(new Event('fb-ready'));
     // 보이는 화면에 정확히 겹친다. 안 밀었으면 0 이라 아무 영향 없다.
     document.body.style.top = top + 'px';
 
-    // 상·하단 바는 이제 안 숨긴다. body 높이만 줄이면 .wrap 이 그만큼 짧아지고
-    // 포커스된 입력은 iOS 가 .wrap 안에서 알아서 보이게 스크롤한다.
+    // 키보드가 올라오면 상·하단 바를 숨겨 자리를 내준다.
+    // 헤더가 사라지면 .wrap 의 위 끝이 헤더 높이만큼 올라가 내용이 그만큼 위로 튄다.
+    // 스크롤을 헤더 높이만큼 반대로 옮겨 보고 있던 내용이 화면상 제자리에 있게 한다.
     var open = textKeyboardTarget(document.activeElement) && (kbBaseH - h) > KB_MIN;
     if (open !== keyboardOpen){
+      var headEl = document.querySelector('header');
+      var headH = headEl ? headEl.offsetHeight : 0;
       keyboardOpen = open;
+      document.body.classList.toggle('keyboard-open', open);
+      if (wrapEl) wrapEl.scrollTop += open ? -headH : headH;
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
     }
@@ -2487,6 +2500,14 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   window.addEventListener('resize', applyViewport);
   window.addEventListener('orientationchange', function(){ setTimeout(applyViewport, 250); });
+  // 키보드가 뜨고 내려갈 때 visualViewport 갱신이 아이폰 앱 모드에서 늦거나 빠질 수 있어
+  // 포커스 전환 직후 몇 번 더 강제로 잰다. applyViewport 는 여러 번 불러도 무해하다.
+  document.addEventListener('focusin', function(e){
+    if (textKeyboardTarget(e.target)) [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
+  });
+  document.addEventListener('focusout', function(){
+    [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
+  });
   applyViewport();
   // 아이폰은 실행 직후 화면 높이를 짧게 줬다가 늦게 늘리기도 한다. 몇 번 더 잰다.
   [60, 300, 800, 2000].forEach(function(t){ setTimeout(applyViewport, t); });
@@ -3058,7 +3079,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.4<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
