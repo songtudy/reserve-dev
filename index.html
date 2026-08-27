@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f1319">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -74,14 +74,16 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--ink)}
-  /* 앱 셸 구조 — html·body 를 스크롤 불가로 잠그고(overflow:hidden, 화면 높이 고정),
-     스크롤은 .wrap 안에서만. body 에 position:fixed 를 쓰지 않는 게 핵심 —
-     아이폰 홈 화면 앱은 키보드가 뜰 때 position:fixed 요소를 화면과 함께 끌어올려서
-     헤더가 사라지는 버그가 있다. flex 항목인 헤더/하단바는 body 가 안 움직이니 그냥 고정된다.
-     키보드는 그 위에 얹혀 올라온다(일반 앱처럼 뒤가 비침). */
+  /* 앱 셸 구조.
+     - html·body: 스크롤 불가. body 높이 = --app-h (= visualViewport.height, JS 세팅).
+       키보드가 올라오면 --app-h 가 줄어 body 전체가 "키보드 위 영역"으로 줄어든다.
+       그래서 헤더·하단바·명단이 전부 그 안에 맞춰지고, 별도 스크롤 계산이 필요 없다.
+     - body 에 position:fixed 를 안 쓴다 — 아이폰 홈 화면 앱은 키보드 뜰 때 fixed 요소를
+       화면과 함께 끌어올려 헤더가 사라진다. 그냥 flex 항목이면 안 끌린다.
+     - 트레이드오프: 키보드 뒤가 단색(앱이 거기서 끝남). 대신 안정적. */
   html{height:100%;overflow:hidden;overscroll-behavior:none}
   body{
-    height:100%;overflow:hidden;
+    height:var(--app-h, 100%);overflow:hidden;
     overscroll-behavior:none;
     background:var(--ink);
     color:var(--text);
@@ -93,22 +95,17 @@
     touch-action:manipulation;        /* 두 번 탭 확대 방지 */
     -webkit-text-size-adjust:100%;
   }
-  /* 키보드가 올라오면 하단 바를 숨긴다 (어차피 키보드 뒤라 못 쓴다).
-     헤더는 유지 — body 가 안 움직이니 그냥 그 자리에 고정돼 있다.
-     붙여넣기 화면(.paste-open)만 헤더도 숨겨 입력칸 자리를 넓힌다. */
+  /* 키보드가 올라오면 하단 바만 숨긴다 (자리가 좁으니). 헤더는 항상 유지. */
   body.keyboard-open > .foot{display:none}
-  body.keyboard-open.paste-open > header{display:none}
+  /* 수정 폼이 열린 채 키보드가 뜨면 명단 끝에 스크롤 여유를 준다 → 마지막 행 폼의
+     저장 버튼까지 키보드 위로 올릴 수 있다. 이 여백은 키보드 뒤라 안 보인다. */
+  body.editing-row.keyboard-open #list{ padding-bottom:var(--kb, 0px) }
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px;
-    /* .wrap 자체엔 키보드용 여백을 안 준다 → 명단이 키보드 뒤까지 그대로 깔려 비친다.
-       검은 박스는 여기에 padding-bottom 을 주는 순간 생겼었다. */
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
-  /* 수정 중 + 키보드: 명단 "맨 끝"에만 스크롤 여유를 준다. 이 여백은 마지막 행을
-     편집할 때만 닿고, 그때도 키보드 뒤라 안 보인다. 중간 행/검색엔 영향 없음. */
-  body.editing-row.keyboard-open #list{ padding-bottom:var(--kb, 0px) }
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -402,11 +399,19 @@
   .panel h2{margin:0 0 4px;font-size:16px;font-weight:700}
   .panel p{margin:0 0 10px;font-size:12px;color:var(--dim);line-height:1.5}
 
-  /* 명단 붙여넣기 — 명단이 비었을 때의 화면. .panel 카드 모양 그대로, 내용만큼만 크다.
-     입력칸 높이는 창을 열 때 JS 가 한 번 고정하고 키보드와 무관하게 유지한다.
-     경고문이 뜨면 입력칸을 그만큼만 줄여 등록 버튼 위치가 안 변한다 (버튼 씹힘 방지). */
-  #pastePanel{ margin-top:10px }
+  /* 명단 붙여넣기 — 명단이 비었을 때의 화면. .wrap 을 꽉 채우는 세로 플렉스.
+     body 높이가 --app-h 라 .wrap = 키보드 위 영역, 카드가 그걸 그대로 채운다.
+     입력칸(flex:1)은 남는 높이만큼 = 키보드 오르내릴 때만 한 번 바뀜, 타이핑 중엔 고정.
+     등록 버튼은 카드 아래 고정. */
+  #pastePanel{
+    margin:10px 0 0;
+    display:flex;flex-direction:column;
+    height:calc(100% - 10px);
+  }
   #pastePanel h2{font-size:17px}
+  #pastePanel .tawrap{flex:1 1 auto;min-height:96px}
+  #pastePanel .tawrap textarea{position:absolute;inset:0;height:100%;overflow-y:auto}
+  #pastePanel .btns{flex:0 0 auto}
 
   .tawrap{position:relative}
   .tawrap textarea, .hl{
@@ -1404,7 +1409,6 @@ window.dispatchEvent(new Event('fb-ready'));
       } else {
         em.classList.add('hide');
         if (state && panel.classList.contains('hide')) openPaste(true);
-        document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
       }
       return;
     }
@@ -1451,9 +1455,6 @@ window.dispatchEvent(new Event('fb-ready'));
     var fb = document.getElementById('foldBtn');
     if (fb) fb.textContent = openCount ? '전체 접기' : '전체 펼치기';
 
-    // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
-    document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
-    // editing-row 는 수정 폼이 열린 상태 여부 (키보드 시 .wrap 아래 여백을 줄지 결정)
     document.body.classList.toggle('editing-row', !!editing);
   }
 
@@ -2246,26 +2247,10 @@ window.dispatchEvent(new Event('fb-ready'));
   function esc(t){
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
-  // 입력칸 높이는 창을 열 때 한 번 정하고 (taFixedH) 키보드·오류와 무관하게 유지한다.
-  // 오류 안내는 별도 박스가 아니라 위 안내문(#pasteHint)이 빨갛게 바뀌는 것뿐이라
-  // 입력칸도 등록 버튼도 전혀 안 움직인다.
-  // "키보드가 올라오고 상·하단 바가 접힌 화면"에도 카드+등록 버튼이 다 들어가도록
-  // 넉넉히 작게 잡는다. 작은 아이폰(SE)에서도 버튼이 안 가리는 값.
-  var taFixedH = 0;
-  function pasteBaseH(){
-    // 붙여넣기 화면은 키보드 시 헤더도 숨으므로 카드가 .wrap 맨 위(y~10)부터 시작한다.
-    // vh*0.55 ≈ 키보드 위 남는 높이. 카드의 나머지(제목·안내문·버튼·여백 ~145px)를 빼면
-    // 입력칸 최대 높이. 작은 아이폰(SE)에서도 등록 버튼이 안 가린다.
-    var vh = visibleViewportH() || 700;
-    return Math.max(180, Math.min(Math.round(vh * 0.55) - 145, 300));
-  }
-  function applyTaHeight(){
-    if (!taFixedH) taFixedH = pasteBaseH();
-    taEl.style.height = taFixedH + 'px';
-    taEl.style.overflowY = (taEl.scrollHeight > taFixedH + 2) ? 'auto' : 'hidden';
-    hl.scrollTop = taEl.scrollTop;
-  }
-  function autoGrow(){ applyTaHeight(); }
+  // 입력칸 크기는 CSS(flex)가 잡는다 — 카드가 .wrap(=키보드 위 영역)을 채우고
+  // 입력칸이 남는 높이를 차지한다. 오류 안내는 위 안내문(#pasteHint)이 빨개지는 것뿐이라
+  // 입력칸·등록 버튼은 안 움직인다. 여기서는 오류 오버레이 스크롤만 맞춘다.
+  function autoGrow(){ hl.scrollTop = taEl.scrollTop; }
   function clearBad(){
     marking = false;
     pasteHint.textContent = HINT_OK;
@@ -2363,19 +2348,14 @@ window.dispatchEvent(new Event('fb-ready'));
     var hasItems = !!(state && state.items && state.items.length);
     document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
     ta.value = '';
-    taFixedH = 0;                 // 이번에 열 때 화면 높이로 한 번 다시 계산
     clearBad();
     autoGrow();
     panel.classList.remove('hide');
-    document.body.classList.add('paste-open');   // 키보드 시 헤더까지 숨겨 입력칸 자리 확보
     if (wrapEl) wrapEl.scrollTop = 0;
     if (silent) return;
     setTimeout(function(){ ta.focus(); }, 200);
   }
-  function closePaste(){
-    panel.classList.add('hide');
-    document.body.classList.remove('paste-open');
-  }
+  function closePaste(){ panel.classList.add('hide'); }
 
   /* ---------- 예약 추가 ---------- */
   var addPanel = document.getElementById('addPanel');
@@ -2469,15 +2449,14 @@ window.dispatchEvent(new Event('fb-ready'));
   var KB_MIN = 90;                       // 이보다 크게 줄면 키보드로 본다
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
-  function cssKb(){
-    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0;
-  }
-
   function applyViewport(){
     var h = visibleViewportH();
-    // 키보드가 가리는 높이 = 레이아웃 뷰포트 높이 - 보이는 높이.
-    var kb = Math.max(0, Math.round((window.innerHeight || 0) - h));
-    document.documentElement.style.setProperty('--kb', kb + 'px');
+    var root = document.documentElement.style;
+    // body 높이 = 보이는 뷰포트 높이. 키보드가 올라오면 그만큼 줄어 앱 전체가
+    // "키보드 위 영역"에 맞춰진다 → 헤더·명단·입력칸이 자동으로 다 들어간다.
+    root.setProperty('--app-h', h + 'px');
+    // --kb 는 예약추가 시트를 키보드 위로 올릴 때만 쓴다.
+    root.setProperty('--kb', Math.max(0, Math.round((window.innerHeight || 0) - h)) + 'px');
 
     var open = textKeyboardTarget(document.activeElement) && (kbBaseH - h) > KB_MIN;
     if (open !== keyboardOpen){
@@ -2485,57 +2464,27 @@ window.dispatchEvent(new Event('fb-ready'));
       document.body.classList.toggle('keyboard-open', open);
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
-      // 키보드가 내려가면 붙여넣기 입력칸을 원래(창 열 때 정한) 높이로 되돌린다
-      if (!open && panel && !panel.classList.contains('hide')) autoGrow();
     }
-    if (open){
-      if (editing) placeEditForm();
-      else if (panel && !panel.classList.contains('hide')) fitPasteCard();
-    }
+    if (open && editing) keepSaveBtnVisible();
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
       kbBaseH = Math.max(kbBaseH, h);
   }
 
-  // 붙여넣기 카드: 키보드 위 남는 높이를 재서 입력칸을 딱 그만큼 맞춘다.
-  // 카드가 화면(키보드 위)을 상단~하단 꽉 채운다. 키보드 뜰 때 한 번만 — 타이핑 중엔 안 바뀜.
-  function fitPasteCard(){
-    if (!wrapEl || !taEl || panel.classList.contains('hide')) return;
-    var slot = visibleViewportH() - 24;             // 키보드 위 + 위아래 여백
-    var chrome = panel.getBoundingClientRect().height - taEl.getBoundingClientRect().height;
-    var target = Math.max(120, Math.round(slot - chrome));
-    if (Math.abs(target - (parseFloat(taEl.style.height) || 0)) < 2) return;
-    taEl.style.height = target + 'px';
-    taEl.style.overflowY = (taEl.scrollHeight > target + 2) ? 'auto' : 'hidden';
-    hl.scrollTop = taEl.scrollTop;
-    if (wrapEl) wrapEl.scrollTop = 0;
-  }
-
-  // 수정 폼: 슬롯[헤더 밑 ~ 키보드 위]에 폼 전체가 보이게 .wrap 을 정확히 스크롤한다.
-  //  - 폼이 슬롯에 들어가면  → 폼 위를 헤더 바로 밑에
-  //  - 안 들어가거나 스크롤 한계면 → 폼 아래(저장 버튼)를 키보드 바로 위에
-  // scrollIntoView 아님. 목표 scrollTop 을 계산해서 한 번 맞춘다.
-  function placeEditForm(){
-    if (!wrapEl || !editing) return;
-    requestAnimationFrame(function(){
-      if (!keyboardOpen || !editing) return;
+  // iOS 가 포커스 칸(메모)을 보이게 스크롤한 뒤, 그 아래 저장·취소 버튼이 .wrap 밖으로
+  // (= 키보드 뒤로) 걸쳐 있으면 걸린 만큼만 .wrap 을 더 올린다. 안 걸렸으면 아무것도 안 함.
+  function keepSaveBtnVisible(){
+    setTimeout(function(){
+      if (!keyboardOpen || !editing || !wrapEl) return;
       var row = rowForId(editing);
-      var form = row && (row.querySelector('.edit') || row);
-      if (!row || !form) return;
-      var wr = wrapEl.getBoundingClientRect();
-      var topEdge = wr.top + 8;                       // 헤더 바로 밑 (= .wrap 위 끝)
-      var botEdge = wr.bottom - cssKb() - 12;         // 키보드 바로 위
-      var r = row.getBoundingClientRect();
-      var delta;
-      if (r.height <= botEdge - topEdge){
-        delta = r.top - topEdge;                      // 폼 위를 헤더 밑에
-      } else {
-        var fr = form.getBoundingClientRect();
-        delta = fr.bottom - botEdge;                  // 저장 버튼을 키보드 위에
+      var eb = row && row.querySelector('.ebtn');
+      if (!eb) return;
+      var over = eb.getBoundingClientRect().bottom - (wrapEl.getBoundingClientRect().bottom - 8);
+      if (over > 4){
+        var max = wrapEl.scrollHeight - wrapEl.clientHeight;
+        wrapEl.scrollTop = Math.min(wrapEl.scrollTop + over, max);
       }
-      var max = wrapEl.scrollHeight - wrapEl.clientHeight;
-      wrapEl.scrollTop = Math.max(0, Math.min(wrapEl.scrollTop + delta, max));
-    });
+    }, 240);
   }
 
   if (vv){
@@ -3121,7 +3070,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.10<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.11<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
