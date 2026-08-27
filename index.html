@@ -101,9 +101,6 @@
      .wrap 을 네이티브 관성으로 스크롤해 입력칸을 드러낸다 (1.4.0 방식, iOS 에 맡김).
      입력칸 높이는 taFixedH 로 열 때 한 번만 정한다 (오류가 떠도 안 움직임 = 버튼 씹힘 방지). */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
-  /* 입력칸을 탭해 편집을 시작하면 상단바를 접는다 (키보드 닫으면 복귀). 첫 진입 때 iOS 가
-     pan 으로 밀어내던 것과 같은 결과를, 긴 명단 재탭 때도 만들어 준다. */
-  body.paste-typing header{ display:none }
   /* 예시 문구는 .hl 오버레이에 그린다 (iOS textarea 여러 줄 placeholder 버그 회피) */
   .hl .ln.ph{ color:var(--ph); -webkit-text-fill-color:var(--ph) }
   .wrap{
@@ -2303,24 +2300,6 @@ window.dispatchEvent(new Event('fb-ready'));
     clearTimeout(recheckTimer);
     recheckTimer = setTimeout(recheck, 180);
   });
-  // 편집을 시작하면(첫 진입이든 긴 명단 재탭이든) 등록 버튼이 키보드에 가린 만큼만 .wrap 을
-  // 스크롤해 올린다. visualViewport 로 키보드 실제 위치를 재는 닫힌 루프 — 키보드가 자리
-  // 잡는 동안 몇 번 시도해 수렴시킨다. (상단바는 body.paste-typing 으로 이미 접혔다.)
-  function revealPasteCard(){
-    var vv = window.visualViewport, btns = panel && panel.querySelector('.btns');
-    if (!vv || !btns || !wrapEl || !document.body.classList.contains('paste-open')) return;
-    [120, 300, 550, 850].forEach(function(t){
-      setTimeout(function(){
-        if (document.activeElement !== taEl) return;
-        var gap = btns.getBoundingClientRect().bottom - (vv.offsetTop + vv.height) + 12;
-        if (gap > 1) wrapEl.scrollBy({ top: gap, behavior: 'smooth' });
-      }, t);
-    });
-  }
-  taEl.addEventListener('focus', function(){
-    if (document.body.classList.contains('paste-open')) document.body.classList.add('paste-typing');
-    revealPasteCard();
-  });
   // 붙여넣은 자리에 커서를 그대로 둔다. 화면(페이지)은 움직이지 않는다.
   taEl.addEventListener('paste', function(){
     setTimeout(function(){
@@ -2329,7 +2308,6 @@ window.dispatchEvent(new Event('fb-ready'));
     }, 0);
   });
   taEl.addEventListener('blur', function(){
-    document.body.classList.remove('paste-typing');   // 키보드 내려가면 상단바 복귀
     clearTimeout(recheckTimer);
     recheck();
   });
@@ -2370,13 +2348,13 @@ window.dispatchEvent(new Event('fb-ready'));
     panel.classList.remove('hide');
     document.body.classList.add('paste-open');
     if (silent) return;
-    // focus 하면 revealPasteCard 리스너가 카드를 키보드 위로 맞춘다 (재탭과 동일 경로)
+    // .wrap 을 카드로 부드럽게 스크롤 → 키보드가 올라와도 iOS 가 이어서 자연스럽게 조정
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(function(){ ta.focus(); }, 200);
   }
   function closePaste(){
     panel.classList.add('hide');
     document.body.classList.remove('paste-open');
-    document.body.classList.remove('paste-typing');
     if (wrapEl) wrapEl.scrollTop = 0;
   }
 
@@ -3053,7 +3031,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.9.10<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.9.7<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
