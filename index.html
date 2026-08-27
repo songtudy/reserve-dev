@@ -95,10 +95,9 @@
     touch-action:manipulation;        /* 두 번 탭 확대 방지 */
     -webkit-text-size-adjust:100%;
   }
-  /* 키보드가 올라오면 상단 헤더·하단 바를 접어 명단에 자리를 내준다.
-     검색바는 검색 입력을 담고 있으므로 그대로 둔다. */
-  body.keyboard-open > header,
-  body.keyboard-open > .foot{display:none}
+  /* 키보드가 올라와도 상·하단 바는 접지 않는다. body 높이가 visualViewport 를 따라
+     줄어들면서 하단 바는 자연히 키보드 바로 위에 자리잡고, .wrap 만 그만큼 짧아진다.
+     바를 숨겼다 되살리면 키보드 오르내릴 때 화면이 튀어서 그 방식을 버렸다. */
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px;
@@ -398,18 +397,11 @@
   .panel h2{margin:0 0 4px;font-size:16px;font-weight:700}
   .panel p{margin:0 0 10px;font-size:12px;color:var(--dim);line-height:1.5}
 
-  /* 명단 붙여넣기 — 명단이 비었을 때의 화면. .panel 카드 모양은 그대로 두고
-     세로 플렉스로 만든다. 입력칸이 남는 높이를 채우고 등록 버튼은 카드 아래에 고정 —
-     경고문이 생기고 사라져도 입력칸이 그만큼만 늘고 줄어 버튼이 안 움직인다. */
-  #pastePanel{
-    display:flex;flex-direction:column;
-    height:calc(100% - 10px);          /* .wrap 안을 채운다 (margin-top 10 만큼 뺀다) */
-  }
+  /* 명단 붙여넣기 — 명단이 비었을 때의 화면. .panel 카드 모양 그대로, 내용만큼만 크다.
+     입력칸 높이는 창을 열 때 JS 가 한 번 고정하고 키보드와 무관하게 유지한다.
+     경고문이 뜨면 입력칸을 그만큼만 줄여 등록 버튼 위치가 안 변한다 (버튼 씹힘 방지). */
+  #pastePanel{ margin-top:10px }
   #pastePanel h2{font-size:17px}
-  #pastePanel .tawrap{flex:1 1 auto;min-height:110px}
-  #pastePanel .tawrap textarea{position:absolute;inset:0;height:100%;overflow-y:auto}
-  #pastePanel .badbox{flex:0 0 auto}
-  #pastePanel .btns{flex:0 0 auto}
 
   .tawrap{position:relative}
   .tawrap textarea, .hl{
@@ -1508,6 +1500,19 @@ window.dispatchEvent(new Event('fb-ready'));
     scrollIntoRoom(rowForId(id));
   }
 
+  // 수정 폼을 닫으며 다시 그릴 때, 그 행이 화면에서 제자리에 있도록 스크롤을 보정한다.
+  // 폼(높이 큼) → 행(작음)으로 접히면서 아래 내용이 위로 튀는 걸 막는다.
+  function renderAnchored(id){
+    var row = rowForId(id);
+    var before = (row && wrapEl) ? row.getBoundingClientRect().top : null;
+    render();
+    if (before == null || !wrapEl) return;
+    var after = rowForId(id);
+    if (!after) return;
+    var delta = after.getBoundingClientRect().top - before;
+    if (Math.abs(delta) > 1) wrapEl.scrollTop += delta;
+  }
+
   var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
     + ' stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
   var ICON_OFF = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
@@ -1520,8 +1525,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function tapMore(id){
     keepSlotOpenForId(id);
     if (editing === id){               // 같은 행이면 저장하지 않고 접는다
-      if (keyboardOpen){ keyboardRevealId = id; keyboardRevealSmooth = false; }
-      editing = null; openMenu = null; lastEditControlId = null; render();
+      editing = null; openMenu = null; lastEditControlId = null; renderAnchored(id);
       return;
     }
     if (editing){                       // 다른 행의 수정 창은 닫고 그 행을 새 기준으로 삼는다
@@ -1669,8 +1673,8 @@ window.dispatchEvent(new Event('fb-ready'));
       form.addEventListener('click', function(e){ e.stopPropagation(); });
       form.querySelector('#e-no').addEventListener('click', function(){
         keepSlotOpenForId(it.id);
-        if (deferKeyboardEditClose(it.id, it.id)) return;
-        editing = null; lastEditControlId = null; render();
+        var anchor = editing;
+        editing = null; lastEditControlId = null; renderAnchored(anchor);
       });
       form.querySelector('#e-ok').addEventListener('click', function(){
         applyEdit(it.id,
@@ -1782,16 +1786,12 @@ window.dispatchEvent(new Event('fb-ready'));
     if (time !== originalTime) armSlotCollapse(time);
     state.items.sort(sortItems);
     state.rosterTs = Date.now();
-    var deferredClose = deferKeyboardEditClose(id, it.id, timeMoved);
-    if (deferredClose){
-      save();
-      toast('수정됨');
-      return;
-    }
+    var anchor = editing;
     editing = null;
     lastEditControlId = null;
-    render();
-    if (timeMoved && !keyboardOpen) ensureVisible(it.id);
+    if (timeMoved) render();                 // 시간이 바뀌면 자리가 달라지니 그냥 다시 그린다
+    else renderAnchored(anchor);             // 제자리 수정이면 행이 안 튀게 보정
+    if (timeMoved) ensureVisible(it.id);
     save();
     toast('수정됨');
   }
@@ -2238,18 +2238,29 @@ window.dispatchEvent(new Event('fb-ready'));
   function esc(t){
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
-  // 입력칸 높이는 CSS(세로 플렉스)가 잡는다 — .wrap 을 꽉 채우고 남는 공간을
-  // 입력칸이 차지한다. 여기서는 오류 오버레이 스크롤만 입력칸에 맞춘다.
-  function autoGrow(){
+  // 입력칸 높이는 창을 열 때 한 번 정하고 (taFixedH) 키보드와 무관하게 유지한다.
+  // 경고문이 떠 있는 동안에는 그 높이(+위 여백)만큼 입력칸을 줄여, 카드 전체 높이와
+  // 등록 버튼 위치가 그대로 있게 한다. 경고문이 없으면 박스는 접히고(gone) 여백도 없다.
+  var taFixedH = 0;
+  function pasteBaseH(){
+    var vh = visibleViewportH() || 700;
+    return Math.max(200, Math.min(Math.round(vh * 0.46) - 43, 360));
+  }
+  function applyTaHeight(){
+    if (!taFixedH) taFixedH = pasteBaseH();
+    var reserve = marking ? (badBox.offsetHeight + 9) : 0;   // 9 = badbox margin-top
+    var h = Math.max(120, taFixedH - reserve);
+    taEl.style.height = h + 'px';
+    taEl.style.overflowY = (taEl.scrollHeight > h + 2) ? 'auto' : 'hidden';
     hl.scrollTop = taEl.scrollTop;
   }
+  function autoGrow(){ applyTaHeight(); }
   function clearBad(){
     marking = false;
-    // 오류가 없으면 경고 박스 자리까지 접는다. 세로 플렉스라 등록 버튼은 안 움직이고
-    // 입력칸이 그만큼 늘어난다 — 죽은 여백도, 버튼 튐도 없다.
     badBox.classList.add('gone');
     hl.innerHTML = '';
     syncLoop(false);
+    applyTaHeight();
   }
 
   // 7) 아이폰은 관성 스크롤 중에 scroll 이벤트를 띄엄띄엄 준다.
@@ -2342,6 +2353,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var hasItems = !!(state && state.items && state.items.length);
     document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
     ta.value = '';
+    taFixedH = 0;                 // 이번에 열 때 화면 높이로 한 번 다시 계산
     clearBad();
     badBox.classList.add('gone');
     autoGrow();
@@ -2421,9 +2433,9 @@ window.dispatchEvent(new Event('fb-ready'));
   aMemo.addEventListener('keydown', function(e){ if (e.key === 'Enter') addOne(); });
 
   /* ---------- 화면 높이 · 키보드 ---------- */
-  // 앱 셸 구조: body 는 --app-h(=visualViewport.height) 만큼의 고정 높이이고,
-  // 스크롤은 .wrap 안에서만 일어난다. 키보드가 올라오면 --app-h 가 줄고
-  // body.keyboard-open 이 상단 헤더·하단 바를 접어 명단에 자리를 내준다.
+  // body 는 position:fixed + --app-h(=visualViewport.height) 만큼의 고정 높이.
+  // 스크롤은 .wrap 안에서만. 키보드가 올라오면 --app-h 가 줄어 .wrap 이 짧아지고
+  // 상·하단 바는 그대로 있다(하단 바는 자연히 키보드 바로 위에 자리잡음).
   // 바텀시트(예약 추가)와 확인창은 --kb 만큼 위로 올려 키보드에 안 가리게 한다.
   var vv = window.visualViewport;
   var keyboardOpen = false;
@@ -2456,15 +2468,13 @@ window.dispatchEvent(new Event('fb-ready'));
     // 보이는 화면에 정확히 겹친다. 안 밀었으면 0 이라 아무 영향 없다.
     document.body.style.top = top + 'px';
 
+    // 상·하단 바는 이제 안 숨긴다. body 높이만 줄이면 .wrap 이 그만큼 짧아지고
+    // 포커스된 입력은 iOS 가 .wrap 안에서 알아서 보이게 스크롤한다.
     var open = textKeyboardTarget(document.activeElement) && (kbBaseH - h) > KB_MIN;
     if (open !== keyboardOpen){
       keyboardOpen = open;
-      document.body.classList.toggle('keyboard-open', open);
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
-      // 키보드가 열리거나(자리가 줄어) 닫힐 때(헤더·하단 바가 돌아와) 편집 행을 다시 보이게 한다
-      if (editing)
-        requestAnimationFrame(function(){ scrollIntoRoom(rowForId(editing)); });
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
@@ -3048,7 +3058,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.2<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.3<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3245,7 +3255,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (document.hidden) return;
     wakeLogOutbox();
     // 화면 높이가 달라졌을 수 있다 (키보드가 열린 채 복귀했을 수도).
-    // applyViewport 가 현재 visualViewport 로 --app-h·--kb·keyboard-open 을 다시 잡는다.
+    // applyViewport 가 현재 visualViewport 로 --app-h·--kb·body top 을 다시 잡는다.
     applyViewport();
     setTimeout(applyViewport, 300);
     // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
