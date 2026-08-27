@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0f1319">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -98,14 +98,13 @@
   body.keyboard-open > .foot{display:none}
   body.keyboard-open.paste-open > header{display:none}
   /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다. .wrap 은 세로 flex.
-     입력칸(.tawrap)이 카드의 남는 공간을 가지므로 높이를 JS 로 계산하지 않는다.
-     - 키보드 없음: 카드는 내용 높이 + 입력칸 기본 크기(44dvh). 헤더 아래에 자리, 아래는 여백.
-     - 키보드 있음: 헤더가 접히므로 .wrap 을 '지금 보이는 높이'(--vh = visualViewport.height,
-       JS 가 넘겨주는 단 하나의 값)로 고정하고 카드(flex:1)가 그 안을 꽉 채운다.
-       카드 아래 여백 6px → 키보드 보조바에 거의 닿음. */
+     viewport 의 interactive-widget=resizes-content 덕분에 키보드가 올라오면 페이지(body)가
+     그만큼 줄어든다 → .wrap 도 flex:1 로 같이 줄고, 카드(flex:1)가 그 안을 꽉 채운다.
+     JS 로 화면 높이를 재지 않는다. 브라우저가 픽셀 단위로 맞춘다.
+     - 키보드 없음: 입력칸 기본 크기 44dvh, 카드는 헤더 아래에 자리
+     - 키보드 있음: 헤더가 접히고 카드가 줄어든 화면을 꽉 채움. 아래 6px → 키보드에 거의 닿음 */
   body.paste-open > .wrap{
     display:flex; flex-direction:column;
-    padding-bottom:18px;
     overscroll-behavior:none;
   }
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
@@ -113,8 +112,6 @@
   body.paste-open #pastePanel textarea{ height:100%; overflow-y:auto }
   body.paste-open:not(.keyboard-open) #pastePanel .tawrap{ height:44dvh }
   body.keyboard-open.paste-open > .wrap{
-    flex:0 0 auto;
-    height:var(--vh, 100dvh);
     padding-top:env(safe-area-inset-top);
     padding-bottom:6px;
   }
@@ -2486,10 +2483,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function applyViewport(){
     var h = visibleViewportH();
-    // 지금 화면에 실제로 보이는 높이. 붙여넣기 카드가 이 높이에 flex 로 맞춰진다.
-    // (튜닝 상수가 아니라 visualViewport.height 그대로 — iOS 가 CSS 에 안 줘서 JS 가 전달만)
-    document.documentElement.style.setProperty('--vh', h + 'px');
-    // 키보드가 가리는 높이 → 바텀시트(예약 추가) 올림·토스트 위치 등에 쓴다
+    // viewport 의 interactive-widget=resizes-content 로 키보드가 뜨면 페이지가 줄어드므로
+    // 레이아웃은 CSS(flex)가 알아서 맞춘다. JS 는 (1) 키보드 열림 감지 → body.keyboard-open,
+    // (2) --kb(키보드가 가리는 높이) 만 넘긴다. resizes-content 라 --kb 는 대개 0에 가깝다.
     var kb = Math.max(0, Math.round((window.innerHeight || 0) - h));
     document.documentElement.style.setProperty('--kb', kb + 'px');
 
@@ -3088,7 +3084,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.8<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.6.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
