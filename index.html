@@ -2300,14 +2300,19 @@ window.dispatchEvent(new Event('fb-ready'));
     clearTimeout(recheckTimer);
     recheckTimer = setTimeout(recheck, 180);
   });
-  // 키보드가 올라올 때마다 카드를 맨 위로 맞춘다. openPaste 는 첫 진입 때만 이걸 하므로,
-  // 오류 고치러 입력칸을 다시 탭할 때도 똑같이 동작하도록 여기서 처리한다.
-  taEl.addEventListener('focus', function(){
-    if (!document.body.classList.contains('paste-open') || !panel) return;
-    requestAnimationFrame(function(){
-      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // 키보드가 올라올 때마다(첫 진입이든, 긴 명단에서 다시 탭하든) 명단 등록 버튼을 키보드
+  // 바로 위로 끌어올린다 → 그 위 카드 전체가 따라 올라와 통째로 보인다. 키보드가 자리 잡는
+  // 동안 몇 번 시도한다.
+  function revealPasteCard(){
+    var btns = panel && panel.querySelector('.btns');
+    if (!btns || !document.body.classList.contains('paste-open')) return;
+    [140, 360, 620].forEach(function(t){
+      setTimeout(function(){
+        if (document.activeElement === taEl) btns.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, t);
     });
-  });
+  }
+  taEl.addEventListener('focus', revealPasteCard);
   // 붙여넣은 자리에 커서를 그대로 둔다. 화면(페이지)은 움직이지 않는다.
   taEl.addEventListener('paste', function(){
     setTimeout(function(){
@@ -2356,8 +2361,7 @@ window.dispatchEvent(new Event('fb-ready'));
     panel.classList.remove('hide');
     document.body.classList.add('paste-open');
     if (silent) return;
-    // .wrap 을 카드로 부드럽게 스크롤 → 키보드가 올라와도 iOS 가 이어서 자연스럽게 조정
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // focus 하면 revealPasteCard 리스너가 카드를 키보드 위로 맞춘다 (재탭과 동일 경로)
     setTimeout(function(){ ta.focus(); }, 200);
   }
   function closePaste(){
@@ -3039,7 +3043,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.9.8<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.9.9<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
