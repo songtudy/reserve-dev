@@ -89,12 +89,10 @@
   }
   .appShell{
     --layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
-    --visual-offset-y:0px;
     position:fixed;left:0;right:0;top:0;margin:0 auto;
     width:100%;max-width:640px;height:var(--layout-height);overflow:hidden;
     background:var(--ink);
-    transform:translate3d(0,var(--visual-offset-y),0);
-    will-change:transform,height;
+    will-change:height;
   }
   .mainScroll{
     position:absolute;z-index:1;left:0;right:0;top:var(--main-top);height:var(--main-height);
@@ -106,13 +104,25 @@
   body.keyboard-open .foot{visibility:hidden;pointer-events:none}
   body.keyboard-open .wrap{padding-bottom:var(--keyboard-room, 0px)}
   body.paste-keyboard header{visibility:hidden;pointer-events:none}
+  /* 명단 등록 중에는 바깥 스크롤을 움직이지 않는다. 패널 안에서만 높이가 바뀐다. */
+  body.paste-keyboard .mainScroll{overflow-y:hidden}
   body.paste-keyboard .wrap{
-    min-height:0;display:block;
+    height:100%;min-height:0;display:block;padding-bottom:0;
   }
   body.paste-keyboard #pastePanel{
-    margin-top:0;padding-bottom:0;border-bottom:0;
+    height:100%;margin-top:0;padding-bottom:0;border-bottom:0;
     border-radius:var(--radius) var(--radius) 0 0;
+    display:flex;flex-direction:column;overflow:hidden;
   }
+  body.paste-keyboard #pastePanel h2,
+  body.paste-keyboard #pastePanel p,
+  body.paste-keyboard #pastePanel .badbox,
+  body.paste-keyboard #pastePanel .btns{flex:0 0 auto}
+  body.paste-keyboard #pastePanel .tawrap{flex:1 1 auto;min-height:84px}
+  body.paste-keyboard #pastePanel .tawrap textarea,
+  body.paste-keyboard #pastePanel .tawrap .hl{height:100% !important}
+  body.paste-keyboard #pastePanel .tawrap textarea{overflow-y:auto !important}
+
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -2579,28 +2589,24 @@ window.dispatchEvent(new Event('fb-ready'));
   function applyViewportGeometry(){
     if (!appShell || !mainScroll || !headerEl) return;
     var visibleH = Math.max(1, visibleViewportH());
-    var viewportTop = vv ? Math.max(0, Math.round(Number(vv.offsetTop) || 0)) : 0;
     var layoutH = Math.max(1, keyboardBaseH || visibleH);
     var shellH = keyboardOpen ? visibleH : layoutH;
-    // 붙여넣기 중에는 상단바만 숨기고 그 자리는 그대로 둔다.
-    // 키보드 감지 순간 mainScroll.top 이 0으로 바뀌면 패널 전체가 한 번 튄다.
+    // 상단바를 숨겨도 그 자리의 높이는 유지한다. 키보드 감지 순간 본문 top이 바뀌면
+    // 등록 패널과 편집 행이 한 번 더 점프한다.
     var headerH = headerEl.offsetHeight;
     var footerVisible = !keyboardOpen && footEl && !footEl.classList.contains('hide');
     var footerH = footerVisible ? footEl.offsetHeight : 0;
     var mainH = Math.max(0, shellH - headerH - footerH);
-    // iOS는 키보드 포커스 중 layout viewport 자체를 pan할 수 있다.
-    // 레이아웃 top을 바꾸면 Safari의 포커스 이동과 앱 레이아웃이 서로 밀어낸다.
-    // 셸의 문서 좌표는 0에 고정하고, visualViewport pan만 transform으로 상쇄한다.
+    // visual viewport의 pan 값은 iOS 포커스 애니메이션의 중간값이다.
+    // 앱 셸이 그 값을 따라 움직이면 Safari의 자체 이동과 합쳐져 위·아래로 왕복한다.
+    // 셸은 항상 0에 두고, 키보드로 줄어든 높이만 반영한다.
     appShell.style.top = '0px';
-    appShell.style.setProperty('--visual-offset-y', viewportTop + 'px');
     appShell.style.setProperty('--layout-height', shellH + 'px');
     appShell.style.setProperty('--header-height', headerH + 'px');
     appShell.style.setProperty('--main-top', headerH + 'px');
     appShell.style.setProperty('--main-height', mainH + 'px');
-    var visualBottom = viewportTop + visibleH;
     document.documentElement.style.setProperty('--kb',
-      keyboardOpen ? Math.max(0, layoutH - visualBottom) + 'px' : '0px');
-    // 내용 정렬은 키보드 세션당 한 번만 별도 스케줄러에서 실행한다.
+      keyboardOpen ? Math.max(0, layoutH - visibleH) + 'px' : '0px');
   }
   function pasteViewportMove(textareaRect, actionRect, viewport, caretInset){
     if (!textareaRect || !actionRect || !viewport) return 0;
@@ -2619,14 +2625,9 @@ window.dispatchEvent(new Event('fb-ready'));
     return minimum;
   }
   function alignPasteKeyboardContent(){
-    if (!pasteKeyboardActive() || keyboardUserScrolled) return;
-    var style = getComputedStyle(taEl);
-    var caretInset = (parseFloat(style.paddingTop) || 0)
-      + (parseFloat(style.lineHeight) || 0);
-    var move = pasteViewportMove(taEl.getBoundingClientRect(),
-      document.getElementById('loadBtn').getBoundingClientRect(),
-      rosterViewportRect(), caretInset);
-    if (Math.abs(move) > 1) rosterScrollBy(move, 'auto');
+    // 키보드 중 명단 등록 화면은 고정 높이 flex 패널이 담당한다.
+    // 오류 바가 나타나거나 사라져도 mainScroll을 자동으로 움직이지 않는다.
+    return;
   }
   function cancelKeyboardAlignment(){
     if (keyboardAlignTimer) clearTimeout(keyboardAlignTimer);
@@ -2740,15 +2741,8 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardUserScrolled = false;
       syncKeyboardPresentation();
       applyViewportGeometry();
-      ensureViewportGeometryGuard();
       if (keyboardOpen) scheduleKeyboardAlignment();
     }
-  }, true);
-  document.addEventListener('focusout', function(){
-    requestAnimationFrame(function(){
-      if (!keyboardOpen && !textKeyboardTarget(document.activeElement))
-        stopViewportGeometryGuard();
-    });
   }, true);
   document.addEventListener('pointerdown', function(e){
     if (textKeyboardTarget(e.target)){
@@ -2815,26 +2809,6 @@ window.dispatchEvent(new Event('fb-ready'));
     // 닫힌 뒤에는 별도 위치 보정을 하지 않는다. 하단바·여백·본문 높이 복원과
     // 추가 scrollTo가 연달아 실행되면 사용자는 두 단계 복귀로 보게 된다.
   }
-  var viewportGuardFrame = 0;
-  function viewportGuardActive(){
-    return keyboardOpen || textKeyboardTarget(document.activeElement);
-  }
-  function stopViewportGeometryGuard(){
-    if (viewportGuardFrame) cancelAnimationFrame(viewportGuardFrame);
-    viewportGuardFrame = 0;
-  }
-  function ensureViewportGeometryGuard(){
-    // WebKit은 키보드가 다 올라온 뒤에도 offsetTop을 늦게 바꾸면서
-    // 별도 visualViewport 이벤트를 보내지 않는 경우가 있다.
-    // 텍스트 포커스 세션 동안에는 scrollTop을 건드리지 않고 좌표만 추적한다.
-    if (viewportGuardFrame) return;
-    function step(){
-      viewportGuardFrame = 0;
-      applyViewportGeometry();
-      if (viewportGuardActive()) viewportGuardFrame = requestAnimationFrame(step);
-    }
-    viewportGuardFrame = requestAnimationFrame(step);
-  }
   function kbFit(){
     if (!vv) return;
     var wasOpen = keyboardOpen;
@@ -2860,8 +2834,6 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardBaseH = Math.max(keyboardBaseH, visibleH);
       applyViewportGeometry();
     }
-    // 키보드 세션 동안 늦게 들어오는 viewport pan도 계속 상쇄한다.
-    ensureViewportGeometryGuard();
   }
   if (vv){
     vv.addEventListener('resize', kbFit);
@@ -3463,7 +3435,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.5<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.6<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
