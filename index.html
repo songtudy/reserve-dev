@@ -88,11 +88,10 @@
     -webkit-text-size-adjust:100%;
   }
   .appShell{
-    --shell-shift:0px;--layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
+    --layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
     position:fixed;left:0;right:0;top:0;margin:0 auto;
     width:100%;max-width:640px;height:var(--layout-height);overflow:hidden;
-    background:var(--ink);transform:translate3d(0,var(--shell-shift),0);
-    will-change:transform,height;
+    background:var(--ink);will-change:height;
   }
   .mainScroll{
     position:absolute;z-index:1;left:0;right:0;top:var(--main-top);height:var(--main-height);
@@ -2542,17 +2541,15 @@ window.dispatchEvent(new Event('fb-ready'));
   var lastEditControlId = null;
   var keyboardUserScrolled = false;
   var keyboardAlignTimer = null;
-  var keyboardCloseTimer = null;
   var keyboardSessionToken = 0;
   var keyboardAlignedToken = -1;
+  var keyboardAlignedViewportH = -1;
   var keyboardFocusedId = null;
   var keyboardTouch = null;
   var keyboardPreAlignedId = null;
   var keyboardSessionMode = null;
-  var keyboardLastViewportMotionAt = 0;
   var KEYBOARD_ALIGN_SETTLE_MS = 180;
   var KEYBOARD_DELTA = 120;
-  var KEYBOARD_CLOSE_QUIET_MS = 120;
   var KEYBOARD_CLOSE_TOLERANCE = 8;
   function visibleViewportH(){
     return vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
@@ -2572,35 +2569,27 @@ window.dispatchEvent(new Event('fb-ready'));
     return editing ? 'edit:' + editing : null;
   }
   function syncKeyboardPresentation(){
-    document.body.classList.toggle('paste-keyboard', pasteKeyboardActive());
+    document.body.classList.toggle('paste-keyboard',
+      keyboardOpen && pasteKeyboardActive());
   }
   function applyViewportGeometry(){
     if (!appShell || !mainScroll || !headerEl) return;
     var layoutH = Math.max(1, keyboardBaseH || visibleViewportH());
-    // iOS의 키보드 자동 팬에서는 보이는 영역이 0부터 시작하지 않는다.
-    // height만 절대 좌표처럼 쓰면 offsetTop만큼 상단바가 빠지고 본문 아래가 빈다.
-    // 셸 전체를 하나의 Visual Viewport 사각형으로 옮겨 세 영역의 좌표계를 통일한다.
-    var viewportTop = keyboardOpen && vv
-      ? Math.max(0, Math.round(Number(vv.offsetTop) || 0)) : 0;
     var shellH = keyboardOpen ? Math.max(1, visibleViewportH()) : layoutH;
-    var pasteMode = pasteKeyboardActive();
+    var pasteMode = keyboardOpen && pasteKeyboardActive();
     var headerH = pasteMode ? 0 : headerEl.offsetHeight;
     var footerVisible = !keyboardOpen && footEl && !footEl.classList.contains('hide');
     var footerH = footerVisible ? footEl.offsetHeight : 0;
     var mainH = Math.max(0, shellH - headerH - footerH);
-    // 레이아웃 top은 항상 0이다. iOS 자동 팬의 반대 방향 이동은
-    // 합성 transform으로만 따라가 상단바를 매 프레임 재배치하지 않는다.
-    appShell.style.setProperty('--shell-shift', viewportTop + 'px');
+    // 셸과 상단바의 화면 좌표는 항상 0이다. Visual Viewport offsetTop은
+    // Safari의 포커스 팬 과정일 뿐 CSS 위치로 다시 적용하지 않는다.
     appShell.style.setProperty('--layout-height', shellH + 'px');
     appShell.style.setProperty('--header-height', headerH + 'px');
     appShell.style.setProperty('--main-top', headerH + 'px');
     appShell.style.setProperty('--main-height', mainH + 'px');
     document.documentElement.style.setProperty('--kb',
       keyboardOpen ? Math.max(0, layoutH - visibleViewportH()) + 'px' : '0px');
-    // 붙여넣기 화면은 등록 버튼의 하단만 현재 보이는 영역에 맞춘다.
-    // 별도의 지연 smooth 스크롤을 만들지 않아 키보드 애니메이션과 한 동작이 된다.
-    if (keyboardOpen && pasteKeyboardActive() && !keyboardUserScrolled)
-      alignPasteKeyboardContent();
+    // 내용 정렬은 키보드 세션당 한 번만 별도 스케줄러에서 실행한다.
   }
   function pasteViewportMove(textareaRect, actionRect, viewport, caretInset){
     if (!textareaRect || !actionRect || !viewport) return 0;
@@ -2633,11 +2622,14 @@ window.dispatchEvent(new Event('fb-ready'));
     keyboardAlignTimer = null;
   }
   function alignKeyboardContent(token){
+    var viewportH = visibleViewportH();
     if (!keyboardOpen || keyboardUserScrolled || token !== keyboardSessionToken
-        || keyboardAlignedToken === token) return;
+        || (keyboardAlignedToken === token
+          && keyboardAlignedViewportH === viewportH)) return;
     var key = keyboardAlignmentKey();
     if (!key) return;
     keyboardAlignedToken = token;
+    keyboardAlignedViewportH = viewportH;
     if (key === 'paste') alignPasteKeyboardContent();
     else if (keyboardFocusedId && editing === keyboardFocusedId
         && keyboardPreAlignedId !== keyboardFocusedId){
@@ -2740,6 +2732,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (!keyboardOpen) keyboardBaseH = Math.max(keyboardBaseH, visibleViewportH());
       keyboardSessionToken++;
       keyboardAlignedToken = -1;
+      keyboardAlignedViewportH = -1;
       keyboardUserScrolled = false;
       syncKeyboardPresentation();
       applyViewportGeometry();
@@ -2786,26 +2779,16 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   mainScroll.addEventListener('scroll', onRosterScroll, { passive:true });
-  function cancelKeyboardClose(){
-    if (keyboardCloseTimer) clearTimeout(keyboardCloseTimer);
-    keyboardCloseTimer = null;
-  }
   function finishKeyboardClose(){
-    cancelKeyboardClose();
     cancelKeyboardAlignment();
     var closeHeightDelta = Math.abs(keyboardBaseH - visibleViewportH());
     var closeOffset = vv ? Math.abs(Math.round(Number(vv.offsetTop) || 0)) : 0;
     if (closeHeightDelta > KEYBOARD_CLOSE_TOLERANCE || closeOffset > 2) return;
-    var quietFor = performance.now() - keyboardLastViewportMotionAt;
-    if (quietFor < KEYBOARD_CLOSE_QUIET_MS){
-      keyboardCloseTimer = setTimeout(finishKeyboardClose,
-        Math.ceil(KEYBOARD_CLOSE_QUIET_MS - quietFor));
-      return;
-    }
     var openRow = editing ? rowForId(editing) : null;
     var openRowTop = openRow ? openRow.getBoundingClientRect().top : null;
     keyboardOpen = false;
     keyboardAlignedToken = -1;
+    keyboardAlignedViewportH = -1;
     keyboardPreAlignedId = null;
     keyboardFocusedId = null;
     document.body.classList.remove('keyboard-open');
@@ -2825,15 +2808,8 @@ window.dispatchEvent(new Event('fb-ready'));
       if (Math.abs(move) > 1) rosterScrollBy(move, 'auto');
     }
   }
-  function scheduleKeyboardClose(){
-    cancelKeyboardClose();
-    var quietFor = performance.now() - keyboardLastViewportMotionAt;
-    keyboardCloseTimer = setTimeout(finishKeyboardClose,
-      Math.max(0, Math.ceil(KEYBOARD_CLOSE_QUIET_MS - quietFor)));
-  }
   function kbFit(){
     if (!vv) return;
-    keyboardLastViewportMotionAt = performance.now();
     var wasOpen = keyboardOpen;
     var visibleH = visibleViewportH();
     var contracted = keyboardBaseH - visibleH > KEYBOARD_DELTA;
@@ -2843,6 +2819,7 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardUserScrolled = false;
       cancelKeyboardAlignment();
       keyboardAlignedToken = -1;
+      keyboardAlignedViewportH = -1;
     }
     document.body.classList.toggle('keyboard-open', keyboardOpen);
     syncKeyboardPresentation();
@@ -2850,9 +2827,8 @@ window.dispatchEvent(new Event('fb-ready'));
     applyViewportGeometry();
     if (keyboardOpen){
       if (contracted){
-        cancelKeyboardClose();
         scheduleKeyboardAlignment();
-      } else scheduleKeyboardClose();
+      } else finishKeyboardClose();
     } else if (!textKeyboardTarget(document.activeElement)){
       keyboardBaseH = Math.max(keyboardBaseH, visibleH);
       applyViewportGeometry();
@@ -3458,7 +3434,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.4<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3659,7 +3635,6 @@ window.dispatchEvent(new Event('fb-ready'));
       // 줄어든 화면을 새 기준 높이로 저장하면 이후에도 키보드를 놓치게 된다.
       kbFit();
     } else {
-      cancelKeyboardClose();
       keyboardOpen = false;
       keyboardBaseH = visibleViewportH();
       document.documentElement.style.setProperty('--kb', '0px');
