@@ -101,20 +101,14 @@
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;padding:0 14px 18px;
-    /* 명단은 키보드 뒤까지 그대로 깔린다(반투명 키보드로 비침). 포커스 칸을 스크롤로
-       드러낼 때만 scroll-padding 으로 키보드 위에 오게 한다 — 검은 여백을 안 만든다. */
-    scroll-padding-bottom:calc(18px + var(--kb, 0px));
+    /* .wrap 자체엔 키보드용 여백을 안 준다 → 명단이 키보드 뒤까지 그대로 깔려 비친다.
+       검은 박스는 여기에 padding-bottom 을 주는 순간 생겼었다. */
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
-  /* 수정 폼이 열린 채 키보드가 뜨면, 폼(저장 버튼)을 항상 키보드 위로 올릴 수 있게
-     아래 여백을 준다. 이 화면은 명단을 보는 게 아니라 폼을 채우는 상황이라 검은 띠 감수. */
-  body.editing-row.keyboard-open > .wrap{ padding-bottom:calc(18px + var(--kb, 0px)) }
-  /* 붙여넣기 + 키보드: 카드를 키보드 위 남는 공간 가운데로 (뒤에 볼 내용 없음). */
-  body.paste-open.keyboard-open > .wrap{
-    display:flex;flex-direction:column;justify-content:center;
-    padding-bottom:calc(18px + var(--kb, 0px));
-  }
+  /* 수정 중 + 키보드: 명단 "맨 끝"에만 스크롤 여유를 준다. 이 여백은 마지막 행을
+     편집할 때만 닿고, 그때도 키보드 뒤라 안 보인다. 중간 행/검색엔 영향 없음. */
+  body.editing-row.keyboard-open #list{ padding-bottom:var(--kb, 0px) }
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -2475,6 +2469,10 @@ window.dispatchEvent(new Event('fb-ready'));
   var KB_MIN = 90;                       // 이보다 크게 줄면 키보드로 본다
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
+  function cssKb(){
+    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0;
+  }
+
   function applyViewport(){
     var h = visibleViewportH();
     // 키보드가 가리는 높이 = 레이아웃 뷰포트 높이 - 보이는 높이.
@@ -2487,26 +2485,57 @@ window.dispatchEvent(new Event('fb-ready'));
       document.body.classList.toggle('keyboard-open', open);
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
-      if (open && editing) nudgeEditAboveKeyboard();
+      // 키보드가 내려가면 붙여넣기 입력칸을 원래(창 열 때 정한) 높이로 되돌린다
+      if (!open && panel && !panel.classList.contains('hide')) autoGrow();
+    }
+    if (open){
+      if (editing) placeEditForm();
+      else if (panel && !panel.classList.contains('hide')) fitPasteCard();
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
       kbBaseH = Math.max(kbBaseH, h);
   }
 
-  // iOS 가 포커스 칸을 스크롤한 뒤, 수정 폼의 저장·취소 버튼이 키보드에 걸려 있으면
-  // 걸린 만큼만 .wrap 을 더 올린다. 안 걸렸으면 아무것도 안 한다 (blind 스크롤 아님).
-  function nudgeEditAboveKeyboard(){
-    setTimeout(function(){
-      if (!keyboardOpen || !editing || !wrapEl) return;
+  // 붙여넣기 카드: 키보드 위 남는 높이를 재서 입력칸을 딱 그만큼 맞춘다.
+  // 카드가 화면(키보드 위)을 상단~하단 꽉 채운다. 키보드 뜰 때 한 번만 — 타이핑 중엔 안 바뀜.
+  function fitPasteCard(){
+    if (!wrapEl || !taEl || panel.classList.contains('hide')) return;
+    var slot = visibleViewportH() - 24;             // 키보드 위 + 위아래 여백
+    var chrome = panel.getBoundingClientRect().height - taEl.getBoundingClientRect().height;
+    var target = Math.max(120, Math.round(slot - chrome));
+    if (Math.abs(target - (parseFloat(taEl.style.height) || 0)) < 2) return;
+    taEl.style.height = target + 'px';
+    taEl.style.overflowY = (taEl.scrollHeight > target + 2) ? 'auto' : 'hidden';
+    hl.scrollTop = taEl.scrollTop;
+    if (wrapEl) wrapEl.scrollTop = 0;
+  }
+
+  // 수정 폼: 슬롯[헤더 밑 ~ 키보드 위]에 폼 전체가 보이게 .wrap 을 정확히 스크롤한다.
+  //  - 폼이 슬롯에 들어가면  → 폼 위를 헤더 바로 밑에
+  //  - 안 들어가거나 스크롤 한계면 → 폼 아래(저장 버튼)를 키보드 바로 위에
+  // scrollIntoView 아님. 목표 scrollTop 을 계산해서 한 번 맞춘다.
+  function placeEditForm(){
+    if (!wrapEl || !editing) return;
+    requestAnimationFrame(function(){
+      if (!keyboardOpen || !editing) return;
       var row = rowForId(editing);
-      var eb = row && row.querySelector('.ebtn');
-      if (!eb) return;
-      var kb = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0;
-      var kbTopY = wrapEl.getBoundingClientRect().bottom - kb;
-      var over = eb.getBoundingClientRect().bottom - (kbTopY - 8);
-      if (over > 4) wrapEl.scrollTop += over;
-    }, 220);
+      var form = row && (row.querySelector('.edit') || row);
+      if (!row || !form) return;
+      var wr = wrapEl.getBoundingClientRect();
+      var topEdge = wr.top + 8;                       // 헤더 바로 밑 (= .wrap 위 끝)
+      var botEdge = wr.bottom - cssKb() - 12;         // 키보드 바로 위
+      var r = row.getBoundingClientRect();
+      var delta;
+      if (r.height <= botEdge - topEdge){
+        delta = r.top - topEdge;                      // 폼 위를 헤더 밑에
+      } else {
+        var fr = form.getBoundingClientRect();
+        delta = fr.bottom - botEdge;                  // 저장 버튼을 키보드 위에
+      }
+      var max = wrapEl.scrollHeight - wrapEl.clientHeight;
+      wrapEl.scrollTop = Math.max(0, Math.min(wrapEl.scrollTop + delta, max));
+    });
   }
 
   if (vv){
@@ -3092,7 +3121,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.9<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.10<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
