@@ -92,23 +92,15 @@
     touch-action:manipulation;        /* 두 번 탭 확대 방지 */
     -webkit-text-size-adjust:100%;
   }
+  /* 키보드가 올라오면 하단 바를 숨긴다 (어차피 키보드 뒤라 못 쓴다).
+     상단 헤더는 늘 유지 — 숨겼다 되살리면 화면이 튄다. */
   body.keyboard-open > .foot{display:none}
-  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나짜리 폼이다.
-     v1.8.1 — 움직이는 부품을 전부 없앤다 (트랜지션·타이머·pan 보정 0). 원리:
-     - 상단바를 이 화면에서 아예 안 보이게 한다 (paste-open 순간부터 — 키보드 감지에
-       엮지 않으므로 애니메이션 도중 깜빡이는 "띡" 이 없다).
-     - 카드(taFixedH)는 키보드 위 공간에 통째로 들어갈 만큼 작다 → 키보드가 올라와도
-       포커스 칸이 이미 다 보이므로 iOS 가 스크롤도 pan 도 안 한다 (= 미동 없음).
-     - .wrap 은 스크롤 컨테이너로 두되(overflow-y:auto 유지 — hidden 으로 바꾸면 iOS 가
-       .wrap 대신 레이아웃 뷰포트를 pan 한다) --kb 여백만 없애 스크롤 범위를 0 으로.
+  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나짜리 폼이다. 명단 관리 화면과 달리
+     '고정'하지 않는다 — .wrap 이 (--kb 만큼 여유를 두고) 정상 스크롤되게 두고,
+     openPaste 에서 scrollIntoView 로 부드럽게 이동한다. 키보드가 올라오면 iOS 가
+     .wrap 을 네이티브 관성으로 스크롤해 입력칸을 드러낸다 (1.4.0 방식, iOS 에 맡김).
      입력칸 높이는 taFixedH 로 열 때 한 번만 정한다 (오류가 떠도 안 움직임 = 버튼 씹힘 방지). */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
-  body.paste-open header{ display:none }
-  body.paste-open .wrap{
-    padding-top:calc(env(safe-area-inset-top) + 10px);
-    padding-bottom:18px;                       /* --kb 제거 = 스크롤 범위 0 */
-    overscroll-behavior:none;
-  }
   /* 예시 문구는 .hl 오버레이에 그린다 (iOS textarea 여러 줄 placeholder 버그 회피) */
   .hl .ln.ph{ color:var(--ph); -webkit-text-fill-color:var(--ph) }
   .wrap{
@@ -960,11 +952,6 @@ window.dispatchEvent(new Event('fb-ready'));
     if (row && active && row.contains(active) && active.blur) active.blur();
     editing = null;
     openMenu = null;
-    pendingKeyboardEditClose = null;
-    followMenuId = null;
-    keyboardRevealId = null;
-    keyboardRevealSmooth = false;
-    lastEditControlId = null;
     return true;
   }
 
@@ -1540,29 +1527,17 @@ window.dispatchEvent(new Event('fb-ready'));
   function tapMore(id){
     keepSlotOpenForId(id);
     if (editing === id){               // 같은 행이면 저장하지 않고 접는다
-      editing = null; openMenu = null; lastEditControlId = null; renderAnchored(id);
+      editing = null; openMenu = null; renderAnchored(id);
       return;
     }
     if (editing){                       // 다른 행의 수정 창은 닫고 그 행을 새 기준으로 삼는다
       keepSlotOpenForId(editing);
-      if (keyboardOpen){ keyboardRevealId = editing; keyboardRevealSmooth = false; }
-      editing = null; lastEditControlId = null;
+      editing = null;
     }
     if (openMenu && openMenu !== id) keepSlotOpenForId(openMenu);
     openMenu = (openMenu === id) ? null : id;
     render();
-    if (openMenu){
-      // 수정 입력창을 없앤 직후에는 실제 키보드가 아직 내려가는 중일 수 있다.
-      // 당장은 가능한 만큼만 드러내고, 종료가 확정되면 이 새 메뉴를 한 번 더 맞춘다.
-      if (keyboardOpen){
-        followMenuId = id;
-        keyboardRevealId = null;
-        keyboardRevealSmooth = false;
-      }
-      ensureVisible(id);
-    } else if (followMenuId === id){
-      followMenuId = null;
-    }
+    if (openMenu) ensureVisible(id);
   }
 
   function runMenuAction(id, action, status){
@@ -1578,7 +1553,7 @@ window.dispatchEvent(new Event('fb-ready'));
         closeSearch(false);
         backDone();
       }
-      editing = id; openMenu = null; lastEditControlId = null; render();
+      editing = id; openMenu = null; render();
       neutralFocusEdit(id);
       ensureVisible(id);
       return;
@@ -1689,7 +1664,7 @@ window.dispatchEvent(new Event('fb-ready'));
       form.querySelector('#e-no').addEventListener('click', function(){
         keepSlotOpenForId(it.id);
         var anchor = editing;
-        editing = null; lastEditControlId = null; renderAnchored(anchor);
+        editing = null; renderAnchored(anchor);
       });
       form.querySelector('#e-ok').addEventListener('click', function(){
         applyEdit(it.id,
@@ -1777,8 +1752,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
       keepSlotOpenForId(it.id);
-      if (deferKeyboardEditClose(it.id, it.id)) return;
-      editing = null; lastEditControlId = null; render(); return;
+      editing = null; render(); return;
     }
 
     // 시간이 바뀌면 옮겨간 시간대의 맨 뒤로
@@ -1803,7 +1777,6 @@ window.dispatchEvent(new Event('fb-ready'));
     state.rosterTs = Date.now();
     var anchor = editing;
     editing = null;
-    lastEditControlId = null;
     if (timeMoved) render();                 // 시간이 바뀌면 자리가 달라지니 그냥 다시 그린다
     else renderAnchored(anchor);             // 제자리 수정이면 행이 안 튀게 보정
     if (timeMoved) ensureVisible(it.id);
@@ -2163,7 +2136,6 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 시간대 접기 / 펼치기
   function toggleSlot(time){
-    if (pendingKeyboardEditClose) return;
     if (!state) return;
     var mine = state.items.filter(function(x){ return x.time === time; });
     if (!mine.length) return;
@@ -2257,12 +2229,10 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 입력칸 높이는 창을 열 때 한 번만 정한다 (내용·키보드·오류와 무관).
   // → 등록 버튼이 늘 같은 자리 (버튼 씹힘 방지). 넘치는 줄은 입력칸 안에서 스크롤.
-  // 카드가 키보드 위 공간(≈화면높이×0.5)에 헤더 pan 후에도 통째로 들어가도록 작게 잡는다.
-  // (v1.7.0 은 이게 커서 카드 위가 잘렸다. 헤더 사라짐·부드러움은 iOS 의 pan 에 맡긴다.)
   var taFixedH = 0;
   function pasteBaseH(){
     var vh = window.innerHeight || 700;
-    return Math.max(150, Math.min(Math.round(vh * 0.5) - 180, 320));
+    return Math.max(200, Math.min(Math.round(vh * 0.46) - 43, 360));
   }
   function applyTaHeight(){
     if (!taFixedH) taFixedH = pasteBaseH();
@@ -2385,8 +2355,8 @@ window.dispatchEvent(new Event('fb-ready'));
     panel.classList.remove('hide');
     document.body.classList.add('paste-open');
     if (silent) return;
-    // 카드는 상단바가 없는 .wrap 맨 위에 있다 (스크롤 범위 0). 확실히 맨 위로만 맞춘다.
-    if (wrapEl) wrapEl.scrollTop = 0;
+    // .wrap 을 카드로 부드럽게 스크롤 → 키보드가 올라와도 iOS 가 이어서 자연스럽게 조정
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(function(){ ta.focus(); }, 200);
   }
   function closePaste(){
@@ -2469,12 +2439,6 @@ window.dispatchEvent(new Event('fb-ready'));
   //                        (2) 키보드 열림 감지 → body.keyboard-open (하단 바 숨김)
   var vv = window.visualViewport;
   var keyboardOpen = false;
-  // 옛 코드가 참조하는 이름들 — 새 모델에서는 대부분 쓰지 않지만 남겨 둔다
-  var followMenuId = null;
-  var keyboardRevealId = null;
-  var keyboardRevealSmooth = false;
-  var pendingKeyboardEditClose = null;
-  var lastEditControlId = null;
 
   function textKeyboardTarget(el){
     return !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT');
@@ -2519,10 +2483,6 @@ window.dispatchEvent(new Event('fb-ready'));
     [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
   });
   applyViewport();
-
-  // 수정 저장 시 키보드 종료를 지연하던 로직은 없앴다 —
-  // .wrap 만 스크롤되는 구조라 폼이 짧아져도 화면이 튀지 않는다.
-  function deferKeyboardEditClose(){ return false; }
 
   /* ---------- 뒤로가기 ---------- */
   // 앱 모드에서는 뒤로가기를 누르면 앱이 그대로 꺼진다.
@@ -2577,9 +2537,6 @@ window.dispatchEvent(new Event('fb-ready'));
     confirmDlg(day + ' 명단을 초기화할까요?\n「예」를 입력해 주세요', function(){
       logAdd('명단 초기화', state.items.length + '건 지움');
       editing = null; openMenu = null;
-      pendingKeyboardEditClose = null;
-      followMenuId = null;
-      keyboardRevealId = null; keyboardRevealSmooth = false; lastEditControlId = null;
       deferredState = null; backgroundRenderPending = false;
       state = { date: viewDate, rosterTs: Date.now(), items: [] };
       collapsed = {};
@@ -2636,7 +2593,6 @@ window.dispatchEvent(new Event('fb-ready'));
 
   listEl.addEventListener('pointerdown', function(e){
     tapInfo = null;
-    if (pendingKeyboardEditClose) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     var m = e.target.closest && e.target.closest('.main, .more, .ghead, .menu button');
     if (!m) return;
@@ -2658,7 +2614,6 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   listEl.addEventListener('pointerup', function(e){
-    if (pendingKeyboardEditClose){ tapInfo = null; return; }
     var t = tapInfo; tapInfo = null;
     if (!t || e.pointerId !== t.pid) return;
     if (Math.abs(e.clientX - t.x) > SLOP || Math.abs(e.clientY - t.y) > SLOP) return;  // 밀었으면 취소
@@ -2677,7 +2632,6 @@ window.dispatchEvent(new Event('fb-ready'));
   // 손가락이 아닌 경로(키보드 Enter, 보이스오버 등)는 여전히 click 으로 들어온다.
   // 손가락에서 뒤따르는 중복 click 은 위의 좌표 판정에서 이미 걸러진다.
   listEl.addEventListener('click', function(e){
-    if (pendingKeyboardEditClose) return;
     var m = e.target.closest && e.target.closest('.main, .more');
     if (!m) return;
     var row = m.closest('.row');
@@ -2748,9 +2702,6 @@ window.dispatchEvent(new Event('fb-ready'));
     rosterLoadEpoch++;
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
     collapseTimers = {};
-    followMenuId = null;
-    keyboardRevealId = null; keyboardRevealSmooth = false; lastEditControlId = null;
-    pendingKeyboardEditClose = null;
   }
   function goDate(ds){
     discardEditing();
@@ -2788,7 +2739,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (!isCollapsed(it.time, pend ? 1 : 0)) anyOpen = true;
     });
     Object.keys(times).forEach(function(t){ setCollapsed(t, anyOpen, times[t]); });
-    if (anyOpen){ editing = null; openMenu = null; lastEditControlId = null; } // 전부 접을 땐 열린 폼도 닫는다
+    if (anyOpen){ editing = null; openMenu = null; } // 전부 접을 땐 열린 폼도 닫는다
     render();
   });
 
@@ -3087,7 +3038,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.8.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.9.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
