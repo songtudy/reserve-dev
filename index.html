@@ -100,10 +100,9 @@
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;
-    /* 키보드가 올라오면 그만큼 아래 여백을 줘 마지막 내용이 키보드 위로 스크롤되고,
-       scroll-padding 으로 scrollIntoView 도 키보드 위에 맞춘다 */
+    /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
+       iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
     padding:0 14px calc(18px + var(--kb, 0px));
-    scroll-padding-bottom:calc(18px + var(--kb, 0px));
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
@@ -1402,6 +1401,7 @@ window.dispatchEvent(new Event('fb-ready'));
       } else {
         em.classList.add('hide');
         if (state && panel.classList.contains('hide')) openPaste(true);
+        document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
       }
       return;
     }
@@ -1447,6 +1447,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
     var fb = document.getElementById('foldBtn');
     if (fb) fb.textContent = openCount ? '전체 접기' : '전체 펼치기';
+
+    // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
+    document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
   }
 
   // 명단은 이제 .wrap 안에서만 스크롤된다. 대상이 스크롤러 밖으로 벗어나면
@@ -2462,10 +2465,11 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function applyViewport(){
     var h = visibleViewportH();
-    var top = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
-    // 레이아웃 뷰포트 바닥과 보이는 뷰포트 바닥의 차 = 키보드가 가리는 높이
-    var inset = Math.max(0, Math.round((window.innerHeight || 0) - h - top));
-    document.documentElement.style.setProperty('--kb', inset + 'px');
+    // 키보드가 가리는 높이 = 레이아웃 뷰포트 높이 - 보이는 높이. 화면이 밀렸든(offsetTop)
+    // 아니든 이 값은 그대로다. .wrap 아래 여백으로 써서, .wrap 이 스스로 포커스 칸을
+    // 키보드 위로 올릴 수 있게 한다 → 아이폰이 화면 전체를 밀(pan) 필요가 없어진다.
+    var kb = Math.max(0, Math.round((window.innerHeight || 0) - h));
+    document.documentElement.style.setProperty('--kb', kb + 'px');
 
     var open = textKeyboardTarget(document.activeElement) && (kbBaseH - h) > KB_MIN;
     if (open !== keyboardOpen){
@@ -2473,16 +2477,6 @@ window.dispatchEvent(new Event('fb-ready'));
       document.body.classList.toggle('keyboard-open', open);
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
-      if (open){
-        // 키보드 위로 끌어올릴 대상: 수정 중이면 그 폼의 저장·취소 버튼,
-        // 붙여넣기 중이면 등록 버튼. .wrap 아래 여백(--kb)이 있어 스크롤이 닿는다.
-        requestAnimationFrame(function(){
-          var t = null;
-          if (editing){ var r = rowForId(editing); t = (r && r.querySelector('.ebtn')) || r; }
-          else if (panel && !panel.classList.contains('hide')) t = panel.querySelector('.btns');
-          if (t) t.scrollIntoView({ block: 'end', behavior: 'auto' });
-        });
-      }
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
@@ -3072,7 +3066,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.6<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.7<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
