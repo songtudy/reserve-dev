@@ -101,7 +101,8 @@
      입력칸을 화면의 32%(고정)로 잡으면 제목·안내·입력칸·등록버튼이 전부 키보드 위에 들어간다.
      키보드가 있든 없든 항상 같은 크기 — JS 로 화면 높이를 재지 않는다(측정 버그 원천 차단).
      카드가 늘 화면보다 작아 .wrap 스크롤 범위가 0(흰 스크롤바 없음).
-     iOS 가 포커스 시 화면을 위로 미는 것(visualViewport.offsetTop)은 counterPan() 이 상쇄한다. */
+     iOS 가 포커스 시 화면을 위로 미는 것(visualViewport.offsetTop)은 startCounterPan() 의
+     매 프레임 루프가 상쇄한다 (밀림·상쇄가 같은 프레임 → 화면 시각적으로 정지). */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
   body.paste-open > .wrap{ padding-bottom:18px; overscroll-behavior:none }
   body.keyboard-open.paste-open > .wrap{ padding-top:calc(env(safe-area-inset-top) + 8px) }
@@ -2383,6 +2384,7 @@ window.dispatchEvent(new Event('fb-ready'));
       wrapEl.scrollTop = 0;
       wrapEl.addEventListener('touchmove', pastePanTrap, { passive: false });
     }
+    startCounterPan();
     if (silent) return;
     setTimeout(function(){ ta.focus(); }, 200);
   }
@@ -2499,18 +2501,27 @@ window.dispatchEvent(new Event('fb-ready'));
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
     }
-    counterPan();
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
       kbBaseH = Math.max(kbBaseH, h);
   }
 
-  // iOS 는 입력칸 포커스 시 레이아웃 뷰포트를 위로 밀 때가 있다(visualViewport.offsetTop).
-  // 붙여넣기 화면에서 그만큼 .wrap 을 도로 내려 밀림을 정확히 상쇄한다. (다른 화면은 안 건드림)
-  function counterPan(){
-    if (!wrapEl) return;
-    var ot = (document.body.classList.contains('paste-open') && vv) ? Math.round(vv.offsetTop) : 0;
-    wrapEl.style.transform = ot > 0 ? ('translateY(' + ot + 'px)') : '';
+  // iOS 는 입력칸 포커스 시 레이아웃 뷰포트를 위로 민다(visualViewport.offsetTop).
+  // 붙여넣기 화면이 열려 있는 동안 매 프레임 그만큼 .wrap 을 도로 내려 밀림을 상쇄한다.
+  // 매 프레임 돌아서 밀림과 상쇄가 같은 프레임에 일어남 → 화면이 시각적으로 완전히 정지.
+  // openPaste 에서 시작, paste-open 이 사라지면 스스로 멈춘다. (다른 화면은 안 건드림)
+  var panRaf = 0;
+  function startCounterPan(){
+    if (panRaf) return;
+    (function loop(){
+      if (!wrapEl || !document.body.classList.contains('paste-open')){
+        if (wrapEl) wrapEl.style.transform = '';
+        panRaf = 0; return;
+      }
+      var ot = vv ? vv.offsetTop : 0;
+      wrapEl.style.transform = ot > 0.5 ? ('translate3d(0,' + ot + 'px,0)') : '';
+      panRaf = requestAnimationFrame(loop);
+    })();
   }
 
   if (vv){
@@ -2528,26 +2539,6 @@ window.dispatchEvent(new Event('fb-ready'));
     [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
   });
   applyViewport();
-
-  /* ===== 임시 진단 (붙여넣기 키보드 위치 문제) — 확인 후 삭제 ===== */
-  (function(){
-    function n(x){ return (x==null||isNaN(x)) ? '?' : Math.round(x); }
-    function tick(){
-      try {
-        if (document.body.classList.contains('paste-open')){
-          var w = wrapEl, cr = panel.getBoundingClientRect();
-          pasteHint.textContent =
-            'vv' + n(vv&&vv.height) + '/ot' + n(vv&&vv.offsetTop) +
-            ' in' + n(window.innerHeight) +
-            ' ' + (document.body.classList.contains('keyboard-open') ? 'KB' : '--') +
-            ' wrp st' + n(w.scrollTop) + '/sh' + n(w.scrollHeight) + '/ch' + n(w.clientHeight) +
-            ' card' + n(cr.top) + '~' + n(cr.bottom);
-        }
-      } catch(e){ pasteHint.textContent = 'err ' + e.message; }
-      requestAnimationFrame(tick);
-    }
-    tick();
-  })();
 
   // 수정 저장 시 키보드 종료를 지연하던 로직은 없앴다 —
   // .wrap 만 스크롤되는 구조라 폼이 짧아져도 화면이 튀지 않는다.
@@ -3116,7 +3107,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.6.4-debug<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.6.5<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
