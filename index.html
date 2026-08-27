@@ -89,11 +89,19 @@
   }
   .appShell{
     --layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
+    --viewport-tail:0px;
     position:fixed;left:0;right:0;top:0;margin:0 auto;
     width:100%;max-width:640px;height:var(--layout-height);overflow:hidden;
     background:var(--ink);
     will-change:height;
   }
+  /* iOS가 포커스 중 visual viewport를 아래로 pan하면 height만큼 만든 셸 뒤에
+     offsetTop 크기의 빈 띠가 남는다. 셸 자체를 움직이지 않고 그 아래쪽만 칠한다. */
+  .appShell::after{
+    content:"";position:absolute;z-index:0;left:0;right:0;bottom:0;
+    height:var(--viewport-tail);background:var(--ink);pointer-events:none;
+  }
+  body.paste-keyboard .appShell::after{background:var(--panel)}
   .mainScroll{
     position:absolute;z-index:1;left:0;right:0;top:var(--main-top);height:var(--main-height);
     min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
@@ -103,9 +111,8 @@
   .wrap{width:100%;margin:0 auto;padding:0 14px calc(18px + var(--keyboard-room, 0px))}
   body.keyboard-open .foot{visibility:hidden;pointer-events:none}
   body.keyboard-open .wrap{padding-bottom:var(--keyboard-room, 0px)}
-  /* 명단 등록은 처음부터 독립 화면으로 쓴다. 키보드가 열린 뒤에 상단바를
-     뒤늦게 없애면 패널 전체가 한 번 위로 점프하므로, 화면을 여는 순간부터 숨긴다. */
-  body.paste-open header{visibility:hidden;pointer-events:none}
+  /* 명단 등록 화면에서도 상단 메뉴·날짜바는 그대로 유지한다.
+     키보드 전용 레이아웃은 본문 안에서만 바뀌고 전역 상단바는 숨기지 않는다. */
   body.paste-open #pastePanel{margin-top:0}
   /* 명단 등록 중에는 바깥 스크롤을 움직이지 않는다. 패널 안에서만 높이가 바뀐다. */
   body.paste-keyboard .mainScroll{overflow-y:hidden}
@@ -2617,18 +2624,19 @@ window.dispatchEvent(new Event('fb-ready'));
     var visibleH = Math.max(1, visibleViewportH());
     var layoutH = Math.max(1, keyboardBaseH || visibleH);
     var shellH = keyboardOpen ? visibleH : layoutH;
-    // 상단바를 숨겨도 그 자리의 높이는 유지한다. 키보드 감지 순간 본문 top이 바뀌면
-    // 등록 패널과 편집 행이 한 번 더 점프한다.
-    var pasteScreen = panel && !panel.classList.contains('hide');
-    var headerH = pasteScreen ? 0 : headerEl.offsetHeight;
+    // 명단 등록 여부와 관계없이 전역 상단바의 자리는 항상 유지한다.
+    // 등록 화면만 0부터 시작하게 만들면 앱을 켰을 때 메뉴가 사라지고 키보드 진입 때도 점프한다.
+    var headerH = headerEl.offsetHeight;
     var footerVisible = !keyboardOpen && footEl && !footEl.classList.contains('hide');
     var footerH = footerVisible ? footEl.offsetHeight : 0;
     var mainH = Math.max(0, shellH - headerH - footerH);
-    // visual viewport의 pan 값은 iOS 포커스 애니메이션의 중간값이다.
-    // 앱 셸이 그 값을 따라 움직이면 Safari의 자체 이동과 합쳐져 위·아래로 왕복한다.
-    // 셸은 항상 0에 두고, 키보드로 줄어든 높이만 반영한다.
+    // offsetTop은 셸의 위치 보정에 쓰지 않는다. 대신 키보드 중 생기는 아래쪽 미도색 영역만
+    // 같은 크기로 연장해 보조바 바로 위에 body 배경이 박스처럼 드러나지 않게 한다.
+    var viewportTail = keyboardOpen && vv
+      ? Math.max(0, Math.round(Number(vv.offsetTop) || 0)) : 0;
     appShell.style.top = '0px';
-    appShell.style.setProperty('--layout-height', shellH + 'px');
+    appShell.style.setProperty('--viewport-tail', viewportTail + 'px');
+    appShell.style.setProperty('--layout-height', (shellH + viewportTail) + 'px');
     appShell.style.setProperty('--header-height', headerH + 'px');
     appShell.style.setProperty('--main-top', headerH + 'px');
     appShell.style.setProperty('--main-height', mainH + 'px');
@@ -3346,7 +3354,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.8<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.9<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
