@@ -89,19 +89,10 @@
   }
   .appShell{
     --layout-height:100dvh;--header-height:84px;--main-top:84px;--main-height:calc(100dvh - 84px);
-    --viewport-tail:0px;
     position:fixed;left:0;right:0;top:0;margin:0 auto;
     width:100%;max-width:640px;height:var(--layout-height);overflow:hidden;
     background:var(--ink);
-    will-change:height;
   }
-  /* iOS가 포커스 중 visual viewport를 아래로 pan하면 height만큼 만든 셸 뒤에
-     offsetTop 크기의 빈 띠가 남는다. 셸 자체를 움직이지 않고 그 아래쪽만 칠한다. */
-  .appShell::after{
-    content:"";position:absolute;z-index:0;left:0;right:0;bottom:0;
-    height:var(--viewport-tail);background:var(--ink);pointer-events:none;
-  }
-  body.paste-keyboard .appShell::after{background:var(--panel)}
   .mainScroll{
     position:absolute;z-index:1;left:0;right:0;top:var(--main-top);height:var(--main-height);
     min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
@@ -110,19 +101,22 @@
   .mainScroll::-webkit-scrollbar{width:auto}
   .wrap{width:100%;margin:0 auto;padding:0 14px calc(18px + var(--keyboard-room, 0px))}
   body.keyboard-open .foot{visibility:hidden;pointer-events:none}
-  body.keyboard-open .wrap{padding-bottom:var(--keyboard-room, 0px)}
   /* 명단 등록 화면에서도 상단 메뉴·날짜바는 그대로 유지한다.
      키보드 전용 레이아웃은 본문 안에서만 바뀌고 전역 상단바는 숨기지 않는다. */
-  body.paste-open #pastePanel{margin-top:0}
+  body.paste-open #pastePanel{
+    margin-top:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
   /* 명단 등록 중에는 바깥 스크롤을 움직이지 않는다. 패널 안에서만 높이가 바뀐다. */
   body.paste-keyboard .mainScroll{overflow-y:hidden}
   body.paste-keyboard .wrap{
     height:100%;min-height:0;display:block;padding-bottom:0;
   }
   body.paste-keyboard #pastePanel{
-    height:100%;margin-top:0;padding-bottom:0;border-bottom:0;
+    height:var(--paste-visible-height, 100%);max-height:100%;
+    margin-top:0;padding-bottom:0;border-bottom:0;
     border-radius:var(--radius) var(--radius) 0 0;
-    display:flex;flex-direction:column;overflow:hidden;
+    display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
   body.paste-keyboard #pastePanel h2,
   body.paste-keyboard #pastePanel p,
@@ -1536,8 +1530,11 @@ window.dispatchEvent(new Event('fb-ready'));
   // 중·하단처럼 가려질 행만 입력 포커스가 시작되기 전에 한 번 같은 기준점으로 옮긴다.
   function editPrefocusMove(rect, band){
     if (!rect || !band) return 0;
-    if (rect.top >= band.top - 1 && rect.bottom <= band.bottom + 1) return 0;
-    return rect.top - band.top;
+    var delta = rect.top - band.top;
+    // 최상단 기준 행은 그대로 둔다. 그보다 아래 행은 수정 버튼을 누른 시점에
+    // 한 번만 같은 기준점으로 옮기고, 실제 입력 포커스 뒤에는 더 움직이지 않는다.
+    if (Math.abs(delta) <= 12) return 0;
+    return delta;
   }
   function prepareEditBeforeFocus(id){
     var row = rowForId(id);
@@ -1556,12 +1553,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var wanted = rosterScrollTop() + editAlignmentMove(row);
     var maximum = Math.max(0, mainScroll.scrollHeight - mainScroll.clientHeight);
     var missing = Math.max(0, Math.ceil(wanted - maximum));
-    // 포커스 직전에는 평상시 18px 꼬리가 있지만 키보드 모드에서는 제거된다.
-    // 하단 행의 임시 공간이 그만큼 줄어들어 다시 밀리지 않게 미리 보상한다.
-    if (missing > 0 && !keyboardOpen){
-      var wrap = mainScroll.querySelector('.wrap');
-      missing += wrap ? (parseFloat(getComputedStyle(wrap).paddingBottom) || 0) : 0;
-    }
+    // 이 여백은 포커스 전에만 한 번 만든다. 키보드 class가 켜져도 wrap의 기본
+    // 18px 여백을 없애지 않으므로 열림/닫힘 중에 높이가 다시 바뀌지 않는다.
     mainScroll.style.setProperty('--keyboard-room', missing + 'px');
   }
   var roomRevealFrame = null;
@@ -2601,8 +2594,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (el.tagName !== 'INPUT') return false;
     return !/^(?:button|checkbox|radio|range|color|file|submit|reset)$/i.test(el.type || 'text');
   }
-  // iOS의 네이티브 포커스가 먼저 실행되면 visual viewport가 입력칸을 따라 pan한다.
-  // 포커스 전에 중앙 목록을 한 번 맞춘 뒤 preventScroll 포커스를 같은 사용자 제스처에서 준다.
+  // preventScroll은 DOM 스크롤만 막는다. iOS의 visual viewport pan을 제어한다고 가정하지 않는다.
+  // 실제 명단 편집 입력은 네이티브 포커스를 그대로 쓰고, 이 helper는 검색·보조 입력 같은 곳에만 쓴다.
   function focusWithoutViewportPan(el){
     if (!el || document.activeElement === el) return;
     try { el.focus({ preventScroll: true }); }
@@ -2623,23 +2616,27 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!appShell || !mainScroll || !headerEl) return;
     var visibleH = Math.max(1, visibleViewportH());
     var layoutH = Math.max(1, keyboardBaseH || visibleH);
-    var shellH = keyboardOpen ? visibleH : layoutH;
-    // 명단 등록 여부와 관계없이 전역 상단바의 자리는 항상 유지한다.
-    // 등록 화면만 0부터 시작하게 만들면 앱을 켰을 때 메뉴가 사라지고 키보드 진입 때도 점프한다.
     var headerH = headerEl.offsetHeight;
-    var footerVisible = !keyboardOpen && footEl && !footEl.classList.contains('hide');
+    // 전역 앱 셸은 키보드 때문에 줄이거나 offsetTop을 따라 움직이지 않는다.
+    // footer도 공간은 그대로 예약하고 시각적으로만 숨겨, mainScroll 높이가 전환 중 바뀌지 않게 한다.
+    var footerVisible = footEl && !footEl.classList.contains('hide');
     var footerH = footerVisible ? footEl.offsetHeight : 0;
-    var mainH = Math.max(0, shellH - headerH - footerH);
-    // offsetTop은 셸의 위치 보정에 쓰지 않는다. 대신 키보드 중 생기는 아래쪽 미도색 영역만
-    // 같은 크기로 연장해 보조바 바로 위에 body 배경이 박스처럼 드러나지 않게 한다.
-    var viewportTail = keyboardOpen && vv
-      ? Math.max(0, Math.round(Number(vv.offsetTop) || 0)) : 0;
+    var mainH = Math.max(0, layoutH - headerH - footerH);
     appShell.style.top = '0px';
-    appShell.style.setProperty('--viewport-tail', viewportTail + 'px');
-    appShell.style.setProperty('--layout-height', (shellH + viewportTail) + 'px');
+    appShell.style.setProperty('--layout-height', layoutH + 'px');
     appShell.style.setProperty('--header-height', headerH + 'px');
     appShell.style.setProperty('--main-top', headerH + 'px');
     appShell.style.setProperty('--main-height', mainH + 'px');
+
+    // visualViewport는 전역 좌표 보정이 아니라 필요한 하위 UI에만 전달한다.
+    // 명단등록은 자기 패널만 키보드 위 보이는 높이로 줄여 내부 스크롤하게 한다.
+    if (keyboardOpen && pasteKeyboardActive()){
+      document.documentElement.style.setProperty('--paste-visible-height',
+        Math.max(1, visibleH - headerH) + 'px');
+    } else {
+      document.documentElement.style.removeProperty('--paste-visible-height');
+    }
+    // 예약 추가/확인 시트처럼 기존에 키보드 높이를 쓰는 독립 overlay만 --kb를 계속 사용한다.
     document.documentElement.style.setProperty('--kb',
       keyboardOpen ? Math.max(0, layoutH - visibleH) + 'px' : '0px');
   }
@@ -2755,8 +2752,9 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   if (vv){
+    // visual viewport의 pan(scroll)은 iOS가 포커스된 입력을 보이기 위해 자체 수행한다.
+    // 여기에 다시 반응하면 앱과 브라우저가 서로 좌표를 보정하므로 resize만 관찰한다.
     vv.addEventListener('resize', kbFit);
-    vv.addEventListener('scroll', kbFit);
   }
   // 명단 유무·검색·날짜 전환으로 상단 요약 줄의 높이가 달라져도
   // 중앙 스크롤 시작점이 이전 높이를 물려받지 않게 한다.
@@ -3354,7 +3352,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.9<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.10<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
