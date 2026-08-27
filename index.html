@@ -97,18 +97,16 @@
      단, 붙여넣기 화면(.paste-open)은 전용 작업이라 헤더도 숨겨 입력칸 자리를 넓힌다. */
   body.keyboard-open > .foot{display:none}
   body.keyboard-open.paste-open > header{display:none}
-  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다. 카드는 내용만큼의 높이이고,
-     입력칸(textarea)의 높이만 JS(fitPaste)가 정한다.
-     iOS 홈화면앱은 키보드가 페이지 위에 얹혀 올라오고(페이지는 안 줄어듦) CSS 로는
-     키보드 높이를 알 수 없다. 그래서 등록 버튼의 실제 위치를 재서(getBoundingClientRect)
-     "키보드 바로 위 6px"에 오도록 입력칸 높이를 맞춘다. 닫힌 루프라 좌표계·safe-area 와
-     무관하게 정확하다. 카드는 늘 화면보다 작아 .wrap 스크롤 범위가 0(흰 바 없음),
+  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다.
+     입력칸을 화면의 31%(고정)로 잡으면 제목·안내·입력칸·등록버튼이 전부 키보드 위에 들어간다.
+     키보드가 있든 없든 항상 같은 크기 — JS 로 화면 높이를 재지 않는다(측정 버그 원천 차단).
+     카드가 늘 화면보다 작아 .wrap 스크롤 범위가 0(흰 스크롤바 없음),
      pastePanTrap 이 손가락 드래그로 화면 미는 것을 막는다. */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
-  /* .wrap 아래 여백에서 --kb 를 뺀다 → 카드가 화면보다 작아 스크롤 범위가 0
-     (흰 스크롤바 없음, iOS 가 .wrap 을 밀 일도 없음). fitPaste 가 카드를 키보드 위에 맞춘다. */
   body.paste-open > .wrap{ padding-bottom:18px; overscroll-behavior:none }
   body.keyboard-open.paste-open > .wrap{ padding-top:calc(env(safe-area-inset-top) + 8px) }
+  body.paste-open #pastePanel .tawrap{ height:31dvh }
+  body.paste-open #pastePanel textarea{ height:100%; overflow-y:auto }
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;
@@ -2253,37 +2251,10 @@ window.dispatchEvent(new Event('fb-ready'));
   function esc(t){
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
-  // 입력칸(textarea) 높이는 taFixedH 하나로 관리한다.
-  //  - 창을 열 때: pasteBaseH() 로 기본값 (화면의 ~44%)
-  //  - 키보드가 올라오면: fitPaste() 가 등록 버튼을 키보드 바로 위로 맞추도록 재계산
-  //  - 오류 안내(#pasteHint)가 빨갛게 바뀌어도 이 값은 안 변함 → 등록 버튼 안 움직임(씹힘 방지)
-  var taFixedH = 0;
-  function pasteBaseH(){
-    var vh = visibleViewportH() || 700;
-    return Math.max(180, Math.min(Math.round(vh * 0.44), 400));
-  }
-  function applyTaHeight(){
-    if (!taFixedH) taFixedH = pasteBaseH();
-    taEl.style.height = taFixedH + 'px';
-    taEl.style.overflowY = (taEl.scrollHeight > taFixedH + 2) ? 'auto' : 'hidden';
-    hl.scrollTop = taEl.scrollTop;
-  }
-  function autoGrow(){ applyTaHeight(); }
-
-  // 붙여넣기 카드가 키보드 위에 통째로 들어가도록 입력칸 높이를 맞춘다.
-  // 카드(#pastePanel)의 실제 아래 위치를 재서 "보이는 화면 바닥 - 6px" 에 오도록 조정한다.
-  // (등록 버튼은 카드 패딩만큼 그 위에 놓임.) 닫힌 루프 — 좌표계/safe-area 와 무관하게 정확.
-  // vv 이벤트마다 불려 키보드 애니메이션 동안 1~2프레임에 수렴한다.
-  function fitPaste(){
-    if (!panel || panel.classList.contains('hide') || !keyboardOpen) return;
-    if (wrapEl) wrapEl.scrollTop = 0;
-    var slack = (visibleViewportH() - 6) - panel.getBoundingClientRect().bottom;
-    var next = Math.max(90, Math.min(taFixedH + slack, 520));
-    if (Math.abs(next - taFixedH) >= 1.5){
-      taFixedH = next;
-      applyTaHeight();
-    }
-  }
+  // 입력칸 높이는 CSS 가 고정(.tawrap height:31dvh)한다. JS 는 오류 하이라이트 스크롤만 맞춘다.
+  // 오류 안내(#pasteHint)가 빨갛게 바뀌어도 입력칸·등록 버튼은 안 움직인다 (씹힘 방지).
+  function applyTaHeight(){ hl.scrollTop = taEl.scrollTop; }
+  function autoGrow(){ hl.scrollTop = taEl.scrollTop; }
   function clearBad(){
     marking = false;
     pasteHint.textContent = HINT_OK;
@@ -2392,9 +2363,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var hasItems = !!(state && state.items && state.items.length);
     document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
     ta.value = '';
-    taFixedH = 0;                 // 이번에 열 때 화면 높이로 기본값 다시 계산
     clearBad();
-    autoGrow();
     panel.classList.remove('hide');
     document.body.classList.add('paste-open');   // 키보드 시 헤더까지 숨겨 입력칸 자리 확보
     if (wrapEl){
@@ -2513,13 +2482,7 @@ window.dispatchEvent(new Event('fb-ready'));
       document.body.classList.toggle('keyboard-open', open);
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
-      // 키보드가 내려가면 붙여넣기 입력칸을 기본 높이로 되돌린다
-      if (!open && panel && !panel.classList.contains('hide')){
-        taFixedH = 0; applyTaHeight();
-      }
     }
-    // 키보드가 올라온 상태에서 붙여넣기 화면이면 카드가 키보드 위에 다 들어오도록 맞춘다
-    if (open && panel && !panel.classList.contains('hide')) fitPaste();
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
       kbBaseH = Math.max(kbBaseH, h);
@@ -3108,7 +3071,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.6.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.6.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
