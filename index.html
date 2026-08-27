@@ -97,6 +97,14 @@
      단, 붙여넣기 화면(.paste-open)은 전용 작업이라 헤더도 숨겨 입력칸 자리를 넓힌다. */
   body.keyboard-open > .foot{display:none}
   body.keyboard-open.paste-open > header{display:none}
+  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다. .wrap 이 스크롤될 이유가
+     없어야 아이폰이 키보드에 맞춰 화면을 밀거나 흰 스크롤바를 띄우지 않는다.
+     - 아래 여백에서 --kb 를 뺀다 → 스크롤 범위 자체가 사라진다
+     - overflow:hidden → 키보드 애니메이션 중 한 프레임도 스크롤바가 안 보인다
+     - 헤더가 접히는 키보드 상태에선 노치 높이만큼 위 여백 (제목이 안 가리게)
+     카드 높이는 fitPaste() 가 등록 버튼까지 키보드 위에 들어가도록 맞춘다. */
+  body.paste-open > .wrap{ padding-bottom:18px; overflow:hidden }
+  body.keyboard-open.paste-open > .wrap{ padding-top:calc(env(safe-area-inset-top) + 8px) }
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;
@@ -2465,6 +2473,23 @@ window.dispatchEvent(new Event('fb-ready'));
   var KB_MIN = 90;                       // 이보다 크게 줄면 키보드로 본다
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
+  // 붙여넣기 카드가 키보드 위에 통째로 들어가도록 textarea 높이를 맞춘다.
+  // btns(등록/취소 줄) 아래가 보이는 화면 바닥에 딱 오도록 실제 위치를 재서 조정한다.
+  // .wrap 은 paste-open 동안 overflow:hidden 이라 스크롤이 없고, 이 계산만으로
+  // 카드가 항상 다 보인다. vv 이벤트마다 불러 키보드 애니메이션 동안 수렴시킨다.
+  function fitPaste(){
+    if (!panel || panel.classList.contains('hide')) return;
+    if (wrapEl) wrapEl.scrollTop = 0;
+    var row = panel.querySelector('.btns');
+    if (!row) return;
+    var slack = (visibleViewportH() - 10) - row.getBoundingClientRect().bottom;
+    var next = Math.max(96, Math.min(taFixedH + slack, 360));
+    if (Math.abs(next - taFixedH) >= 2){
+      taFixedH = next;
+      applyTaHeight();
+    }
+  }
+
   function applyViewport(){
     var h = visibleViewportH();
     // 키보드가 가리는 높이 = 레이아웃 뷰포트 높이 - 보이는 높이. 화면이 밀렸든(offsetTop)
@@ -2479,7 +2504,13 @@ window.dispatchEvent(new Event('fb-ready'));
       document.body.classList.toggle('keyboard-open', open);
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
+      // 키보드가 내려가면 붙여넣기 입력칸을 원래(화면 높이 기준) 높이로 되돌린다
+      if (!open && panel && !panel.classList.contains('hide')){
+        taFixedH = 0; applyTaHeight();
+      }
     }
+    // 키보드가 올라온 상태에서 붙여넣기 화면이면 카드가 다 보이도록 높이를 맞춘다
+    if (open && panel && !panel.classList.contains('hide')) fitPaste();
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
       kbBaseH = Math.max(kbBaseH, h);
@@ -3097,7 +3128,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.1-debug<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.2-debug<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
