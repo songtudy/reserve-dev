@@ -93,21 +93,14 @@
     -webkit-text-size-adjust:100%;
   }
   /* 키보드가 올라오면 하단 바를 숨긴다 (어차피 키보드 뒤라 못 쓴다).
-     상단 헤더는 유지 — 일반 앱처럼 날짜/맥락이 계속 보이고, 숨겼다 되살리면 화면이 튄다.
-     단, 붙여넣기 화면(.paste-open)은 전용 작업이라 헤더도 숨겨 입력칸 자리를 넓힌다. */
+     상단 헤더는 늘 유지 — 숨겼다 되살리면 화면이 튄다. */
   body.keyboard-open > .foot{display:none}
-  body.keyboard-open.paste-open > header{display:none}
-  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나가 전부다.
-     입력칸을 화면의 32%(고정)로 잡으면 제목·안내·입력칸·등록버튼이 전부 키보드 위에 들어간다.
-     키보드가 있든 없든 항상 같은 크기 — JS 로 화면 높이를 재지 않는다(측정 버그 원천 차단).
-     카드가 늘 화면보다 작아 .wrap 스크롤 범위가 0(흰 스크롤바 없음).
-     iOS 가 포커스 시 화면을 위로 미는 것(visualViewport.offsetTop)은 startCounterPan() 의
-     매 프레임 루프가 상쇄한다 (밀림·상쇄가 같은 프레임 → 화면 시각적으로 정지). */
+  /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나짜리 폼이다. 명단 관리 화면과 달리
+     '고정'하지 않는다 — .wrap 이 (--kb 만큼 여유를 두고) 정상 스크롤되게 두고,
+     openPaste 에서 scrollIntoView 로 부드럽게 이동한다. 키보드가 올라오면 iOS 가
+     .wrap 을 네이티브 관성으로 스크롤해 입력칸을 드러낸다 (1.4.0 방식, iOS 에 맡김).
+     입력칸 높이는 taFixedH 로 열 때 한 번만 정한다 (오류가 떠도 안 움직임 = 버튼 씹힘 방지). */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
-  body.paste-open > .wrap{ padding-bottom:18px; overscroll-behavior:none }
-  body.keyboard-open.paste-open > .wrap{ padding-top:calc(env(safe-area-inset-top) + 8px) }
-  body.paste-open #pastePanel .tawrap{ height:32dvh }
-  body.paste-open #pastePanel textarea{ height:100%; overflow-y:auto }
   /* 예시 문구는 .hl 오버레이에 그린다 (iOS textarea 여러 줄 placeholder 버그 회피) */
   .hl .ln.ph{ color:var(--ph); -webkit-text-fill-color:var(--ph) }
   .wrap{
@@ -2254,10 +2247,20 @@ window.dispatchEvent(new Event('fb-ready'));
   function esc(t){
     return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
-  // 입력칸 높이는 CSS 가 고정(.tawrap height:32dvh)한다. JS 는 오류 하이라이트 스크롤만 맞춘다.
-  // 오류 안내(#pasteHint)가 빨갛게 바뀌어도 입력칸·등록 버튼은 안 움직인다 (씹힘 방지).
-  function applyTaHeight(){ hl.scrollTop = taEl.scrollTop; }
-  function autoGrow(){ hl.scrollTop = taEl.scrollTop; }
+  // 입력칸 높이는 창을 열 때 한 번만 정한다 (내용·키보드·오류와 무관).
+  // → 등록 버튼이 늘 같은 자리 (버튼 씹힘 방지). 넘치는 줄은 입력칸 안에서 스크롤.
+  var taFixedH = 0;
+  function pasteBaseH(){
+    var vh = window.innerHeight || 700;
+    return Math.max(200, Math.min(Math.round(vh * 0.46) - 43, 360));
+  }
+  function applyTaHeight(){
+    if (!taFixedH) taFixedH = pasteBaseH();
+    taEl.style.height = taFixedH + 'px';
+    taEl.style.overflowY = (taEl.scrollHeight > taFixedH + 2) ? 'auto' : 'hidden';
+    hl.scrollTop = taEl.scrollTop;
+  }
+  function autoGrow(){ applyTaHeight(); }
 
   // 예시 문구는 .hl 오버레이에 직접 그린다 (iOS <textarea> 여러 줄 placeholder 버그 회피).
   var PH_LINES = ['14:00 임동현 2명','15:00 김동현 4명 방문','15:00 박동현 2명','17:00 Donghyun Lee 3명 취소','19:00 송동현 5명'];
@@ -2336,26 +2339,6 @@ window.dispatchEvent(new Event('fb-ready'));
     recheck();
   });
 
-  // 붙여넣기 화면에선 화면(레이아웃 뷰포트)을 손가락으로 밀 수 없게 '항상' 막는다.
-  // (조건부로 막으면 iOS 가 입력칸 스크롤과 화면 pan 을 같이 해버려서 카드가 움직인다.)
-  // 긴 명단은 iOS 에 맡기지 않고 손가락 이동량만큼 입력칸을 직접 스크롤한다.
-  // openPaste/closePaste 에서만 붙였다 뗀다 (다른 화면 스크롤 성능에 영향 없게).
-  var pasteTouchY = null;
-  function pasteTouchStart(e){
-    pasteTouchY = (e.touches && e.touches[0]) ? e.touches[0].clientY : null;
-  }
-  function pastePanTrap(e){
-    e.preventDefault();                       // iOS 가 화면/뷰포트를 절대 못 움직이게
-    var t = e.touches && e.touches[0];
-    if (!t) return;
-    var inTa = e.target && e.target.closest && e.target.closest('#ta');
-    if (inTa && taEl.scrollHeight > taEl.clientHeight + 1 && pasteTouchY != null){
-      taEl.scrollTop += (pasteTouchY - t.clientY);   // 넘치는 명단은 그 안에서만 스크롤
-      hl.scrollTop = taEl.scrollTop;
-    }
-    pasteTouchY = t.clientY;
-  }
-
   function applyPaste(text){
     var fresh = parse(text);
     if (fresh.bad.length){ showBad(fresh.bad); return false; }
@@ -2376,7 +2359,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!document.getElementById('addPanel').classList.contains('hide')) closeAdd();
   });
   var ta = document.getElementById('ta');
-  // 명단이 비었을 때 .wrap 을 채우는 전체 화면. 한 건 추가는 「예약 추가」 폼이 맡는다.
+  // 명단이 비었을 때의 전체 화면 폼. 한 건 추가는 「예약 추가」 폼이 맡는다.
   function openPaste(silent){
     if (discardEditing()) render();
     var g = dayGap(viewDate);
@@ -2386,27 +2369,20 @@ window.dispatchEvent(new Event('fb-ready'));
     var hasItems = !!(state && state.items && state.items.length);
     document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
     ta.value = '';
+    taFixedH = 0;                 // 창을 열 때 한 번만 계산
     clearBad();
+    autoGrow();
     panel.classList.remove('hide');
-    document.body.classList.add('paste-open');   // 키보드 시 헤더까지 숨겨 입력칸 자리 확보
-    if (wrapEl){
-      wrapEl.scrollTop = 0;
-      wrapEl.addEventListener('touchstart', pasteTouchStart, { passive: true });
-      wrapEl.addEventListener('touchmove', pastePanTrap, { passive: false });
-    }
-    startCounterPan();
+    document.body.classList.add('paste-open');
     if (silent) return;
+    // .wrap 을 카드로 부드럽게 스크롤 → 키보드가 올라와도 iOS 가 이어서 자연스럽게 조정
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(function(){ ta.focus(); }, 200);
   }
   function closePaste(){
     panel.classList.add('hide');
     document.body.classList.remove('paste-open');
-    if (wrapEl){
-      wrapEl.style.transform = '';
-      wrapEl.removeEventListener('touchstart', pasteTouchStart, { passive: true });
-      wrapEl.removeEventListener('touchmove', pastePanTrap, { passive: false });
-    }
-    pasteTouchY = null;
+    if (wrapEl) wrapEl.scrollTop = 0;
   }
 
   /* ---------- 예약 추가 ---------- */
@@ -2516,24 +2492,6 @@ window.dispatchEvent(new Event('fb-ready'));
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
       kbBaseH = Math.max(kbBaseH, h);
-  }
-
-  // iOS 는 입력칸 포커스 시 레이아웃 뷰포트를 위로 민다(visualViewport.offsetTop).
-  // 붙여넣기 화면이 열려 있는 동안 매 프레임 그만큼 .wrap 을 도로 내려 밀림을 상쇄한다.
-  // 매 프레임 돌아서 밀림과 상쇄가 같은 프레임에 일어남 → 화면이 시각적으로 완전히 정지.
-  // openPaste 에서 시작, paste-open 이 사라지면 스스로 멈춘다. (다른 화면은 안 건드림)
-  var panRaf = 0;
-  function startCounterPan(){
-    if (panRaf) return;
-    (function loop(){
-      if (!wrapEl || !document.body.classList.contains('paste-open')){
-        if (wrapEl) wrapEl.style.transform = '';
-        panRaf = 0; return;
-      }
-      var ot = vv ? vv.offsetTop : 0;
-      wrapEl.style.transform = ot > 0.5 ? ('translate3d(0,' + ot + 'px,0)') : '';
-      panRaf = requestAnimationFrame(loop);
-    })();
   }
 
   if (vv){
@@ -3119,7 +3077,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.6.6<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
