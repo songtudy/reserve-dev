@@ -106,11 +106,6 @@
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
-  /* 붙여넣기 화면: 카드가 전부라 아래로 스크롤할 게 없다. --kb 여백을 빼서 .wrap 이
-     스크롤 불가가 되게 → iOS 가 위로 밀지 않고 스크롤 인디케이터도 안 뜬다.
-     헤더를 숨긴 만큼 노치 안전영역을 .wrap 위에 준다 (제목이 상태바에 안 가리게). */
-  body.paste-open > .wrap{ padding-bottom:18px }
-  body.keyboard-open.paste-open > .wrap{ padding-top:env(safe-area-inset-top) }
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -721,6 +716,8 @@
 </style>
 </head>
 <body>
+
+<div id="dbg" style="position:fixed;top:calc(env(safe-area-inset-top) + 2px);right:2px;z-index:99999;background:rgba(0,0,0,.82);color:#0f0;font:10px/1.35 ui-monospace,Menlo,monospace;padding:5px 7px;border-radius:6px;white-space:pre;pointer-events:none;max-width:60vw"></div>
 
 <header>
     <div class="toprow">
@@ -2253,22 +2250,11 @@ window.dispatchEvent(new Event('fb-ready'));
   // 넉넉히 작게 잡는다. 작은 아이폰(SE)에서도 버튼이 안 가리는 값.
   var taFixedH = 0;
   function pasteBaseH(){
-    // 대략 추정치. vh*0.56 ≈ 키보드 위 남는 높이, 카드의 나머지(제목·안내문·버튼·여백·
-    // 노치 여백 ~200px)를 뺀다. 정확한 값은 키보드가 뜬 뒤 fitPasteToKeyboard() 가 맞춘다.
+    // 붙여넣기 화면은 키보드 시 헤더도 숨으므로 카드가 .wrap 맨 위(y~10)부터 시작한다.
+    // vh*0.55 ≈ 키보드 위 남는 높이. 카드의 나머지(제목·안내문·버튼·여백 ~145px)를 빼면
+    // 입력칸 최대 높이. 작은 아이폰(SE)에서도 등록 버튼이 안 가린다.
     var vh = visibleViewportH() || 700;
-    return Math.max(150, Math.min(Math.round(vh * 0.56) - 200, 300));
-  }
-  // 키보드가 뜬 뒤 등록 버튼이 키보드에 걸쳐 있으면 걸린 만큼만 입력칸을 줄인다.
-  // 줄이기만 함(다시 안 키움) → 한 번 맞으면 타이핑 중엔 안 변한다.
-  function fitPasteToKeyboard(){
-    if (!panel || panel.classList.contains('hide') || !keyboardOpen || !taFixedH) return;
-    var btns = panel.querySelector('.btns');
-    if (!btns) return;
-    var over = btns.getBoundingClientRect().bottom - (visibleViewportH() - 8);
-    if (over > 6){
-      taFixedH = Math.max(110, taFixedH - Math.ceil(over));
-      applyTaHeight();
-    }
+    return Math.max(180, Math.min(Math.round(vh * 0.55) - 145, 300));
   }
   function applyTaHeight(){
     if (!taFixedH) taFixedH = pasteBaseH();
@@ -2494,11 +2480,6 @@ window.dispatchEvent(new Event('fb-ready'));
       if (typeof addPanel !== 'undefined' && addPanel)
         addPanel.classList.toggle('kb', open);
     }
-    // 붙여넣기 + 키보드: 카드를 맨 위에 붙여두고, 등록 버튼이 키보드에 걸리면 입력칸을 줄인다.
-    if (open && wrapEl && panel && !panel.classList.contains('hide')){
-      wrapEl.scrollTop = 0;
-      fitPasteToKeyboard();
-    }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
       kbBaseH = Math.max(kbBaseH, h);
@@ -2519,6 +2500,35 @@ window.dispatchEvent(new Event('fb-ready'));
     [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
   });
   applyViewport();
+
+  /* ===== 임시 디버그 (붙여넣기 키보드 문제 진단용) ===== */
+  (function(){
+    var dbg = document.getElementById('dbg');
+    if (!dbg) return;
+    function num(x){ return (x == null || isNaN(x)) ? '?' : Math.round(x); }
+    function tick(){
+      try {
+        var b = document.body, w = wrapEl;
+        var vvh = vv ? vv.height : 0, vvt = vv ? vv.offsetTop : 0;
+        var cs = w ? getComputedStyle(w) : null;
+        var card = document.getElementById('pastePanel');
+        var cr = card ? card.getBoundingClientRect() : null;
+        var wr = w ? w.getBoundingClientRect() : null;
+        var btn = card ? card.querySelector('.btns') : null;
+        var br = btn ? btn.getBoundingClientRect() : null;
+        dbg.textContent =
+          'in ' + num(window.innerHeight) + ' vv ' + num(vvh) + ' vt ' + num(vvt) + '\n' +
+          'kb ' + (getComputedStyle(document.documentElement).getPropertyValue('--kb').trim() || '0') +
+          ' body ' + num(b.getBoundingClientRect().height) + '\n' +
+          'cls ' + (b.classList.contains('keyboard-open') ? 'KB' : '--') + ' ' + (b.classList.contains('paste-open') ? 'PASTE' : '-----') + '\n' +
+          (w ? ('wrap y' + num(wr.top) + ' cl' + num(w.clientHeight) + ' sh' + num(w.scrollHeight) + ' st' + num(w.scrollTop) + '\n' +
+                'wrap pT' + parseInt(cs.paddingTop) + ' pB' + parseInt(cs.paddingBottom) + '\n') : 'no wrap\n') +
+          (cr && cr.height ? ('card y' + num(cr.top) + '~' + num(cr.bottom) + ' btn' + (br ? num(br.bottom) : '?') + ' vv' + num(vvh)) : 'card hidden');
+      } catch(e){ dbg.textContent = 'err ' + e.message; }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  })();
 
   // 수정 저장 시 키보드 종료를 지연하던 로직은 없앴다 —
   // .wrap 만 스크롤되는 구조라 폼이 짧아져도 화면이 튀지 않는다.
@@ -3087,7 +3097,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.0<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.1-debug<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
