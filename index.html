@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content">
 <meta name="theme-color" content="#0f1319">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -74,12 +74,14 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--ink)}
-  /* 앱 셸 구조 — body 는 화면 전체를 덮는 고정 틀. 절대 크기가 안 변한다.
-     키보드는 그 위에 얹혀 올라오고(일반 앱처럼 뒤가 비침), 스크롤은 .wrap 안에서만.
-     하단 바가 position:fixed 가 아니라 flex 항목이라 옛날처럼 뜨지 않는다. */
+  /* 앱 셸 구조 — html·body 를 스크롤 불가로 잠그고(overflow:hidden, 화면 높이 고정),
+     스크롤은 .wrap 안에서만. body 에 position:fixed 를 쓰지 않는 게 핵심 —
+     아이폰 홈 화면 앱은 키보드가 뜰 때 position:fixed 요소를 화면과 함께 끌어올려서
+     헤더가 사라지는 버그가 있다. flex 항목인 헤더/하단바는 body 가 안 움직이니 그냥 고정된다.
+     키보드는 그 위에 얹혀 올라온다(일반 앱처럼 뒤가 비침). */
   html{height:100%;overflow:hidden;overscroll-behavior:none}
   body{
-    position:fixed;inset:0;
+    height:100%;overflow:hidden;
     overscroll-behavior:none;
     background:var(--ink);
     color:var(--text);
@@ -87,24 +89,26 @@
     font-size:16px;
     line-height:1.4;
     display:flex;flex-direction:column;
-    overflow:hidden;
     -webkit-font-smoothing:antialiased;
     touch-action:manipulation;        /* 두 번 탭 확대 방지 */
     -webkit-text-size-adjust:100%;
   }
   /* 키보드가 올라오면 하단 바를 숨긴다 (어차피 키보드 뒤라 못 쓴다).
-     상단 헤더는 유지 — 일반 앱처럼 날짜/맥락이 계속 보이고, 숨겼다 되살리면 화면이 튄다.
-     단, 붙여넣기 화면(.paste-open)은 전용 작업이라 헤더도 숨겨 입력칸 자리를 넓힌다. */
+     헤더는 유지 — body 가 안 움직이니 그냥 그 자리에 고정돼 있다.
+     붙여넣기 화면(.paste-open)만 헤더도 숨겨 입력칸 자리를 넓힌다. */
   body.keyboard-open > .foot{display:none}
   body.keyboard-open.paste-open > header{display:none}
   .wrap{
     flex:1 1 auto;min-height:0;
     width:100%;max-width:640px;margin:0 auto;
-    /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
-       iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
+    /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능 */
     padding:0 14px calc(18px + var(--kb, 0px));
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
+  /* 붙여넣기 + 키보드: 카드를 키보드 위 남는 공간의 가운데로. 아래만 휑하지 않게. */
+  body.paste-open.keyboard-open > .wrap{
+    display:flex;flex-direction:column;justify-content:center;
   }
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
@@ -2441,9 +2445,10 @@ window.dispatchEvent(new Event('fb-ready'));
   aMemo.addEventListener('keydown', function(e){ if (e.key === 'Enter') addOne(); });
 
   /* ---------- 키보드 ---------- */
-  // body 는 화면 전체 크기로 고정 (CSS position:fixed inset:0). 키보드는 그 위에 얹힌다.
-  // JS 가 하는 일은 딱 둘: (1) --kb = 키보드가 가리는 높이 → .wrap 아래 여백 + 시트 올림
-  //                        (2) 키보드 열림 감지 → body.keyboard-open (하단 바 숨김)
+  // html·body 는 CSS 로 스크롤 잠금(overflow:hidden, 높이 고정). position:fixed 는 안 씀.
+  // 키보드는 그 위에 얹힌다. JS 가 하는 일은 딱 둘:
+  //   (1) --kb = 키보드가 가리는 높이 → .wrap 아래 여백 + 예약추가 시트 올림
+  //   (2) 키보드 열림 감지 → body.keyboard-open (하단 바 숨김)
   var vv = window.visualViewport;
   var keyboardOpen = false;
   // 옛 코드가 참조하는 이름들 — 새 모델에서는 대부분 쓰지 않지만 남겨 둔다
@@ -3066,7 +3071,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.4.7<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.4.8<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
