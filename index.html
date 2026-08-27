@@ -2336,15 +2336,24 @@ window.dispatchEvent(new Event('fb-ready'));
     recheck();
   });
 
-  // 붙여넣기 화면에선 화면(레이아웃 뷰포트)을 손가락으로 밀 수 없게 막는다.
-  // iOS 는 position:fixed 페이지라도 입력칸에 포커스가 있으면 pan 을 허용하는데,
-  // 그러면 카드가 위로 밀려 제목이 가려진다. 붙여넣기 화면엔 스크롤할 게 입력칸뿐이라
-  // 입력칸 내용이 넘칠 때(긴 명단)만 그 안쪽 스크롤을 살리고 나머지는 전부 막는다.
+  // 붙여넣기 화면에선 화면(레이아웃 뷰포트)을 손가락으로 밀 수 없게 '항상' 막는다.
+  // (조건부로 막으면 iOS 가 입력칸 스크롤과 화면 pan 을 같이 해버려서 카드가 움직인다.)
+  // 긴 명단은 iOS 에 맡기지 않고 손가락 이동량만큼 입력칸을 직접 스크롤한다.
   // openPaste/closePaste 에서만 붙였다 뗀다 (다른 화면 스크롤 성능에 영향 없게).
+  var pasteTouchY = null;
+  function pasteTouchStart(e){
+    pasteTouchY = (e.touches && e.touches[0]) ? e.touches[0].clientY : null;
+  }
   function pastePanTrap(e){
+    e.preventDefault();                       // iOS 가 화면/뷰포트를 절대 못 움직이게
+    var t = e.touches && e.touches[0];
+    if (!t) return;
     var inTa = e.target && e.target.closest && e.target.closest('#ta');
-    if (inTa && taEl.scrollHeight > taEl.clientHeight + 1) return;
-    e.preventDefault();
+    if (inTa && taEl.scrollHeight > taEl.clientHeight + 1 && pasteTouchY != null){
+      taEl.scrollTop += (pasteTouchY - t.clientY);   // 넘치는 명단은 그 안에서만 스크롤
+      hl.scrollTop = taEl.scrollTop;
+    }
+    pasteTouchY = t.clientY;
   }
 
   function applyPaste(text){
@@ -2382,6 +2391,7 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.add('paste-open');   // 키보드 시 헤더까지 숨겨 입력칸 자리 확보
     if (wrapEl){
       wrapEl.scrollTop = 0;
+      wrapEl.addEventListener('touchstart', pasteTouchStart, { passive: true });
       wrapEl.addEventListener('touchmove', pastePanTrap, { passive: false });
     }
     startCounterPan();
@@ -2393,8 +2403,10 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.remove('paste-open');
     if (wrapEl){
       wrapEl.style.transform = '';
+      wrapEl.removeEventListener('touchstart', pasteTouchStart, { passive: true });
       wrapEl.removeEventListener('touchmove', pastePanTrap, { passive: false });
     }
+    pasteTouchY = null;
   }
 
   /* ---------- 예약 추가 ---------- */
@@ -3107,7 +3119,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.6.5<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.6.6<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
