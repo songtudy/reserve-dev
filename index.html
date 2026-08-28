@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow"><!-- 매장 내부용 — 검색 색인 차단 (robots.txt 와 함께) -->
 <meta name="theme-color" content="#0f1319">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,18 +11,20 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="익순이">
 <script>
-// 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme).
+// 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
+// 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
 //
-// 아이폰 노치: status-bar-style 은 "black" 고정(런타임에 안 건드림), theme-color 만 바꾼다.
-// iOS 홈화면 앱은 문서가 "고정"이면(body position:fixed) 테마를 바꿔도 노치 색을 안 다시
-// 칠하는데, CSS 에서 html 을 1px 스크롤 가능하게 둬서(아래 style, body 가 가려 안 보임)
-// "스크롤되는 문서"로 보이면 theme-color 를 런타임에 다시 읽어 노치가 테마를 따라온다.
-// (iPhone 17 시뮬 standalone 에서 다크↔라이트 양방향 확인. black-translucent 는 웹뷰가
-//  풀스크린이 되며 키보드·하단바 레이아웃이 깨져서 안 씀.)
+// 아이폰 노치: status-bar-style="black" 고정, theme-color 만 바꾼다. iOS 홈화면 앱은
+// 이 앱셸(body position:fixed)에서 테마를 바꿔도 노치 색을 다음 실행 전까지 다시 안 칠한다
+// (iOS 한계 — black-translucent·문서 스크롤 트릭 등 여러 방법 시도했으나 실기기에서 안 됨).
+// 앱 켤 때는 정확하고, iOS 가 PWA 를 자주 종료해 대개 저절로 보정된다.
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
+  // 페인트 전에 인라인으로 바탕색을 박아 둔다 — 스타일시트가 파싱되기 전
+  // 첫 프레임이 흰색으로 번쩍이는 걸 막는다 (설치형 PWA 콜드 스타트).
+  d.style.background = (t === 'light') ? '#f4f6f9' : '#0f1319';
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   if (themeMeta) themeMeta.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
 };
@@ -42,15 +45,15 @@ window.setThemeChrome = function(t){
     /* 바탕 */
     --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
     --line:#252c36;     --press:#26313d;
-    --text:#f0f3f6;     --dim:#8792a0;      --off:#5a657a;
-    --ph:#7b8695;       --disTx:#626d7c;
+    --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
+    --ph:#7b8695;
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
     --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
     --onWait:#241a05;   --mark:#463a13;
     /* 방문 — 초록 */
     --go:#5fb08a;       --goTx:var(--go);      --onGo:#08241a;
-    --goBg:#141d19;     --goLine:#26382f;   --goTag:#1b2f27;
+    --goBg:#141d19;     --goTag:#1b2f27;
     --goTagTx:#7fc9a5;  --goName:#94a49c;
     /* 취소·경고 — 붉은색 */
     --warn:#c9736a;     --warnBg:#1a1618;   --warnTag:#332323;  --warnTagTx:#d2938c;
@@ -61,15 +64,15 @@ window.setThemeChrome = function(t){
   html[data-theme="light"]{
     --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
     --line:#dfe4ec;     --press:#e2e7ef;
-    --text:#161a20;     --dim:#5c6772;      --off:#a9b3c0;
-    --ph:#767f8d;       --disTx:#a8b0bb;
+    --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
+    --ph:#676f7d;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
     --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
     --onWait:#2a1d02;   --mark:#fdf1d8;
     --go:#2f9c6e;       --goTx:#1d7a54;     --onGo:#ffffff;
-    --goBg:#eefaf3;     --goLine:#b9e3ce;   --goTag:#d9f2e5;
-    --goTagTx:#1c7853;  --goName:#4a6a5b;
+    --goBg:#eefaf3;     --goTag:#d9f2e5;
+    --goTagTx:#176b49;  --goName:#4a6a5b;
     --warn:#b43f36;     --warnBg:#fdf1ef;   --warnTag:#fadedb;  --warnTagTx:#a2463c;
     --warnName:#855c55; --warnPax:#7a4f48;  --warnPaxBg:#f6e7e5;
     --errRow:rgba(192,72,60,.12);   --errTx:#9e4438;
@@ -79,15 +82,7 @@ window.setThemeChrome = function(t){
   /* 앱 셸 구조 — body 는 화면 전체를 덮는 고정 틀. 절대 크기가 안 변한다.
      키보드는 그 위에 얹혀 올라오고(일반 앱처럼 뒤가 비침), 스크롤은 .wrap 안에서만.
      하단 바가 position:fixed 가 아니라 flex 항목이라 옛날처럼 뜨지 않는다. */
-  /* html 을 1px 스크롤 가능하게 둔다 (body 가 다 덮어 안 보임). 이렇게 안 하면
-     iOS 홈화면 앱이 문서를 "고정"으로 보고 테마 바꿔도 노치 색을 다시 안 칠한다.
-     스크롤 가능한 문서로 보이면 theme-color 를 런타임에 다시 읽어 노치가 테마를 따라온다. */
-  html{
-    height:100%;overflow-x:hidden;overflow-y:scroll;overscroll-behavior:none;
-    scrollbar-width:none;
-  }
-  html::-webkit-scrollbar{display:none}
-  html::after{content:"";display:block;height:1px}
+  html{height:100%;overflow:hidden;overscroll-behavior:none}
   body{
     position:fixed;inset:0;
     overscroll-behavior:none;
@@ -157,7 +152,7 @@ window.setThemeChrome = function(t){
     background:var(--panel);border:1px solid var(--line);
     padding:5px 10px;border-radius:8px;
   }
-  .dayprog.full{color:var(--goTx);border-color:var(--goLine)}
+  .dayprog.full{color:var(--goTx);border-color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   .tools button.off{visibility:hidden;pointer-events:none}
   .tools button{
@@ -177,7 +172,7 @@ window.setThemeChrome = function(t){
   .offtag{
     display:none;align-items:center;flex:0 0 auto;
     padding:4px 9px;border-radius:8px;
-    background:var(--warnBg);border:1px solid var(--warnTag);
+    background:var(--warnBg);border:1px solid var(--warn);
     color:var(--warn);font-size:12px;font-weight:700;white-space:nowrap;line-height:1.2;
   }
   html[data-off] .offtag{display:inline-flex}
@@ -227,7 +222,7 @@ window.setThemeChrome = function(t){
   }
   .qcount.zero{color:var(--warn)}
   .searchbar input::placeholder{color:var(--dim)}
-  .searchbar input:focus{outline:2px solid var(--wait);outline-offset:-1px}
+  .searchbar input:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
   .searchbar input::-webkit-search-cancel-button{display:none}
   .searchbar button{
     position:absolute;right:4px;top:50%;transform:translateY(-50%);
@@ -264,8 +259,8 @@ window.setThemeChrome = function(t){
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px}
   .group.now .gtime{color:var(--waitBig)}
-  .group.now .row{border-left-color:var(--wait)}
-  .group.done .gtime{opacity:.6}
+  .group.now .row{border-left-color:var(--waitBig)}
+  .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
   /* row */
@@ -368,7 +363,7 @@ window.setThemeChrome = function(t){
     font-variant-numeric:tabular-nums;width:100%;min-width:0;height:44px;
     -webkit-appearance:none;appearance:none;
   }
-  .erow input:focus, .erow select:focus{outline:2px solid var(--wait);outline-offset:-1px}
+  .erow input:focus, .erow select:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
   .erow select{
     text-align:center;text-align-last:center;
     background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
@@ -430,7 +425,7 @@ window.setThemeChrome = function(t){
     border:1px solid var(--line);border-radius:11px;
     background:var(--ink);
   }
-  .tawrap:focus-within{outline:2px solid var(--wait);outline-offset:-1px}
+  .tawrap:focus-within{outline:2px solid var(--waitTx);outline-offset:-1px}
   .tawrap textarea, .hl{
     font-family:inherit;font-size:16px;line-height:1.65;
     font-variant-numeric:tabular-nums;
@@ -618,7 +613,7 @@ window.setThemeChrome = function(t){
   }
   .step .n{
     width:17px;height:17px;flex:0 0 auto;border-radius:50%;
-    background:var(--line);color:var(--dim);
+    background:var(--line);color:var(--text);
     font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;
   }
   .step b{color:var(--text);font-weight:700}
@@ -663,7 +658,7 @@ window.setThemeChrome = function(t){
   .about b{color:var(--text);font-weight:700}
   .credit{
     border-top:1px solid var(--line);padding-top:12px;margin:16px 0 14px;
-    font-size:12px;line-height:1.6;color:var(--off);letter-spacing:.01em;
+    font-size:12px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
   .sheetClose{
     width:100%;padding:13px 0;margin-top:2px;border-radius:11px;
@@ -691,7 +686,7 @@ window.setThemeChrome = function(t){
     text-align:center;-webkit-appearance:none;appearance:none;
   }
   .dialog input::placeholder{color:var(--ph);font-weight:400}
-  .dialog input:focus{outline:2px solid var(--wait);outline-offset:-1px}
+  .dialog input:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
   .dbtn{display:flex;gap:8px;margin-top:11px}
   .dbtn button{
     flex:1;padding:12px 0;border-radius:11px;
@@ -699,7 +694,7 @@ window.setThemeChrome = function(t){
     color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
   }
   .dbtn #dlgYes{background:var(--wait);color:var(--onWait);border-color:var(--wait)}
-  .dbtn #dlgYes:disabled{background:var(--panel2);color:var(--disTx);border-color:var(--line);cursor:default}
+  .dbtn #dlgYes:disabled{background:var(--panel2);color:var(--dim);border-color:var(--line);cursor:default}
   .dbtn button:active{filter:brightness(.9)}
 
   .toast{
@@ -2797,9 +2792,8 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function applyTheme(){
     var t = theme();
-    // 페인트 전 스크립트와 똑같이 — data-theme·color-scheme·상태바 색을 한 번에.
-    if (window.setThemeChrome) window.setThemeChrome(t);
-    else document.documentElement.setAttribute('data-theme', t);
+    // 페인트 전 스크립트와 같은 함수 — data-theme·color-scheme·theme-color 를 한 번에.
+    window.setThemeChrome(t);
     [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
       btn.classList.toggle('on', btn.getAttribute('data-theme-set') === t);
     });
@@ -3051,7 +3045,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단 관리 앱입니다.</p>'
       + '<p class="about">바뀐 내용은 <b>실시간으로 모든 폰에 반영</b>됩니다.</p>'
       + '<p class="about"><b>명단 복사</b>는 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3334,6 +3328,15 @@ window.dispatchEvent(new Event('fb-ready'));
     setTimeout(function(){ if (!state) boot(); }, 4000);  // 로딩 실패 시에도 화면은 뜨게
   }
 })();
+</script>
+<script>
+// 서비스 워커 — 앱 껍데기를 캐시해 콜드 스타트 흰 번쩍임을 없앤다 (sw.js 참고).
+// 예약 데이터는 Firebase 실시간 연결이라 캐시와 무관.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
