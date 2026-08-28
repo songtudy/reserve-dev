@@ -7,23 +7,23 @@
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="익순이">
 <script>
-// 테마에 딸린 것들(속성·색·상태바)을 한 번에 바꾼다.
-// 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme) 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
-// (v1.4.x 부터 검증된 방식 — 업데이트 도중 black-translucent 로 바꿨다가 노치 색이 테마를
-//  따라오지 않는 회귀가 생겨 원래대로 되돌림.)
+// 테마에 딸린 것들(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
+// 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
+//
+// 아이폰 상태바(노치): apple-mobile-web-app-status-bar-style 은 실행 시점에만 읽혀서
+// 런타임에 못 바꾼다. 대신 그 값을 "default" 로 두면 iOS 가 theme-color 로 상태바 색을
+// 칠하고, theme-color 는 실행 중에도 다시 읽는다 → 여기서 theme-color 만 바꾸면
+// 노치 색도 테마 따라 같이 바뀐다. (status-bar-style 을 "black" 으로 두면 iOS 가 검정 바를
+// 그리고 theme-color 를 무시하므로 안 됨.)
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
-  // theme-color: 안드로이드 상태바 색.
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   if (themeMeta) themeMeta.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
-  // 아이폰 앱 모드 상태바 — 라이트는 default(밝은 바 + 검은 글씨), 다크는 black(검정 바 + 흰 글씨).
-  var statusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-  if (statusMeta) statusMeta.content = (t === 'light') ? 'default' : 'black';
 };
 // 화면이 그려지기 전에 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
 (function(){
