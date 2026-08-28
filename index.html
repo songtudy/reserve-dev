@@ -300,10 +300,10 @@
   .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
   .memo{
     margin-top:2px;font-size:12px;font-weight:600;line-height:1.3;
-    color:var(--waitTx);opacity:.85;text-align:left;
+    color:var(--waitTx);text-align:left;
     word-break:break-all;
   }
-  .row.arrived .memo, .row.cancelled .memo{color:var(--dim);opacity:1}
+  .row.arrived .memo, .row.cancelled .memo{color:var(--dim)}
   .erow.memorow{margin-top:6px}
   #addPanel .edit{padding:0}
   #addPanel h2{margin-bottom:12px}
@@ -353,7 +353,7 @@
   .erow label.grow{flex:1;min-width:0}
   .erow input, .erow select{
     background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:9px;
+    border:1px solid var(--line);border-radius:11px;
     padding:10px 9px;font-family:inherit;font-size:16px;font-weight:600;
     font-variant-numeric:tabular-nums;width:100%;min-width:0;height:44px;
     -webkit-appearance:none;appearance:none;
@@ -370,7 +370,7 @@
   .erow #e-pax{width:80px}
   .ebtn{display:flex;gap:6px;margin-top:7px}
   .ebtn button{
-    flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);
+    flex:1;padding:10px 0;border-radius:11px;border:1px solid var(--line);
     background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
   }
   .ebtn #e-ok{background:var(--wait);color:var(--onWait);border-color:var(--wait)}
@@ -378,7 +378,7 @@
 
   .menu{display:flex;gap:6px;padding:0 10px 10px}
   .menu button{
-    flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--line);
+    flex:1;padding:10px 0;border-radius:11px;border:1px solid var(--line);
     background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
   }
   .menu button:active{background:var(--press)}
@@ -388,7 +388,7 @@
   .panel.asSheet{
     position:fixed;left:50%;bottom:0;
     transform:translateX(-50%) translateY(calc(-1 * var(--kb, 0px)));
-    transition:transform .16s ease;
+    transition:transform .2s ease;
     z-index:71;width:100%;max-width:520px;margin:0;
     border-radius:18px 18px 0 0;border-bottom:0;
     display:flex;flex-direction:column;
@@ -417,7 +417,7 @@
      같아서 → iOS 의 키보드 포커스 처리(Visual Viewport pan)가 두 경우 동일하게 동작한다. */
   .tawrap{
     position:relative;height:273px;overflow:hidden;
-    border:1px solid var(--line);border-radius:10px;
+    border:1px solid var(--line);border-radius:11px;
     background:var(--ink);
   }
   .tawrap:focus-within{outline:2px solid var(--wait);outline-offset:-1px}
@@ -496,7 +496,7 @@
     width:min(68vw, 258px);
     background:var(--panel);border-right:1px solid var(--line);
     padding:calc(env(safe-area-inset-top) + 18px) 0 calc(env(safe-area-inset-bottom) + 14px);
-    transform:translateX(-101%);transition:transform .22s ease;
+    transform:translateX(-101%);transition:transform .2s ease;
     display:flex;flex-direction:column;overflow-y:auto;
   }
   .drawer.open{transform:translateX(0)}
@@ -527,17 +527,21 @@
     color:var(--text);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
   }
   .dwitem:active{background:var(--panel2)}
-  /* 테마 — Wi-Fi 탭과 같은 세그먼트 토글. 강조색은 두 테마 모두 「켜짐」으로 읽힌다. */
-  .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 18px 2px}
-  .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
-  .themeseg{display:flex;gap:6px;margin-left:auto}
-  .themeseg button{
-    padding:7px 15px;border-radius:9px;
+  /* 세그먼트 토글 — 테마 다크/라이트, Wi-Fi 본관/별관 공용.
+     강조색(--wait)은 두 테마 모두 「켜짐」으로 읽힌다. .wide 는 시트 안에서 꽉 차게. */
+  .seg{display:flex;gap:6px}
+  .seg button{
+    padding:7px 15px;border-radius:11px;
     border:1px solid var(--line);background:var(--panel2);
     color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
   }
-  .themeseg button:active{background:var(--press)}
-  .themeseg button.on{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
+  .seg button:active{background:var(--press)}
+  .seg button.on{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
+  .seg.wide{gap:8px;margin:-2px 0 14px}
+  .seg.wide button{flex:1;padding:11px 0;font-size:15px}
+  .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 18px 2px}
+  .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
+  .dwtheme .seg{margin-left:auto}
   .dwsep.push{margin-top:auto}
   .dwfoot{
     padding:12px 18px 0;
@@ -563,7 +567,7 @@
   .sheetBtns{display:flex;gap:8px}
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
-    flex:1;padding:13px 0;border-radius:12px;
+    flex:1;padding:13px 0;border-radius:11px;
     border:1px solid var(--line);background:none;
     color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
   }
@@ -577,7 +581,7 @@
     font-family:inherit;font-size:14px;font-weight:700;color:var(--text);
     text-align:left;letter-spacing:-.02em;line-height:1.35;
   }
-  .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .18s}
+  .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .15s}
   .qa.open .q{color:var(--waitTx)}
   .qa.open .qchev{transform:rotate(90deg);color:var(--waitTx)}
   .qa .a{
@@ -631,14 +635,7 @@
        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lgempty{font-size:14px;color:var(--dim);padding:6px 0 14px}
 
-  /* Wi-Fi 안내 */
-  .wtab{display:flex;gap:8px;margin:-2px 0 14px}
-  .wtab button{
-    flex:1;padding:11px 0;border-radius:11px;
-    border:1px solid var(--line);background:var(--panel2);
-    color:var(--dim);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
-  }
-  .wtab button.on{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
+  /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
   .qrcard{
     background:#fff;border-radius:16px;padding:16px;margin:0 auto 16px;
@@ -679,7 +676,7 @@
   .dialog h3{margin:0 0 13px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
   .dialog input{
     width:100%;background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:10px;
+    border:1px solid var(--line);border-radius:11px;
     padding:12px 13px;font-family:inherit;font-size:16px;font-weight:600;
     text-align:center;-webkit-appearance:none;appearance:none;
   }
@@ -734,7 +731,7 @@
   </header>
 
 <div class="searchbar hide" id="searchbar">
-  <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
+  <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
   <input type="search" id="q" placeholder="이름 검색" autocomplete="off" autocorrect="off" spellcheck="false">
   <span class="qcount hide" id="qCount"></span>
   <button type="button" id="qClear" class="hide" aria-label="검색어 지우기"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>
@@ -762,13 +759,13 @@
 <div class="foot hide">
   <div class="inner">
     <div class="frow">
-      <button id="refreshBtn">새로고침</button>
       <button id="copyBtn">명단 복사</button>
+      <button id="addBtn">예약 추가</button>
     </div>
     <div class="frow sub">
-      <button id="resetBtn">명단 초기화</button>
-      <button id="addBtn">예약 추가</button>
+      <button id="refreshBtn">새로고침</button>
       <button id="foldBtn">전체 접기</button>
+      <button id="resetBtn">명단 초기화</button>
     </div>
   </div>
 </div>
@@ -810,7 +807,7 @@
   <div class="dwsep push"></div>
   <div class="dwtheme">
     <span class="dwthlab">테마</span>
-    <div class="themeseg">
+    <div class="seg">
       <button type="button" data-theme-set="dark">다크</button>
       <button type="button" data-theme-set="light">라이트</button>
     </div>
@@ -917,6 +914,8 @@ window.dispatchEvent(new Event('fb-ready'));
 (function(){
   'use strict';
 
+  // 주소에 -dev 가 들어 있으면 개발용 (모듈 스크립트의 DEV 와 같은 판정, 스코프만 분리).
+  var IS_DEV = /-dev(\/|$)/.test(location.pathname);
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
   var state = null;      // {date, items:[]}
@@ -1015,7 +1014,8 @@ window.dispatchEvent(new Event('fb-ready'));
   function pad(n){ return (n<10?'0':'') + n; }
   function ymd(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
 
-  // 오늘의 영업일 (새벽 5시 이전은 전날로 취급)
+  // 오늘의 영업일. DAY_ROLLOVER=0 이라 자정에 넘어간다.
+  // (마감이 자정을 넘기게 되면 그 시각으로 올려 그때까지는 전날로 잡는다)
   function bizDate(){
     var d = new Date();
     if (d.getHours() < DAY_ROLLOVER) d.setDate(d.getDate() - 1);
@@ -1209,17 +1209,22 @@ window.dispatchEvent(new Event('fb-ready'));
   // 연결 표시는 Firebase가 알려주는 실제 상태만 반영한다.
   // 개별 읽기·쓰기 실패로는 켜지 않는다 — 잠깐 끊겼다 붙는 동안 계속 떠 있게 되므로.
   var online = false;
+  function connReady(){ return online && hasStore(); }
+  // 서랍 하단의 연결 표시 한 줄. setSync 와 renderDrawerDays 둘 다 여기로 그린다.
+  function paintConn(){
+    var cf = document.getElementById('dwConn');
+    if (!cf) return;
+    var ready = connReady();
+    cf.className = 'dwfoot' + (ready ? '' : ' off');
+    cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
+      + (ready ? '연결됨' : '연결 안 됨');
+  }
   function setSync(ok){
     if (ok !== undefined) online = ok;
-    var ready = online && hasStore();
-    if (ready) document.documentElement.removeAttribute('data-off');
-    else document.documentElement.setAttribute('data-off', '');
-    var cf = document.getElementById('dwConn');
-    if (cf){
-      cf.className = 'dwfoot' + (ready ? '' : ' off');
-      cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-        + (ready ? '연결됨' : '연결 안 됨');
-    }
+    var d = document.documentElement;
+    if (connReady()) d.removeAttribute('data-off');
+    else d.setAttribute('data-off', '');
+    paintConn();
   }
 
   /* ---------- 렌더 ---------- */
@@ -1230,6 +1235,15 @@ window.dispatchEvent(new Event('fb-ready'));
   var GRACE_ON_HOUR = 11, GRACE_OFF_HOUR = 5/60;
   var AUTO_CANCEL_MIN = 20;    // 예약 시각에서 이만큼 지나도 체크가 없으면 취소
   var AUTO_CANCEL_WINDOW = 1;  // 그 순간에만 한 번. 지나간 시간대를 뒤늦게 훑지 않는다
+
+  // 예약 시간 선택 범위 — 예약 추가·수정 폼 공용. (영업 11:45–21:00, 예약 12–19시,
+  // 변경으로 20시까지 받을 수 있음). 범위 밖의 기존 예약은 수정 폼이 그 값을 따로 넣어준다.
+  var HOUR_MIN = 12, HOUR_MAX = 20;
+  function hourOptions(){
+    var s = '';
+    for (var h = HOUR_MIN; h <= HOUR_MAX; h++) s += '<option value="' + pad(h) + '">' + pad(h) + '</option>';
+    return s;
+  }
 
   function nowMin(){
     var d = new Date();
@@ -1515,6 +1529,13 @@ window.dispatchEvent(new Event('fb-ready'));
     + ' stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
   var ICON_OFF = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
     + ' stroke-width="3.4" stroke-linecap="round"><path d="M7 7 L17 17M17 7 L7 17"/></svg>';
+  // 세 점 — 가로(⋯)는 행 메뉴 버튼, 세로(⋮)는 설치 안내. 같은 모양으로.
+  function dots3(vertical){
+    var c = vertical
+      ? '<circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>'
+      : '<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>';
+    return '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">' + c + '</svg>';
+  }
   function statusTag(st){
     return st === 'arrived' ? '<span class="tag arrived">방문</span>'
          : st === 'cancelled' ? '<span class="tag cancelled">취소</span>' : '';
@@ -1608,8 +1629,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var more = document.createElement('button');
     more.className = 'more';
     more.type = 'button';
-    more.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">'
-      + '<circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
+    more.setAttribute('aria-label', it.name + ' 메뉴');
+    more.innerHTML = dots3(false);
 
     top.appendChild(main); top.appendChild(info); top.appendChild(more);
     body.appendChild(top);
@@ -1620,8 +1641,7 @@ window.dispatchEvent(new Event('fb-ready'));
       form.setAttribute('tabindex', '-1');
       var paxOpts = '';
       for (var pn = 1; pn <= 12; pn++) paxOpts += '<option value="' + pn + '">' + pn + '명</option>';
-      var hOpts = '';
-      for (var hh = 12; hh <= 20; hh++) hOpts += '<option value="' + pad(hh) + '">' + pad(hh) + '</option>';
+      var hOpts = hourOptions();
       var mOpts = '';
       for (var mm = 0; mm < 60; mm += 5) mOpts += '<option value="' + pad(mm) + '">' + pad(mm) + '</option>';
       form.innerHTML = '<div class="erow">'
@@ -1789,7 +1809,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 변경 내역 — 무슨 일이 있었는지만 남긴다 (되돌리기는 없다)
   var LOG_SHOW = 10;
   var LOG_KEEP = 40;
-  var LOG_SCOPE = /-dev(\/|$)/.test(location.pathname) ? 'dev' : 'prod';
+  var LOG_SCOPE = IS_DEV ? 'dev' : 'prod';
   var LOG_CACHE_KEY = 'ix-log-cache-v1:' + LOG_SCOPE;
   var LOG_OUTBOX_KEY = 'ix-log-outbox-v1:' + LOG_SCOPE;
   var LOG_OUTBOX_PREFIX = LOG_OUTBOX_KEY + ':';
@@ -1932,7 +1952,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   function warnLogPersistence(){
-    setTimeout(function(){ toast('변경 내역을 이 기기에 저장하지 못했습니다'); }, 0);
+    setTimeout(function(){ toast('변경 내역 저장 실패'); }, 0);
   }
   function scheduleLogRetry(){
     if (logRetryTimer || !Object.keys(logOutbox).length || document.hidden || !online
@@ -2047,7 +2067,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     function failed(){
       if (serial === logWatchSerial && !sheetScrim.classList.contains('hide')){
-        toast('변경 내역 동기화 실패 — 다시 연결되면 자동으로 재시도합니다');
+        toast('동기화 실패 — 연결되면 자동 재시도');
       }
     }
     if (api.logWatch){
@@ -2071,7 +2091,7 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   function logHtml(rows){
-    if (!rows.length) return '<p class="lgempty">변경 내역이 없습니다.</p>';
+    if (!rows.length) return '<p class="lgempty">변경 내역이 없습니다</p>';
     return rows.map(function(r){
       var cls = r.k === '방문' ? ' go'
               : (r.k === '취소' || r.k === '자동 취소' || r.k === '삭제' || r.k === '명단 초기화') ? ' off' : '';
@@ -2383,9 +2403,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var aMemo = document.getElementById('a-memo');
 
   (function fillAddOpts(){
-    var h = '';
-    for (var i = 12; i <= 23; i++) h += '<option value="' + pad(i) + '">' + pad(i) + '</option>';
-    aHour.innerHTML = h;
+    aHour.innerHTML = hourOptions();
     var m = '';
     for (var j = 0; j < 60; j += 5) m += '<option value="' + pad(j) + '">' + pad(j) + '</option>';
     aMin.innerHTML = m;
@@ -2400,8 +2418,8 @@ window.dispatchEvent(new Event('fb-ready'));
     // 기본값 — 정각 기준. 상단 시간이 넘어가는 규칙(정각 11분)과 같이 움직인다.
     var t = new Date(), hh = t.getHours();
     if (t.getMinutes() >= GRACE_ON_HOUR) hh += 1;
-    if (hh < 12) hh = 12;
-    if (hh > 23) hh = 23;
+    if (hh < HOUR_MIN) hh = HOUR_MIN;
+    if (hh > HOUR_MAX) hh = HOUR_MAX;
     aHour.value = pad(hh); aMin.value = '00';
     aName.value = ''; aMemo.value = ''; aPax.value = '2';
     addPanel.classList.remove('hide');
@@ -2754,7 +2772,7 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   // 개발용 폴더에서 열렸으면 표시해 둔다. 실제 앱과 헷갈리지 않게.
-  if (/-dev(\/|$)/.test(location.pathname)){
+  if (IS_DEV){
     var dt = document.getElementById('devTag');
     if (dt) dt.classList.remove('hide');
   }
@@ -2876,12 +2894,7 @@ window.dispatchEvent(new Event('fb-ready'));
         slot.textContent = '—';
       }
     });
-    var cf = document.getElementById('dwConn');
-    if (cf){
-      cf.className = 'dwfoot' + (online && hasStore() ? '' : ' off');
-      cf.innerHTML = '<span class="dot' + (online && hasStore() ? '' : ' stale') + '"></span>'
-        + (online && hasStore() ? '연결됨' : '연결 안 됨');
-    }
+    paintConn();
   }
 
   /* ---------- 안내 시트 ---------- */
@@ -2926,7 +2939,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '1초 안에 보입니다. 연결이 끊기면 맨 위에 <em>연결 안 됨</em>이 뜨고,\n'
       + '그동안 바꾼 내용은 폰에 남아 있다가 다시 연결되면 올라갑니다. 계속 쓰셔도 됩니다.'],
     ['누가 뭘 바꿨는지 볼 수 있나요?',
-      '왼쪽 위 메뉴 → <em>변경 내역</em>에서 오늘 바뀐 내용(최근 10건)을 볼 수 있습니다.'],
+      '왼쪽 위 메뉴 → <em>최근 변경 내역</em>에서 오늘 바뀐 내용(최근 10건)을 볼 수 있습니다.'],
     ['날짜는 언제 바뀌나요?',
       '자정에 바뀝니다. 어제 명단은 왼쪽 위 메뉴에서 볼 수 있고, 이틀 지나면 지워집니다.']
   ];
@@ -2968,14 +2981,8 @@ window.dispatchEvent(new Event('fb-ready'));
     } catch(e){ return false; }
   }
   function installHtml(){
-    // 두 점 아이콘은 똑같이 그린다 — 아이폰은 가로(⋯), 갤럭시는 세로(⋮), 방향만 다르게.
-    function dotKey(vertical){
-      var c = vertical
-        ? '<circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/>'
-        : '<circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/>';
-      return '<span class="key"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">'
-        + c + '</svg></span>';
-    }
+    // 세 점 아이콘은 행 메뉴 버튼과 같은 dots3 — 아이폰은 가로(⋯), 갤럭시는 세로(⋮).
+    var dotKey = function(vertical){ return '<span class="key">' + dots3(vertical) + '</span>'; };
     return plat('ios', '아이폰 · 사파리', [
         '화면 <b>아래 오른쪽</b> ' + dotKey(false),
         '<b>공유</b>',
@@ -3002,7 +3009,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var wifiPick = 'main';
   function wifiHtml(){
     var n = WIFI[wifiPick];
-    return '<div class="wtab">'
+    return '<div class="seg wide">'
       + Object.keys(WIFI).map(function(k){
           return '<button type="button" data-wifi="' + k + '"'
             + (k === wifiPick ? ' class="on"' : '') + '>' + WIFI[k].label + '</button>';
@@ -3069,7 +3076,7 @@ window.dispatchEvent(new Event('fb-ready'));
     return false;
   }
   function reloadPage(){
-    if (typingNow()){ toast('입력 중이라 새로 불러오지 않았습니다'); return; }
+    if (typingNow()){ toast('입력 중 — 새로고침 건너뜀'); return; }
     try { window.location.reload(); } catch(e){}
   }
 
