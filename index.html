@@ -12,11 +12,12 @@
 <script>
 // 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme).
 //
-// 아이폰 노치: iOS standalone 은 theme-color·status-bar-style 메타를 "앱 켤 때" 만 읽어서,
-// 앱 안에서 테마를 바꾸면 노치 색은 다음 실행까지 안 따라온다 (iPhone 17 시뮬 확인).
-// black-translucent 로 하면 실시간 반영되지만 웹뷰가 풀스크린이 되며 키보드·하단바 레이아웃이
-// 깨진다 → 안 쓴다. status-bar-style 은 "black" 고정, 어디서도 런타임에 안 건드린다.
-// theme-color 만 바꾼다 (안드로이드 상태바 + 아이폰 다음 실행 시 반영).
+// 아이폰 노치: status-bar-style 은 "black" 고정(런타임에 안 건드림), theme-color 만 바꾼다.
+// iOS 홈화면 앱은 문서가 "고정"이면(body position:fixed) 테마를 바꿔도 노치 색을 안 다시
+// 칠하는데, CSS 에서 html 을 1px 스크롤 가능하게 둬서(아래 style, body 가 가려 안 보임)
+// "스크롤되는 문서"로 보이면 theme-color 를 런타임에 다시 읽어 노치가 테마를 따라온다.
+// (iPhone 17 시뮬 standalone 에서 다크↔라이트 양방향 확인. black-translucent 는 웹뷰가
+//  풀스크린이 되며 키보드·하단바 레이아웃이 깨져서 안 씀.)
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
@@ -78,7 +79,15 @@ window.setThemeChrome = function(t){
   /* 앱 셸 구조 — body 는 화면 전체를 덮는 고정 틀. 절대 크기가 안 변한다.
      키보드는 그 위에 얹혀 올라오고(일반 앱처럼 뒤가 비침), 스크롤은 .wrap 안에서만.
      하단 바가 position:fixed 가 아니라 flex 항목이라 옛날처럼 뜨지 않는다. */
-  html{height:100%;overflow:hidden;overscroll-behavior:none}
+  /* html 을 1px 스크롤 가능하게 둔다 (body 가 다 덮어 안 보임). 이렇게 안 하면
+     iOS 홈화면 앱이 문서를 "고정"으로 보고 테마 바꿔도 노치 색을 다시 안 칠한다.
+     스크롤 가능한 문서로 보이면 theme-color 를 런타임에 다시 읽어 노치가 테마를 따라온다. */
+  html{
+    height:100%;overflow-x:hidden;overflow-y:scroll;overscroll-behavior:none;
+    scrollbar-width:none;
+  }
+  html::-webkit-scrollbar{display:none}
+  html::after{content:"";display:block;height:1px}
   body{
     position:fixed;inset:0;
     overscroll-behavior:none;
