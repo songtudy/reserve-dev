@@ -667,13 +667,18 @@ window.setThemeChrome = function(t){
     position:fixed;inset:0;z-index:50;
     background:var(--scrim);
     display:grid;place-items:center;
-    padding:22px 22px calc(22px + var(--kb, 0px));
+    padding:22px;
   }
   .scrim.hide{display:none}
   .dialog{
     width:100%;max-width:330px;
     background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:19px 18px 15px;
+    /* 평소엔 화면 중앙. 키보드가 올라오면 딱 그 위(약 26px 틈)까지만 올라간다.
+       --kb 가 작을 땐(중앙 배치로 이미 안 가림) 0 → 안 움직임. 125 ≈ 틈 + 다이얼로그 높이 절반.
+       clamp 아래끝: 가로 모드 등 극단적으로 짧은 화면에서 위로 잘려나가는 것 방지. */
+    transition:transform .2s ease;
+    transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 125px), 0px));
   }
   .dialog h3{margin:0 0 13px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
   .dialog input{
