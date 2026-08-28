@@ -2477,6 +2477,47 @@ window.dispatchEvent(new Event('fb-ready'));
   });
   applyViewport();
 
+  /* ===== v1.9.7-diag: 붙여넣기 포커스 이후 iOS 동작 실측 (스크린샷 2장 받고 제거) ===== */
+  (function(){
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;left:8px;right:8px;z-index:99999;'
+      + 'font:12px/1.45 ui-monospace,Menlo,monospace;color:#0f0;background:#000;'
+      + 'border:2px solid #0f0;border-radius:8px;padding:8px 10px;white-space:pre-wrap;'
+      + 'pointer-events:none;display:none';
+    document.body.appendChild(box);
+    var vv = window.visualViewport;
+    var focusN = 0, t0 = 0, maxTop = 0, maxWrapST = 0, contentLines = 0, phase = '-';
+    function panelEl(){ return document.getElementById('pastePanel'); }
+    function tick(){
+      if (!document.body.classList.contains('paste-open')){ box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      var top = vv ? Math.round(vv.offsetTop) : 0;
+      var h   = vv ? Math.round(vv.height) : 0;
+      var w   = (typeof wrapEl !== 'undefined' && wrapEl) ? Math.round(wrapEl.scrollTop) : 0;
+      if (top > maxTop) maxTop = top;
+      if (w > maxWrapST) maxWrapST = w;
+      var p = panelEl().getBoundingClientRect();
+      var btn = document.getElementById('loadBtn').getBoundingClientRect();
+      var kbTop = top + h;                       // 보이는 영역 바닥 = 키보드 상단
+      box.textContent =
+        'focus#' + focusN + '  ' + (t0 ? ('t+' + (Date.now() - t0) + 'ms') : '-') + '  lines ' + contentLines + '\n' +
+        'vvTop ' + top + '  (max ' + maxTop + ')   vvH ' + h + '\n' +
+        'wrapST ' + w + ' (max ' + maxWrapST + ')   card ' + Math.round(p.top) + '~' + Math.round(p.bottom) + '\n' +
+        'btnBottom ' + Math.round(btn.bottom) + '  kbTop ' + kbTop + '  ' +
+          (btn.bottom <= kbTop ? 'OK' : 'BUTTON HIDDEN ' + Math.round(btn.bottom - kbTop));
+      var y = top + h - box.offsetHeight - 6;
+      box.style.top = Math.max(top + 4, Math.round(y)) + 'px';
+    }
+    var ta = document.getElementById('ta');
+    ta.addEventListener('focus', function(){
+      focusN++; t0 = Date.now(); maxTop = 0; maxWrapST = 0;
+      contentLines = ta.value ? ta.value.split('\n').length : 0;
+    });
+    if (vv){ vv.addEventListener('resize', tick); vv.addEventListener('scroll', tick); }
+    setInterval(tick, 120);
+  })();
+  /* ===== /diag ===== */
+
   /* ---------- 뒤로가기 ---------- */
   // 앱 모드에서는 뒤로가기를 누르면 앱이 그대로 꺼진다.
   // 서랍·시트·팝업이 열려 있으면 그것부터 닫는다. (아이폰의 화면 끝 쓸기도 같다)
@@ -3031,7 +3072,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.9.7<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.9.7-diag<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
