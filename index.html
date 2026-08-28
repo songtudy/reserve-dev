@@ -868,7 +868,7 @@
 <script type="module">
 // ---------- Firebase 연결 ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import { getDatabase, ref, get, set, remove, onValue, off, goOffline, goOnline }
+import { getDatabase, ref, get, set, remove, onValue, off, goOffline, goOnline, runTransaction }
   from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -888,17 +888,40 @@ const ROOT = DEV ? 'roster-dev' : 'roster';
 // Firebase 규칙이 허용하는 명단 영역 안에 변경 내역 전용 가지를 둔다.
 const LOGROOT = ROOT + '/__logs__';
 const path = k => ROOT + '/' + String(k).replace('roster:', '');
+// 예약 id 를 Firebase 키로 (id 엔 ':' '|' 가, 이름엔 '.' 이 들어갈 수 있어 해시한다)
+const k32 = s => {
+  let a = 5381, b = 52711;
+  for (let i = 0; i < s.length; i++){ const c = s.charCodeAt(i); a = (Math.imul(a,33) ^ c) >>> 0; b = (Math.imul(b,63689) ^ c) >>> 0; }
+  const f = n => ('0000000' + n.toString(36)).slice(-7);
+  return 'k' + f(a) + f(b);
+};
+const ipath = (ds, id) => ROOT + '/' + ds + '/items/' + k32(id);
+const itemsRef = ds => ref(db, ROOT + '/' + ds + '/items');
 
 window.__fb = {
-  get: k => get(ref(db, path(k))).then(s => s.exists() ? s.val() : null),
-  set: (k, v) => set(ref(db, path(k)), v),
-  remove: ds => remove(ref(db, ROOT + '/' + ds)),
-  list: () => get(ref(db, ROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
-  watch: (k, cb) => {
-    const r = ref(db, path(k));
-    const h = onValue(r, s => cb(s.exists() ? s.val() : null));
+  // ---- 명단: 예약별 노드 (roster/<날짜>/items/<해시>) ----
+  // 읽기는 구 형식(items 가 배열)도 그대로 처리된다. legacy=true 면 앱이 1회 변환해 쓴다.
+  itemsGet: ds => get(itemsRef(ds)).then(s => {
+    const v = s.exists() ? s.val() : null;
+    return { items: v ? Object.values(v) : [], legacy: Array.isArray(v) };
+  }),
+  itemsWatch: (ds, cb) => {
+    const r = itemsRef(ds);
+    const h = onValue(r, s => {
+      const v = s.exists() ? s.val() : null;
+      cb({ items: v ? Object.values(v) : [], legacy: Array.isArray(v) });
+    });
     return () => off(r, 'value', h);
   },
+  itemPut: (ds, id, item) => set(ref(db, ipath(ds, id)), item),
+  itemDel: (ds, id) => remove(ref(db, ipath(ds, id))),
+  // 한 예약 노드를 원자적으로 바꾼다. 이미 지워졌으면(cur==null) abort → 파편으로 되살리지 않음.
+  itemTxn: (ds, id, mutate) => runTransaction(ref(db, ipath(ds, id)), cur => cur == null ? undefined : mutate(cur)).then(r => r.committed),
+  // items 서브트리 통째 교체 (붙여넣기·명단 초기화 = 의도적 리셋). arr 비면 노드 삭제.
+  itemsReplace: (ds, arr) => set(itemsRef(ds), (arr && arr.length) ? arr.reduce((o, it) => (o[k32(it.id)] = it, o), {}) : null),
+  // 오래된 날짜 정리용 (날짜 노드 목록·삭제)
+  dayList: () => get(ref(db, ROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
+  dayRemove: ds => remove(ref(db, ROOT + '/' + ds)),
   // 변경 내역 — 날짜별로 따로 쌓는다. id 를 앱이 정하므로(logSet) 같은 이벤트를 여러 대가
   // 써도 같은 자리에 덮여 한 줄로 합쳐진다 (상태 변경 이벤트는 id 가 결정적).
   logSet: (ds, id, entry) => set(ref(db, LOGROOT + '/' + ds + '/' + id), entry),
@@ -920,7 +943,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
-  var state = null;      // {date, rosterTs, items:[]}
+  var state = null;      // {date, items:[]}
   var openMenu = null;
   var editing = null;
   var collapsed = {}; // 시간대별 수동 접기 상태 (미설정이면 자동)
@@ -943,7 +966,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function stageBackgroundState(next){
     if (interactionActive()){
-      deferredState = deferredState ? merge(next, deferredState) : next;
+      deferredState = next;   // 서버 최신 전체 상태 → 최신 것으로 덮으면 된다
       backgroundRenderPending = true;
       return false;
     }
@@ -1001,7 +1024,6 @@ window.dispatchEvent(new Event('fb-ready'));
     return Date.now() - (touched[time] || 0) > COLLAPSE_DELAY;
   }
   function setCollapsed(time, v, done){ collapsed[time] = { v: v, done: done }; }
-  var saving = false, dirty = false;
 
   /* ---------- 날짜 ---------- */
   var KEEP_DAYS = 2; // 오늘 기준 이보다 오래된 날짜는 삭제
@@ -1029,7 +1051,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   var viewDate = bizDate();
-  function key(ds){ return 'roster:' + (ds || viewDate); }
 
   function prettyDate(){
     var p = viewDate.split('-');
@@ -1053,9 +1074,9 @@ window.dispatchEvent(new Event('fb-ready'));
     var limit = shiftDate(bizDate(), -KEEP_DAYS);
     purgeOldLocalLogs(limit);
     if (!hasStore()) return;
-    fb().list().then(function(keys){
+    fb().dayList().then(function(keys){
       (keys || []).forEach(function(ds){
-        if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().remove(ds).catch(function(){});
+        if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().dayRemove(ds).catch(function(){});
       });
     }).catch(function(){});
     if (fb().logList){
@@ -1106,19 +1127,12 @@ window.dispatchEvent(new Event('fb-ready'));
   function fb(){ return window.__fb; }
   function hasStore(){ return !!fb(); }
 
-  function loadRemote(ds){
-    if (!hasStore()) return Promise.resolve(null);
-    return fb().get(key(ds)).catch(function(){ return null; });
-  }
-
-  function writeRemote(data, ds){
-    if (!hasStore()) return Promise.resolve(data);
-    return fb().set(key(ds), data).then(function(){ return data; });
-  }
-
-  // 다른 기기의 변경을 즉시 받아온다
+  /* 명단은 예약별 노드(roster/<날짜>/items/<해시>)로 저장한다. 각 변경은 그 노드 하나만
+     즉시 쓴다 — 두 기기가 다른 예약을 동시에 바꿔도 서로 안 겹치고, 같은 예약이면 트랜잭션이
+     정리한다. 하루치를 통째로 읽고-합치고-덮어쓰던 merge/rosterTs/staging 은 없앴다. */
   var unwatch = null;
   var rosterLoadEpoch = 0;
+  var writesPending = 0;        // 나간 쓰기 개수 (자동 업데이트를 잠깐 미루는 데만 씀)
   function loadTicket(){ return { epoch: ++rosterLoadEpoch, date: viewDate }; }
   function ticketCurrent(ticket){
     return ticket.epoch === rosterLoadEpoch && ticket.date === viewDate;
@@ -1126,102 +1140,86 @@ window.dispatchEvent(new Event('fb-ready'));
   function stopWatch(){
     if (unwatch){ unwatch(); unwatch = null; }
   }
+  function itemsToState(ds, res){
+    var arr = (res.items || []).filter(function(it){ return it && it.id && it.time; });
+    return { date: ds, items: arr.slice().sort(sortItems) };
+  }
+  var migratedDates = {};   // 구→신 형식 변환은 날짜당 한 번만 시도
+  // 화면에 영향 주는 필드만으로 비교 (ts 는 쓸 때마다 바뀌고 표시엔 무관 → 제외)
+  function itemsSig(items){
+    return (items || []).map(function(it){
+      return [it.id, it.time, it.name, it.pax, it.memo || '', it.status, it.seq || 0].join('');
+    }).join('');
+  }
+  function applyRemoteItems(ds, res){
+    if (ds !== viewDate) return;
+    var next = itemsToState(ds, res);
+    // 구 형식(items 가 배열)이면 신 형식(해시 키 객체)으로 1회 변환해 둔다.
+    if (res.legacy && next.items.length && hasStore() && !migratedDates[ds]){
+      migratedDates[ds] = 1;
+      fb().itemsReplace(ds, next.items).catch(function(){ migratedDates[ds] = 0; });
+    }
+    // 서버가 기준. 단, 내가 방금 바꿨는데 아직 서버 반영이 안 돌아온 '기존' 항목은 내 값 유지
+    // (ts 최신 승리). 서버에 없는 항목은 건드리지 않는다 — 추가/삭제 왕복은 각자 알아서 붙는다.
+    if (state && state.date === ds){
+      var srv = {}; next.items.forEach(function(it){ srv[it.id] = it; });
+      state.items.forEach(function(loc){
+        var s = srv[loc.id];
+        if (s && (loc.ts || 0) > (s.ts || 0)) srv[loc.id] = loc;
+      });
+      next.items = Object.keys(srv).map(function(k){ return srv[k]; }).sort(sortItems);
+    }
+    if (state && state.date === ds && itemsSig(next.items) === itemsSig(state.items)) return;
+    stageBackgroundState(next);
+  }
   function watchRemote(){
     stopWatch();
     if (!hasStore()) return;
     var watchDate = viewDate;
-    unwatch = fb().watch(key(watchDate), function(remote){
+    unwatch = fb().itemsWatch(watchDate, function(res){
       if (watchDate !== viewDate) return;
-      if (saving) return;
-      // remote가 비어 있어도(명단 초기화) 그대로 반영해야 한다
-      var merged = merge(remote || { date: viewDate, rosterTs: 0, items: [] }, state);
-      if (JSON.stringify(merged) === JSON.stringify(state)) return;
-      stageBackgroundState(merged);
+      applyRemoteItems(watchDate, res);
     });
   }
-
-  // Firebase는 빈 배열·빈 객체를 저장하지 않으므로 items가 사라져서 돌아올 수 있다.
-  function norm(d){
-    if (!d) return null;
-    return { date: d.date, rosterTs: d.rosterTs || 0, items: Array.isArray(d.items) ? d.items : [] };
-  }
-
-  function merge(a, b){
-    a = norm(a); b = norm(b);
-    if (!a) return b;
-    if (!b) return a;
-    var base  = (a.rosterTs||0) >= (b.rosterTs||0) ? a : b;
-    var other = base === a ? b : a;
-    var map = {};
-    other.items.forEach(function(it){ map[it.id] = it; });
-    var items = base.items.map(function(it){
-      var o = map[it.id];
-      if (o && (o.ts||0) > (it.ts||0)) {
-        var next = {};
-        for (var k in it) if (Object.prototype.hasOwnProperty.call(it, k)) next[k] = it[k];
-        next.status = o.status;
-        next.ts = o.ts;
-        return next;
-      }
-      return it;
-    });
-    return { date: base.date, rosterTs: base.rosterTs, items: items };
-  }
-
   function sync(){
     var syncDate = viewDate;
-    return loadRemote(syncDate).then(function(remote){
-      if (syncDate !== viewDate) return;
-      var merged = merge(remote, state);
-      var changed = JSON.stringify(merged) !== JSON.stringify(state);
-      if (changed) stageBackgroundState(merged);
+    if (!hasStore()) return Promise.resolve();
+    return fb().itemsGet(syncDate).then(function(res){
+      applyRemoteItems(syncDate, res);
     }).catch(function(){});
   }
 
-  var saveTimer = null;
-  var pendingWrites = {};
-  var localDrafts = {};
-  function copyState(data){ return JSON.parse(JSON.stringify(data)); }
-  function save(){
-    if (!state) return;
-    var snapshot = copyState(state);
-    localDrafts[viewDate] = snapshot;
-    pendingWrites[viewDate] = snapshot;
-    dirty = true;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(flush, 250);
+  // 한 예약 노드에 부분 변경(상태·메모 등)을 원자적으로 반영한다. 이미 지워졌으면 아무것도 안 함.
+  function writeItem(id, patch){
+    if (!hasStore()) return;
+    var ds = viewDate;
+    writesPending++;
+    fb().itemTxn(ds, id, function(cur){
+      var next = {};
+      for (var k in cur) if (Object.prototype.hasOwnProperty.call(cur, k)) next[k] = cur[k];
+      for (var p in patch) if (Object.prototype.hasOwnProperty.call(patch, p)) next[p] = patch[p];
+      return next;
+    }).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
   }
-  function flush(){
-    clearTimeout(saveTimer); saveTimer = null;
-    if (saving) return;
-    var dates = Object.keys(pendingWrites);
-    if (!dates.length){ dirty = false; return; }
-    var flushDate = dates[0];
-    var localState = pendingWrites[flushDate];
-    delete pendingWrites[flushDate];
-    saving = true; dirty = true;
-    var before = JSON.stringify(localState);
-    loadRemote(flushDate).then(function(remote){
-      var merged = merge(remote, localState);
-      return writeRemote(merged, flushDate);
-    }).then(function(merged){
-      saving = false;
-      // 같은 날짜의 더 최신 스냅샷이 기다리면 오래된 완료값은 화면에 적용하지 않는다.
-      if (flushDate === viewDate && !pendingWrites[flushDate]
-          && JSON.stringify(merged) !== before){
-        stageBackgroundState(merged);
-      }
-      if (!pendingWrites[flushDate]) delete localDrafts[flushDate];
-      dirty = Object.keys(pendingWrites).length > 0;
-      if (dirty) flush();
-    }).catch(function(){
-      saving = false;
-      // 성공하기 전까지 보존한 날짜별 최신 로컬본을 재시도해 날짜 왕복 중에도 앞선 변경을 잃지 않는다.
-      pendingWrites[flushDate] = localDrafts[flushDate] || localState;
-      dirty = true;
-      toast('저장 실패 — 잠시 뒤 다시 시도합니다');
-      setTimeout(flush, 3000);
-    });
+  // 예약 하나를 통째로 쓴다 (새 예약 추가).
+  function putItem(item){
+    if (!hasStore()) return;
+    var ds = viewDate;
+    writesPending++;
+    fb().itemPut(ds, item.id, item).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
+  }
+  function delItem(id){
+    if (!hasStore()) return;
+    var ds = viewDate;
+    writesPending++;
+    fb().itemDel(ds, id).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
+  }
+  // 명단을 통째로 새로 쓴다 (붙여넣기·초기화).
+  function replaceItems(arr){
+    if (!hasStore()) return;
+    var ds = viewDate;
+    writesPending++;
+    fb().itemsReplace(ds, arr).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
   }
 
   // 연결 표시는 Firebase가 알려주는 실제 상태만 반영한다.
@@ -1344,7 +1342,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function render(){
     if (!interactionActive() && deferredState){
-      state = merge(deferredState, state);
+      state = deferredState;
       deferredState = null;
     }
     backgroundRenderPending = !!deferredState;
@@ -1569,8 +1567,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (action === 'delete'){
       logAdd('삭제', it.time + ' ' + it.name);
       state.items = state.items.filter(function(x){ return x.id !== id; });
-      state.rosterTs = Date.now();
-      openMenu = null; render(); save();
+      openMenu = null; render();
+      delItem(id);
     }
   }
 
@@ -1775,20 +1773,22 @@ window.dispatchEvent(new Event('fb-ready'));
     logAdd(memoOnly ? '메모' : '수정',
       memoOnly ? (it.time + ' ' + it.name + (memo ? ' · ' + memo : ' · 메모 지움'))
                : (it.time + ' ' + it.name + ' → ' + time + ' ' + name + ' ' + pax + '명'));
+    var oldId = it.id;
     it.time = time; it.name = name; it.pax = pax; it.memo = memo;
     it.id = uniqueId(time, name, pax, id);
+    it.ts = Date.now();
     touched[originalTime] = Date.now();
     touched[time] = Date.now();
     armSlotCollapse(originalTime);
     if (time !== originalTime) armSlotCollapse(time);
     state.items.sort(sortItems);
-    state.rosterTs = Date.now();
     var anchor = editing;
     editing = null;
     if (timeMoved) render();                 // 시간이 바뀌면 자리가 달라지니 그냥 다시 그린다
     else renderAnchored(anchor);             // 제자리 수정이면 행이 안 튀게 보정
     if (timeMoved) ensureVisible(it.id);
-    save();
+    if (it.id === oldId) writeItem(oldId, { memo: it.memo, ts: it.ts });   // 메모만 바뀜 (id 유지)
+    else { delItem(oldId); putItem(it); }                                  // 시각·이름·인원 바뀜 = 다른 노드
     toast('수정됨');
   }
 
@@ -2226,8 +2226,9 @@ window.dispatchEvent(new Event('fb-ready'));
       logAdd(kind, it.time + ' ' + it.name,
              'st:' + id + ':' + st + ':' + Math.round(Date.now() / 120000));
     }
+    var ts = Date.now();
     it.status = st;
-    it.ts = Date.now();
+    it.ts = ts;
     keepSlotOpenForId(id);
     openMenu = null;
     var patched = patchStatus(it);
@@ -2235,7 +2236,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (interactionActive()) backgroundRenderPending = true;
       else render();
     } else if (backgroundRenderPending && !interactionActive()) render();
-    save();
+    writeItem(id, { status: st, ts: ts });
     if (st === 'arrived') toast(it.name + ' 방문 체크');
   }
 
@@ -2353,9 +2354,11 @@ window.dispatchEvent(new Event('fb-ready'));
     clearBad();
     if (!fresh.length){ toast('등록할 예약이 없습니다'); return false; }
     logAdd('명단 등록', fresh.length + '건');
-    state = { date: viewDate, rosterTs: Date.now(), items: fresh.sort(sortItems) };
+    var ts = Date.now();
+    fresh.forEach(function(it){ it.ts = ts; });
+    state = { date: viewDate, items: fresh.sort(sortItems) };
     render();
-    save(); flush();
+    replaceItems(state.items);   // items 서브트리 통째 교체
     toast(fresh.length + '건 등록');
     return true;
   }
@@ -2440,20 +2443,20 @@ window.dispatchEvent(new Event('fb-ready'));
     var time = aHour.value + ':' + aMin.value;
     var pax = parseInt(aPax.value, 10);
     var memo = aMemo.value.replace(/\s+/g,' ').trim();
-    if (!state) state = { date: viewDate, rosterTs: 0, items: [] };
+    if (!state) state = { date: viewDate, items: [] };
     var maxSeq = 0;
     state.items.forEach(function(x){ if ((x.seq||0) > maxSeq) maxSeq = x.seq||0; });
-    state.items.push({
+    var item = {
       id: uniqueId(time, name, pax), time: time, name: name, pax: pax,
       memo: memo, status: 'pending', ts: Date.now(), seq: maxSeq + 1
-    });
+    };
+    state.items.push(item);
     state.items.sort(sortItems);
-    state.rosterTs = Date.now();
     logAdd('예약 추가', time + ' ' + name + ' ' + pax + '명');
     delete collapsed[time];        // 방금 넣은 예약은 보이게
     closeAdd();
     render();
-    save();
+    putItem(item);                 // 새 예약 노드 하나 추가
     toast(time + ' ' + name + ' 추가됨');
   }
   document.getElementById('addOk').addEventListener('click', addOne);
@@ -2566,12 +2569,13 @@ window.dispatchEvent(new Event('fb-ready'));
       logAdd('명단 초기화', state.items.length + '건 지움');
       editing = null; openMenu = null;
       deferredState = null; backgroundRenderPending = false;
-      state = { date: viewDate, rosterTs: Date.now(), items: [] };
+      state = { date: viewDate, items: [] };
       collapsed = {};
       closeSearch(false);
       if (wrapEl) wrapEl.scrollTop = 0;
       render();
-      save(); flush();
+      replaceItems([]);   // items 노드 삭제
+
     });
   });
 
@@ -2743,16 +2747,17 @@ window.dispatchEvent(new Event('fb-ready'));
     if (wrapEl) wrapEl.scrollTop = 0;
     render();
     var ticket = loadTicket();
-    loadRemote(ticket.date).then(function(remote){
+    if (!hasStore()){ state = { date: ticket.date, items: [] }; render(); return; }
+    fb().itemsGet(ticket.date).then(function(res){
       if (!ticketCurrent(ticket)) return;
-      state = (remote && remote.items) ? remote : { date: ticket.date, rosterTs: 0, items: [] };
-      if (localDrafts[ticket.date]) state = merge(localDrafts[ticket.date], state);
+      state = itemsToState(ticket.date, res);
       render();
-      watchRemote();
+      watchRemote();   // 즉시 fire → applyRemoteItems 가 필요시 구 형식 변환도 한다
     }).catch(function(){
       if (!ticketCurrent(ticket)) return;
-      state = { date: ticket.date, rosterTs: 0, items: [] };
+      state = { date: ticket.date, items: [] };
       render();
+      watchRemote();
     });
   }
   var foldBtn = document.getElementById('foldBtn');
@@ -2897,8 +2902,8 @@ window.dispatchEvent(new Event('fb-ready'));
         dayCount[ds] = slot.textContent;
       } else if (hasStore()) {
         slot.textContent = dayCount[ds] || '';   // 받아오는 동안 이전 값을 그대로 둔다
-        fb().get('roster:' + ds).then(function(r){
-          dayCount[ds] = (r && r.items && r.items.length) ? r.items.length + '건' : '—';
+        fb().itemsGet(ds).then(function(r){
+          dayCount[ds] = r.items.length ? r.items.length + '건' : '—';
           slot.textContent = dayCount[ds];
         }).catch(function(){ slot.textContent = dayCount[ds] || '—'; });
       } else {
@@ -3066,7 +3071,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.10.2<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.11.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3180,19 +3185,16 @@ window.dispatchEvent(new Event('fb-ready'));
     purgeOld();
     wakeLogOutbox();
     var ticket = loadTicket();
-    loadRemote(ticket.date).then(function(remote){
+    if (!hasStore()){ stageBackgroundState(state || { date: ticket.date, items: [] }); return; }
+    fb().itemsGet(ticket.date).then(function(res){
       if (!ticketCurrent(ticket)) return;
-      var incoming = (remote && remote.items)
-        ? remote : { date: ticket.date, rosterTs: 0, items: [] };
-      if (localDrafts[ticket.date]) incoming = merge(localDrafts[ticket.date], incoming);
-      var next = state && state.date === ticket.date ? merge(incoming, state) : incoming;
-      stageBackgroundState(next);
-      watchRemote();
+      stageBackgroundState(itemsToState(ticket.date, res));
+      watchRemote();   // 즉시 fire → applyRemoteItems 가 필요시 구 형식 변환도 한다
       if (!boot._hinted){ boot._hinted = true; maybeInstallHint(); }
     }).catch(function(){
       if (!ticketCurrent(ticket)) return;
-      var next = state || { date: ticket.date, rosterTs: 0, items: [] };
-      stageBackgroundState(next);
+      stageBackgroundState(state || { date: ticket.date, items: [] });
+      watchRemote();
     });
   }
 
@@ -3234,7 +3236,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 새로 불러도 잃을 게 없는 상태인가
   function safeToReload(){
     if (document.hidden || !online) return false;
-    if (typingNow() || dirty || saving || openMenu) return false;
+    if (typingNow() || writesPending > 0 || openMenu) return false;
     if (Date.now() - lastTouchAt < 20000) return false;   // 방금 만졌으면 기다린다
     var busy = ['pastePanel', 'addPanel', 'panelScrim', 'sheetScrim', 'scrim'].some(function(id){
       var el = document.getElementById(id);
@@ -3325,10 +3327,11 @@ window.dispatchEvent(new Event('fb-ready'));
       // 한 줄. (예약 id 는 편집·개별추가로 기기마다 달라질 수 있어 이름 기준이 더 안전하다.)
       var label = it.time + ' ' + it.name;
       logAdd('자동 취소', label, 'ac:' + label);
+      var ts = Date.now();
       it.status = 'cancelled';
-      it.ts = Date.now();
+      it.ts = ts;
+      writeItem(it.id, { status: 'cancelled', ts: ts });
     });
-    save();
     return true;
   }
 
