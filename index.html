@@ -7,17 +7,17 @@
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="익순이">
 <script>
-// 테마에 딸린 것들(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
-// 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
+// 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
+// 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다. (v1.4.x 검증 방식)
 //
-// 아이폰 상태바(노치): apple-mobile-web-app-status-bar-style 은 실행 시점에만 읽혀서
-// 런타임에 못 바꾼다. 대신 그 값을 "default" 로 두면 iOS 가 theme-color 로 상태바 색을
-// 칠하고, theme-color 는 실행 중에도 다시 읽는다 → 여기서 theme-color 만 바꾸면
-// 노치 색도 테마 따라 같이 바뀐다. (status-bar-style 을 "black" 으로 두면 iOS 가 검정 바를
-// 그리고 theme-color 를 무시하므로 안 됨.)
+// 아이폰 노치: status-bar-style="black" 이면 iOS 가 그 아래를 theme-color 로 칠하고,
+// theme-color 는 실행 중에도 다시 읽는다 → theme-color 만 바꾸면 노치 색도 같이 바뀐다.
+// (iPhone 17 시뮬레이터 standalone 에서 다크↔라이트 양방향 확인.)
+// ★ status-bar-style 메타는 런타임에 절대 건드리지 않는다 — 그러면 iOS 가 노치를 잠근다.
+//   (이걸 만졌던 중간 버전이 회귀 원인. 앱 켤 때 값만 아래 페인트 전 IIFE 가 정한다.)
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
@@ -29,6 +29,9 @@ window.setThemeChrome = function(t){
 (function(){
   var t = 'dark';
   try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
+  // 상태바 스타일 — iOS 는 앱 켤 때 한 번만 읽는다. 여기서만 정한다 (setThemeChrome 은 안 건드림).
+  var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (sb) sb.content = (t === 'light') ? 'default' : 'black';
   window.setThemeChrome(t);
 })();
 </script>
