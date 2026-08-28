@@ -868,7 +868,7 @@
 <script type="module">
 // ---------- Firebase 연결 ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import { getDatabase, ref, get, set, push, remove, onValue, off, goOffline, goOnline }
+import { getDatabase, ref, get, set, remove, onValue, off, goOffline, goOnline }
   from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -899,8 +899,8 @@ window.__fb = {
     const h = onValue(r, s => cb(s.exists() ? s.val() : null));
     return () => off(r, 'value', h);
   },
-  // 변경 내역 — 날짜별로 따로 쌓는다. push 라 여러 대가 동시에 써도 안 겹친다
-  logPush: (ds, entry) => push(ref(db, LOGROOT + '/' + ds), entry),
+  // 변경 내역 — 날짜별로 따로 쌓는다. id 를 앱이 정하므로(logSet) 같은 이벤트를 여러 대가
+  // 써도 같은 자리에 덮여 한 줄로 합쳐진다 (상태 변경 이벤트는 id 가 결정적).
   logSet: (ds, id, entry) => set(ref(db, LOGROOT + '/' + ds + '/' + id), entry),
   logGet: ds => get(ref(db, LOGROOT + '/' + ds)).then(s => s.exists() ? Object.values(s.val()) : []),
   logWatch: (ds, cb, fail) => { const r = ref(db, LOGROOT + '/' + ds); const h = onValue(r, s => cb(s.exists() ? Object.values(s.val()) : []), fail); return () => off(r, 'value', h); },
@@ -1898,6 +1898,18 @@ window.dispatchEvent(new Event('fb-ready'));
     return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12)
       + '-' + Math.random().toString(36).slice(2, 8);
   }
+  // 같은 실제 이벤트(예: 한 예약의 자동 취소)를 여러 기기가 각각 기록해도 한 줄이 되도록,
+  // 그 이벤트를 규정하는 문자열에서 결정적인 id 를 만든다. 두 기기가 같은 id 로 write → 덮임.
+  function logKeyId(keyStr){
+    var a = 5381, b = 52711;
+    for (var i = 0; i < keyStr.length; i++){
+      var c = keyStr.charCodeAt(i);
+      a = (Math.imul(a, 33) ^ c) >>> 0;
+      b = (Math.imul(b, 63689) ^ c) >>> 0;
+    }
+    function f(n){ return ('0000000' + n.toString(36)).slice(-7); }
+    return 'ev' + f(a) + f(b);                 // 16자, LOG_ID_PATTERN 통과
+  }
   function logIdentity(r){
     return r && r.id ? 'id:' + r.id
       : 'legacy:' + ((r && r.at) || 0) + '|' + ((r && r.k) || '') + '|' + ((r && r.s) || '');
@@ -2006,11 +2018,13 @@ window.dispatchEvent(new Event('fb-ready'));
     if (outboxChanged) removeLogStore(LOG_OUTBOX_KEY);
   }
 
-  function logAdd(kind, what){
+  // key 를 주면 그 이벤트의 id 가 결정적이 된다 (여러 기기의 중복 기록이 한 줄로 합쳐짐).
+  // 안 주면 랜덤 id — 동시 중복이 있을 수 없는 이벤트(예약 추가·삭제·메모·명단 등록 등)용.
+  function logAdd(kind, what, key){
     if (dayGap(viewDate) !== 0) return;      // 오늘 명단만 기록한다
     var d = new Date();
     var entry = cleanLogEntry({
-      id: logEventId(),
+      id: key ? logKeyId(key) : logEventId(),
       at: Date.now(),
       t: pad(d.getHours()) + ':' + pad(d.getMinutes()),
       k: kind,
@@ -2203,13 +2217,14 @@ window.dispatchEvent(new Event('fb-ready'));
     });
   }
 
-  function setStatus(id, st, auto){
+  function setStatus(id, st){
     var it = find(id);
     if (!it) return;
     if (it.status !== st){
-      logAdd(auto ? '자동 취소'
-           : st === 'arrived' ? '방문'
-           : st === 'cancelled' ? '취소' : '체크 해제', it.time + ' ' + it.name);
+      var kind = st === 'arrived' ? '방문' : st === 'cancelled' ? '취소' : '체크 해제';
+      // 두 직원이 같은 행을 동시에 눌러도 한 줄. 2분 단위로 묶어 나중의 재-토글은 별도 줄로.
+      logAdd(kind, it.time + ' ' + it.name,
+             'st:' + id + ':' + st + ':' + Math.round(Date.now() / 120000));
     }
     it.status = st;
     it.ts = Date.now();
@@ -3051,7 +3066,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.10.0<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.10.1<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3305,7 +3320,8 @@ window.dispatchEvent(new Event('fb-ready'));
     });
     if (!hit.length) return false;
     hit.forEach(function(it){
-      logAdd('자동 취소', it.time + ' ' + it.name);
+      // 한 예약의 자동 취소는 평생 한 번 → 예약 id 만으로 묶으면 여러 기기가 겹쳐도 한 줄.
+      logAdd('자동 취소', it.time + ' ' + it.name, 'ac:' + it.id);
       it.status = 'cancelled';
       it.ts = Date.now();
     });
