@@ -887,7 +887,6 @@ const DEV = /-dev(\/|$)/.test(location.pathname);
 const ROOT = DEV ? 'roster-dev' : 'roster';
 // Firebase 규칙이 허용하는 명단 영역 안에 변경 내역 전용 가지를 둔다.
 const LOGROOT = ROOT + '/__logs__';
-const path = k => ROOT + '/' + String(k).replace('roster:', '');
 // 예약 id 를 Firebase 키로 (id 엔 ':' '|' 가, 이름엔 '.' 이 들어갈 수 있어 해시한다)
 const k32 = s => {
   let a = 5381, b = 52711;
@@ -1389,8 +1388,8 @@ window.dispatchEvent(new Event('fb-ready'));
 
     // 명단이 없으면 하단 메뉴와 검색은 할 일이 없다
     var allCount = all.length;
-    var footEl2 = document.querySelector('.foot');
-    if (footEl2) footEl2.classList.toggle('hide', !allCount);
+    var footEl = document.querySelector('.foot');
+    if (footEl) footEl.classList.toggle('hide', !allCount);
     searchBtn.classList.toggle('off', !allCount);
     if (!allCount && !searchbar.classList.contains('hide')) closeSearch(false);
 
@@ -1452,8 +1451,8 @@ window.dispatchEvent(new Event('fb-ready'));
       openCount += shut ? 0 : 1;
     });
 
-    var fb = document.getElementById('foldBtn');
-    if (fb) fb.textContent = openCount ? '전체 접기' : '전체 펼치기';
+    var foldBtnEl = document.getElementById('foldBtn');
+    if (foldBtnEl) foldBtnEl.textContent = openCount ? '전체 접기' : '전체 펼치기';
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
     document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
@@ -1858,17 +1857,6 @@ window.dispatchEvent(new Event('fb-ready'));
         if (item) out[id] = item;
         else if (removeLogStore(key)) i--;
       }
-      // v1.3.12 시험판의 한 덩어리 outbox가 남아 있으면 안전한 항목만 한 건씩 옮긴다.
-      var legacy = readLogStore(LOG_OUTBOX_KEY);
-      var remaining = {};
-      Object.keys(legacy).forEach(function(id){
-        var item = cleanOutboxItem(id, legacy[id]);
-        if (!item || out[id]) return;
-        if (writeLogStore(LOG_OUTBOX_PREFIX + id, item)) out[id] = item;
-        else remaining[id] = item;
-      });
-      if (Object.keys(remaining).length) writeLogStore(LOG_OUTBOX_KEY, remaining);
-      else removeLogStore(LOG_OUTBOX_KEY);
     } catch(e){}
     return out;
   }
@@ -2002,7 +1990,7 @@ window.dispatchEvent(new Event('fb-ready'));
     });
   }
   function purgeOldLocalLogs(limit){
-    var cacheChanged = false, outboxChanged = false;
+    var cacheChanged = false;
     Object.keys(logCache).forEach(function(ds){
       if (!validLogDate(ds) || ds < limit || ds > bizDate()){
         delete logCache[ds]; cacheChanged = true;
@@ -2011,11 +1999,10 @@ window.dispatchEvent(new Event('fb-ready'));
     Object.keys(logOutbox).forEach(function(id){
       var item = logOutbox[id];
       if (!cleanOutboxItem(id, item) || item.date < limit){
-        removeLogOutboxItem(id, item); outboxChanged = true;
+        removeLogOutboxItem(id, item);   // 개별 키 삭제까지 여기서 처리
       }
     });
     if (cacheChanged) writeLogStore(LOG_CACHE_KEY, logCache);
-    if (outboxChanged) removeLogStore(LOG_OUTBOX_KEY);
   }
 
   // key 를 주면 그 이벤트의 id 가 결정적이 된다 (여러 기기의 중복 기록이 한 줄로 합쳐짐).
@@ -2491,8 +2478,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (open !== keyboardOpen){
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
-      if (typeof addPanel !== 'undefined' && addPanel)
-        addPanel.classList.toggle('kb', open);
+      if (addPanel) addPanel.classList.toggle('kb', open);
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
@@ -3071,7 +3057,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.11.0<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
