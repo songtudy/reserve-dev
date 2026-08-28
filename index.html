@@ -22,9 +22,6 @@ window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
-  // 페인트 전에 인라인으로 바탕색을 박아 둔다 — 스타일시트가 파싱되기 전
-  // 첫 프레임이 흰색으로 번쩍이는 걸 막는다 (설치형 PWA 콜드 스타트).
-  d.style.background = (t === 'light') ? '#f4f6f9' : '#0f1319';
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   if (themeMeta) themeMeta.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
 };
@@ -3045,7 +3042,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단 관리 앱입니다.</p>'
       + '<p class="about">바뀐 내용은 <b>실시간으로 모든 폰에 반영</b>됩니다.</p>'
       + '<p class="about"><b>명단 복사</b>는 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.2<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.3<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3328,15 +3325,6 @@ window.dispatchEvent(new Event('fb-ready'));
     setTimeout(function(){ if (!state) boot(); }, 4000);  // 로딩 실패 시에도 화면은 뜨게
   }
 })();
-</script>
-<script>
-// 서비스 워커 — 앱 껍데기를 캐시해 콜드 스타트 흰 번쩍임을 없앤다 (sw.js 참고).
-// 예약 데이터는 Firebase 실시간 연결이라 캐시와 무관.
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
-  });
-}
 </script>
 </body>
 </html>
