@@ -10,20 +10,27 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="익순이">
 <script>
-// 화면이 그려지기 전에 테마를 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
-(function(){
-  var t = 'dark';
-  try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
+// 테마에 딸린 것들(속성·상태바 색)을 한 번에 바꾼다.
+// 페인트 전 1회 + 나중에 서랍에서 바꿀 때(applyTheme) 둘 다 이 함수를 쓴다 →
+// 색과 상태바가 항상 같이 바뀐다.
+window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
-  var m = document.querySelector('meta[name="theme-color"]');
-  if (m) m.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
-  // 아이폰 앱 모드 상태바.
-  // black-translucent 는 화면을 상태바 높이만큼 깎아 아래에 빈 띠를 남긴다. 쓰지 않는다.
+  // theme-color: 안드로이드 상태바.
+  var mc = document.querySelector('meta[name="theme-color"]');
+  if (mc) mc.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
+  // apple-...-status-bar-style: 아이폰 앱 모드 상태바.
   // 다크는 black(검정 바 + 흰 글씨), 라이트는 default(밝은 바 + 검은 글씨).
-  var b = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-  if (b) b.content = (t === 'light') ? 'default' : 'black';
+  // (black-translucent 는 화면을 상태바 높이만큼 깎아 빈 띠를 남겨 쓰지 않는다.)
+  var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (sb) sb.content = (t === 'light') ? 'default' : 'black';
+};
+// 화면이 그려지기 전에 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
+(function(){
+  var t = 'dark';
+  try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
+  window.setThemeChrome(t);
 })();
 </script>
 <link rel="manifest" href="manifest.json">
@@ -38,7 +45,6 @@
     --line:#252c36;     --press:#26313d;
     --text:#f0f3f6;     --dim:#8792a0;      --off:#5a657a;
     --ph:#7b8695;       --disTx:#626d7c;
-    --headBg:rgba(15,19,25,.96);
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
     /* 대기 — 금색. 칠할 때와 글자일 때를 나눈다 (밝은 테마에서 대비가 달라서) */
     --wait:#e8b757;     --waitTx:#e8b757;   --waitBig:#e8b757;
@@ -59,7 +65,6 @@
     --line:#dfe4ec;     --press:#e2e7ef;
     --text:#161a20;     --dim:#5c6772;      --off:#a9b3c0;
     --ph:#a3acb9;       --disTx:#a8b0bb;
-    --headBg:rgba(244,246,249,.96);
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
     --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
@@ -2787,11 +2792,9 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function applyTheme(){
     var t = theme();
-    var d = document.documentElement;
-    d.setAttribute('data-theme', t);
-    d.style.colorScheme = t;
-    var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
+    // 페인트 전 스크립트와 똑같이 — data-theme·color-scheme·상태바 색을 한 번에.
+    if (window.setThemeChrome) window.setThemeChrome(t);
+    else document.documentElement.setAttribute('data-theme', t);
     [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
       btn.classList.toggle('on', btn.getAttribute('data-theme-set') === t);
     });
