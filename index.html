@@ -2511,10 +2511,37 @@ window.dispatchEvent(new Event('fb-ready'));
     var ta = document.getElementById('ta');
     ta.addEventListener('focus', function(){
       focusN++; t0 = Date.now(); maxTop = 0; maxWrapST = 0;
-      contentLines = ta.value ? ta.value.split('\n').length : 0;
+      var real = trickVal != null ? trickVal : ta.value;
+      contentLines = real ? real.split('\n').length : 0;
     });
     if (vv){ vv.addEventListener('resize', tick); vv.addEventListener('scroll', tick); }
     setInterval(tick, 120);
+
+    /* --- 속임수: 재탭 순간 입력칸을 빈 것처럼 보여 iOS pan 을 유발, 곧 내용 복원 --- */
+    var trickVal = null, trickSel = null;
+    ta.addEventListener('pointerdown', function(){
+      if (!document.body.classList.contains('paste-open')) return;
+      if (document.activeElement === ta || !ta.value) return;
+      trickVal = ta.value;
+      trickSel = [ta.selectionStart, ta.selectionEnd];
+      ta.value = '';
+    });
+    ta.addEventListener('focus', function(){
+      if (trickVal == null) return;
+      var v = trickVal, s = trickSel; trickVal = null;
+      setTimeout(function(){
+        ta.value = v;
+        try { ta.setSelectionRange(s[0], s[1]); } catch(e){}
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }, 220);
+    });
+    // 탭했다가 포커스 안 되고 벗어난 경우 대비 복원
+    setInterval(function(){
+      if (trickVal != null && document.activeElement !== ta){
+        ta.value = trickVal; trickVal = null;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }, 500);
   })();
   /* ===== /diag ===== */
 
@@ -3072,7 +3099,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
       + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
       + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.9.7-diag<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.9.7-trick<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
