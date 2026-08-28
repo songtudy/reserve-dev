@@ -7,24 +7,22 @@
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="익순이">
 <script>
 // 테마에 딸린 것들(속성·상태바 색)을 한 번에 바꾼다.
-// 페인트 전 1회 + 나중에 서랍에서 바꿀 때(applyTheme) 둘 다 이 함수를 쓴다 →
-// 색과 상태바가 항상 같이 바뀐다.
+// 페인트 전 1회 + 나중에 서랍에서 바꿀 때(applyTheme) 둘 다 이 함수를 쓴다.
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
-  // theme-color: 안드로이드 상태바.
+  // theme-color: 안드로이드 상태바 색.
   var mc = document.querySelector('meta[name="theme-color"]');
   if (mc) mc.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
-  // apple-...-status-bar-style: 아이폰 앱 모드 상태바.
-  // 다크는 black(검정 바 + 흰 글씨), 라이트는 default(밝은 바 + 검은 글씨).
-  // (black-translucent 는 화면을 상태바 높이만큼 깎아 빈 띠를 남겨 쓰지 않는다.)
-  var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-  if (sb) sb.content = (t === 'light') ? 'default' : 'black';
+  // 아이폰: status-bar-style 은 실행 시점에만 읽혀 런타임에 못 바꾼다.
+  // black-translucent 로 상태바를 투명하게 두고, 그 아래 <header> 배경(var(--ink))이
+  // 비쳐 보이게 한다 → 테마를 바꾸면 노치 영역 색도 CSS 로 같이 바뀐다.
+  // (viewport-fit=cover + header 의 safe-area 상단 패딩이 빈 띠를 막는다.)
 };
 // 화면이 그려지기 전에 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
 (function(){
@@ -46,25 +44,24 @@ window.setThemeChrome = function(t){
     --text:#f0f3f6;     --dim:#8792a0;      --off:#5a657a;
     --ph:#7b8695;       --disTx:#626d7c;
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
-    /* 대기 — 금색. 칠할 때와 글자일 때를 나눈다 (밝은 테마에서 대비가 달라서) */
-    --wait:#e8b757;     --waitTx:#e8b757;   --waitBig:#e8b757;
+    /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
+    --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
     --onWait:#241a05;   --mark:#463a13;
     /* 방문 — 초록 */
-    --go:#5fb08a;       --goTx:#5fb08a;     --onGo:#08241a;
+    --go:#5fb08a;       --goTx:var(--go);      --onGo:#08241a;
     --goBg:#141d19;     --goLine:#26382f;   --goTag:#1b2f27;
     --goTagTx:#7fc9a5;  --goName:#94a49c;
     /* 취소·경고 — 붉은색 */
     --warn:#c9736a;     --warnBg:#1a1618;   --warnTag:#332323;  --warnTagTx:#d2938c;
     --warnName:#b8938e; --warnPax:#a8837e;  --warnPaxBg:#241c1d;
-    /* 붙여넣기 오류 */
-    --errBg:#1e1618;    --errLine:#4a2e2c;  --errTx:#e0a49d;
-    --errRow:rgba(201,115,106,.16);
+    /* 붙여넣기 오류 (줄 강조 + 안내문) */
+    --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   html[data-theme="light"]{
     --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
     --line:#dfe4ec;     --press:#e2e7ef;
     --text:#161a20;     --dim:#5c6772;      --off:#a9b3c0;
-    --ph:#a3acb9;       --disTx:#a8b0bb;
+    --ph:#767f8d;       --disTx:#a8b0bb;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
     --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
@@ -74,8 +71,7 @@ window.setThemeChrome = function(t){
     --goTagTx:#1c7853;  --goName:#4a6a5b;
     --warn:#b43f36;     --warnBg:#fdf1ef;   --warnTag:#fadedb;  --warnTagTx:#a2463c;
     --warnName:#855c55; --warnPax:#7a4f48;  --warnPaxBg:#f6e7e5;
-    --errBg:#fdf0ee;    --errLine:#f0c8c2;  --errTx:#9e4438;
-    --errRow:rgba(192,72,60,.12);
+    --errRow:rgba(192,72,60,.12);   --errTx:#9e4438;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--ink)}
@@ -135,7 +131,7 @@ window.setThemeChrome = function(t){
     line-height:0;cursor:pointer;border-radius:9px;
   }
   .nav button svg{display:block}
-  .nav button:active{background:var(--panel2)}
+  .nav button:active{background:var(--press)}
   .nav button:disabled{opacity:.22}
   .date{
     display:flex;min-width:0;
@@ -161,7 +157,7 @@ window.setThemeChrome = function(t){
     background:none;border:0;border-radius:9px;
     color:var(--dim);cursor:pointer;margin-right:-8px;
   }
-  .tools button:active{background:var(--panel2)}
+  .tools button:active{background:var(--press)}
   .tools button.on{color:var(--waitTx);background:var(--panel2)}
   /* 개발용 주소에서만 뜨는 표시 */
   .devtag{
@@ -231,7 +227,7 @@ window.setThemeChrome = function(t){
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .searchbar button svg{display:block}
-  .searchbar button:active{background:var(--panel2)}
+  .searchbar button:active{background:var(--press)}
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
   /* time group */
@@ -244,7 +240,7 @@ window.setThemeChrome = function(t){
     width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 8px;
     border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
-  .ghead:active{background:var(--panel2)}
+  .ghead:active{background:var(--press)}
   .chev{
     color:var(--dim);flex:0 0 auto;
     display:grid;place-items:center;width:14px;height:14px;line-height:0;
@@ -281,7 +277,7 @@ window.setThemeChrome = function(t){
     background:none;border:0;border-right:1px solid var(--line);
     color:inherit;font:inherit;
   }
-  .main:active{background:var(--panel2)}
+  .main:active{background:var(--press)}
   .info{
     flex:1;min-width:0;display:flex;align-items:center;gap:12px;
     padding:14px 12px;
@@ -336,7 +332,7 @@ window.setThemeChrome = function(t){
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .more svg{display:block}
-  .more:active{background:var(--panel2)}
+  .more:active{background:var(--press)}
 
   .row.arrived{border-left-color:var(--go);background:var(--goBg)}
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
@@ -353,7 +349,7 @@ window.setThemeChrome = function(t){
   .erow{display:flex;gap:6px}
   .erow label{
     display:flex;flex-direction:column;gap:4px;
-    font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--dim);
+    font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--dim);
   }
   .erow label.grow{flex:1;min-width:0}
   .erow input, .erow select{
@@ -486,7 +482,7 @@ window.setThemeChrome = function(t){
     padding:9px 0;font-size:12px;font-weight:600;
     background:none;color:var(--dim);border-color:transparent;
   }
-  .foot button:active{background:var(--panel2)}
+  .foot button:active{background:var(--press)}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
@@ -519,7 +515,7 @@ window.setThemeChrome = function(t){
     padding:13px 18px;border:0;background:none;cursor:pointer;
     color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
   }
-  .dwday:active{background:var(--panel2)}
+  .dwday:active{background:var(--press)}
   .dwday .d1{flex:1;min-width:0;white-space:nowrap}
   .dwday .d2{font-size:12px;font-variant-numeric:tabular-nums}
   .dwday.on{color:var(--text)}
@@ -531,7 +527,7 @@ window.setThemeChrome = function(t){
     padding:13px 18px;border:0;background:none;cursor:pointer;
     color:var(--text);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
   }
-  .dwitem:active{background:var(--panel2)}
+  .dwitem:active{background:var(--press)}
   /* 세그먼트 토글 — 테마 다크/라이트, Wi-Fi 본관/별관 공용.
      강조색(--wait)은 두 테마 모두 「켜짐」으로 읽힌다. .wide 는 시트 안에서 꽉 차게. */
   .seg{display:flex;gap:6px}
