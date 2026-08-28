@@ -7,20 +7,16 @@
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="익순이">
 <script>
-// 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
-// 둘 다 이 함수를 쓴다.
+// 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme).
 //
-// 아이폰 노치: iOS standalone 은 status-bar-style / theme-color 메타를 "앱 켤 때" 만 읽어서
-// 런타임 테마 전환에 노치 색이 안 따라온다 (여러 버전 시도, iPhone 17 시뮬 확인). 유일한 방법 =
-// status-bar-style="black-translucent" → 상태바가 투명해지고 그 아래 <header>·<body> 배경
-// (var(--ink), CSS) 이 비쳐 보인다 → 테마 바꾸면 CSS 라 즉시 같이 바뀐다. 시계·배터리 글씨
-// 색은 iOS 가 알아서 맞춘다 (라이트=검정 / 다크=흰색). header 의 env(safe-area-inset-top)
-// 패딩이 노치를 피하고 빈 띠도 막는다 (viewport-fit=cover 와 함께).
-// ★ status-bar-style 메타는 어디서도 런타임에 바꾸지 않는다 — 바꾸면 iOS 가 노치를 잠근다.
-// theme-color 는 안드로이드 상태바용으로만 남긴다.
+// 아이폰 노치: iOS standalone 은 theme-color·status-bar-style 메타를 "앱 켤 때" 만 읽어서,
+// 앱 안에서 테마를 바꾸면 노치 색은 다음 실행까지 안 따라온다 (iPhone 17 시뮬 확인).
+// black-translucent 로 하면 실시간 반영되지만 웹뷰가 풀스크린이 되며 키보드·하단바 레이아웃이
+// 깨진다 → 안 쓴다. status-bar-style 은 "black" 고정, 어디서도 런타임에 안 건드린다.
+// theme-color 만 바꾼다 (안드로이드 상태바 + 아이폰 다음 실행 시 반영).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
