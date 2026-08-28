@@ -2502,6 +2502,13 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
       if (addPanel) addPanel.classList.toggle('kb', open);
+      // 키보드가 내려가면 --kb 여백이 사라지고 하단 바가 다시 나타난다. 하단 행의
+      // 수정 폼(높이 큼)이 그때 바에 가려 저장 버튼이 안 보이므로, 폼이 다시 바 위로
+      // 오게 스크롤을 맞춘다. iOS 는 스크롤 위치가 늦게 자리잡아 한 번 더 늦게 확인한다.
+      if (!open && editing){
+        ensureVisible(editing);
+        setTimeout(function(){ if (!keyboardOpen && editing) ensureVisible(editing); }, 250);
+      }
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
