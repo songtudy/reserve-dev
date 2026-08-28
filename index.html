@@ -2318,6 +2318,13 @@ window.dispatchEvent(new Event('fb-ready'));
     pasteHint.textContent = HINT_BAD;
     pasteHint.classList.add('bad');
     syncLoop(true);
+    // 첫 오타 줄을 입력칸 맨 위로 — 화면 밖이면 표시를 못 보니까. 커서는 안 건드린다.
+    // .hl 의 줄 span 은 textarea 와 폰트·줄바꿈이 같아 위치가 정확하다(긴 줄이 접혀도).
+    var firstLn = hl.querySelectorAll('.ln')[bad[0].no - 1];
+    if (firstLn){
+      taEl.scrollTop = Math.max(0, firstLn.offsetTop - 11);
+      syncHl();
+    }
   }
   // 표시 중일 때는 입력할 때마다 다시 검사한다.
   // 그 줄이 실제로 양식에 맞아야만 빨간 표시가 사라진다 —
