@@ -527,35 +527,17 @@
     color:var(--text);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
   }
   .dwitem:active{background:var(--panel2)}
-  .dwval{margin-left:auto;font-size:13px;font-weight:600;color:var(--dim)}
-  .dwchev{flex:0 0 auto;color:var(--off);transition:transform .18s;margin-right:-2px}
-  .dwitem.open .dwchev{transform:rotate(90deg);color:var(--waitTx)}
-  /* 서랍 안에서 펼쳐지는 하위 목록 */
-  .dwsub{display:flex;flex-direction:column;background:var(--panel2)}
-  .dwsub button{
-    display:flex;align-items:center;gap:10px;
-    padding:11px 18px;border:0;background:none;cursor:pointer;
-    color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
+  /* 테마 — Wi-Fi 탭과 같은 세그먼트 토글. 강조색은 두 테마 모두 「켜짐」으로 읽힌다. */
+  .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 18px 2px}
+  .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
+  .themeseg{display:flex;gap:6px;margin-left:auto}
+  .themeseg button{
+    padding:7px 15px;border-radius:9px;
+    border:1px solid var(--line);background:var(--panel2);
+    color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
   }
-  .dwsub button:active{background:var(--press)}
-  /* 달 / 해 — 두 줄이 한눈에 갈리게 */
-  .dwsub .tico{
-    width:27px;height:27px;flex:0 0 auto;display:grid;place-items:center;
-    border-radius:9px;border:1px solid var(--line);
-    background:none;color:var(--off);
-  }
-  /* 고른 줄은 강조색으로 칠한다.
-     회색 계열로 칠하면 테마에 따라 밝기가 뒤집혀 반대쪽이 켜진 것처럼 보인다.
-     강조색은 두 테마 모두 「켜짐」으로 읽힌다. */
-  .dwsub button.on{
-    background:var(--mark);color:var(--text);font-weight:700;
-    box-shadow:inset 3px 0 0 var(--wait);
-  }
-  .dwsub button.on .tico{
-    background:var(--wait);border-color:transparent;color:var(--onWait);
-  }
-  .dwsub .chk{margin-left:auto;color:var(--waitTx);font-weight:800;opacity:0}
-  .dwsub button.on .chk{opacity:1}
+  .themeseg button:active{background:var(--press)}
+  .themeseg button.on{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
   .dwsep.push{margin-top:auto}
   .dwfoot{
     padding:12px 18px 0;
@@ -604,10 +586,6 @@
   }
   .qa.open .a{display:block}
   .qa .a em{font-style:normal;color:var(--text);font-weight:600}
-  .qnew{
-    flex:0 0 auto;font-size:10px;font-weight:800;color:var(--ink);
-    background:var(--go);padding:2px 5px;border-radius:4px;letter-spacing:.02em;
-  }
   /* 설치 안내 — 기기별 카드 */
   .plat{
     background:var(--panel2);border:1px solid var(--line);
@@ -621,7 +599,7 @@
   .plat.ios .pn{color:var(--waitTx)}
   .plat.and .pn{color:var(--goTx)}
   .step{
-    display:flex;align-items:center;gap:9px;min-height:30px;
+    display:flex;align-items:center;gap:9px;min-height:32px;
     padding:3px 0;font-size:13px;color:var(--dim);line-height:1.35;
   }
   .step .n{
@@ -632,10 +610,9 @@
   .step b{color:var(--text);font-weight:700}
   .key{
     display:inline-grid;place-items:center;
-    min-width:25px;height:22px;padding:0 5px;margin:0 1px;
-    border:1px solid var(--line);border-radius:6px;background:var(--ink);
-    color:var(--text);line-height:0;
-    vertical-align:middle;
+    width:26px;height:26px;margin:0 1px;
+    border:1px solid var(--line);border-radius:7px;background:var(--ink);
+    color:var(--text);line-height:0;vertical-align:middle;
   }
   .key svg{display:block}
   .sheetNote{font-size:13px;line-height:1.6;color:var(--goTx);margin:0 0 14px;white-space:pre-line}
@@ -824,20 +801,20 @@
   </div>
   <div class="dwdays" id="dwDays"></div>
   <div class="dwsep"></div>
-  <button type="button" class="dwitem" id="themeBtn">테마 설정
-    <span class="dwval" id="themeVal"></span>
-    <span class="dwchev"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>
-  </button>
-  <div class="dwsub hide" id="themeSub">
-    <button type="button" data-theme-set="dark"><span class="tico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.4A8.5 8.5 0 1 1 9.6 4a7 7 0 0 0 10.4 10.4Z"/></svg></span>다크<span class="chk">✓</span></button>
-    <button type="button" data-theme-set="light"><span class="tico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.6 5.6l1.5 1.5M16.9 16.9l1.5 1.5M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5"/></svg></span>라이트<span class="chk">✓</span></button>
-  </div>
   <button type="button" class="dwitem" id="logBtn">최근 변경 내역</button>
   <button type="button" class="dwitem" id="wifiBtn">Wi-Fi 안내</button>
+  <div class="dwsep"></div>
   <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
   <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
   <button type="button" class="dwitem" id="installBtn">앱으로 설치하기</button>
   <div class="dwsep push"></div>
+  <div class="dwtheme">
+    <span class="dwthlab">테마</span>
+    <div class="themeseg">
+      <button type="button" data-theme-set="dark">다크</button>
+      <button type="button" data-theme-set="light">라이트</button>
+    </div>
+  </div>
   <div class="dwfoot" id="dwConn"></div>
 </aside>
 
@@ -989,13 +966,21 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시계는 관여하지 않는다. 보고 있는데 시간이 지났다는 이유로 접히면 곤란하니까.
   // 손으로 접거나 편 것은 그대로 두되, 대기 여부가 바뀌면 기본 규칙으로 돌아간다.
   // collapsed[time] = { v: 접힘여부, done: 그때 대기가 비어 있었나 }
+  // 그 시간대가 마지막으로 바뀐 시각 — 내 손(touched)이든, 다른 폰의 체크든, 자동취소든.
+  // (항목 ts 는 상태를 바꾼 폰의 시계라 기기 간 오차가 있지만 5초 유예가 흡수한다)
+  function slotChangedAt(time){
+    var t = touched[time] || 0;
+    if (state) state.items.forEach(function(x){ if (x.time === time && (x.ts || 0) > t) t = x.ts; });
+    return t;
+  }
   function armSlotCollapse(time){
     if (!time) return;
     if (collapseTimers[time]) clearTimeout(collapseTimers[time]);
+    var wait = Math.max(0, COLLAPSE_DELAY + 100 - (Date.now() - slotChangedAt(time)));
     collapseTimers[time] = setTimeout(function(){
       delete collapseTimers[time];
       if (!slotHasWork(time)) renderWhenIdle();
-    }, COLLAPSE_DELAY + 100);
+    }, wait);
   }
   function keepSlotOpenForId(id){
     var it = id && find(id);
@@ -1019,8 +1004,8 @@ window.dispatchEvent(new Event('fb-ready'));
       delete collapsed[time];            // 대기가 생기거나 사라지면 기본 규칙으로
     }
     if (!done) return false;
-    // 마지막 하나를 체크한 직후에는 손가락 밑에서 사라지지 않게 잠깐 둔다
-    return Date.now() - (touched[time] || 0) > COLLAPSE_DELAY;
+    // 마지막 하나를 체크한 직후에는 손가락 밑에서 사라지지 않게 5초 둔다 (어느 폰이든)
+    return Date.now() - slotChangedAt(time) > COLLAPSE_DELAY;
   }
   function setCollapsed(time, v, done){ collapsed[time] = { v: v, done: done }; }
 
@@ -1424,6 +1409,12 @@ window.dispatchEvent(new Event('fb-ready'));
       var off  = g.items.filter(function(x){ return x.status==='cancelled'; }).length;
       var tot  = g.items.length;
       var shut = q ? false : isCollapsed(g.time, pend.length);
+      // 완료됐는데 아직 5초 유예 중이면, 유예가 끝나는 시점에 접히도록 타이머를 걸어둔다.
+      // (직접 체크한 폰은 keepSlotOpenForId 가 이미 걸었고, 다른 폰·자동취소는 여기서 건다)
+      if (!q && !pend.length && !shut && !collapseTimers[g.time] && !slotHasWork(g.time)
+          && Date.now() - slotChangedAt(g.time) <= COLLAPSE_DELAY){
+        armSlotCollapse(g.time);
+      }
 
       var wrap = document.createElement('section');
       wrap.className = 'group' + (g.time === nowTime ? ' now' : (pend.length ? '' : ' done')) + (shut ? ' shut' : '');
@@ -2771,7 +2762,6 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 테마 ---------- */
   // 다크가 기본. 라이트를 고른 사람만 저장값이 남는다.
   var THEME_KEY = 'theme';
-  var THEMES = { dark: '다크', light: '라이트' };
 
   function theme(){
     try { return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; }
@@ -2784,20 +2774,12 @@ window.dispatchEvent(new Event('fb-ready'));
     d.style.colorScheme = t;
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
-    var v = document.getElementById('themeVal');
-    if (v) v.textContent = THEMES[t];
     [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
       btn.classList.toggle('on', btn.getAttribute('data-theme-set') === t);
     });
   }
   // 서랍 안에서 바로 고른다. 서랍을 열어둔 채라 바뀌는 색이 그 자리에서 보인다.
-  var themeBtn = document.getElementById('themeBtn');
-  var themeSub = document.getElementById('themeSub');
-  themeBtn.addEventListener('click', function(){
-    var open = themeSub.classList.toggle('hide');
-    themeBtn.classList.toggle('open', !open);
-  });
-  [].forEach.call(themeSub.querySelectorAll('[data-theme-set]'), function(btn){
+  [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
     btn.addEventListener('click', function(){
       try { localStorage.setItem(THEME_KEY, btn.getAttribute('data-theme-set')); } catch(e){}
       applyTheme();
@@ -2812,8 +2794,6 @@ window.dispatchEvent(new Event('fb-ready'));
   function hideDrawer(){
     drawer.classList.remove('open');
     drawerScrim.classList.add('off');
-    var sub = document.getElementById('themeSub');
-    if (sub){ sub.classList.add('hide'); document.getElementById('themeBtn').classList.remove('open'); }
   }
   function openDrawer(){
     renderDrawerDays();
@@ -2924,33 +2904,31 @@ window.dispatchEvent(new Event('fb-ready'));
   sheetScrim.addEventListener('click', function(e){ if (e.target === sheetScrim) closeSheet(); });
 
   var FAQ = [
-    ['메모는 어떻게 다나요?', 1,
-      '예약 추가할 때 <em>메모</em> 칸에 적거나, 이름 오른쪽 ⋯ → <em>수정</em>에서 넣습니다.\n'
-      + '이름 아래에 노란 글씨로 보이고, 명단 복사에는 들어가지 않습니다.'],
-    ['예약을 고치거나 지우려면?', 0,
+    ['명단은 어떻게 올리나요?',
+      '단톡방 예약 명단을 그대로 복사해서 <em>명단 붙여넣기</em> 칸에 넣고 <em>명단 등록</em>을 누릅니다.\n'
+      + '「14:00 홍길동 2명」 형식이면 되고, 뒤에 (메모)나 방문·취소도 붙일 수 있습니다.'],
+    ['예약을 고치거나 지우려면?',
       '이름 오른쪽 ⋯ 에 <em>방문 · 취소 · 수정 · 삭제</em>가 있습니다.\n'
       + '시간을 고치면 그 시간대로 옮겨갑니다.'],
-    ['시간대는 언제 접히나요?', 0,
+    ['메모는 어떻게 다나요?',
+      '예약 추가할 때 <em>메모</em> 칸에 적거나, 이름 오른쪽 ⋯ → <em>수정</em>에서 넣습니다.\n'
+      + '이름 아래 노란 글씨로 보이고, 명단 복사에는 들어가지 않습니다.'],
+    ['시간대는 언제 접히나요?',
       '남은 팀이 없으면 5초 뒤에 접히고, 체크를 풀면 다시 펼쳐집니다.\n'
       + '직접 접거나 편 것은 그대로 둡니다.'],
-    ['맨 위 시간은 언제 넘어가나요?', 0,
+    ['맨 위 시간은 언제 넘어가나요?',
       '그 시간대를 다 체크하면 바로 넘어갑니다.\n'
       + '아니면 정각 예약은 11분 뒤에(15:00은 15:11에), 그 외에는 그 시각이 되면 넘어갑니다.'],
-    ['다른 사람이 체크한 게 바로 보이나요?', 0,
-      '1초 안에 보입니다.'],
-    ['연결이 끊기면 어떻게 되나요?', 0,
-      '맨 위에 <em>연결 안 됨</em>이 표시됩니다.\n'
-      + '그동안 체크하거나 고친 내용은 폰에 남아 있다가, 다시 연결되면 자동으로 올라갑니다.\n'
-      + '앱을 계속 쓰셔도 됩니다.'],
-    ['안 온 손님은 어떻게 되나요?', 1,
+    ['안 온 손님은 어떻게 되나요?',
       '예약 시각에서 <em>20분</em>이 지나도 체크가 없으면 자동으로 취소됩니다.\n'
       + '늦게 오시면 체크 칸을 한 번 누르면 방문으로 바뀝니다.'],
-    ['누가 뭘 바꿨는지 볼 수 있나요?', 1,
-      '왼쪽 위 메뉴 → <em>변경 내역</em>에서 오늘 바뀐 내용을 볼 수 있습니다.\n'
-      + '체크·취소·메모·삭제·명단 등록까지 최근 10건이 나옵니다.'],
-    ['날짜는 언제 바뀌나요?', 0,
-      '자정에 바뀝니다.\n'
-      + '어제 명단은 왼쪽 위 메뉴에서 볼 수 있고, 이틀 지나면 지워집니다.']
+    ['다른 폰에서 바꾼 게 바로 보이나요?',
+      '1초 안에 보입니다. 연결이 끊기면 맨 위에 <em>연결 안 됨</em>이 뜨고,\n'
+      + '그동안 바꾼 내용은 폰에 남아 있다가 다시 연결되면 올라갑니다. 계속 쓰셔도 됩니다.'],
+    ['누가 뭘 바꿨는지 볼 수 있나요?',
+      '왼쪽 위 메뉴 → <em>변경 내역</em>에서 오늘 바뀐 내용(최근 10건)을 볼 수 있습니다.'],
+    ['날짜는 언제 바뀌나요?',
+      '자정에 바뀝니다. 어제 명단은 왼쪽 위 메뉴에서 볼 수 있고, 이틀 지나면 지워집니다.']
   ];
   var CHEV = '<span class="qchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>';
 
@@ -2960,9 +2938,8 @@ window.dispatchEvent(new Event('fb-ready'));
       + FAQ.map(function(f){
           return '<div class="qa"><button type="button" class="q">'
             + '<span>' + f[0] + '</span>'
-            + (f[1] ? '<span class="qnew">NEW</span>' : '')
             + CHEV + '</button>'
-            + '<div class="a">' + f[2] + '</div></div>';
+            + '<div class="a">' + f[1] + '</div></div>';
         }).join('')
       + '</div>');
   });
@@ -2991,25 +2968,27 @@ window.dispatchEvent(new Event('fb-ready'));
     } catch(e){ return false; }
   }
   function installHtml(){
-    return plat('ios', '아이폰 (사파리)', [
-        '화면 <b>아래 오른쪽</b> <span class="key">'
-          + '<svg viewBox="0 0 22 8" width="20" height="8" fill="currentColor" aria-hidden="true">'
-          + '<circle cx="3.4" cy="4" r="1.7"/><circle cx="11" cy="4" r="1.7"/><circle cx="18.6" cy="4" r="1.7"/></svg>'
-          + '</span>',
+    // 두 점 아이콘은 똑같이 그린다 — 아이폰은 가로(⋯), 갤럭시는 세로(⋮), 방향만 다르게.
+    function dotKey(vertical){
+      var c = vertical
+        ? '<circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/>'
+        : '<circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/>';
+      return '<span class="key"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">'
+        + c + '</svg></span>';
+    }
+    return plat('ios', '아이폰 · 사파리', [
+        '화면 <b>아래 오른쪽</b> ' + dotKey(false),
         '<b>공유</b>',
         '<b>홈 화면에 추가</b>'
       ])
-      + plat('and', '갤럭시 (크롬)', [
-        '화면 <b>위 오른쪽</b> <span class="key">'
-          + '<svg viewBox="0 0 8 22" width="8" height="20" fill="currentColor" aria-hidden="true">'
-          + '<circle cx="4" cy="3.4" r="1.7"/><circle cx="4" cy="11" r="1.7"/><circle cx="4" cy="18.6" r="1.7"/></svg>'
-          + '</span>',
-        '<b>설치 및 바로가기 만들기</b>',
+      + plat('and', '갤럭시 · 크롬', [
+        '화면 <b>위 오른쪽</b> ' + dotKey(true),
+        '<b>홈 화면에 추가</b>',
         '<b>설치</b>'
       ]);
   }
   var INSTALL_NOTE = '<p class="sheetNote plain" style="margin:-4px 0 14px">'
-    + '익선취향 예약 매니저 「익순이」는 홈 화면 앱에 최적화되어 있습니다.</p>';
+    + '「익순이」는 홈 화면에 추가하면 앱처럼 전체 화면으로 열립니다.</p>';
 
   document.getElementById('installBtn').addEventListener('click', function(){
     hideDrawer();
@@ -3054,9 +3033,9 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('aboutBtn').addEventListener('click', function(){
     hideDrawer();
     openSheet('익순이란?',
-      '<p class="about">익선취향 예약 명단을 관리하는 앱입니다.</p>'
-      + '<p class="about">모든 변경사항은 <b>실시간으로 반영</b>되어 각자의 폰에서 바로 확인할 수 있습니다.</p>'
-      + '<p class="about"><b>명단 복사</b>를 누르면 단톡방 양식 그대로 복사됩니다.</p>'
+      '<p class="about">익선취향 예약 명단 관리 앱입니다.</p>'
+      + '<p class="about">바뀐 내용은 <b>실시간으로 모든 폰에 반영</b>됩니다.</p>'
+      + '<p class="about"><b>명단 복사</b>는 단톡방 양식 그대로 복사됩니다.</p>'
       + '<p class="credit">익순이 v1.5.0<br>© 2026 Jumin Labs</p>');
   });
 
