@@ -1018,8 +1018,11 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 날짜 ---------- */
   var KEEP_DAYS = 2; // 오늘 기준 이보다 오래된 날짜는 삭제
 
+  var WEEKDAYS = ['일','월','화','수','목','금','토'];
   function pad(n){ return (n<10?'0':'') + n; }
   function ymd(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  // "2026-08-29" → 그 날 자정의 Date (로컬)
+  function parseYmd(ds){ var p = ds.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
 
   // 오늘의 영업일. DAY_ROLLOVER=0 이라 자정에 넘어간다.
   // (마감이 자정을 넘기게 되면 그 시각으로 올려 그때까지는 전날로 잡는다)
@@ -1029,24 +1032,19 @@ window.dispatchEvent(new Event('fb-ready'));
     return ymd(d);
   }
   function shiftDate(ds, n){
-    var p = ds.split('-');
-    var d = new Date(+p[0], +p[1]-1, +p[2]);
+    var d = parseYmd(ds);
     d.setDate(d.getDate() + n);
     return ymd(d);
   }
   function dayGap(ds){ // viewDate가 오늘로부터 며칠 떨어져 있나
-    var a = bizDate().split('-'), b = ds.split('-');
-    var t1 = new Date(+a[0], +a[1]-1, +a[2]).getTime();
-    var t2 = new Date(+b[0], +b[1]-1, +b[2]).getTime();
-    return Math.round((t2 - t1) / 86400000);
+    return Math.round((parseYmd(ds).getTime() - parseYmd(bizDate()).getTime()) / 86400000);
   }
 
   var viewDate = bizDate();
 
   function prettyDate(){
     var p = viewDate.split('-');
-    var d = new Date(+p[0], +p[1]-1, +p[2]);
-    var w = ['일','월','화','수','목','금','토'][d.getDay()];
+    var w = WEEKDAYS[parseYmd(viewDate).getDay()];
     var g = dayGap(viewDate);
     var label = g === 0 ? '오늘' : g === -1 ? '어제' : g === 1 ? '내일' : '';
     return { full: (+p[1]) + '월 ' + (+p[2]) + '일 (' + w + ')', tail: label ? ' · ' + label : '' };
@@ -1112,6 +1110,26 @@ window.dispatchEvent(new Event('fb-ready'));
   function sortItems(a,b){
     if (a.time !== b.time) return a.time < b.time ? -1 : 1;
     return (a.seq||0) - (b.seq||0);
+  }
+
+  // 예약을 시간대별로 묶는다 (입력은 이미 sortItems 로 정렬돼 있어야 한다).
+  function groupByTime(items){
+    var gs = [], gi = {};
+    (items || []).forEach(function(it){
+      if (gi[it.time] === undefined){ gi[it.time] = gs.length; gs.push({ time: it.time, items: [] }); }
+      gs[gi[it.time]].items.push(it);
+    });
+    return gs;
+  }
+  // 「지금 시간대」 — 오늘 명단에서, 아직 안 지났고(slotLive) 대기 팀이 남은 첫 시간대.
+  function liveNowTime(groups){
+    if (dayGap(viewDate) !== 0) return null;
+    var now = nowMin();
+    for (var i = 0; i < groups.length; i++){
+      if (!slotLive(groups[i].time, now)) continue;
+      if (groups[i].items.some(function(x){ return x.status === 'pending'; })) return groups[i].time;
+    }
+    return null;
   }
 
   /* ---------- 저장소 (Firebase Realtime Database) ---------- */
@@ -1266,17 +1284,29 @@ window.dispatchEvent(new Event('fb-ready'));
     return now < m + grace;
   }
 
-  // 하루가 끝났을 때 방문 / 취소가 각각 몇 팀이었는지.
-  // 「17/17」만으로는 몇 팀이 실제로 왔는지 알 수 없다.
-  function dayTally(items){
+  // 방문·취소·대기 팀 수를 센다. 여러 곳에서 같은 계산을 한다.
+  function tallyStatus(items){
     var came = 0, off = 0;
-    items.forEach(function(x){
+    (items || []).forEach(function(x){
       if (x.status === 'arrived') came++;
       else if (x.status === 'cancelled') off++;
     });
-    var out = ['<span class="pc tally-go">방문 ' + came + '</span>'];
-    if (off) out.push('<span class="pc tally-off">취소 ' + off + '</span>');
+    return { came: came, off: off, pend: (items ? items.length : 0) - came - off, total: items ? items.length : 0 };
+  }
+
+  // 하루가 끝났을 때 방문 / 취소가 각각 몇 팀이었는지.
+  // 「17/17」만으로는 몇 팀이 실제로 왔는지 알 수 없다.
+  function dayTally(items){
+    var t = tallyStatus(items);
+    var out = ['<span class="pc tally-go">방문 ' + t.came + '</span>'];
+    if (t.off) out.push('<span class="pc tally-off">취소 ' + t.off + '</span>');
     return out.join('<span class="pcsep"> · </span>');
+  }
+  // 시간대 머리글의 「n/n · 방문 n · 취소 n」 — render 와 patchStatus 가 같이 쓴다.
+  function slotMetaHtml(items){
+    var t = tallyStatus(items);
+    return '<b>' + (t.came + t.off) + '/' + t.total + '</b>'
+      + '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>';
   }
 
   // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
@@ -1284,18 +1314,8 @@ window.dispatchEvent(new Event('fb-ready'));
     paintDate();
     var all = state ? state.items.slice().sort(sortItems) : [];
     var gap = dayGap(viewDate);
-    var gs = [], gi = {};
-    all.forEach(function(it){
-      if (gi[it.time] === undefined){ gi[it.time] = gs.length; gs.push({ time: it.time, items: [] }); }
-      gs[gi[it.time]].items.push(it);
-    });
-    var now = nowMin(), nowTime = null;
-    if (gap === 0){
-      for (var i = 0; i < gs.length; i++){
-        if (!slotLive(gs[i].time, now)) continue;
-        if (gs[i].items.some(function(x){ return x.status === 'pending'; })){ nowTime = gs[i].time; break; }
-      }
-    }
+    var gs = groupByTime(all);
+    var nowTime = liveNowTime(gs);
     var slotPend = [];
     if (nowTime){
       gs.forEach(function(g){
@@ -1334,15 +1354,11 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     if (leadRow) leadRow.classList.toggle('hide', !st.textContent && !lm.textContent);
 
-    var doneN = 0, offN = 0;
-    all.forEach(function(it){
-      if (it.status === 'arrived') doneN++;
-      else if (it.status === 'cancelled') offN++;
-    });
+    var t = tallyStatus(all), done = t.came + t.off;
     var dp = document.getElementById('dayProg');
-    dp.textContent = (doneN + offN) + '/' + all.length;
+    dp.textContent = done + '/' + all.length;
     dp.className = 'dayprog num' + (all.length ? '' : ' hide')
-      + (all.length && doneN + offN === all.length ? ' full' : '');
+      + (all.length && done === all.length ? ' full' : '');
   }
 
   function render(){
@@ -1351,8 +1367,7 @@ window.dispatchEvent(new Event('fb-ready'));
       deferredState = null;
     }
     backgroundRenderPending = !!deferredState;
-    paintDate();
-    var list = document.getElementById('list');
+    var list = document.getElementById('list');   // 날짜 라벨은 아래 paintHead() 가 그린다
     var all = state ? state.items.slice().sort(sortItems) : [];
     var q = (query || '').trim().toLowerCase();
     var items = q
@@ -1368,26 +1383,10 @@ window.dispatchEvent(new Event('fb-ready'));
       qc.classList.add('hide');
     }
 
-    // 시간대 묶기 — 표시용은 검색 결과, 계산용(allGroups)은 전체
-    function groupBy(arr){
-      var gs = [], gi = {};
-      arr.forEach(function(it){
-        if (gi[it.time] === undefined){ gi[it.time] = gs.length; gs.push({time:it.time, items:[]}); }
-        gs[gi[it.time]].items.push(it);
-      });
-      return gs;
-    }
-    var groups = groupBy(items);
-    var allGroups = q ? groupBy(all) : groups;
-
-    // 다음 시간대 — 아직 마감되지 않았고 남은 팀이 있는 첫 시간대 (오늘일 때만)
-    var now = nowMin(), nowTime = null;
-    if (dayGap(viewDate) === 0){
-      for (var i=0;i<allGroups.length;i++){
-        if (!slotLive(allGroups[i].time, now)) continue;
-        if (allGroups[i].items.some(function(x){ return x.status==='pending'; })){ nowTime = allGroups[i].time; break; }
-      }
-    }
+    // 시간대 묶기 — 표시용(groups)은 검색 결과, 계산용(allGroups)은 전체
+    var groups = groupByTime(items);
+    var allGroups = q ? groupByTime(all) : groups;
+    var nowTime = liveNowTime(allGroups);
 
     paintHead();
     var gap = dayGap(viewDate);
@@ -1424,21 +1423,18 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!panel.classList.contains('hide') && !ta.value.trim()) closePaste();
 
     var openCount = 0;
-    groups.forEach(function(g, idx){
-      var pend = g.items.filter(function(x){ return x.status==='pending'; });
-      var came = g.items.filter(function(x){ return x.status==='arrived'; }).length;
-      var off  = g.items.filter(function(x){ return x.status==='cancelled'; }).length;
-      var tot  = g.items.length;
-      var shut = q ? false : isCollapsed(g.time, pend.length);
+    groups.forEach(function(g){
+      var pendN = tallyStatus(g.items).pend;
+      var shut = q ? false : isCollapsed(g.time, pendN);
       // 완료됐는데 아직 5초 유예 중이면, 유예가 끝나는 시점에 접히도록 타이머를 걸어둔다.
       // (직접 체크한 폰은 keepSlotOpenForId 가 이미 걸었고, 다른 폰·자동취소는 여기서 건다)
-      if (!q && !pend.length && !shut && !collapseTimers[g.time] && !slotHasWork(g.time)
+      if (!q && !pendN && !shut && !collapseTimers[g.time] && !slotHasWork(g.time)
           && Date.now() - slotChangedAt(g.time) <= COLLAPSE_DELAY){
         armSlotCollapse(g.time);
       }
 
       var wrap = document.createElement('section');
-      wrap.className = 'group' + (g.time === nowTime ? ' now' : (pend.length ? '' : ' done')) + (shut ? ' shut' : '');
+      wrap.className = 'group' + (g.time === nowTime ? ' now' : (pendN ? '' : ' done')) + (shut ? ' shut' : '');
       wrap.setAttribute('data-time', g.time);
 
       var head = document.createElement('button');
@@ -1447,10 +1443,7 @@ window.dispatchEvent(new Event('fb-ready'));
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
         + '<span class="gline"></span>'
-        + '<span class="gmeta num">'
-        +   '<b>' + (came + off) + '/' + tot + '</b>'
-        +   '<span class="gbreak">방문 ' + came + (off ? ' · 취소 ' + off : '') + '</span>'
-        + '</span>';
+        + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(e){
         if (takeGhostClick(e)) return;
@@ -2168,16 +2161,10 @@ window.dispatchEvent(new Event('fb-ready'));
     var wrap = row.closest('.group');
     if (wrap && state){
       var mine = state.items.filter(function(x){ return x.time === it.time; });
-      var came = mine.filter(function(x){ return x.status === 'arrived'; }).length;
-      var off  = mine.filter(function(x){ return x.status === 'cancelled'; }).length;
-      var pend = mine.length - came - off;
       var man = collapsed[it.time];
-      if (man && man.done !== (pend === 0)) delete collapsed[it.time];
+      if (man && man.done !== (tallyStatus(mine).pend === 0)) delete collapsed[it.time];
       var meta = wrap.querySelector('.gmeta');
-      if (meta){
-        meta.innerHTML = '<b>' + (came + off) + '/' + mine.length + '</b>'
-          + '<span class="gbreak">방문 ' + came + (off ? ' · 취소 ' + off : '') + '</span>';
-      }
+      if (meta) meta.innerHTML = slotMetaHtml(mine);
       wrap.setAttribute('data-time', it.time);
     }
     repaintNow();
@@ -2224,19 +2211,8 @@ window.dispatchEvent(new Event('fb-ready'));
   // 「지금 시간대」가 어디인지 다시 계산해서 시간대 색과 왼쪽 막대를 맞춘다
   function repaintNow(){
     if (!state) return;
-    var all = state.items.slice().sort(sortItems);
-    var gs = [], gi = {};
-    all.forEach(function(it){
-      if (gi[it.time] === undefined){ gi[it.time] = gs.length; gs.push({ time: it.time, items: [] }); }
-      gs[gi[it.time]].items.push(it);
-    });
-    var now = nowMin(), nowTime = null;
-    if (dayGap(viewDate) === 0){
-      for (var i = 0; i < gs.length; i++){
-        if (!slotLive(gs[i].time, now)) continue;
-        if (gs[i].items.some(function(x){ return x.status === 'pending'; })){ nowTime = gs[i].time; break; }
-      }
-    }
+    var gs = groupByTime(state.items.slice().sort(sortItems));
+    var nowTime = liveNowTime(gs);
     gs.forEach(function(g){
       var w = document.querySelector('.group[data-time="' + g.time + '"]');
       if (!w) return;
@@ -2559,12 +2535,11 @@ window.dispatchEvent(new Event('fb-ready'));
   window.addEventListener('orientationchange', function(){ setTimeout(applyViewport, 250); });
   // 키보드가 뜨고 내려갈 때 visualViewport 갱신이 아이폰 앱 모드에서 늦거나 빠질 수 있어
   // 포커스 전환 직후 몇 번 더 강제로 잰다. applyViewport 는 여러 번 불러도 무해하다.
+  function remeasureViewport(){ [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); }); }
   document.addEventListener('focusin', function(e){
-    if (textKeyboardTarget(e.target)) [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
+    if (textKeyboardTarget(e.target)) remeasureViewport();
   });
-  document.addEventListener('focusout', function(){
-    [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); });
-  });
+  document.addEventListener('focusout', remeasureViewport);
   applyViewport();
 
   /* ---------- 뒤로가기 ---------- */
@@ -2920,8 +2895,7 @@ window.dispatchEvent(new Event('fb-ready'));
     [-1, 0, 1].forEach(function(off){
       var ds = shiftDate(bizDate(), off);
       var p = ds.split('-');
-      var d = new Date(+p[0], +p[1]-1, +p[2]);
-      var w = ['일','월','화','수','목','금','토'][d.getDay()];
+      var w = WEEKDAYS[parseYmd(ds).getDay()];
       var label = off === -1 ? '어제' : off === 0 ? '오늘' : '내일';
       var cur = (ds === viewDate);
 
