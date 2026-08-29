@@ -1520,24 +1520,23 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   // 저장·취소로 수정 폼이 닫히면 키보드가 내려가며 .wrap 이 줄어든다. 그 순간 스크롤이
-  // 어긋나 그 행(과 아래)이 하단 바에 가리므로, 키보드 애니메이션이 끝나는 여러 시점에
-  // 다시 맞춘다. scrollIntoRoom 은 이미 제자리면 아무것도 안 한다.
+  // 어긋나 그 행(과 아래)이 하단 바에 가리므로, 키보드가 다 내려간 뒤 딱 한 번 맞춘다.
+  // (여러 번 하면 내려가는 중간중간 스크롤이 튀어 깜빡여 보인다. scrollIntoRoom 은
+  //  이미 제자리면 아무것도 안 한다.)
   function refitAfterEditClose(id){
-    [0, 140, 340, 600].forEach(function(t){
-      setTimeout(function(){
-        if (!wrapEl) return;
-        var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
-        if (wrapEl.scrollTop > maxST){ wrapEl.scrollTop = Math.max(0, maxST); return; }
-        // 편집한 행이 명단 끝에서 한 화면 안이면(= 하단 행 수정) 마지막 행이 바 위로 오게,
-        // 아니면(= 중간 수정) 편집한 행만 화면 안으로.
-        if (maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
-          var rows = wrapEl.querySelectorAll('.row');
-          if (rows.length) scrollIntoRoom(rows[rows.length - 1]);
-        } else {
-          ensureVisible(id);
-        }
-      }, t);
-    });
+    setTimeout(function(){
+      if (!wrapEl) return;
+      var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
+      if (wrapEl.scrollTop > maxST){ wrapEl.scrollTop = Math.max(0, maxST); return; }
+      // 편집한 행이 명단 끝에서 한 화면 안이면(= 하단 행 수정) 마지막 행이 바 위로 오게,
+      // 아니면(= 중간 수정) 편집한 행만 화면 안으로.
+      if (maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
+        var rows = wrapEl.querySelectorAll('.row');
+        if (rows.length) scrollIntoRoom(rows[rows.length - 1]);
+      } else {
+        ensureVisible(id);
+      }
+    }, keyboardOpen ? 560 : 60);   // 키보드가 완전히 내려가 --kb 가 0 이 된 뒤
   }
 
   // 수정 폼을 닫으며 다시 그릴 때, 그 행이 화면에서 제자리에 있도록 스크롤을 보정한다.
