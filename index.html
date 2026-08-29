@@ -1519,29 +1519,32 @@ window.dispatchEvent(new Event('fb-ready'));
     scrollIntoRoom(rowForId(id));
   }
 
-  // 수정 폼이 닫힌 뒤(키보드가 완전히 내려간 시점) 스크롤을 딱 한 번 맞춘다.
-  // applyViewport 의 '키보드 닫힘' 전환에서 호출한다 (고정 타이머 X → 레이스 없음).
-  //  - reveal=true (시간이 바뀌어 다른 자리로 이동): 무조건 그 행을 화면에 보여준다.
+  // 수정 폼이 닫힌 뒤 스크롤을 딱 한 번 맞춘다. 스크롤 이동은 전부 scrollIntoRoom 한 번으로
+  // 끝낸다 (별도 클램프 write 를 앞에 두지 않는다 → 두 번 움직여 흔들려 보이지 않게).
+  //  - reveal=true  (시간이 바뀌어 다른 자리로 이동): 무조건 그 행을 화면에 보여준다.
   //  - reveal=false (제자리 수정): 폼이 접히며 .wrap 이 줄어 그 행(과 아래)이 하단 바에
   //    가릴 수 있어, 명단 끝 근처면 마지막 행을 바 위로 올리고 아니면 그 행을 맞춘다.
   var pendingClose = null;
   function scrollAfterClose(o){
     if (!wrapEl || !o) return;
-    var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
-    if (wrapEl.scrollTop > maxST) wrapEl.scrollTop = Math.max(0, maxST);
-    if (!o.reveal && maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
-      var rows = wrapEl.querySelectorAll('.row');
-      if (rows.length) scrollIntoRoom(rows[rows.length - 1]);
-      return;
+    var el = rowForId(o.id);
+    if (!o.reveal){
+      var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
+      if (maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
+        var rows = wrapEl.querySelectorAll('.row');
+        if (rows.length) el = rows[rows.length - 1];
+      }
     }
-    var row = rowForId(o.id);
-    if (row) scrollIntoRoom(row);
+    if (el) scrollIntoRoom(el);
   }
-  // 폼을 닫는 모든 경로에서 호출: 키보드가 올라와 있으면 닫힐 때까지 미뤘다가, 아니면 바로.
+  // 폼을 닫는 모든 경로에서 호출: 키보드가 올라와 있으면 완전히 내려앉은 뒤로 미룬다
+  // (applyViewport 가 --kb 0 을 보는 시점), 아니면 바로.
   function afterEditClose(id, reveal){
     var o = { id: id, reveal: !!reveal };
-    if (keyboardOpen) pendingClose = o;
-    else requestAnimationFrame(function(){ scrollAfterClose(o); });
+    if (!keyboardOpen){ requestAnimationFrame(function(){ scrollAfterClose(o); }); return; }
+    pendingClose = o;
+    // --kb 0 시점을 놓쳤을 때의 백스톱 (그때는 이미 실행돼 pendingClose 가 비어 no-op)
+    setTimeout(function(){ if (pendingClose === o){ pendingClose = null; scrollAfterClose(o); } }, 700);
   }
 
   // 수정 폼을 닫으며 다시 그릴 때, 그 행이 화면에서 제자리에 있도록 스크롤을 보정한다.
@@ -2511,14 +2514,14 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
       if (addPanel) addPanel.classList.toggle('kb', open);
-      // 키보드가 완전히 내려간 뒤(= 이 전환 시점) 스크롤을 딱 한 번 맞춘다.
-      if (!open){
-        if (editing) ensureVisible(editing);                  // 폼이 아직 열려 있음
-        else if (pendingClose){                               // 저장/취소로 폼이 닫혔음
-          var pc = pendingClose; pendingClose = null;
-          requestAnimationFrame(function(){ scrollAfterClose(pc); });
-        }
-      }
+      // 폼이 아직 열려 있으면 키보드 내려간 직후 한 번 화면에 맞춘다.
+      if (!open && editing) ensureVisible(editing);
+    }
+    // 저장/취소로 폼이 닫혔으면, 키보드가 완전히 내려앉아(--kb 0) 레이아웃이 멈춘 뒤
+    // 딱 한 번 스크롤한다. 전환 시점(KB_MIN)은 아직 키보드가 90px 남아 흔들린다.
+    if (!open && kb === 0 && pendingClose){
+      var pc = pendingClose; pendingClose = null;
+      requestAnimationFrame(function(){ scrollAfterClose(pc); });
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open) kbBaseH = Math.max(kbBaseH, h);
