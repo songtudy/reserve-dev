@@ -2540,9 +2540,33 @@ window.dispatchEvent(new Event('fb-ready'));
           requestAnimationFrame(function(){ fixScrollAfterEditClose(pid); });
         }
       }
+      // 키보드가 다 올라온 뒤, iOS 가 (하단 바가 숨으며 .wrap 이 커진 만큼) 포커스 칸을
+      // 필요 이상으로 위로 올려놓는 경우가 있다 → 그만큼 아래로 당겨 키보드에 붙인다.
+      if (open) setTimeout(closeKbGap, 380);
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open) kbBaseH = Math.max(kbBaseH, h);
+
+    // 키보드가 올라와 있을 때 iOS 가 .wrap 을 유효 범위 밖으로 스크롤해두는 경우가 있다
+    // (화면이 과하게 올라감 → 손으로 스크롤해야 풀림). 매번 유효 범위로 되돌린다.
+    // scrollTop 을 코드로 set 하면 iOS 도 다시 클램프한다 (손 스크롤과 같은 효과).
+    if (open && wrapEl){
+      var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
+      if (wrapEl.scrollTop > maxST + 1) wrapEl.scrollTop = Math.max(0, maxST);
+    }
+  }
+
+  // 포커스된 입력칸 아래에 키보드까지 빈 공간이 크면(iOS 과다 스크롤) 그만큼 아래로 당긴다.
+  function closeKbGap(){
+    if (!keyboardOpen || !wrapEl || !vv) return;
+    var af = document.activeElement;
+    if (!af || !wrapEl.contains(af) || (af.tagName !== 'INPUT' && af.tagName !== 'TEXTAREA')) return;
+    var kbLine = vv.offsetTop + vv.height;                 // 키보드 상단 (레이아웃 좌표)
+    var gap = kbLine - af.getBoundingClientRect().bottom;  // 입력칸 하단 ~ 키보드 사이
+    if (gap > 60){
+      var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
+      wrapEl.scrollTop = Math.min(maxST, wrapEl.scrollTop + (gap - 14));
+    }
   }
 
   if (vv){
