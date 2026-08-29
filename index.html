@@ -94,9 +94,9 @@ window.setThemeChrome = function(t){
     touch-action:manipulation;        /* 두 번 탭 확대 방지 */
     -webkit-text-size-adjust:100%;
   }
-  /* 키보드가 올라와도 하단 바·헤더를 그대로 둔다 — .wrap 높이가 안 변해야
-     명단 위치와 상관없이 스크롤이 일관된다. 키보드(항상 바보다 큼)가 바를 덮으니
-     숨겨서 얻는 건 없고 여닫을 때 화면만 튄다. 키보드 위 작업 영역은 동일. */
+  /* 키보드가 올라오면 하단 바를 숨긴다 (어차피 키보드 뒤라 못 쓴다).
+     상단 헤더는 늘 유지 — 숨겼다 되살리면 화면이 튄다. */
+  body.keyboard-open > .foot{display:none}
   /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나짜리 폼이다. 명단 관리 화면과 달리
      '고정'하지 않는다 — .wrap 이 (--kb 만큼 여유를 두고) 정상 스크롤되게 두고,
      openPaste 에서 scrollIntoView 로 부드럽게 이동한다. 키보드가 올라오면 iOS 가
@@ -667,18 +667,13 @@ window.setThemeChrome = function(t){
     position:fixed;inset:0;z-index:50;
     background:var(--scrim);
     display:grid;place-items:center;
-    padding:22px;
+    padding:22px 22px calc(22px + var(--kb, 0px));
   }
   .scrim.hide{display:none}
   .dialog{
     width:100%;max-width:330px;
     background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:19px 18px 15px;
-    /* 평소엔 화면 중앙. 키보드가 올라오면 딱 그 위(약 26px 틈)까지만 올라간다.
-       --kb 가 작을 땐(중앙 배치로 이미 안 가림) 0 → 안 움직임. 125 ≈ 틈 + 다이얼로그 높이 절반.
-       clamp 아래끝: 가로 모드 등 극단적으로 짧은 화면에서 위로 잘려나가는 것 방지. */
-    transition:transform .2s ease;
-    transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 125px), 0px));
   }
   .dialog h3{margin:0 0 13px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
   .dialog input{
@@ -2477,7 +2472,7 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 키보드 ---------- */
   // body 는 화면 전체 크기로 고정 (CSS position:fixed inset:0). 키보드는 그 위에 얹힌다.
   // JS 가 하는 일은 딱 둘: (1) --kb = 키보드가 가리는 높이 → .wrap 아래 여백 + 시트 올림
-  //                        (2) 키보드 열림 감지 → 예약추가 시트 패딩 트림 + 닫힐 때 수정폼 재정렬
+  //                        (2) 키보드 열림 감지 → body.keyboard-open (하단 바 숨김)
   var vv = window.visualViewport;
   var keyboardOpen = false;
 
@@ -2500,14 +2495,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var open = textKeyboardTarget(document.activeElement) && (kbBaseH - h) > KB_MIN;
     if (open !== keyboardOpen){
       keyboardOpen = open;
+      document.body.classList.toggle('keyboard-open', open);
       if (addPanel) addPanel.classList.toggle('kb', open);
-      // 키보드가 내려가면 --kb 여백이 사라지고 하단 바가 다시 나타난다. 하단 행의
-      // 수정 폼(높이 큼)이 그때 바에 가려 저장 버튼이 안 보이므로, 폼이 다시 바 위로
-      // 오게 스크롤을 맞춘다. iOS 는 스크롤 위치가 늦게 자리잡아 한 번 더 늦게 확인한다.
-      if (!open && editing){
-        ensureVisible(editing);
-        setTimeout(function(){ if (!keyboardOpen && editing) ensureVisible(editing); }, 250);
-      }
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
@@ -3255,7 +3244,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (document.hidden) return;
     wakeLogOutbox();
     // 화면 높이가 달라졌을 수 있다 (키보드가 열린 채 복귀했을 수도).
-    // applyViewport 가 현재 visualViewport 로 --kb 와 키보드 열림 상태를 다시 잡는다.
+    // applyViewport 가 현재 visualViewport 로 --kb 와 keyboard-open 을 다시 잡는다.
     applyViewport();
     setTimeout(applyViewport, 300);
     // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
