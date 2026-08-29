@@ -1470,9 +1470,10 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
   }
 
-  // 명단은 .wrap 안에서만 스크롤된다. 대상이 스크롤러 밖으로 벗어나 있으면 최소한으로
-  // 스크롤해 보이게 한다. (상·하단 바는 스크롤러 밖이라 높이를 손으로 뺄 필요가 없다.)
-  // roomScroll = 동기(즉시). scrollIntoRoom = 다음 프레임에 (레이아웃이 방금 바뀐 경우).
+  // 명단은 .wrap 안에서만 스크롤된다. 대상이 스크롤러 밖으로 벗어나 있으면 최소한으로,
+  // 그 자리에서 바로(동기) 스크롤해 보이게 한다. render() 직후 같은 tick 에 부르면 브라우저가
+  // 한 번만 그려 중간에 엉뚱한 스크롤 위치가 프레임에 안 보인다. (상·하단 바는 스크롤러 밖이라
+  // 높이를 손으로 뺄 필요가 없다.)
   function roomScroll(el){
     if (!el || !wrapEl) return;
     var er = el.getBoundingClientRect();
@@ -1487,11 +1488,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var move = 0;
     if (er.height > bottomEdge - topEdge || er.top < topEdge) move = er.top - topEdge;
     else if (er.bottom > bottomEdge) move = er.bottom - bottomEdge;
-    if (Math.abs(move) > 1) wrapEl.scrollTop += move;   // 즉시. 부드러운 애니메이션이 겹치면 튕겨 보인다
-  }
-  function scrollIntoRoom(el){
-    if (!el || !wrapEl) return;
-    requestAnimationFrame(function(){ roomScroll(el); });
+    if (Math.abs(move) > 1) wrapEl.scrollTop += move;
   }
 
   function rowForId(id){
@@ -1522,8 +1519,8 @@ window.dispatchEvent(new Event('fb-ready'));
     roomScroll(rowForId(id));
   }
 
-  // 수정 폼이 닫힌 뒤 스크롤을 딱 한 번 맞춘다. 스크롤 이동은 전부 scrollIntoRoom 한 번으로
-  // 끝낸다 (별도 클램프 write 를 앞에 두지 않는다 → 두 번 움직여 흔들려 보이지 않게).
+  // 수정 폼이 닫힌 뒤 스크롤을 딱 한 번 맞춘다. 호출한 쪽이 이미 알맞은 시점까지 미뤄
+  // 놓으므로(rAF 또는 키보드 완전히 내려간 뒤) 여기선 바로 옮긴다.
   //  - reveal=true  (시간이 바뀌어 다른 자리로 이동): 무조건 그 행을 화면에 보여준다.
   //  - reveal=false (제자리 수정): 폼이 접히며 .wrap 이 줄어 그 행(과 아래)이 하단 바에
   //    가릴 수 있어, 명단 끝 근처면 마지막 행을 바 위로 올리고 아니면 그 행을 맞춘다.
@@ -1538,7 +1535,7 @@ window.dispatchEvent(new Event('fb-ready'));
         if (rows.length) el = rows[rows.length - 1];
       }
     }
-    if (el) scrollIntoRoom(el);
+    if (el) roomScroll(el);
   }
   // 폼을 닫는 모든 경로에서 호출: 키보드가 올라와 있으면 완전히 내려앉은 뒤로 미룬다
   // (applyViewport 가 --kb 0 을 보는 시점), 아니면 바로.
@@ -1792,6 +1789,13 @@ window.dispatchEvent(new Event('fb-ready'));
     return id;
   }
 
+  // 명단 맨 뒤로 보낼 때 쓸 다음 순번
+  function nextSeq(){
+    var m = 0;
+    state.items.forEach(function(x){ if ((x.seq || 0) > m) m = x.seq || 0; });
+    return m + 1;
+  }
+
   function applyEdit(id, timeV, nameV, paxV, memoV){
     var it = find(id);
     if (!it) return;
@@ -1812,11 +1816,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     // 시간이 바뀌면 옮겨간 시간대의 맨 뒤로
     var timeMoved = time !== it.time;
-    if (timeMoved){
-      var maxSeq = 0;
-      state.items.forEach(function(x){ if ((x.seq||0) > maxSeq) maxSeq = x.seq||0; });
-      it.seq = maxSeq + 1;
-    }
+    if (timeMoved) it.seq = nextSeq();
 
     var memoOnly = (time === it.time && name === it.name && pax === it.pax);
     logAdd(memoOnly ? '메모' : '수정',
@@ -1829,7 +1829,7 @@ window.dispatchEvent(new Event('fb-ready'));
     touched[originalTime] = Date.now();
     touched[time] = Date.now();
     armSlotCollapse(originalTime);
-    if (time !== originalTime) armSlotCollapse(time);
+    if (timeMoved) armSlotCollapse(time);
     state.items.sort(sortItems);
     var anchor = editing;
     editing = null;
@@ -2220,7 +2220,7 @@ window.dispatchEvent(new Event('fb-ready'));
     setCollapsed(time, willShut, tallyStatus(mine).pend === 0);
     render();
     if (editing) writeEditDraft(rowForId(editing), editDraft);
-    if (!willShut) scrollIntoRoom(slotEl(time));
+    if (!willShut) roomScroll(slotEl(time));
   }
 
   // 「지금 시간대」가 어디인지 다시 계산해서 시간대 색과 왼쪽 막대를 맞춘다
@@ -2466,11 +2466,9 @@ window.dispatchEvent(new Event('fb-ready'));
     var pax = parseInt(aPax.value, 10);
     var memo = aMemo.value.replace(/\s+/g,' ').trim();
     if (!state) state = { date: viewDate, items: [] };
-    var maxSeq = 0;
-    state.items.forEach(function(x){ if ((x.seq||0) > maxSeq) maxSeq = x.seq||0; });
     var item = {
       id: uniqueId(time, name, pax), time: time, name: name, pax: pax,
-      memo: memo, status: 'pending', ts: Date.now(), seq: maxSeq + 1
+      memo: memo, status: 'pending', ts: Date.now(), seq: nextSeq()
     };
     state.items.push(item);
     state.items.sort(sortItems);
