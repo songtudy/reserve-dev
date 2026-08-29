@@ -2223,7 +2223,7 @@ window.dispatchEvent(new Event('fb-ready'));
     setCollapsed(time, willShut, tallyStatus(mine).pend === 0);
     render();
     if (editing) writeEditDraft(rowForId(editing), editDraft);
-    if (!willShut) roomScroll(slotEl(time), true);   // 펼친 시간대가 가려져 있으면 부드럽게 내려 보여준다
+    if (!willShut) roomScroll(slotEl(time), true);   // 펼친 시간대가 길어 가려지면 부드럽게 맞춰 보여준다
   }
 
   // 「지금 시간대」가 어디인지 다시 계산해서 시간대 색과 왼쪽 막대를 맞춘다
