@@ -1042,6 +1042,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
   var viewDate = bizDate();
 
+  // 그 날짜를 부르는 말. viewDate 는 goDate 가 ±1 로 막아 늘 여기 해당된다.
+  function dayWord(ds){ var g = dayGap(ds); return g === -1 ? '어제' : g === 1 ? '내일' : '오늘'; }
+
   function prettyDate(){
     var p = viewDate.split('-');
     var w = WEEKDAYS[parseYmd(viewDate).getDay()];
@@ -1112,6 +1115,10 @@ window.dispatchEvent(new Event('fb-ready'));
     return (a.seq||0) - (b.seq||0);
   }
 
+  // 지금 상태에서 그 시간대에 속한 예약들.
+  function itemsAt(time){
+    return state ? state.items.filter(function(x){ return x.time === time; }) : [];
+  }
   // 예약을 시간대별로 묶는다 (입력은 이미 sortItems 로 정렬돼 있어야 한다).
   function groupByTime(items){
     var gs = [], gi = {};
@@ -1420,7 +1427,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     // 다른 기기에서 명단이 들어오면 이쪽 붙여넣기 창은 닫는다.
     // 단, 내가 직접 입력하던 중이면 건드리지 않는다.
-    if (!panel.classList.contains('hide') && !ta.value.trim()) closePaste();
+    if (!panel.classList.contains('hide') && !taEl.value.trim()) closePaste();
 
     var openCount = 0;
     groups.forEach(function(g){
@@ -2160,7 +2167,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 시간대 머리글 숫자
     var wrap = row.closest('.group');
     if (wrap && state){
-      var mine = state.items.filter(function(x){ return x.time === it.time; });
+      var mine = itemsAt(it.time);
       var man = collapsed[it.time];
       if (man && man.done !== (tallyStatus(mine).pend === 0)) delete collapsed[it.time];
       var meta = wrap.querySelector('.gmeta');
@@ -2172,20 +2179,26 @@ window.dispatchEvent(new Event('fb-ready'));
     return true;
   }
 
+  var EDIT_FIELDS = ['e-hour','e-min','e-name','e-pax','e-memo'];
+  function readEditDraft(row){
+    return row ? EDIT_FIELDS.map(function(id){ var f = row.querySelector('#' + id); return f ? f.value : null; }) : null;
+  }
+  function writeEditDraft(row, draft){
+    if (!row || !draft) return;
+    EDIT_FIELDS.forEach(function(id, i){
+      var f = row.querySelector('#' + id);
+      if (f && draft[i] !== null) f.value = draft[i];
+    });
+  }
+  function slotEl(time){ return document.querySelector('.group[data-time="' + time + '"]'); }
+
   // 시간대 접기 / 펼치기
   function toggleSlot(time){
     if (!state) return;
-    var mine = state.items.filter(function(x){ return x.time === time; });
+    var mine = itemsAt(time);
     if (!mine.length) return;
-    var editDraft = null;
-    var editedRow = editing && rowForId(editing);
-    if (editedRow){
-      editDraft = ['e-hour','e-min','e-name','e-pax','e-memo'].map(function(fieldId){
-        var field = editedRow.querySelector('#' + fieldId);
-        return field ? field.value : null;
-      });
-    }
-    var wrap = document.querySelector('.group[data-time="' + time + '"]');
+    var editDraft = editing ? readEditDraft(rowForId(editing)) : null;
+    var wrap = slotEl(time);
     var willShut = !(wrap && wrap.classList.contains('shut'));
     if (willShut){        // 접을 때는 그 시간대에서 열려 있던 수정 폼·메뉴를 닫는다
       var inHere = function(id){ return mine.some(function(x){ return x.id === id; }); };
@@ -2193,19 +2206,10 @@ window.dispatchEvent(new Event('fb-ready'));
       if (openMenu && inHere(openMenu)) openMenu = null;
     }
     openMenu = null;
-    var pend = mine.filter(function(x){ return x.status === 'pending'; }).length;
-    setCollapsed(time, willShut, pend === 0);
+    setCollapsed(time, willShut, tallyStatus(mine).pend === 0);
     render();
-    if (editing && editDraft){
-      var restoredRow = rowForId(editing);
-      if (restoredRow){
-        ['e-hour','e-min','e-name','e-pax','e-memo'].forEach(function(fieldId, index){
-          var field = restoredRow.querySelector('#' + fieldId);
-          if (field && editDraft[index] !== null) field.value = editDraft[index];
-        });
-      }
-    }
-    if (!willShut) scrollIntoRoom(document.querySelector('.group[data-time="' + time + '"]'));
+    if (editing) writeEditDraft(rowForId(editing), editDraft);
+    if (!willShut) scrollIntoRoom(slotEl(time));
   }
 
   // 「지금 시간대」가 어디인지 다시 계산해서 시간대 색과 왼쪽 막대를 맞춘다
@@ -2214,9 +2218,9 @@ window.dispatchEvent(new Event('fb-ready'));
     var gs = groupByTime(state.items.slice().sort(sortItems));
     var nowTime = liveNowTime(gs);
     gs.forEach(function(g){
-      var w = document.querySelector('.group[data-time="' + g.time + '"]');
+      var w = slotEl(g.time);
       if (!w) return;
-      var pend = g.items.some(function(x){ return x.status === 'pending'; });
+      var pend = tallyStatus(g.items).pend > 0;
       var shut = w.classList.contains('shut');
       w.className = 'group' + (g.time === nowTime ? ' now' : (pend ? '' : ' done')) + (shut ? ' shut' : '');
     });
@@ -2381,17 +2385,14 @@ window.dispatchEvent(new Event('fb-ready'));
   panelScrim.addEventListener('click', function(){
     if (!document.getElementById('addPanel').classList.contains('hide')) closeAdd();
   });
-  var ta = document.getElementById('ta');
   // 명단이 비었을 때의 전체 화면 폼. 한 건 추가는 「예약 추가」 폼이 맡는다.
   function openPaste(silent){
     if (discardEditing()) render();
-    var g = dayGap(viewDate);
-    var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
-    document.getElementById('pasteTitle').textContent = day + ' 예약 명단 붙여넣기';
+    document.getElementById('pasteTitle').textContent = dayWord(viewDate) + ' 예약 명단 붙여넣기';
     // 명단이 아예 없을 땐 돌아갈 화면이 없으므로 취소 버튼을 숨긴다
     var hasItems = !!(state && state.items && state.items.length);
     document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
-    ta.value = '';
+    taEl.value = '';
     taFixedH = 0;                 // 창을 열 때 한 번만 계산
     clearBad();
     fixTaHeight();
@@ -2400,7 +2401,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (silent) return;
     // .wrap 을 카드로 부드럽게 스크롤 → 키보드가 올라와도 iOS 가 이어서 자연스럽게 조정
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(function(){ ta.focus(); }, 200);
+    setTimeout(function(){ taEl.focus(); }, 200);
   }
   function closePaste(){
     panel.classList.add('hide');
@@ -2590,9 +2591,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   document.getElementById('resetBtn').addEventListener('click', function(){
     if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
-    var g = dayGap(viewDate);
-    var day = g === 1 ? '내일' : g === -1 ? '어제' : '오늘';
-    confirmDlg(day + ' 명단을 초기화할까요?\n「예」를 입력해 주세요', function(){
+    confirmDlg(dayWord(viewDate) + ' 명단을 초기화할까요?\n「예」를 입력해 주세요', function(){
       logAdd('명단 초기화', state.items.length + '건 지움');
       editing = null; openMenu = null;
       deferredState = null; backgroundRenderPending = false;
@@ -2607,7 +2606,7 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   document.getElementById('loadBtn').addEventListener('click', function(){
-    if (applyPaste(ta.value)) closePaste();
+    if (applyPaste(taEl.value)) closePaste();
   });
   document.getElementById('cancelPaste').addEventListener('click', closePaste);
   document.getElementById('addBtn').addEventListener('click', openAdd);
@@ -2791,14 +2790,13 @@ window.dispatchEvent(new Event('fb-ready'));
   foldBtn.addEventListener('click', function(){
     if (!state || !state.items.length) return;
     if (!panel.classList.contains('hide')) closePaste();
-    var times = {}, anyOpen = false;
-    state.items.forEach(function(it){
-      if (times[it.time] !== undefined) return;
-      var pend = state.items.some(function(x){ return x.time===it.time && x.status==='pending'; });
-      times[it.time] = !pend;              // 대기가 비어 있는 시간대인지 기록
-      if (!isCollapsed(it.time, pend ? 1 : 0)) anyOpen = true;
+    var slots = groupByTime(state.items.slice().sort(sortItems)), anyOpen = false;
+    var done = slots.map(function(g){
+      var d = tallyStatus(g.items).pend === 0;   // 대기가 비어 있는 시간대인지
+      if (!isCollapsed(g.time, d ? 0 : 1)) anyOpen = true;
+      return d;
     });
-    Object.keys(times).forEach(function(t){ setCollapsed(t, anyOpen, times[t]); });
+    slots.forEach(function(g, i){ setCollapsed(g.time, anyOpen, done[i]); });
     if (anyOpen){ editing = null; openMenu = null; } // 전부 접을 땐 열린 폼도 닫는다
     render();
   });
@@ -3096,8 +3094,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 화면을 새로 불러오면 입력 중이던 글이 날아간다. 쓰던 게 있으면 하지 않는다.
   function typingNow(){
-    var pnl = document.getElementById('pastePanel');
-    if (pnl && !pnl.classList.contains('hide') && ta.value.trim()) return true;
+    if (!panel.classList.contains('hide') && taEl.value.trim()) return true;
     if (addPanel && !addPanel.classList.contains('hide')
         && (aName.value.trim() || aMemo.value.trim())) return true;
     if (editing) return true;
