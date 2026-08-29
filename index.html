@@ -1488,8 +1488,10 @@ window.dispatchEvent(new Event('fb-ready'));
       var move = 0;
       if (er.height > bottomEdge - topEdge || er.top < topEdge) move = er.top - topEdge;
       else if (er.bottom > bottomEdge) move = er.bottom - bottomEdge;
-      // 즉시 이동한다. 키보드 오르내릴 때 부드러운 애니메이션이 겹치면 튕겨 보인다.
-      if (Math.abs(move) > 1) wrapEl.scrollTop += move;
+      // 뭔가를 화면에 보여주려는 이동이므로 부드럽게. (renderAnchored 처럼 '다시 그릴 때
+      // 안 튀게 붙잡는' 즉시 보정과는 성격이 다르다.) 이 함수는 키보드가 다 자리잡은
+      // 뒤에만 불리므로 옛날처럼 애니메이션이 겹쳐 튕길 일은 없다.
+      if (Math.abs(move) > 1) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
     });
   }
 
@@ -1826,10 +1828,13 @@ window.dispatchEvent(new Event('fb-ready'));
     state.items.sort(sortItems);
     var anchor = editing;
     editing = null;
-    if (timeMoved) render();                 // 시간이 바뀌면 자리가 달라지니 그냥 다시 그린다
-    else renderAnchored(anchor);             // 제자리 수정이면 행이 안 튀게 보정
-    if (timeMoved) ensureVisible(it.id);
-    afterEditClose(it.id);                   // 키보드 내려간 뒤 한 번 재정렬 (하단 행 가림 방지)
+    if (timeMoved){
+      render();                              // 시간이 바뀌면 자리가 달라지니 그냥 다시 그린다
+      ensureVisible(it.id);                  // 옮겨간 자리로 한 번만 (하단 보정은 안 건다 — 이중 스크롤)
+    } else {
+      renderAnchored(anchor);                // 제자리 수정이면 행이 안 튀게 보정
+      afterEditClose(it.id);                 // 키보드 내려간 뒤 한 번 재정렬 (하단 행 가림 방지)
+    }
     if (it.id === oldId) writeItem(oldId, { memo: it.memo, ts: it.ts });   // 메모만 바뀜 (id 유지)
     else { delItem(oldId); putItem(it); }                                  // 시각·이름·인원 바뀜 = 다른 노드
     toast('수정됨');
@@ -2565,7 +2570,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var gap = kbLine - af.getBoundingClientRect().bottom;  // 입력칸 하단 ~ 키보드 사이
     if (gap > 60){
       var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
-      wrapEl.scrollTop = Math.min(maxST, wrapEl.scrollTop + (gap - 14));
+      // 키보드는 이미 다 올라온 뒤라 부드럽게 당겨도 겹칠 애니메이션이 없다.
+      wrapEl.scrollTo({ top: Math.min(maxST, wrapEl.scrollTop + (gap - 14)), behavior: 'smooth' });
     }
   }
 
