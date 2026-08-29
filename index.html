@@ -1470,11 +1470,13 @@ window.dispatchEvent(new Event('fb-ready'));
     document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
   }
 
-  // 명단은 .wrap 안에서만 스크롤된다. 대상이 스크롤러 밖으로 벗어나 있으면 최소한으로,
-  // 그 자리에서 바로(동기) 스크롤해 보이게 한다. render() 직후 같은 tick 에 부르면 브라우저가
-  // 한 번만 그려 중간에 엉뚱한 스크롤 위치가 프레임에 안 보인다. (상·하단 바는 스크롤러 밖이라
-  // 높이를 손으로 뺄 필요가 없다.)
-  function roomScroll(el){
+  // 명단은 .wrap 안에서만 스크롤된다. 대상이 스크롤러 밖으로 벗어나 있으면 최소한으로
+  // 스크롤해 보이게 한다. (상·하단 바는 스크롤러 밖이라 높이를 손으로 뺄 필요가 없다.)
+  // 기본은 동기(즉시) — render() 직후 같은 tick 에 부르면 브라우저가 한 번만 그려
+  // 중간에 엉뚱한 스크롤 위치가 프레임에 안 보인다.
+  // smooth=true 는 사용자가 ⋯·수정을 눌러 가려진 행을 여는 경우 — 부드럽게 미끄러진다
+  // (이땐 키보드 애니메이션과 안 겹친다).
+  function roomScroll(el, smooth){
     if (!el || !wrapEl) return;
     var er = el.getBoundingClientRect();
     var wr = wrapEl.getBoundingClientRect();
@@ -1488,7 +1490,9 @@ window.dispatchEvent(new Event('fb-ready'));
     var move = 0;
     if (er.height > bottomEdge - topEdge || er.top < topEdge) move = er.top - topEdge;
     else if (er.bottom > bottomEdge) move = er.bottom - bottomEdge;
-    if (Math.abs(move) > 1) wrapEl.scrollTop += move;
+    if (Math.abs(move) <= 1) return;
+    if (smooth && wrapEl.scrollTo) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
+    else wrapEl.scrollTop += move;
   }
 
   function rowForId(id){
@@ -1513,10 +1517,9 @@ window.dispatchEvent(new Event('fb-ready'));
     });
   }
 
-  // 메뉴·수정 폼을 열고 나서 그 행이 화면에 들어오게. render() 직후에 부르므로 동기로
-  // 처리해 중간에 엉뚱한 스크롤 위치가 프레임에 안 보이게 한다.
+  // ⋯·수정을 눌러 가려져 있던 행을 열 때 — 부드럽게 스크롤해 보여준다.
   function ensureVisible(id){
-    roomScroll(rowForId(id));
+    roomScroll(rowForId(id), true);
   }
 
   // 수정 폼이 닫힌 뒤 스크롤을 딱 한 번 맞춘다. 호출한 쪽이 이미 알맞은 시점까지 미뤄
@@ -2220,7 +2223,7 @@ window.dispatchEvent(new Event('fb-ready'));
     setCollapsed(time, willShut, tallyStatus(mine).pend === 0);
     render();
     if (editing) writeEditDraft(rowForId(editing), editDraft);
-    if (!willShut) roomScroll(slotEl(time));
+    if (!willShut) roomScroll(slotEl(time), true);   // 펼친 시간대가 가려져 있으면 부드럽게 내려 보여준다
   }
 
   // 「지금 시간대」가 어디인지 다시 계산해서 시간대 색과 왼쪽 막대를 맞춘다
@@ -2516,8 +2519,8 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
       if (addPanel) addPanel.classList.toggle('kb', open);
-      // 폼이 아직 열려 있으면 키보드 내려간 직후 한 번 화면에 맞춘다.
-      if (!open && editing) ensureVisible(editing);
+      // 폼이 아직 열려 있으면 키보드 내려간 직후 한 번 화면에 맞춘다 (즉시 — 키보드 꼬리와 안 겹치게).
+      if (!open && editing) roomScroll(rowForId(editing));
     }
     // 저장/취소로 폼이 닫혔으면, 키보드가 완전히 내려앉아(--kb 0) 레이아웃이 멈춘 뒤
     // 딱 한 번 스크롤한다. 전환 시점(KB_MIN)은 아직 키보드가 90px 남아 흔들린다.
