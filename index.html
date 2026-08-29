@@ -667,13 +667,18 @@ window.setThemeChrome = function(t){
     position:fixed;inset:0;z-index:50;
     background:var(--scrim);
     display:grid;place-items:center;
-    padding:22px 22px calc(22px + var(--kb, 0px));
+    padding:22px;
   }
   .scrim.hide{display:none}
   .dialog{
     width:100%;max-width:330px;
     background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:19px 18px 15px;
+    /* 평소엔 화면 중앙. 키보드가 올라오면 딱 그 위(약 26px 틈)까지만 올라간다.
+       --kb 가 작을 땐(중앙 배치로 이미 안 가림) 0 → 안 움직임. 125 ≈ 틈 + 다이얼로그 높이 절반.
+       clamp 아래끝: 가로 모드 등 극단적으로 짧은 화면에서 위로 잘려나가는 것 방지. */
+    transition:transform .2s ease;
+    transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 125px), 0px));
   }
   .dialog h3{margin:0 0 13px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
   .dialog input{
@@ -2497,6 +2502,20 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
       if (addPanel) addPanel.classList.toggle('kb', open);
+      // 키보드가 내려가면 --kb 여백이 사라지고 하단 바가 다시 나타난다. 하단 행의
+      // 수정 폼(높이 큼)이 그때 바에 가려 저장 버튼이 안 보이므로, 폼이 다시 바 위로
+      // 오게 스크롤을 맞춘다. iOS 는 스크롤 위치가 늦게 자리잡아 한 번 더 늦게 확인한다.
+      if (!open && editing){
+        ensureVisible(editing);
+        setTimeout(function(){ if (!keyboardOpen && editing) ensureVisible(editing); }, 250);
+      }
+    }
+    // 키보드가 없을 때: 저장으로 폼이 닫히거나 --kb 여백이 줄며 .wrap 이 짧아졌을 수 있다.
+    // 스크롤이 콘텐츠 끝을 넘어가 있으면 (→ 마지막 행이 하단 바에 가림) 유효 범위로 되돌린다.
+    // (focusout 뒤 [40,140,320,600]ms 재호출로 키보드가 다 내려간 시점에 자연히 보정된다)
+    if (!open && wrapEl){
+      var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
+      if (wrapEl.scrollTop > maxST + 1) wrapEl.scrollTop = Math.max(0, maxST);
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open && !textKeyboardTarget(document.activeElement))
