@@ -1523,9 +1523,12 @@ window.dispatchEvent(new Event('fb-ready'));
   // 어긋나 그 행(과 아래)이 하단 바에 가리므로, 키보드가 다 내려간 뒤 딱 한 번 맞춘다.
   // (여러 번 하면 내려가는 중간중간 스크롤이 튀어 깜빡여 보인다. scrollIntoRoom 은
   //  이미 제자리면 아무것도 안 한다.)
+  var refitTimer = null;
   function refitAfterEditClose(id){
-    setTimeout(function(){
-      if (!wrapEl) return;
+    clearTimeout(refitTimer);
+    refitTimer = setTimeout(function(){
+      refitTimer = null;
+      if (!wrapEl || editing) return;   // 그새 다른 행 수정 중이면 스크롤을 건드리지 않는다
       var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
       if (wrapEl.scrollTop > maxST){ wrapEl.scrollTop = Math.max(0, maxST); return; }
       // 편집한 행이 명단 끝에서 한 화면 안이면(= 하단 행 수정) 마지막 행이 바 위로 오게,
@@ -1597,6 +1600,7 @@ window.dispatchEvent(new Event('fb-ready'));
         closeSearch(false);
         backDone();
       }
+      clearTimeout(refitTimer); refitTimer = null;   // 이전 수정의 보정 타이머가 남아 스크롤을 튀게 하지 않도록
       editing = id; openMenu = null; render();
       neutralFocusEdit(id);
       ensureVisible(id);
@@ -2528,7 +2532,11 @@ window.dispatchEvent(new Event('fb-ready'));
       // 오게 스크롤을 맞춘다. iOS 는 스크롤 위치가 늦게 자리잡아 한 번 더 늦게 확인한다.
       if (!open && editing){
         ensureVisible(editing);
-        setTimeout(function(){ if (!keyboardOpen && editing) ensureVisible(editing); }, 250);
+        clearTimeout(refitTimer);
+        refitTimer = setTimeout(function(){
+          refitTimer = null;
+          if (!keyboardOpen && editing) ensureVisible(editing);
+        }, 250);
       }
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
