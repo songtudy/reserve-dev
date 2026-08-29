@@ -1519,6 +1519,30 @@ window.dispatchEvent(new Event('fb-ready'));
     scrollIntoRoom(rowForId(id));
   }
 
+  // 저장·취소로 수정 폼이 닫힌 뒤(키보드가 완전히 내려간 시점) 스크롤을 한 번 맞춘다.
+  // 폼이 접히며 .wrap 이 줄어 그 행(과 아래)이 하단 바에 가릴 수 있어서. 딱 한 번만 —
+  // applyViewport 의 '키보드 닫힘' 전환에서 호출한다(고정 타이머 X → 레이스 없음).
+  var pendingCloseFixId = null;
+  function fixScrollAfterEditClose(id){
+    if (!wrapEl) return;
+    var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
+    if (wrapEl.scrollTop > maxST){ wrapEl.scrollTop = Math.max(0, maxST); return; }
+    // 편집한 행이 명단 끝에서 한 화면 안이면(= 하단 행) 마지막 행이 바 위로 오게,
+    // 아니면(= 중간) 편집한 행만 화면 안으로.
+    if (maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
+      var rows = wrapEl.querySelectorAll('.row');
+      if (rows.length) scrollIntoRoom(rows[rows.length - 1]);
+    } else {
+      var r = rowForId(id);
+      if (r) scrollIntoRoom(r);
+    }
+  }
+  // 폼을 닫는 모든 경로에서 호출: 키보드가 올라와 있으면 닫힐 때까지 미뤘다가, 아니면 바로.
+  function afterEditClose(id){
+    if (keyboardOpen) pendingCloseFixId = id;
+    else requestAnimationFrame(function(){ fixScrollAfterEditClose(id); });
+  }
+
   // 수정 폼을 닫으며 다시 그릴 때, 그 행이 화면에서 제자리에 있도록 스크롤을 보정한다.
   // 폼(높이 큼) → 행(작음)으로 접히면서 아래 내용이 위로 튀는 걸 막는다.
   function renderAnchored(id){
@@ -1551,7 +1575,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function tapMore(id){
     keepSlotOpenForId(id);
     if (editing === id){               // 같은 행이면 저장하지 않고 접는다
-      editing = null; openMenu = null; renderAnchored(id);
+      editing = null; openMenu = null; renderAnchored(id); afterEditClose(id);
       return;
     }
     if (editing){                       // 다른 행의 수정 창은 닫고 그 행을 새 기준으로 삼는다
@@ -1577,6 +1601,7 @@ window.dispatchEvent(new Event('fb-ready'));
         closeSearch(false);
         backDone();
       }
+      pendingCloseFixId = null;   // 이전 폼 닫힘 보정이 남아 새 편집을 튀게 하지 않도록
       editing = id; openMenu = null; render();
       neutralFocusEdit(id);
       ensureVisible(id);
@@ -1687,7 +1712,7 @@ window.dispatchEvent(new Event('fb-ready'));
       form.querySelector('#e-no').addEventListener('click', function(){
         keepSlotOpenForId(it.id);
         var anchor = editing;
-        editing = null; renderAnchored(anchor);
+        editing = null; renderAnchored(anchor); afterEditClose(anchor);
       });
       form.querySelector('#e-ok').addEventListener('click', function(){
         applyEdit(it.id,
@@ -1775,7 +1800,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
       keepSlotOpenForId(it.id);
-      editing = null; render(); return;
+      editing = null; render(); afterEditClose(it.id); return;
     }
 
     // 시간이 바뀌면 옮겨간 시간대의 맨 뒤로
@@ -1804,6 +1829,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (timeMoved) render();                 // 시간이 바뀌면 자리가 달라지니 그냥 다시 그린다
     else renderAnchored(anchor);             // 제자리 수정이면 행이 안 튀게 보정
     if (timeMoved) ensureVisible(it.id);
+    afterEditClose(it.id);                   // 키보드 내려간 뒤 한 번 재정렬 (하단 행 가림 방지)
     if (it.id === oldId) writeItem(oldId, { memo: it.memo, ts: it.ts });   // 메모만 바뀜 (id 유지)
     else { delItem(oldId); putItem(it); }                                  // 시각·이름·인원 바뀜 = 다른 노드
     toast('수정됨');
@@ -2506,9 +2532,14 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
       if (addPanel) addPanel.classList.toggle('kb', open);
-      // 키보드가 완전히 내려간 뒤(= 이 전환 시점) 수정 폼이 열려 있으면 하단 바에
-      // 가리지 않게 다시 맞춘다. 저장/취소로 폼이 닫힌 경우는 renderAnchored 가 맡는다.
-      if (!open && editing) ensureVisible(editing);
+      // 키보드가 완전히 내려간 뒤(= 이 전환 시점) 스크롤을 딱 한 번 맞춘다.
+      if (!open){
+        if (editing) ensureVisible(editing);                  // 폼이 아직 열려 있음
+        else if (pendingCloseFixId != null){                  // 저장/취소로 폼이 닫혔음
+          var pid = pendingCloseFixId; pendingCloseFixId = null;
+          requestAnimationFrame(function(){ fixScrollAfterEditClose(pid); });
+        }
+      }
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open) kbBaseH = Math.max(kbBaseH, h);
