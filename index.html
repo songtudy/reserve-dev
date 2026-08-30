@@ -1440,9 +1440,9 @@ window.dispatchEvent(new Event('fb-ready'));
         armSlotCollapse(g.time);
       }
 
-      var wrap = document.createElement('section');
-      wrap.className = 'group' + (g.time === nowTime ? ' now' : (pendN ? '' : ' done')) + (shut ? ' shut' : '');
-      wrap.setAttribute('data-time', g.time);
+      var sec = document.createElement('section');
+      sec.className = 'group' + (g.time === nowTime ? ' now' : (pendN ? '' : ' done')) + (shut ? ' shut' : '');
+      sec.setAttribute('data-time', g.time);
 
       var head = document.createElement('button');
       head.className = 'ghead';
@@ -1456,10 +1456,10 @@ window.dispatchEvent(new Event('fb-ready'));
         if (takeGhostClick(e)) return;
         toggleSlot(g.time);
       });
-      wrap.appendChild(head);
+      sec.appendChild(head);
 
-      if (!shut) g.items.forEach(function(it){ wrap.appendChild(rowEl(it)); });
-      list.appendChild(wrap);
+      if (!shut) g.items.forEach(function(it){ sec.appendChild(rowEl(it)); });
+      list.appendChild(sec);
       openCount += shut ? 0 : 1;
     });
 
@@ -1474,8 +1474,10 @@ window.dispatchEvent(new Event('fb-ready'));
   // 스크롤해 보이게 한다. (상·하단 바는 스크롤러 밖이라 높이를 손으로 뺄 필요가 없다.)
   // 기본은 동기(즉시) — render() 직후 같은 tick 에 부르면 브라우저가 한 번만 그려
   // 중간에 엉뚱한 스크롤 위치가 프레임에 안 보인다.
-  // smooth=true 는 사용자가 ⋯·수정을 눌러 가려진 행을 여는 경우 — 부드럽게 미끄러진다
-  // (이땐 키보드 애니메이션과 안 겹친다).
+  // smooth=true 는 사용자가 ⋯·수정·시간대펼치기로 가려진 걸 여는 경우 — 부드럽게 미끄러진다.
+  // 단, 이동이 짧으면(SMOOTH_MIN 미만) 즉시로 처리한다. 몇십 px 를 부드럽게 굴리면 render 직후
+  // 프레임과 겹쳐 오히려 버벅여 보인다 (특히 sticky 헤더에 살짝 가린 행).
+  var SMOOTH_MIN = 44;
   function roomScroll(el, smooth){
     if (!el || !wrapEl) return;
     var er = el.getBoundingClientRect();
@@ -1491,7 +1493,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (er.height > bottomEdge - topEdge || er.top < topEdge) move = er.top - topEdge;
     else if (er.bottom > bottomEdge) move = er.bottom - bottomEdge;
     if (Math.abs(move) <= 1) return;
-    if (smooth && wrapEl.scrollTo) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
+    if (smooth && Math.abs(move) >= SMOOTH_MIN && wrapEl.scrollTo) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
     else wrapEl.scrollTop += move;
   }
 
@@ -2179,14 +2181,14 @@ window.dispatchEvent(new Event('fb-ready'));
     }
 
     // 시간대 머리글 숫자
-    var wrap = row.closest('.group');
-    if (wrap && state){
+    var grp = row.closest('.group');
+    if (grp && state){
       var mine = itemsAt(it.time);
       var man = collapsed[it.time];
       if (man && man.done !== (tallyStatus(mine).pend === 0)) delete collapsed[it.time];
-      var meta = wrap.querySelector('.gmeta');
+      var meta = grp.querySelector('.gmeta');
       if (meta) meta.innerHTML = slotMetaHtml(mine);
-      wrap.setAttribute('data-time', it.time);
+      grp.setAttribute('data-time', it.time);
     }
     repaintNow();
     paintHead();
@@ -2212,8 +2214,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var mine = itemsAt(time);
     if (!mine.length) return;
     var editDraft = editing ? readEditDraft(rowForId(editing)) : null;
-    var wrap = slotEl(time);
-    var willShut = !(wrap && wrap.classList.contains('shut'));
+    var grp = slotEl(time);
+    var willShut = !(grp && grp.classList.contains('shut'));
     if (willShut){        // 접을 때는 그 시간대에서 열려 있던 수정 폼·메뉴를 닫는다
       var inHere = function(id){ return mine.some(function(x){ return x.id === id; }); };
       if (editing && inHere(editing)) editing = null;
