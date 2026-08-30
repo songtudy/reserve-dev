@@ -701,6 +701,8 @@ window.setThemeChrome = function(t){
   .dbtn button:active{filter:brightness(.9)}
 
   /* ---------- 화장실 청소 룰렛 (이스터에그) ---------- */
+  /* 서랍(61) 위 — 롱프레스로 열 때 빠져나가는 서랍이 룰렛 위를 스치지 않게 */
+  #rltScrim{ z-index:62 }
   .rlt{
     width:100%;max-width:340px;
     background:var(--panel);border:1px solid var(--line);border-radius:16px;
@@ -729,7 +731,7 @@ window.setThemeChrome = function(t){
     padding:7px 12px;border-radius:10px;
     background:var(--panel2);border:1px solid var(--line);
     font-size:14px;font-weight:700;color:var(--text);
-    transition:background .04s linear,color .04s linear,border-color .04s linear,transform .26s cubic-bezier(.34,1.56,.64,1);
+    transition:background .03s linear,color .03s linear,border-color .03s linear,transform .26s cubic-bezier(.34,1.56,.64,1);
   }
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   .rltchip.win{ transform:scale(1.09) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
@@ -2957,35 +2959,45 @@ window.dispatchEvent(new Event('fb-ready'));
     var namesBox = document.getElementById('rltNames');
     var result = document.getElementById('rltResult');
     var goBtn = document.getElementById('rltGo');
+    var sub = scrim.querySelector('.rltsub');
+    var SUB_TEXT = sub.textContent;
     var spinning = false, gen = 0;
 
     function buzz(pattern){ try { navigator.vibrate && navigator.vibrate(pattern); } catch(e){} }
 
-    // 띄어쓰기·쉼표로 나누고, 빈 값·중복 이름 제거 (같은 사람 두 번 뽑히면 확률이 틀어짐)
+    // 띄어쓰기·쉼표로 나누고, 빈 값·중복 이름 제거 (같은 사람이 두 번 있으면 확률이 틀어짐).
+    // seen 은 프로토타입 없는 순수 사전 — '__proto__' 같은 이름도 안전하다.
     function names(){
-      var seen = {};
+      var seen = Object.create(null);
       return inp.value.split(/[\s,]+/)
         .map(function(s){ return s.trim(); })
-        .filter(function(s){ return s && !seen[s] && (seen[s] = 1); });
+        .filter(function(s){ return s && !seen[s] && (seen[s] = true); });
     }
-    function drawChips(){
+    function drawChips(list){
       namesBox.innerHTML = '';
-      names().forEach(function(nm){
+      list.forEach(function(nm){
         var c = document.createElement('span');
         c.className = 'rltchip';
         c.textContent = nm;
         namesBox.appendChild(c);
       });
     }
+    // 안내문 한 줄을 안내/경고로 바꾼다 (토스트는 룰렛 스크림 뒤라 안 보임)
+    function say(msg, warn){
+      sub.textContent = msg || SUB_TEXT;
+      sub.style.color = warn ? 'var(--warn)' : '';
+    }
     function reset(){
       result.classList.add('hide');
       goBtn.textContent = '돌리기';
       goBtn.disabled = false;
+      inp.disabled = false;
       spinning = false;
+      say();
     }
     function open(){
       inp.value = '';
-      drawChips();          // 빈 입력 → 칩 영역도 비움
+      drawChips([]);          // 빈 입력 → 칩 영역도 비움
       reset();
       scrim.classList.remove('hide');
       backOpen(hide);
@@ -2993,61 +3005,72 @@ window.dispatchEvent(new Event('fb-ready'));
     function hide(){ gen++; scrim.classList.add('hide'); spinning = false; }   // gen++ → 돌던 스핀 루프 폐기
     function close(){ hide(); backDone(); }
 
-    // 리듬은 인원수·당첨자와 무관하게 늘 같다: 빠른 등속 → 마찰 감속 → 당첨칸 안착 → 잠깐 정지 → 결과 (~2.3초)
+    // 흐름은 인원수·당첨자와 무관하게 늘 같다:
+    //   빠른 회전 → ease-out 감속 → 당첨칸 안착 → HOLD_MS 정지 → 결과·바운스
+    // 감속 곡선 p·(2−p) 이 마지막 칸에 닿는 지점이 늘 ~86%p 라, 도는 시간은 인원수와 무관하게 ~SPIN_MS 로 일정하다.
+    var SPIN_MS = 2200;   // 회전이 멎기까지 (실제 정지는 그 ~86% 지점 + HOLD_MS)
+    var STEP_MS = 50;     // 가장 빠른 구간의 칸 간격 — CSS 전환(0.03s)보다 커야 두 칸이 겹쳐 안 빛난다
+    var HOLD_MS = 280;    // 당첨칸에 멈춰 있는 시간 (결과가 뜨기 전)
+    var AIM     = 23;     // 목표 이동 칸수 — 시작칸을 무작위로 두되 이 근처(±인원/2)에서 당첨칸에 맞춘다
+
     function spin(){
       if (spinning) return;
       var ns = names();
-      if (ns.length < 2){ toast('이름을 2명 이상 넣어 주세요'); return; }
+      if (ns.length < 2){ say('이름을 2명 이상 넣어 주세요', true); return; }
       spinning = true;
-      inp.blur();                     // 키보드 내려 칩 안 가리게 + 스핀 중 이름 못 바꾸게
+      inp.blur();                     // 키보드 내려 칩 안 가리게
+      inp.disabled = true;            // 스핀 중 이름·키보드 못 건드리게
       goBtn.disabled = true;
       result.classList.add('hide');
-      drawChips();
+      say();
+      drawChips(ns);
       var chips = namesBox.querySelectorAll('.rltchip');
+      var n = ns.length;
 
-      var SPIN_MS = 2300;   // 마찰 감속 곡선 기준 시간 — 곡선이 거의 멎는 ~86% 지점에서 실제로 정지
-      var STEP_MIN = 52;    // 칸 전환 최소 간격 (CSS 전환 0.04s 보다 느려 두 칩이 겹쳐 빛나지 않게)
-      var SETTLE_MS = 280;  // 당첨칸에 선 뒤 결과가 뜨기까지의 정지
-
-      var winner = Math.floor(Math.random() * ns.length);
-      var loops = Math.max(2, Math.round((24 - winner) / ns.length));   // 총 이동 칸수를 인원수 무관 ~24로
-      var totalSteps = loops * ns.length + winner;                      // 이 칸수를 지나면 정확히 winner 자리
+      var winner = Math.random() * n | 0;
+      var from   = Math.random() * n | 0;              // 시작칸 무작위 — 어디서 출발할지 미리 못 읽게(스포일러 방지)
+      // AIM 을 중심으로 폭 n 인 창 [AIM−n/2, AIM+n/2−1] 안에서 from→winner 로 딱 떨어지는 칸수.
+      // 창을 AIM 에 고정 → 도는 시간 편차 <100ms, 그러면서 시작칸은 매번 다르다.
+      var lo    = AIM - (n >> 1);
+      var steps = lo + (((winner - from - lo) % n) + n) % n;   // (from + steps) % n === winner
       var myGen = ++gen;
 
-      var start = null, cur = -1, shown = -1, lastAt = 0, landedAt = null;
+      var t0 = 0, at = 0, done = 0, lit = from, landed = 0;
+      chips[from].className = 'rltchip lit';                         // 시작칸 점등
       function frame(now){
-        if (myGen !== gen) return;    // 닫혔거나 다시 돌렸으면 이 루프 폐기
-        if (start === null){ start = now; lastAt = now - STEP_MIN; }   // 첫 칸은 바로
+        if (myGen !== gen) return;   // 닫혔거나 다시 돌렸으면 이 루프 폐기
+        if (!t0){ t0 = now; at = now - STEP_MS; }
 
-        if (cur < totalSteps){
-          var p = Math.min(1, (now - start) / SPIN_MS);
-          var target = Math.round(p * (2 - p) * totalSteps);   // 감속 곡선상 지금 있어야 할 칸
-          if (cur < target && now - lastAt >= STEP_MIN){        // 초반엔 STEP_MIN, 후반엔 target 이 속도 지배
-            if (shown >= 0) chips[shown].className = 'rltchip';
-            shown = ++cur % ns.length;
-            chips[shown].className = 'rltchip lit';
-            if (now - lastAt > 110) buzz(5);   // 느려지면 톡톡
-            lastAt = now;
+        if (done < steps){
+          var p = Math.min(1, (now - t0) / SPIN_MS);
+          var curveAt = Math.round(p * (2 - p) * steps);   // 감속 곡선상 지금 있어야 할 칸
+          if (done < curveAt && now - at >= STEP_MS){       // 한 프레임에 한 칸씩, STEP_MS 보다 빠르지 않게
+            chips[lit].className = 'rltchip';
+            lit = (from + ++done) % n;
+            chips[lit].className = 'rltchip lit';
+            if (now - at > 110) buzz(5);   // 간격이 벌어지는 후반에만 톡톡
+            at = now;
           }
           requestAnimationFrame(frame);
           return;
         }
 
-        // 당첨칸에 안착 → SETTLE_MS 동안 가만히(자연스러운 정지) → 결과
-        if (landedAt === null) landedAt = now;
-        if (now - landedAt < SETTLE_MS){ requestAnimationFrame(frame); return; }
+        // 당첨칸에 안착 (lit === winner) → HOLD_MS 동안 가만히 → 결과
+        if (!landed) landed = now;
+        if (now - landed < HOLD_MS){ requestAnimationFrame(frame); return; }
         chips[winner].className = 'rltchip win';
         result.textContent = '🚽 ' + ns[winner] + ' 당첨!';
         result.classList.remove('hide');
         goBtn.disabled = false;
         goBtn.textContent = '다시';
+        inp.disabled = false;
         spinning = false;
         buzz([25, 45, 25]);
       }
       requestAnimationFrame(frame);
     }
 
-    inp.addEventListener('input', function(){ if (!spinning){ reset(); drawChips(); } });
+    inp.addEventListener('input', function(){ if (!spinning){ reset(); drawChips(names()); } });
     goBtn.addEventListener('click', spin);
     document.getElementById('rltClose').addEventListener('click', close);
     scrim.addEventListener('click', function(e){ if (e.target === scrim && !spinning) close(); });
@@ -3425,7 +3448,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (document.hidden || !online) return false;
     if (typingNow() || writesPending > 0 || openMenu) return false;
     if (Date.now() - lastTouchAt < 20000) return false;   // 방금 만졌으면 기다린다
-    var busy = ['pastePanel', 'addPanel', 'panelScrim', 'sheetScrim', 'scrim'].some(function(id){
+    var busy = ['pastePanel', 'addPanel', 'panelScrim', 'sheetScrim', 'scrim', 'rltScrim'].some(function(id){
       var el = document.getElementById(id);
       return el && !el.classList.contains('hide');
     });
