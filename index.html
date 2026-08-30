@@ -2959,6 +2959,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var goBtn = document.getElementById('rltGo');
     var spinning = false, gen = 0;
 
+    function buzz(pattern){ try { navigator.vibrate && navigator.vibrate(pattern); } catch(e){} }
+
     // 띄어쓰기·쉼표로 나누고, 빈 값·중복 이름 제거 (같은 사람 두 번 뽑히면 확률이 틀어짐)
     function names(){
       var seen = {};
@@ -2991,51 +2993,56 @@ window.dispatchEvent(new Event('fb-ready'));
     function hide(){ gen++; scrim.classList.add('hide'); spinning = false; }   // gen++ → 돌던 스핀 루프 폐기
     function close(){ hide(); backDone(); }
 
-    // 인원수·당첨자와 무관하게 언제나 같은 리듬 — 빠른 등속(~55ms/칸) → 마찰 감속 → 당첨칸에서 숨 고르고 튕기며 안착(~2.3초)
+    // 리듬은 인원수·당첨자와 무관하게 늘 같다: 빠른 등속 → 마찰 감속 → 당첨칸 안착 → 잠깐 정지 → 결과 (~2.3초)
     function spin(){
       if (spinning) return;
       var ns = names();
       if (ns.length < 2){ toast('이름을 2명 이상 넣어 주세요'); return; }
       spinning = true;
-      inp.blur();                     // 키보드 내려 칩이 안 가리게 + 스핀 중 이름 못 바꾸게
+      inp.blur();                     // 키보드 내려 칩 안 가리게 + 스핀 중 이름 못 바꾸게
       goBtn.disabled = true;
       result.classList.add('hide');
       drawChips();
       var chips = namesBox.querySelectorAll('.rltchip');
-      var DUR = 2300;
+
+      var SPIN_MS = 2300;   // 마찰 감속 곡선 기준 시간 — 곡선이 거의 멎는 ~86% 지점에서 실제로 정지
+      var STEP_MIN = 52;    // 칸 전환 최소 간격 (CSS 전환 0.04s 보다 느려 두 칩이 겹쳐 빛나지 않게)
+      var SETTLE_MS = 280;  // 당첨칸에 선 뒤 결과가 뜨기까지의 정지
+
       var winner = Math.floor(Math.random() * ns.length);
-      var loops = Math.max(2, Math.round((24 - winner) / ns.length));   // 인원수·당첨자와 무관하게 총 이동칸을 ~24로 고정
-      var totalSteps = loops * ns.length + winner;                      // 이만큼 지나가면 정확히 winner 자리
-      var STEP_MIN = Math.min(60, Math.round(1400 / totalSteps));       // 초반 최고 속도 ≈ 55ms/칸 → 전체 ~2초로 수렴
+      var loops = Math.max(2, Math.round((24 - winner) / ns.length));   // 총 이동 칸수를 인원수 무관 ~24로
+      var totalSteps = loops * ns.length + winner;                      // 이 칸수를 지나면 정확히 winner 자리
       var myGen = ++gen;
+
       var start = null, cur = -1, shown = -1, lastAt = 0, landedAt = null;
       function frame(now){
-        if (myGen !== gen) return;    // 닫혔거나 다시 돌림 → 이 루프 폐기
-        if (start === null){ start = now; lastAt = now - STEP_MIN; }
+        if (myGen !== gen) return;    // 닫혔거나 다시 돌렸으면 이 루프 폐기
+        if (start === null){ start = now; lastAt = now - STEP_MIN; }   // 첫 칸은 바로
+
         if (cur < totalSteps){
-          var p = Math.min(1, (now - start) / DUR);
-          var target = Math.round(p * (2 - p) * totalSteps);   // 마찰 감속 곡선상 "여기까지 왔어야" 하는 칸
-          if (cur < target && now - lastAt >= STEP_MIN){        // 초반엔 STEP_MIN 이, 후반엔 target 이 속도를 정함
-            cur++;
+          var p = Math.min(1, (now - start) / SPIN_MS);
+          var target = Math.round(p * (2 - p) * totalSteps);   // 감속 곡선상 지금 있어야 할 칸
+          if (cur < target && now - lastAt >= STEP_MIN){        // 초반엔 STEP_MIN, 후반엔 target 이 속도 지배
             if (shown >= 0) chips[shown].className = 'rltchip';
-            shown = cur % ns.length;
+            shown = ++cur % ns.length;
             chips[shown].className = 'rltchip lit';
-            if (now - lastAt > 110){ try { navigator.vibrate && navigator.vibrate(5); } catch(e){} }  // 느려지면 딱딱
+            if (now - lastAt > 110) buzz(5);   // 느려지면 톡톡
             lastAt = now;
           }
           requestAnimationFrame(frame);
           return;
         }
-        // 당첨칸(cur === totalSteps → shown === winner)에 안착 — 잠깐 숨 고르고(자연스러운 정지) 축하
+
+        // 당첨칸에 안착 → SETTLE_MS 동안 가만히(자연스러운 정지) → 결과
         if (landedAt === null) landedAt = now;
-        if (now - landedAt < 280){ requestAnimationFrame(frame); return; }
+        if (now - landedAt < SETTLE_MS){ requestAnimationFrame(frame); return; }
         chips[winner].className = 'rltchip win';
         result.textContent = '🚽 ' + ns[winner] + ' 당첨!';
         result.classList.remove('hide');
         goBtn.disabled = false;
         goBtn.textContent = '다시';
         spinning = false;
-        try { navigator.vibrate && navigator.vibrate([25, 45, 25]); } catch(e){}
+        buzz([25, 45, 25]);
       }
       requestAnimationFrame(frame);
     }
@@ -3054,7 +3061,7 @@ window.dispatchEvent(new Event('fb-ready'));
       cancel();
       timer = setTimeout(function(){
         timer = null;
-        try { navigator.vibrate && navigator.vibrate(15); } catch(e){}
+        buzz(15);
         hideDrawer();
         open();
       }, 650);
