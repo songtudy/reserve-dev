@@ -700,7 +700,7 @@ window.setThemeChrome = function(t){
   .dbtn #dlgYes:disabled{background:var(--panel2);color:var(--dim);border-color:var(--line);cursor:default}
   .dbtn button:active{filter:brightness(.9)}
 
-  /* ---------- 청소 뽑기 (이스터에그) ---------- */
+  /* ---------- 화장실 청소 뽑기 (이스터에그) ---------- */
   .rlt{
     width:100%;max-width:340px;
     background:var(--panel);border:1px solid var(--line);border-radius:16px;
@@ -729,7 +729,7 @@ window.setThemeChrome = function(t){
     padding:7px 12px;border-radius:10px;
     background:var(--panel2);border:1px solid var(--line);
     font-size:14px;font-weight:700;color:var(--text);
-    transition:background .08s,color .08s,transform .08s;
+    transition:background .05s linear,color .05s linear,border-color .05s linear,transform .13s ease;
   }
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   .rltchip.win{ transform:scale(1.08) }
@@ -884,8 +884,8 @@ window.setThemeChrome = function(t){
 
 <div class="scrim hide" id="rltScrim">
   <div class="rlt">
-    <h3>🧹 청소 뽑기</h3>
-    <p class="rltsub">이름을 띄어쓰기로 넣고 돌리세요</p>
+    <h3>🚽 화장실 청소 뽑기</h3>
+    <p class="rltsub">이름을 띄어쓰기로 구분해 입력하세요</p>
     <input type="text" id="rltInput" placeholder="예: 민지 현우 서연 도윤" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="rltnames" id="rltNames"></div>
     <p class="rltresult hide" id="rltResult"></p>
@@ -2950,7 +2950,7 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('menuBtn').addEventListener('click', openDrawer);
   drawerScrim.addEventListener('click', closeDrawer);
 
-  /* ---------- 청소 뽑기 (이스터에그) — 서랍 아이콘 꾹 누르기 ---------- */
+  /* ---------- 화장실 청소 뽑기 (이스터에그) — 서랍 아이콘 꾹 누르기 ---------- */
   (function roulette(){
     var scrim = document.getElementById('rltScrim');
     var inp = document.getElementById('rltInput');
@@ -2992,7 +2992,7 @@ window.dispatchEvent(new Event('fb-ready'));
     function hide(){ gen++; scrim.classList.add('hide'); spinning = false; }   // gen++ → 돌던 스핀 루프 폐기
     function close(){ hide(); backDone(); }
 
-    // 사람 수와 무관하게 항상 같은 길이·리듬 (2.2초, 빠른 블러 → 마찰 감속 → 딱딱 멈춤)
+    // 인원수·당첨자와 무관하게 언제나 같은 리듬 — 2초 동안 ~24칸이 마찰 감속(빠르게 → 딱딱 → 안착)
     function spin(){
       if (spinning) return;
       var ns = names();
@@ -3003,28 +3003,28 @@ window.dispatchEvent(new Event('fb-ready'));
       result.classList.add('hide');
       drawChips(-1);
       var chips = namesBox.querySelectorAll('.rltchip');
-      var DUR = 2200;
+      var DUR = 2300;
       var winner = Math.floor(Math.random() * ns.length);
-      var loops = Math.max(4, Math.ceil(26 / ns.length));   // 적은 인원도 최소 4바퀴 돌게
-      var totalSteps = loops * ns.length + winner;           // p=1 에서 딱 winner 자리
+      var loops = Math.max(2, Math.round((24 - winner) / ns.length));   // 인원수·당첨자와 무관하게 총 이동칸을 ~24로 고정
+      var totalSteps = loops * ns.length + winner;                      // 이만큼 지나가면 정확히 winner 자리
       var myGen = ++gen;
       var start = null, shown = -1, lastAt = 0;
       function frame(now){
         if (myGen !== gen) return;    // 닫혔거나 다시 돌림 → 이 루프 폐기
         if (start === null){ start = now; lastAt = now; }
         var p = Math.min(1, (now - start) / DUR);
-        var eased = p * (2 - p);                             // 2차 ease-out = 마찰로 감속하는 원판
-        var idx = Math.floor(eased * totalSteps) % ns.length;
+        var steps = Math.round(p * (2 - p) * totalSteps);    // 2차 ease-out = 마찰로 감속하는 원판
+        var idx = steps % ns.length;
         if (idx !== shown){
           if (chips[shown]) chips[shown].className = 'rltchip';
           if (chips[idx]) chips[idx].className = 'rltchip lit';
           if (now - lastAt > 110){ try { navigator.vibrate && navigator.vibrate(5); } catch(e){} }  // 느려지면 딱딱
           lastAt = now; shown = idx;
         }
-        if (p < 1){ requestAnimationFrame(frame); return; }
-        if (chips[shown]) chips[shown].className = 'rltchip';
+        if (steps < totalSteps){ requestAnimationFrame(frame); return; }
+        // 당첨칸 도달 → 바로 마무리 (p=1 까지 멈춘 채 기다리지 않음 → 매번 같은 ~2초, 군더더기 없음)
         if (chips[winner]) chips[winner].className = 'rltchip win';
-        result.textContent = '🧹 ' + ns[winner] + ' 당첨!';
+        result.textContent = '🚽 ' + ns[winner] + ' 당첨!';
         result.classList.remove('hide');
         goBtn.disabled = false;
         goBtn.textContent = '다시';
