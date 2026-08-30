@@ -2954,12 +2954,12 @@ window.dispatchEvent(new Event('fb-ready'));
 
   /* ---------- 화장실 청소 룰렛 (이스터에그) — 서랍 아이콘 꾹 누르기 ---------- */
   (function roulette(){
-    var scrim = document.getElementById('rltScrim');
+    var rltScrim = document.getElementById('rltScrim');
     var inp = document.getElementById('rltInput');
     var namesBox = document.getElementById('rltNames');
     var result = document.getElementById('rltResult');
     var goBtn = document.getElementById('rltGo');
-    var sub = scrim.querySelector('.rltsub');
+    var sub = rltScrim.querySelector('.rltsub');
     var SUB_TEXT = sub.textContent;
     var spinning = false, gen = 0;
 
@@ -2999,10 +2999,10 @@ window.dispatchEvent(new Event('fb-ready'));
       inp.value = '';
       drawChips([]);          // 빈 입력 → 칩 영역도 비움
       reset();
-      scrim.classList.remove('hide');
+      rltScrim.classList.remove('hide');
       backOpen(hide);
     }
-    function hide(){ gen++; scrim.classList.add('hide'); spinning = false; }   // gen++ → 돌던 스핀 루프 폐기
+    function hide(){ gen++; rltScrim.classList.add('hide'); spinning = false; }   // gen++ → 돌던 스핀 루프 폐기
     function close(){ hide(); backDone(); }
 
     // 흐름은 인원수·당첨자와 무관하게 늘 같다:
@@ -3073,7 +3073,7 @@ window.dispatchEvent(new Event('fb-ready'));
     inp.addEventListener('input', function(){ if (!spinning){ reset(); drawChips(names()); } });
     goBtn.addEventListener('click', spin);
     document.getElementById('rltClose').addEventListener('click', close);
-    scrim.addEventListener('click', function(e){ if (e.target === scrim && !spinning) close(); });
+    rltScrim.addEventListener('click', function(e){ if (e.target === rltScrim && !spinning) close(); });
 
     // 진입: 서랍 맨 위 아이콘 롱프레스 (0.65초)
     var ico = document.querySelector('.dwico');
@@ -3293,9 +3293,13 @@ window.dispatchEvent(new Event('fb-ready'));
   function maybeInstallHint(){
     if (isStandalone() || hintOff()) return;
     setTimeout(function(){
-      if (!sheetScrim.classList.contains('hide')) return;   // 다른 안내가 떠 있으면 건너뛴다
-      openSheet('앱으로 설치하기',
-        INSTALL_NOTE + installHtml());
+      // 다른 안내·서랍·팝업이 떠 있으면 그 위에 겹쳐 띄우지 않는다 (이번엔 건너뛴다)
+      var blocked = ['sheetScrim', 'scrim', 'rltScrim', 'panelScrim'].some(function(id){
+        var el = document.getElementById(id);
+        return el && !el.classList.contains('hide');
+      }) || drawer.classList.contains('open');
+      if (blocked) return;
+      openSheet('앱으로 설치하기', INSTALL_NOTE + installHtml());
       sheetNever.classList.remove('hide');
     }, 1200);
   }
