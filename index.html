@@ -888,7 +888,7 @@ window.setThemeChrome = function(t){
   <div class="rlt">
     <h3>🚽 화장실 청소 룰렛</h3>
     <p class="rltsub">이름을 띄어쓰기로 구분해 입력하세요</p>
-    <input type="text" id="rltInput" placeholder="예: 민지 현우 서연 도윤" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input type="text" id="rltInput" placeholder="예: 동현 동주 동희 동욱" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="rltnames" id="rltNames"></div>
     <p class="rltresult hide" id="rltResult"></p>
     <div class="dbtn">
@@ -903,7 +903,7 @@ window.setThemeChrome = function(t){
 <script type="module">
 // ---------- Firebase 연결 ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import { getDatabase, ref, get, set, remove, onValue, off, goOffline, goOnline, runTransaction }
+import { getDatabase, ref, get, set, update, remove, onValue, off, goOffline, goOnline }
   from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -947,10 +947,22 @@ window.__fb = {
     });
     return () => off(r, 'value', h);
   },
-  itemPut: (ds, id, item) => set(ref(db, ipath(ds, id)), item),
   itemDel: (ds, id) => remove(ref(db, ipath(ds, id))),
-  // 한 예약 노드를 원자적으로 바꾼다. 이미 지워졌으면(cur==null) abort → 파편으로 되살리지 않음.
-  itemTxn: (ds, id, mutate) => runTransaction(ref(db, ipath(ds, id)), cur => cur == null ? undefined : mutate(cur)).then(r => r.committed),
+  // 한 예약 노드를 반영한다 (오프라인 쓰기 큐 재생용). 현재 값을 get 으로 확인하고 조건부로 쓴다.
+  //  - data: patch(부분 필드) 또는 item(통짜, create=true)
+  //  - minTs: 서버 값이 이보다 새 것이면 건드리지 않는다 (오래된 큐가 최신 값 못 덮게)
+  //  - create: true 면 없을 때 새로 만든다(예약 추가). false(patch) 면 삭제된 노드는 되살리지 않는다.
+  // patch 는 update() 로 지정한 필드만 서버에서 병합 → 다른 기기가 딴 필드를 동시에 바꿔도 안 날린다.
+  // (트랜잭션은 cold 캐시에서 null 로 오판해 patch 를 통째로 잃으므로 쓰지 않는다.)
+  // 반환 true = 반영됐거나 더는 필요 없음 → 큐에서 제거.
+  itemMerge: (ds, id, data, minTs, create) => {
+    var r = ref(db, ipath(ds, id));
+    return get(r).then(s => {
+      if (!s.exists()) return create ? set(r, data).then(() => true) : true;
+      if ((s.val().ts || 0) >= (minTs || 0)) return true;       // 서버가 더/같이 최신 → 유지
+      return (create ? set(r, data) : update(r, data)).then(() => true);
+    });
+  },
   // items 서브트리 통째 교체 (붙여넣기·명단 초기화 = 의도적 리셋). arr 비면 노드 삭제.
   itemsReplace: (ds, arr) => set(itemsRef(ds), (arr && arr.length) ? arr.reduce((o, it) => (o[k32(it.id)] = it, o), {}) : null),
   // 오래된 날짜 정리용 (날짜 노드 목록·삭제)
@@ -1119,6 +1131,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function purgeOld(){
     var limit = shiftDate(bizDate(), -KEEP_DAYS);
     purgeOldLocalLogs(limit);
+    wqPurge();
     if (!hasStore()) return;
     fb().dayList().then(function(keys){
       (keys || []).forEach(function(ds){
@@ -1259,33 +1272,140 @@ window.dispatchEvent(new Event('fb-ready'));
     }).catch(function(){});
   }
 
-  // 한 예약 노드에 부분 변경(상태·메모 등)을 원자적으로 반영한다. 이미 지워졌으면 아무것도 안 함.
-  function writeItem(id, patch){
-    if (!hasStore()) return;
-    var ds = viewDate;
-    writesPending++;
-    fb().itemTxn(ds, id, function(cur){
-      var next = {};
-      for (var k in cur) if (Object.prototype.hasOwnProperty.call(cur, k)) next[k] = cur[k];
-      for (var p in patch) if (Object.prototype.hasOwnProperty.call(patch, p)) next[p] = patch[p];
-      return next;
-    }).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
+  /* ---------- 오프라인 쓰기 큐 (예약 노드) ----------
+     Firebase RTDB 웹 SDK 는 오프라인 쓰기를 메모리에만 큐잉 → 새로고침·앱 종료를 못 버틴다.
+     예약 변경(방문·취소·메모·추가·삭제)을 localStorage 에도 남겨, 다시 떴을 때 서버보다
+     새 것만(ts 비교) 재적용한다. 붙여넣기·초기화 같은 통짜 교체는 큐에 넣지 않고 큐만 비운다.
+     변경 내역 log 는 별도 아웃박스가 담당하고 재적용 시 다시 기록하지 않으므로,
+     여러 기기가 겹쳐도 「최근 변경 내역」이 중복되지 않는다. */
+  var WQ_KEY = 'ix-wq-v1:' + (IS_DEV ? 'dev' : 'prod');
+  var WQ_OP_TIMEOUT = 10000;
+  var wqMap = wqRead();
+  var wqTimer = null, wqDelay = 3000, wqBusy = false;
+
+  function wqRead(){
+    try {
+      var v = JSON.parse(localStorage.getItem(WQ_KEY) || '{}');
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    } catch(e){ return {}; }
   }
+  function wqSave(){
+    try {
+      if (Object.keys(wqMap).length) localStorage.setItem(WQ_KEY, JSON.stringify(wqMap));
+      else localStorage.removeItem(WQ_KEY);
+    } catch(e){
+      try { localStorage.removeItem(LOG_CACHE_KEY); localStorage.setItem(WQ_KEY, JSON.stringify(wqMap)); }
+      catch(e2){}
+    }
+  }
+  function wqk(date, id){ return date + '|' + id; }
+  function wqMerge(a, b){ var o = {}, k; for (k in a) o[k] = a[k]; for (k in b) o[k] = b[k]; return o; }
+
+  // prev(없으면 null)에 새 변경을 얹은 큐 엔트리 (순수 — 저장·전송 안 함).
+  // 객체는 항상 복사해 담는다 (state.items 의 항목과 참조를 공유하지 않게).
+  function wqEntry(prev, date, id, op, payload){
+    var ts = (payload && payload.ts) || Date.now();
+    var pts = Math.max(ts, (prev && prev.ts) || 0);
+    if (op === 'del') return { date: date, id: id, op: 'del', ts: ts };
+    if (op === 'put') return { date: date, id: id, op: 'put', item: wqMerge(payload.item, {}), ts: pts };
+    var patch = payload.patch;                              // op === 'patch'
+    if (prev && prev.op === 'del') return prev;             // 삭제가 걸려 있으면 삭제 유지 (put 만 덮음)
+    if (prev && prev.op === 'patch')
+      return { date: date, id: id, op: 'patch', patch: wqMerge(prev.patch, patch), ts: pts };
+    if (prev && prev.op === 'put')
+      return { date: date, id: id, op: 'put', item: wqMerge(prev.item, patch), ts: pts };
+    return { date: date, id: id, op: 'patch', patch: wqMerge(patch, {}), ts: ts };
+  }
+  function wqPush(id, op, payload){
+    var date = viewDate, k = wqk(date, id);
+    wqMap[k] = wqEntry(wqMap[k] || null, date, id, op, payload);
+    wqSave();
+    wqFlush();
+  }
+  function wqValid(e){
+    return e && /^\d{4}-\d{2}-\d{2}$/.test(e.date)
+      && e.date >= shiftDate(bizDate(), -KEEP_DAYS)
+      && e.date <= shiftDate(bizDate(), 1);   // 오늘 ±(보관일/내일) 밖은 버린다
+  }
+  function wqPurge(){
+    var changed = false;
+    Object.keys(wqMap).forEach(function(k){ if (!wqValid(wqMap[k])){ delete wqMap[k]; changed = true; } });
+    if (changed) wqSave();
+  }
+  function wqClearDate(date){
+    var changed = false;
+    Object.keys(wqMap).forEach(function(k){ if (wqMap[k] && wqMap[k].date === date){ delete wqMap[k]; changed = true; } });
+    if (changed) wqSave();
+  }
+  function wqSchedule(){
+    if (wqTimer || !hasStore() || !Object.keys(wqMap).length) return;
+    var wait = wqDelay;
+    wqDelay = Math.min(wqDelay * 2, 60000);
+    wqTimer = setTimeout(function(){ wqTimer = null; wqFlush(); }, wait);
+  }
+  function wqWake(){
+    if (wqTimer){ clearTimeout(wqTimer); wqTimer = null; }
+    wqDelay = 3000;
+    wqFlush();
+  }
+  function wqOnce(p){          // 각 쓰기에 시한을 둬 오프라인에서 매달리지 않게
+    return new Promise(function(res){
+      var t = setTimeout(function(){ res(false); }, WQ_OP_TIMEOUT);
+      p.then(function(v){ clearTimeout(t); res(v !== false); }, function(){ clearTimeout(t); res(false); });
+    });
+  }
+  function wqFlush(){
+    if (wqBusy || !hasStore() || window.__ixTest) return;
+    var keys = Object.keys(wqMap);
+    if (!keys.length) return;
+    wqBusy = true;
+    writesPending++;
+    var okCount = 0;
+    Promise.all(keys.map(function(k){
+      var e = wqMap[k];
+      if (!wqValid(e)){ delete wqMap[k]; return Promise.resolve(); }
+      var call;
+      try {
+        call = e.op === 'del' ? wqOnce(fb().itemDel(e.date, e.id).then(function(){ return true; }))
+             : e.op === 'put' ? wqOnce(fb().itemMerge(e.date, e.id, e.item, e.ts, true))
+             :                  wqOnce(fb().itemMerge(e.date, e.id, e.patch, e.ts, false));
+      } catch(err){ return Promise.resolve(); }   // 큐 막힘 방지 — 다음 flush 에서 재시도
+      return call.then(function(applied){ if (applied){ delete wqMap[k]; okCount++; } });
+    })).then(function(){
+      wqBusy = false;
+      writesPending = Math.max(0, writesPending - 1);
+      wqSave();
+      if (okCount) wqDelay = 3000;
+      if (Object.keys(wqMap).length) wqSchedule();
+    }, function(){
+      wqBusy = false;
+      writesPending = Math.max(0, writesPending - 1);
+      wqSave();
+      wqSchedule();
+    });
+  }
+
+  // 다른 탭이 큐에 얹었을 수 있다. 큐는 키 하나에 map 전체라, 통째로 갈아치우면 두 탭이
+  // 거의 동시에 얹을 때 한쪽이 사라질 수 있다 → 들어온 것을 병합만 한다(ts 큰 쪽 우선).
+  // 다른 탭이 지운 항목은 우리한테 남지만, 재전송해도 itemMerge 가 ts 로 걸러 무해하다.
+  window.addEventListener('storage', function(e){
+    if (e.key !== WQ_KEY || wqBusy) return;
+    var incoming = wqRead(), touched = false;
+    Object.keys(incoming).forEach(function(k){
+      var mine = wqMap[k], theirs = incoming[k];
+      if (!mine || (theirs.ts || 0) >= (mine.ts || 0)){ wqMap[k] = theirs; touched = true; }
+    });
+    if (touched){ wqSave(); wqWake(); }
+  });
+
+  // 한 예약 노드에 부분 변경(상태·메모 등)을 반영한다. 실제 전송은 큐가 맡는다.
+  function writeItem(id, patch){ wqPush(id, 'patch', { patch: patch, ts: patch && patch.ts }); }
   // 예약 하나를 통째로 쓴다 (새 예약 추가).
-  function putItem(item){
-    if (!hasStore()) return;
-    var ds = viewDate;
-    writesPending++;
-    fb().itemPut(ds, item.id, item).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
-  }
-  function delItem(id){
-    if (!hasStore()) return;
-    var ds = viewDate;
-    writesPending++;
-    fb().itemDel(ds, id).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
-  }
-  // 명단을 통째로 새로 쓴다 (붙여넣기·초기화).
+  function putItem(item){ wqPush(item.id, 'put', { item: item, ts: item.ts }); }
+  function delItem(id){ wqPush(id, 'del', { ts: Date.now() }); }
+  // 명단을 통째로 새로 쓴다 (붙여넣기·초기화). 개별 대기분은 이 교체가 덮으니 큐에서 버린다.
   function replaceItems(arr){
+    wqClearDate(viewDate);
     if (!hasStore()) return;
     var ds = viewDate;
     writesPending++;
@@ -2953,6 +3073,18 @@ window.dispatchEvent(new Event('fb-ready'));
   drawerScrim.addEventListener('click', closeDrawer);
 
   /* ---------- 화장실 청소 룰렛 (이스터에그) — 서랍 아이콘 꾹 누르기 ---------- */
+  // 시작칸(from)에서 당첨칸(winner)까지 갈 칸수.
+  //  - RLT_BASE 근처로 잡아 도는 시간이 인원수와 무관하게 일정하다 (from 은 무작위 = 스포일러 방지).
+  //  - 22칸을 넘으면 한 바퀴 덜 돌아 당첨칸에 선다. 22 = SPIN_MS/(2·STEP_MS) — 이 위로는 ease-out
+  //    곡선 초반이 STEP_MS 바닥보다 빨라 감속이 「쭉 빠르다 뚝」이 된다. 아래로 묶으면 곡선이
+  //    전 구간을 지배해 인원수와 무관하게 처음부터 끝까지 매끄럽게 감속한다.
+  //  - (from + steps) % n === winner 는 두 경우 모두 성립.
+  var RLT_BASE = 16, RLT_STEP_CAP = 22;
+  function rltSteps(n, winner, from){
+    var steps = RLT_BASE + (((winner - from - RLT_BASE) % n) + n) % n;
+    if (steps > RLT_STEP_CAP) steps -= n;   // 22칸 초과면 한 바퀴 덜 돌아 착지 (n ≤ 22 면 항상 ≥ 1)
+    return steps < 1 ? steps + n : steps;   // 초대형 명단(n > 22)에서만 음수 방지
+  }
   (function roulette(){
     var rltScrim = document.getElementById('rltScrim');
     var inp = document.getElementById('rltInput');
@@ -3007,11 +3139,10 @@ window.dispatchEvent(new Event('fb-ready'));
 
     // 흐름은 인원수·당첨자와 무관하게 늘 같다:
     //   빠른 회전 → ease-out 감속 → 당첨칸 안착 → HOLD_MS 정지 → 결과·바운스
-    // 감속 곡선 p·(2−p) 이 마지막 칸에 닿는 지점이 늘 ~86%p 라, 도는 시간은 인원수와 무관하게 ~SPIN_MS 로 일정하다.
-    var SPIN_MS = 2200;   // 회전이 멎기까지 (실제 정지는 그 ~86% 지점 + HOLD_MS)
-    var STEP_MS = 50;     // 가장 빠른 구간의 칸 간격 — CSS 전환(0.03s)보다 커야 두 칸이 겹쳐 안 빛난다
-    var HOLD_MS = 280;    // 당첨칸에 멈춰 있는 시간 (결과가 뜨기 전)
-    var AIM     = 23;     // 목표 이동 칸수 — 시작칸을 무작위로 두되 이 근처(±인원/2)에서 당첨칸에 맞춘다
+    // 감속 곡선 p·(2−p) 이 마지막 칸에 닿는 지점이 늘 ~85%p 라, 도는 시간은 인원수와 무관하게 일정하다.
+    var SPIN_MS = 2000;   // 회전이 멎기까지 (실제 정지는 그 ~85% 지점 + HOLD_MS ≈ 총 2초)
+    var STEP_MS = 45;     // 가장 빠른 구간의 칸 간격 — CSS 전환(0.03s)보다 커야 두 칸이 겹쳐 안 빛난다
+    var HOLD_MS = 300;    // 당첨칸에 멈춰 있는 시간 (결과가 뜨기 전)
 
     function spin(){
       if (spinning) return;
@@ -3029,11 +3160,8 @@ window.dispatchEvent(new Event('fb-ready'));
 
       var winner = Math.random() * n | 0;
       var from   = Math.random() * n | 0;              // 시작칸 무작위 — 어디서 출발할지 미리 못 읽게(스포일러 방지)
-      // AIM 을 중심으로 폭 n 인 창 [AIM−n/2, AIM+n/2−1] 안에서 from→winner 로 딱 떨어지는 칸수.
-      // 창을 AIM 에 고정 → 도는 시간 편차 <100ms, 그러면서 시작칸은 매번 다르다.
-      var lo    = AIM - (n >> 1);
-      var steps = lo + (((winner - from - lo) % n) + n) % n;   // (from + steps) % n === winner
-      var myGen = ++gen;
+      var steps  = rltSteps(n, winner, from);          // from → winner, RLT_BASE(16) 근처
+      var myGen  = ++gen;
 
       var t0 = 0, at = 0, done = 0, lit = from, landed = 0;
       chips[from].className = 'rltchip lit';                         // 시작칸 점등
@@ -3392,12 +3520,13 @@ window.dispatchEvent(new Event('fb-ready'));
       boot._watched = true;
       fb().onConnected(function(ok){
         setSync(ok);
-        if (ok) wakeLogOutbox();
+        if (ok){ wakeLogOutbox(); wqWake(); }
       });
     }
     setSync(hasStore());
     purgeOld();
     wakeLogOutbox();
+    wqWake();
     var ticket = loadTicket();
     if (!hasStore()){ stageBackgroundState(state || { date: ticket.date, items: [] }); return; }
     fb().itemsGet(ticket.date).then(function(res){
@@ -3478,6 +3607,7 @@ window.dispatchEvent(new Event('fb-ready'));
   document.addEventListener('visibilitychange', function(){
     if (document.hidden) return;
     wakeLogOutbox();
+    wqWake();
     // 화면 높이가 달라졌을 수 있다 (키보드가 열린 채 복귀했을 수도).
     // applyViewport 가 현재 visualViewport 로 --kb 와 keyboard-open 을 다시 잡는다.
     applyViewport();
@@ -3547,6 +3677,36 @@ window.dispatchEvent(new Event('fb-ready'));
       writeItem(it.id, { status: 'cancelled', ts: ts });
     });
     return true;
+  }
+
+  // ---------- 셀프테스트 모드 ----------
+  // 주소에 ?selftest 가 있으면 앱을 띄우지 않고, 실제 배포되는 순수 함수들을 노출한 뒤
+  // selftest.js 가 단언 검사를 돌려 결과를 화면에 뿌린다. 평소엔 이 블록을 그냥 지나간다.
+  if (/[?&]selftest\b/.test(location.search)) {
+    window.__ixTest = {
+      parse: parse, normTime: normTime, sortItems: sortItems,
+      pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
+      tallyStatus: tallyStatus, dayTally: dayTally,
+      slotMin: slotMin, slotLive: slotLive, groupByTime: groupByTime, liveNowTime: liveNowTime,
+      esc: esc, hourOptions: hourOptions,
+      validLogDate: validLogDate, cleanLogEntry: cleanLogEntry, logIdentity: logIdentity,
+      logKeyId: logKeyId, mergeLogRows: mergeLogRows,
+      reportText: reportText, uniqueId: uniqueId, nextSeq: nextSeq, isCollapsed: isCollapsed,
+      rltSteps: rltSteps, wqEntry: wqEntry,
+      consts: { COLLAPSE_DELAY: COLLAPSE_DELAY, AUTO_CANCEL_MIN: AUTO_CANCEL_MIN,
+                GRACE_ON_HOUR: GRACE_ON_HOUR, GRACE_OFF_HOUR: GRACE_OFF_HOUR,
+                HOUR_MIN: HOUR_MIN, HOUR_MAX: HOUR_MAX, KEEP_DAYS: KEEP_DAYS,
+                RLT_BASE: RLT_BASE, RLT_STEP_CAP: RLT_STEP_CAP },
+      // 상태에 기대는 함수를 검사할 때 쓰는 세터
+      setState: function(s){ state = s; },
+      setViewDate: function(d){ viewDate = d; },
+      setCollapsed: function(c){ collapsed = c || {}; },
+      setTouched: function(t){ touched = t || {}; }
+    };
+    var st = document.createElement('script');
+    st.src = 'selftest.js';
+    document.head.appendChild(st);
+    return;
   }
 
   var lastPaint = '';
