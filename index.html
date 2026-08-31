@@ -1767,14 +1767,23 @@ window.dispatchEvent(new Event('fb-ready'));
       editing = null; openMenu = null; renderAnchored(id); afterEditClose(id);
       return;
     }
-    if (editing){                       // 다른 행의 수정 창은 닫고 그 행을 새 기준으로 삼는다
+    if (editing){                       // 다른 행의 수정 폼 닫기 = 폼 DOM 을 제거해야 하니 통째로 그린다
       keepSlotOpenForId(editing);
       editing = null;
+      openMenu = (openMenu === id) ? null : id;
+      render();
+      if (openMenu) ensureVisible(id);
+      return;
     }
+    // 수정 중이 아니면 메뉴 토글은 그 행만 손댄다 (통째 render 안 함)
     if (openMenu && openMenu !== id) keepSlotOpenForId(openMenu);
     openMenu = (openMenu === id) ? null : id;
-    render();
-    if (openMenu) ensureVisible(id);
+    if (openMenu){
+      openRowMenu(id);
+    } else {
+      closeRowMenu();
+      if (deferredState && !interactionActive()) render();   // 메뉴 닫히면 밀려 있던 서버 상태 반영
+    }
   }
 
   function runMenuAction(id, action, status){
@@ -1917,43 +1926,49 @@ window.dispatchEvent(new Event('fb-ready'));
         if (e.key === 'Enter') form.querySelector('#e-ok').click();
       });
     } else if (openMenu === it.id){
-      var menu = document.createElement('div');
-      menu.className = 'menu';
-      [['방문','arrived'],['취소','cancelled']].forEach(function(p){
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = p[0];
-        b.setAttribute('data-list-action', 'status');
-        b.setAttribute('data-status', p[1]);
-        b.addEventListener('click', function(e){
-          if (takeGhostClick(e)) return;
-          e.stopPropagation(); runMenuAction(it.id, 'status', p[1]);
-        });
-        menu.appendChild(b);
-      });
-      var ed = document.createElement('button');
-      ed.type = 'button'; ed.textContent = '수정';
-      ed.setAttribute('data-list-action', 'edit');
-      ed.addEventListener('click', function(e){
-        if (takeGhostClick(e)) return;
-        e.stopPropagation();
-        runMenuAction(it.id, 'edit');
-      });
-      menu.appendChild(ed);
-      var del = document.createElement('button');
-      del.type = 'button'; del.className = 'del'; del.textContent = '삭제';
-      del.setAttribute('data-list-action', 'delete');
-      del.addEventListener('click', function(e){
-        if (takeGhostClick(e)) return;
-        e.stopPropagation();
-        runMenuAction(it.id, 'delete');
-      });
-      menu.appendChild(del);
-      body.appendChild(menu);
+      body.appendChild(buildMenu(it.id));
     }
 
     row.appendChild(body);
     return row;
+  }
+
+  // ⋯ 메뉴 (방문·취소·수정·삭제). rowEl 이 통째로 그릴 때도, tapMore 가 그 행에만 붙일 때도 쓴다.
+  function buildMenu(id){
+    var menu = document.createElement('div');
+    menu.className = 'menu';
+    function btn(label, action, status){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.setAttribute('data-list-action', action);
+      if (status) b.setAttribute('data-status', status);
+      if (action === 'delete') b.className = 'del';
+      b.addEventListener('click', function(e){
+        if (takeGhostClick(e)) return;
+        e.stopPropagation();
+        runMenuAction(id, action, status);
+      });
+      return b;
+    }
+    menu.appendChild(btn('방문', 'status', 'arrived'));
+    menu.appendChild(btn('취소', 'status', 'cancelled'));
+    menu.appendChild(btn('수정', 'edit'));
+    menu.appendChild(btn('삭제', 'delete'));
+    return menu;
+  }
+  // 열려 있는 ⋯ 메뉴 DOM 제거 (보통 하나지만 안전하게 전부)
+  function closeRowMenu(){
+    var ms = document.querySelectorAll('#list .menu');
+    for (var i = 0; i < ms.length; i++) if (ms[i].parentNode) ms[i].parentNode.removeChild(ms[i]);
+  }
+  // 그 행에만 메뉴를 붙인다 (통째 render 안 함). 가려졌으면 같은 tick 에 스크롤 → 한 번에 나타남.
+  function openRowMenu(id){
+    closeRowMenu();
+    var row = rowForId(id);
+    if (!row){ render(); return; }   // 그 행이 DOM 에 없으면(접힌 시간대 등) 안전하게 통째로
+    row.querySelector('.rbody').appendChild(buildMenu(id));
+    roomScroll(row, true);
   }
 
   // "1530" "15:30" "15시30분" "15.30" → "15:30"
@@ -2345,11 +2360,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var chk = row.querySelector('.check');
     if (chk) chk.innerHTML = it.status === 'arrived' ? ICON_GO
                            : it.status === 'cancelled' ? ICON_OFF : '';
-    // 부분 갱신이라 통째 render 를 안 거친다 → 다른 행에 열려 있던 ⋯ 메뉴 DOM 이 남는다. 지운다.
-    var stale = document.querySelectorAll('#list .menu');
-    for (var si = 0; si < stale.length; si++){
-      if (stale[si].parentNode) stale[si].parentNode.removeChild(stale[si]);
-    }
+    closeRowMenu();   // 부분 갱신이라 다른 행에 열려 있던 ⋯ 메뉴 DOM 이 남는다 — 지운다
     var info = row.querySelector('.info');
     var old = info.querySelector('.tag');
     if (old) old.parentNode.removeChild(old);
@@ -2816,7 +2827,11 @@ window.dispatchEvent(new Event('fb-ready'));
     if (t.closest && (t.closest('.menu') || t.closest('.more'))) return;
     keepSlotOpenForId(openMenu);
     openMenu = null;
-    setTimeout(render, 0);        // 누른 동작이 먼저 처리된 뒤에 지운다
+    // 누른 동작이 먼저 처리된 뒤에 메뉴만 지운다 (통째 render 안 함)
+    setTimeout(function(){
+      closeRowMenu();
+      if (deferredState && !interactionActive()) render();
+    }, 0);
   }, true);
 
   // 체크와 ⋯ 는 손을 뗄 때(pointerup) 직접 처리한다.
@@ -3717,16 +3732,25 @@ window.dispatchEvent(new Event('fb-ready'));
     return;
   }
 
-  var lastPaint = '';
+  var tickSig = '', tickMin = -1;
   setInterval(function(){
     if (editing || openMenu) return;
     if (rolloverIfNeeded()) return;
     var changed = autoCancel();
-    // 화면에 나올 내용이 그대로면 다시 그리지 않는다 (시간대 표시는 분 단위면 충분하다)
-    var sig = JSON.stringify(state) + '|' + viewDate + '|' + Math.floor(nowMin());
-    if (!changed && sig === lastPaint) return;
-    lastPaint = sig;
-    render();
+    // 명단 내용이 바뀌었으면(자동취소 포함) 통째로 다시 그린다.
+    // itemsSig 는 화면에 영향 주는 필드만 본다 — ts 만 바뀐 쓰기로는 안 그린다.
+    var sig = (state ? itemsSig(state.items) : '') + '|' + viewDate;
+    if (changed || sig !== tickSig){
+      tickSig = sig; tickMin = Math.floor(nowMin());
+      render();
+      return;
+    }
+    // 시간만 흘렀으면 「지금 시간대」와 상단 요약만 손본다 (통째 render 안 함)
+    var m = Math.floor(nowMin());
+    if (m === tickMin) return;
+    tickMin = m;
+    repaintNow();
+    paintHead();
   }, 5000);
 
   // Firebase 모듈이 먼저 준비되면 바로, 아니면 준비 신호를 기다린다
