@@ -1716,11 +1716,14 @@ window.dispatchEvent(new Event('fb-ready'));
   function scrollAfterClose(o){
     if (!wrapEl || !o) return;
     var el = rowForId(o.id);
-    if (!o.reveal){
+    if (!o.reveal && el){
+      var rows = wrapEl.querySelectorAll('.row');
+      var idx = [].indexOf.call(rows, el);
       var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
-      if (maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
-        var rows = wrapEl.querySelectorAll('.row');
-        if (rows.length) el = rows[rows.length - 1];
+      // 폼이 접히며 아래 내용이 하단 바에 가릴 수 있는 건 목록 끝쪽 행을 고쳤을 때뿐이다.
+      // 위·가운데 행이면 그 행만 맞춘다 — 끝 행으로 스크롤하면 첫 행이 시간 머리글 뒤로 숨는다.
+      if (idx >= rows.length - 2 && maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
+        el = rows[rows.length - 1];
       }
     }
     if (el) roomScroll(el);
@@ -3436,7 +3439,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about">익선취향 예약 명단을 여러 직원이 함께 체크하는 앱입니다.</p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 폰에 반영</b>됩니다.</p>'
       + '<p class="about"><b>명단 복사</b>는 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.5.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
