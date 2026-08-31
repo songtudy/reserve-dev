@@ -1286,8 +1286,9 @@ window.dispatchEvent(new Event('fb-ready'));
      여러 기기가 겹쳐도 「최근 변경 내역」이 중복되지 않는다. */
   var WQ_KEY = 'ix-wq-v1:' + (IS_DEV ? 'dev' : 'prod');
   var WQ_OP_TIMEOUT = 10000;
-  var wqMap = wqRead();
-  var wqTimer = null, wqDelay = 3000, wqBusy = false;
+  var WQ_MAX_IDLE_RETRY = 20;   // 이만큼 연속으로 한 건도 못 보내면 자동 재시도만 멈춘다.
+  var wqMap = wqRead();          // 큐는 그대로 둔다 — 앱 복귀·재연결·새 변경 때 wqWake 가 다시 시도한다.
+  var wqTimer = null, wqDelay = 3000, wqBusy = false, wqIdleFails = 0;
 
   function wqRead(){
     try {
@@ -1326,6 +1327,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var date = viewDate, k = wqk(date, id);
     wqMap[k] = wqEntry(wqMap[k] || null, date, id, op, payload);
     wqSave();
+    wqIdleFails = 0;   // 새 변경 = 지금은 보낼 수 있다고 보고 재시도를 다시 연다
     wqFlush();
   }
   function wqValid(e){
@@ -1352,6 +1354,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function wqWake(){
     if (wqTimer){ clearTimeout(wqTimer); wqTimer = null; }
     wqDelay = 3000;
+    wqIdleFails = 0;   // 앱 복귀·재연결·다른 탭 변경 — 다시 보낼 만한 계기가 생겼다
     wqFlush();
   }
   function wqOnce(p){          // 각 쓰기에 시한을 둬 오프라인에서 매달리지 않게
@@ -1377,18 +1380,18 @@ window.dispatchEvent(new Event('fb-ready'));
              :                  wqOnce(fb().itemMerge(e.date, e.id, e.patch, e.ts, false));
       } catch(err){ return Promise.resolve(); }   // 큐 막힘 방지 — 다음 flush 에서 재시도
       return call.then(function(applied){ if (applied){ delete wqMap[k]; okCount++; } });
-    })).then(function(){
+    })).then(done, done);   // Promise.all 은 여기서 거부되지 않지만(각 항목이 늘 resolve), 대비해 같은 마무리
+    function done(){
       wqBusy = false;
       writesPending = Math.max(0, writesPending - 1);
       wqSave();
-      if (okCount) wqDelay = 3000;
-      if (Object.keys(wqMap).length) wqSchedule();
-    }, function(){
-      wqBusy = false;
-      writesPending = Math.max(0, writesPending - 1);
-      wqSave();
-      wqSchedule();
-    });
+      var left = Object.keys(wqMap).length;
+      if (okCount){ wqDelay = 3000; wqIdleFails = 0; }   // 하나라도 나갔으면 정상으로 본다
+      else if (left) wqIdleFails++;                      // 한 건도 못 보냄 = 연속 실패 누적
+      // 큐가 남았고 아직 포기 문턱 전이면 백오프 재시도를 건다.
+      // 문턱을 넘으면 타이머만 멈춘다 — 큐는 유지되고 wqWake(복귀·재연결·새 변경)가 다시 연다.
+      if (left && wqIdleFails < WQ_MAX_IDLE_RETRY) wqSchedule();
+    }
   }
 
   // 다른 탭이 큐에 얹었을 수 있다. 큐는 키 하나에 map 전체라, 통째로 갈아치우면 두 탭이
