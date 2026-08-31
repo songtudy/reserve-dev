@@ -172,6 +172,17 @@ window.setThemeChrome = function(t){
     background:var(--wait);color:var(--onWait);
     font-size:12px;font-weight:800;letter-spacing:.04em;line-height:1.2;
   }
+  /* 실사용이 아닌 곳(테스트/로컬/복사본)에서 열렸을 때 맨 위 경고 띠.
+     position:fixed 라 앱 셸(플렉스) 레이아웃엔 영향 없음. 서랍·팝업보다 위. */
+  #devBar{
+    position:fixed;top:0;left:0;width:100vw;z-index:9999;box-sizing:border-box;
+    background:#7c1d1d;color:#fff;text-align:center;pointer-events:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    font-size:11px;font-weight:700;line-height:1.35;letter-spacing:.06em;
+    padding:calc(env(safe-area-inset-top) + 3px) 8px 3px;
+  }
+  #devBar.hide{display:none}
   .offtag{
     display:none;align-items:center;flex:0 0 auto;
     padding:4px 9px;border-radius:8px;
@@ -644,6 +655,22 @@ window.setThemeChrome = function(t){
        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lgempty{font-size:14px;color:var(--dim);padding:6px 0 14px}
 
+  /* 명단 백업 내역 */
+  .bklist{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .bkrow{
+    display:flex;align-items:center;gap:8px;
+    padding:12px 0;border-top:1px solid var(--line);
+  }
+  .bkrow:first-child{border-top:0}
+  .bkt{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+  .bkn{font-size:12px;color:var(--dim);flex:0 0 auto}
+  /* 앱의 보조 버튼(.btn.ghost / 하단 '명단 복사')과 같은 계열 — 주황(.btn.primary)은 화면당 주동작 전용 */
+  .bkcopy{
+    flex:0 0 auto;padding:8px 14px;border:1px solid var(--line);border-radius:10px;
+    background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .bkcopy:active{background:var(--press)}
+
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
   .qrcard{
@@ -758,6 +785,8 @@ window.setThemeChrome = function(t){
 </head>
 <body>
 
+<div class="hide" id="devBar">테스트 DB · 실사용 명단 아님</div>
+
 <header>
     <div class="toprow">
       <div class="nav">
@@ -852,6 +881,7 @@ window.setThemeChrome = function(t){
   <div class="dwdays" id="dwDays"></div>
   <div class="dwsep"></div>
   <button type="button" class="dwitem" id="logBtn">최근 변경 내역</button>
+  <button type="button" class="dwitem" id="backupBtn">명단 백업 내역</button>
   <button type="button" class="dwitem" id="wifiBtn">Wi-Fi 안내</button>
   <div class="dwsep"></div>
   <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
@@ -885,7 +915,7 @@ window.setThemeChrome = function(t){
     <input type="text" id="dlgInput" placeholder="예" autocomplete="off" autocorrect="off" spellcheck="false">
     <div class="dbtn">
       <button type="button" id="dlgNo">취소</button>
-      <button type="button" id="dlgYes" disabled>초기화</button>
+      <button type="button" id="dlgYes" disabled>확인</button>
     </div>
   </div>
 </div>
@@ -923,8 +953,12 @@ const firebaseConfig = {
 };
 
 const db = getDatabase(initializeApp(firebaseConfig));
-// 주소에 -dev 가 들어 있으면 개발용. 명단 저장 위치를 따로 써서 실제 명단을 건드리지 않는다.
-const DEV = /-dev(\/|$)/.test(location.pathname);
+// dev/prod 판정 — 실제 배포 주소일 때만 prod, 그 외 전부 dev(roster-dev).
+// 실배포: songtudy.github.io/reserve/   테스트: songtudy.github.io/reserve-dev/
+// localhost·파일·미리보기·폴더 복사본·남의 fork = 전부 dev. 실명단을 건드리지 않는다.
+// (아래 IIFE 의 computeDev 와 같은 판정 — 둘 다 고쳐야 함)
+const DEV = !(location.hostname === 'songtudy.github.io'
+  && /^\/reserve(\/|$)/.test(location.pathname));
 const ROOT = DEV ? 'roster-dev' : 'roster';
 // Firebase 규칙이 허용하는 명단 영역 안에 변경 내역 전용 가지를 둔다.
 const LOGROOT = ROOT + '/__logs__';
@@ -938,7 +972,15 @@ const k32 = s => {
 const ipath = (ds, id) => ROOT + '/' + ds + '/items/' + k32(id);
 const itemsRef = ds => ref(db, ROOT + '/' + ds + '/items');
 
+// Firebase 서버 시계와 이 기기 시계의 차이(ms). "지금 몇 시/며칠이냐" 를 이 값으로 보정한다
+// (serverNow = Date.now() + __skewMs). 기기 시계가 틀려도 자동취소·자정넘어감·지금시간대·백업이
+// 서버 시계를 따르게. 서버 시계는 구글 인프라(NTP)라 실제 시각과 사실상 일치한다.
+let __skewMs = 0, __skewKnown = false;
+onValue(ref(db, '.info/serverTimeOffset'), s => { __skewMs = Number(s.val()) || 0; __skewKnown = true; });
+
 window.__fb = {
+  serverSkew: () => __skewMs,
+  serverSkewKnown: () => __skewKnown,
   // ---- 명단: 예약별 노드 (roster/<날짜>/items/<해시>) ----
   // 읽기는 구 형식(items 가 배열)도 그대로 처리된다. legacy=true 면 앱이 1회 변환해 쓴다.
   itemsGet: ds => get(itemsRef(ds)).then(s => {
@@ -974,6 +1016,12 @@ window.__fb = {
   // 오래된 날짜 정리용 (날짜 노드 목록·삭제)
   dayList: () => get(ref(db, ROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
   dayRemove: ds => remove(ref(db, ROOT + '/' + ds)),
+  // 명단 백업 — roster/__backup__/<날짜>/<키> = {at, sig, n, items:[...]}
+  // 무료 요금제라 Firebase 자동 백업이 없어서 앱이 스스로 스냅샷을 남긴다.
+  backupPut: (ds, key, data) => set(ref(db, ROOT + '/__backup__/' + ds + '/' + key), data),
+  backupList: ds => get(ref(db, ROOT + '/__backup__/' + ds)).then(s => s.exists() ? s.val() : {}),
+  backupDates: () => get(ref(db, ROOT + '/__backup__')).then(s => s.exists() ? Object.keys(s.val()) : []),
+  backupDelDate: ds => remove(ref(db, ROOT + '/__backup__/' + ds)),
   // 변경 내역 — 날짜별로 따로 쌓는다. id 를 앱이 정하므로(logSet) 같은 이벤트를 여러 대가
   // 써도 같은 자리에 덮여 한 줄로 합쳐진다 (상태 변경 이벤트는 id 가 결정적).
   logSet: (ds, id, entry) => set(ref(db, LOGROOT + '/' + ds + '/' + id), entry),
@@ -993,8 +1041,12 @@ window.dispatchEvent(new Event('fb-ready'));
 (function(){
   'use strict';
 
-  // 주소에 -dev 가 들어 있으면 개발용 (모듈 스크립트의 DEV 와 같은 판정, 스코프만 분리).
-  var IS_DEV = /-dev(\/|$)/.test(location.pathname);
+  // dev/prod 판정 — 실제 배포(songtudy.github.io/reserve/) 일 때만 prod, 그 외 전부 dev.
+  // 모듈 스크립트의 DEV 와 반드시 같은 판정 (둘 다 고쳐야 함). localStorage 스코프만 여기서 분리.
+  function computeDev(host, path){
+    return !(host === 'songtudy.github.io' && /^\/reserve(\/|$)/.test(path));
+  }
+  var IS_DEV = computeDev(location.hostname, location.pathname);
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
   var state = null;      // {date, items:[]}
@@ -1087,7 +1139,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function setCollapsed(time, v, done){ collapsed[time] = { v: v, done: done }; }
 
-  /* ---------- 날짜 ---------- */
+  /* ---------- 날짜 · 시간 ---------- */
   var KEEP_DAYS = 2; // 오늘 기준 이보다 오래된 날짜는 삭제
 
   var WEEKDAYS = ['일','월','화','수','목','금','토'];
@@ -1096,12 +1148,28 @@ window.dispatchEvent(new Event('fb-ready'));
   // "2026-08-29" → 그 날 자정의 Date (로컬)
   function parseYmd(ds){ var p = ds.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
 
-  // 오늘의 영업일. DAY_ROLLOVER=0 이라 자정에 넘어간다.
+  // "지금" 을 Firebase 서버 시계로 보정한 epoch(ms). 서버 시계를 아직 모르면 기기 시계 그대로.
+  //  → 자동취소·자정넘어감·지금시간대·백업시간대·로그시각 이 전부 이걸 쓴다.
+  //  → ts(충돌 해결용)·경과시간 타이머·롱프레스 등은 기기 Date.now() 그대로 (아래 설명).
+  function serverNow(){
+    return Date.now() + (typeof fb === 'function' && fb() && fb().serverSkew ? fb().serverSkew() : 0);
+  }
+  // epoch(ms) → 한국시간(KST=UTC+9, 서머타임 없음) 벽시계 조각.
+  // getUTC* 로 읽으므로 기기의 '시간대' 설정이 틀려 있어도(시각이 아니라 지역) 영향 없음.
+  function kstParts(ms){
+    var d = new Date(ms + 9 * 3600 * 1000);
+    return { y: d.getUTCFullYear(), mon: d.getUTCMonth(), day: d.getUTCDate(),
+             h: d.getUTCHours(), min: d.getUTCMinutes(), s: d.getUTCSeconds(), ms: d.getUTCMilliseconds() };
+  }
+  function nowParts(){ return kstParts(serverNow()); }
+
+  // 오늘의 영업일 (KST). DAY_ROLLOVER=0 이라 자정에 넘어간다.
   // (마감이 자정을 넘기게 되면 그 시각으로 올려 그때까지는 전날로 잡는다)
   function bizDate(){
-    var d = new Date();
-    if (d.getHours() < DAY_ROLLOVER) d.setDate(d.getDate() - 1);
-    return ymd(d);
+    var sn = serverNow(), t = sn + 9 * 3600 * 1000;
+    if (kstParts(sn).h < DAY_ROLLOVER) t -= 86400000;   // 마감이 자정 넘길 때만 (지금은 DAY_ROLLOVER=0)
+    var d = new Date(t);
+    return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
   }
   function shiftDate(ds, n){
     var d = parseYmd(ds);
@@ -1133,22 +1201,45 @@ window.dispatchEvent(new Event('fb-ready'));
     el.appendChild(a); el.appendChild(b);
   }
 
+  // 순수: 날짜 키 목록에서 '지워도 되는' 것만 고른다.
+  //  - 날짜 형식(YYYY-MM-DD)이 아닌 키는 무시(안 지움)
+  //  - '가장 최근 날짜' 는 절대 안 지운다 (누군가의 '오늘' 일 수 있으므로 — 시계 오류 방어)
+  //  - limit 보다 오래됐거나, futureLimit 이 주어졌는데 그보다 미래면 지움
+  function stalePurgeDates(keys, limit, futureLimit){
+    var ds = (keys || []).filter(function(k){ return /^\d{4}-\d{2}-\d{2}$/.test(k); }).sort();
+    var newest = ds[ds.length - 1];
+    return ds.filter(function(k){
+      return k !== newest && (k < limit || (futureLimit && k > futureLimit));
+    });
+  }
   // 오래된 날짜 정리
+  var lastPurgeAt = 0;
   function purgeOld(){
-    var limit = shiftDate(bizDate(), -KEEP_DAYS);
-    purgeOldLocalLogs(limit);
+    var limit = shiftDate(bizDate(), -KEEP_DAYS);   // bizDate 는 서버 시계 기준
+    purgeOldLocalLogs(limit);   // 이 기기 로컬 캐시만 — 다른 기기엔 영향 없음
     wqPurge();
     if (!hasStore()) return;
+    // ↓ 여기서부터는 서버(모든 기기 공용) 데이터를 지운다. 세 겹으로 막는다:
+    //  (1) 서버 시계를 아직 모르면(부팅 직후) 지우지 않는다 — bizDate 가 아직 기기 시계라서.
+    //      연결되면 onConnected 에서 purgeOld 를 다시 부르므로 이때 미뤄도 곧 처리된다.
+    //  (2) 서버 시계를 알아도 '가장 최근 날짜' 는 절대 안 지운다 (stalePurgeDates) — 어떤 버그든 방어.
+    //  (3) 10분 내 이미 서버 정리를 했으면 건너뛴다 — 재연결이 잦아도 큰 읽기를 반복하지 않게.
+    if (fb().serverSkewKnown && !fb().serverSkewKnown()) return;
+    if (Date.now() - lastPurgeAt < 10 * 60000) return;
+    lastPurgeAt = Date.now();
     fb().dayList().then(function(keys){
-      (keys || []).forEach(function(ds){
-        if (/^\d{4}-\d{2}-\d{2}$/.test(ds) && ds < limit) fb().dayRemove(ds).catch(function(){});
-      });
+      stalePurgeDates(keys, limit).forEach(function(ds){ fb().dayRemove(ds).catch(function(){}); });
     }).catch(function(){});
     if (fb().logList){
       fb().logList().then(function(keys){
-        (keys || []).forEach(function(ds){
-          if (!validLogDate(ds) || ds < limit || ds > bizDate()) fb().logRemove(ds).catch(function(){});
-        });
+        stalePurgeDates(keys, limit, bizDate()).forEach(function(ds){ fb().logRemove(ds).catch(function(){}); });
+      }).catch(function(){});
+    }
+    if (fb().backupDates){
+      // 백업은 짧게만 둔다 — 오늘+어제만. (한 기기 시계가 하루 빨라도 여유가 있게)
+      var bkLimit = shiftDate(bizDate(), -1);
+      fb().backupDates().then(function(keys){
+        stalePurgeDates(keys, bkLimit).forEach(function(ds){ fb().backupDelDate(ds).catch(function(){}); });
       }).catch(function(){});
     }
   }
@@ -1248,13 +1339,21 @@ window.dispatchEvent(new Event('fb-ready'));
       migratedDates[ds] = 1;
       fb().itemsReplace(ds, next.items).catch(function(){ migratedDates[ds] = 0; });
     }
-    // 서버가 기준. 단, 내가 방금 바꿨는데 아직 서버 반영이 안 돌아온 '기존' 항목은 내 값 유지
-    // (ts 최신 승리). 서버에 없는 항목은 건드리지 않는다 — 추가/삭제 왕복은 각자 알아서 붙는다.
+    // 서버가 기준. 단 두 가지는 내 쪽을 유지한다:
+    //  1) 서버에도 있는 항목인데 내가 방금 바꾼 게 더 최신(ts 비교)
+    //  2) 아직 서버로 못 간 내 변경 — 큐(wqMap)에 put 이면 화면에 유지, del 이면 화면에서 뺀다.
+    //     (왕복 사이에 다른 기기 변경이 끼어들어도, 방금 추가/삭제한 예약이 깜빡이지 않게)
     if (state && state.date === ds){
       var srv = {}; next.items.forEach(function(it){ srv[it.id] = it; });
       state.items.forEach(function(loc){
         var s = srv[loc.id];
+        var q = wqMap[wqk(ds, loc.id)];
         if (s && (loc.ts || 0) > (s.ts || 0)) srv[loc.id] = loc;
+        else if (!s && q && q.op === 'put') srv[loc.id] = loc;
+      });
+      Object.keys(wqMap).forEach(function(k){
+        var q = wqMap[k];
+        if (q && q.date === ds && q.op === 'del') delete srv[q.id];
       });
       next.items = Object.keys(srv).map(function(k){ return srv[k]; }).sort(sortItems);
     }
@@ -1421,6 +1520,54 @@ window.dispatchEvent(new Event('fb-ready'));
     fb().itemsReplace(ds, arr).catch(function(){}).then(function(){ writesPending = Math.max(0, writesPending - 1); });
   }
 
+  /* ---------- 명단 백업 ----------
+     roster/__backup__/<날짜>/<키> 에 명단 스냅샷을 남긴다. 매시간 :20 (자동취소 :15 뒤),
+     마지막 백업과 내용이 같으면 스킵. 키가 h12..h19 라 하루 최대 8개 + purgeOld 가
+     오늘·어제만 남기므로 별도 정리는 없다. 되돌리기도 없다 — 「명단 백업 내역」에서
+     그 시점 명단을 단톡방 양식으로 복사해 다시 붙여넣으면 된다. */
+  var BACKUP_MAX_TRIES = 3;                                               // 한 시간 안에서 백업 재시도 한도 (무한 재시도 방지)
+  var backupState = { sig: '', hour: -1, tries: 0, triesHour: -1 };       // 이 기기가 마지막으로 남긴 백업
+
+  function doBackup(key, done){
+    if (!connReady() || !state || !state.items.length || dayGap(viewDate) !== 0){ if (done) done(false); return; }
+    var ds = viewDate;
+    var snap = {
+      at: serverNow(),   // 어느 폰이 남겼든 시트에 같은 시각으로 보이게
+      sig: itemsSig(state.items),
+      n: state.items.length,
+      items: state.items.map(function(it){ return wqMerge(it, {}); })
+    };
+    writesPending++;
+    // wqOnce = 10초 시한. 오프라인에서 set() 프로미스가 매달려 writesPending 이 안 풀리는 걸 막는다.
+    wqOnce(fb().backupPut(ds, key, snap).then(function(){ return true; })).then(function(ok){
+      writesPending = Math.max(0, writesPending - 1);
+      if (ok) backupState.sig = snap.sig;
+      if (done) done(ok);
+    });
+  }
+  // 5초 인터벌에서 autoCancel 다음에 부른다
+  function maybeHourlyBackup(){
+    if (!connReady() || !state || !state.items.length || dayGap(viewDate) !== 0) return;  // 빈 명단은 백업 안 함
+    var p = nowParts(), h = p.h;                            // KST · 서버 시계
+    if (h < 12 || h > 19 || p.min < 20) return;             // 영업 12~19시대, 매시 :20 이후 한 번
+    if (backupState.hour === h) return;                     // 이 시간엔 이미 처리
+    var sig = itemsSig(state.items);
+    if (sig === backupState.sig){ backupState.hour = h; return; }   // 안 바뀜 → 이 시간 스킵
+    if (backupState.triesHour !== h){ backupState.tries = 0; backupState.triesHour = h; }  // 새 시간 = 카운터 리셋
+    backupState.hour = h;
+    doBackup('h' + h, function(ok){
+      if (ok){ backupState.tries = 0; return; }
+      // 실패 — 이 시간 안에서 BACKUP_MAX_TRIES 번까지만 다시 시도한다 (hour=-1 로 두면 다음 틱에 재시도).
+      // 규칙 거부처럼 계속 실패해도 5초마다 무한히 두드리지 않게. 그 다음은 다음 시간에 새로 시도.
+      if (++backupState.tries < BACKUP_MAX_TRIES) backupState.hour = -1;
+    });
+  }
+  // 백업은 오늘 것만 보관하므로(purgeOld) 시각만 보인다. at 은 serverNow() 라 KST 로 읽는다.
+  function backupWhen(at){
+    var p = kstParts(at);
+    return pad(p.h) + ':' + pad(p.min);
+  }
+
   // 연결 표시는 Firebase가 알려주는 실제 상태만 반영한다.
   // 개별 읽기·쓰기 실패로는 켜지 않는다 — 잠깐 끊겼다 붙는 동안 계속 떠 있게 되므로.
   var online = false;
@@ -1448,7 +1595,7 @@ window.dispatchEvent(new Event('fb-ready'));
   //  - 비정각 예약   : 그 시각이 되면 (5초)
   // 어느 쪽이든 그 시간대를 다 체크하면 그 즉시 넘어간다.
   var GRACE_ON_HOUR = 11, GRACE_OFF_HOUR = 5/60;
-  var AUTO_CANCEL_MIN = 20;    // 예약 시각에서 이만큼 지나도 체크가 없으면 취소
+  var AUTO_CANCEL_MIN = 15;    // 예약 시각에서 이만큼 지나도 체크가 없으면 취소 (직원 :10 컷의 백스톱)
   var AUTO_CANCEL_WINDOW = 1;  // 그 순간에만 한 번. 지나간 시간대를 뒤늦게 훑지 않는다
 
   // 예약 시간 선택 범위 — 예약 추가·수정 폼 공용. (영업 11:45–21:00, 예약 12–19시,
@@ -1460,9 +1607,10 @@ window.dispatchEvent(new Event('fb-ready'));
     return s;
   }
 
+  // 지금이 그 날의 몇 분째인가 (KST, 서버 시계 기준). 자동취소·지금시간대 판정에 쓴다.
   function nowMin(){
-    var d = new Date();
-    return d.getHours()*60 + d.getMinutes() + d.getSeconds()/60 + d.getMilliseconds()/60000;
+    var p = nowParts();
+    return p.h * 60 + p.min + p.s / 60 + p.ms / 60000;
   }
   function slotMin(hm){
     var p = hm.split(':');
@@ -2270,11 +2418,11 @@ window.dispatchEvent(new Event('fb-ready'));
   // 안 주면 랜덤 id — 동시 중복이 있을 수 없는 이벤트(예약 추가·삭제·메모·명단 등록 등)용.
   function logAdd(kind, what, key){
     if (dayGap(viewDate) !== 0) return;      // 오늘 명단만 기록한다
-    var d = new Date();
+    var sn = serverNow(), p = kstParts(sn);   // 서버 시계 — 폰마다 시각이 달라도 로그 순서·표시 일관
     var entry = cleanLogEntry({
       id: key ? logKeyId(key) : logEventId(),
-      at: Date.now(),
-      t: pad(d.getHours()) + ':' + pad(d.getMinutes()),
+      at: sn,
+      t: pad(p.h) + ':' + pad(p.min),
       k: kind,
       s: what || ''
     }, true);
@@ -2445,8 +2593,9 @@ window.dispatchEvent(new Event('fb-ready'));
     if (it.status !== st){
       var kind = st === 'arrived' ? '방문' : st === 'cancelled' ? '취소' : '체크 해제';
       // 두 직원이 같은 행을 동시에 눌러도 한 줄. 2분 단위로 묶어 나중의 재-토글은 별도 줄로.
+      // 버킷은 '서버 시계' 기준 — 두 폰 시각이 몇 분 달라도 같은 버킷 → 같은 id → 한 줄.
       logAdd(kind, it.time + ' ' + it.name,
-             'st:' + id + ':' + st + ':' + Math.round(Date.now() / 120000));
+             'st:' + id + ':' + st + ':' + Math.round(serverNow() / 120000));
     }
     var ts = Date.now();
     it.status = st;
@@ -2643,9 +2792,9 @@ window.dispatchEvent(new Event('fb-ready'));
   function openAdd(){
     if (discardEditing()) render();
     if (!panel.classList.contains('hide')) closePaste();
-    // 기본값 — 정각 기준. 상단 시간이 넘어가는 규칙(정각 11분)과 같이 움직인다.
-    var t = new Date(), hh = t.getHours();
-    if (t.getMinutes() >= GRACE_ON_HOUR) hh += 1;
+    // 기본값 — 정각 기준. 상단 시간이 넘어가는 규칙(정각 11분)과 같이 움직인다. (KST · 서버 시계)
+    var p = nowParts(), hh = p.h;
+    if (p.min >= GRACE_ON_HOUR) hh += 1;
     if (hh < HOUR_MIN) hh = HOUR_MIN;
     if (hh > HOUR_MAX) hh = HOUR_MAX;
     aHour.value = pad(hh); aMin.value = '00';
@@ -2775,11 +2924,12 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   var scrim = document.getElementById('scrim');
-  function confirmDlg(title, onYes){
+  function confirmDlg(title, onYes, yesLabel){
     var yes = document.getElementById('dlgYes');
     var no  = document.getElementById('dlgNo');
     var inp = document.getElementById('dlgInput');
     document.getElementById('dlgTitle').textContent = title;
+    yes.textContent = yesLabel || '확인';
     inp.value = '';
     yes.disabled = true;
     scrim.classList.remove('hide');
@@ -2813,7 +2963,7 @@ window.dispatchEvent(new Event('fb-ready'));
       render();
       replaceItems([]);   // items 노드 삭제
 
-    });
+    }, '초기화');
   });
 
   document.getElementById('loadBtn').addEventListener('click', function(){
@@ -2971,6 +3121,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function resetDateScopedUi(){
     editing = null; openMenu = null; collapsed = {}; touched = {};
     deferredState = null; backgroundRenderPending = false;
+    backupState = { sig: '', hour: -1, tries: 0, triesHour: -1 };   // 백업 추적도 날짜별
     stopWatch();
     rosterLoadEpoch++;
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
@@ -3016,10 +3167,12 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   });
 
-  // 개발용 폴더에서 열렸으면 표시해 둔다. 실제 앱과 헷갈리지 않게.
+  // 실사용이 아닌 곳에서 열렸으면 표시해 둔다. 실제 앱과 헷갈리지 않게.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
     if (dt) dt.classList.remove('hide');
+    var db_ = document.getElementById('devBar');
+    if (db_) db_.classList.remove('hide');
   }
 
   /* ---------- 테마 ---------- */
@@ -3313,31 +3466,35 @@ window.dispatchEvent(new Event('fb-ready'));
   sheetScrim.addEventListener('click', function(e){ if (e.target === sheetScrim) closeSheet(); });
 
   var FAQ = [
-    ['명단은 어떻게 올리나요?',
-      '단톡방 예약 명단을 복사해 <em>명단 붙여넣기</em> 칸에 넣고 <em>명단 등록</em>을 누릅니다.\n'
-      + '「14:00 홍길동 2명」 형식이면 됩니다.'],
-    ['예약은 어떻게 고치나요?',
+    ['명단은 어떻게 등록하나요?',
+      '단톡방에 올라온 예약 명단을 복사해 <em>명단 붙여넣기</em>에 넣고 <em>명단 등록</em>을 누릅니다.\n'
+      + '「14:00 임동현 2명」 형식이면 됩니다.'],
+    ['예약은 어떻게 수정하나요?',
       '이름 오른쪽 ⋯ 에서 <em>방문·취소·수정·삭제</em>를 할 수 있습니다.\n'
-      + '시간을 바꾸면 해당 시간대로 옮겨갑니다.'],
-    ['메모는 어떻게 다나요?',
+      + '시간을 바꾸면 해당 시간대로 자동으로 옮겨갑니다.'],
+    ['메모는 어떻게 남기나요?',
       '<em>예약 추가</em>나 ⋯ → <em>수정</em>의 메모 칸에 적습니다.\n'
-      + '이름 아래 노란 글씨로 보이며, 명단 복사에는 들어가지 않습니다.'],
+      + '이름 아래에 보이며, 명단 복사에는 들어가지 않습니다.'],
     ['시간대는 언제 접히나요?',
-      '남은 팀이 없으면 5초 뒤에 접힙니다.\n'
+      '남은 예약이 없으면 5초 뒤에 자동으로 접힙니다.\n'
       + '체크를 풀면 다시 펼쳐지고, 직접 접거나 편 것은 그대로 유지됩니다.'],
     ['맨 위 시간대는 언제 넘어가나요?',
-      '그 시간대를 다 체크하면 바로 넘어갑니다.\n'
-      + '남아 있으면 정각 예약은 11분 뒤에, 그 외에는 예약 시각에 넘어갑니다.'],
-    ['안 온 손님은 어떻게 되나요?',
-      '예약 시각에서 20분이 지나도 체크가 없으면 자동으로 취소됩니다.\n'
-      + '늦게 오신 손님은 체크 칸을 누르면 방문으로 바뀝니다.'],
+      '그 시간대 예약을 모두 체크하면 바로 다음 시간대로 넘어갑니다.\n'
+      + '남은 예약이 있으면 정각 예약은 11분 뒤에, 그 외에는 예약 시각에 넘어갑니다.'],
+    ['손님이 오지 않으면 어떻게 되나요?',
+      '예약 시각에서 15분이 지나도 체크가 없으면 자동으로 취소됩니다.\n'
+      + '늦게 도착한 손님은 체크하면 방문으로 바뀝니다.'],
     ['연결이 끊기면 어떻게 되나요?',
-      '맨 위에 <em>연결 안 됨</em>이 표시됩니다.\n'
-      + '바꾼 내용은 폰에 저장됐다가 다시 연결되면 올라가니, 계속 쓰셔도 됩니다.'],
-    ['누가 뭘 바꿨는지 볼 수 있나요?',
+      '화면 위에 <em>연결 안 됨</em>이 표시됩니다.\n'
+      + '바꾼 내용은 기기에 저장됐다가 다시 연결되면 자동으로 올라갑니다.'],
+    ['누가 바꿨는지 확인할 수 있나요?',
       '왼쪽 위 메뉴 → <em>최근 변경 내역</em>에서 오늘 바뀐 내용(최근 10건)을 볼 수 있습니다.'],
+    ['명단이 잘못되거나 사라지면?',
+      '왼쪽 위 메뉴 → <em>명단 백업 내역</em>에서 원하는 시점을 골라 <em>명단 복사</em>를 누릅니다.\n'
+      + '복사한 명단을 <em>명단 붙여넣기</em>에 넣어 다시 등록하면 됩니다.\n'
+      + '명단은 낮 12시 20분부터 저녁 7시 20분까지 매시간 자동으로 백업됩니다.'],
     ['날짜는 언제 바뀌나요?',
-      '자정에 바뀝니다.\n'
+      '자정에 자동으로 바뀝니다.\n'
       + '어제 명단은 왼쪽 위 메뉴에서 볼 수 있고, 이틀이 지나면 지워집니다.']
   ];
   var CHEV = '<span class="qchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>';
@@ -3424,6 +3581,46 @@ window.dispatchEvent(new Event('fb-ready'));
     startLogWatch(viewDate);
   });
 
+  function backupSheetHtml(map){
+    var rows = Object.keys(map || {})
+      .map(function(k){ return { key: k, s: map[k] }; })
+      .filter(function(r){ return r.s && r.s.items; })
+      .sort(function(a, b){ return (b.s.at || 0) - (a.s.at || 0); });
+    if (!rows.length) return '<p class="lgempty">백업 내역이 없습니다</p>';
+    return '<div class="bklist">' + rows.map(function(r){
+      return '<div class="bkrow">'
+        + '<span class="bkt">' + esc(backupWhen(r.s.at)) + '</span>'
+        + '<span class="bkn num">' + (r.s.n || 0) + '건</span>'
+        + '<button type="button" class="bkcopy" data-key="' + esc(r.key) + '">명단 복사</button></div>';
+    }).join('') + '</div>';
+  }
+  function openBackupSheet(){
+    openSheet('명단 백업 내역', '<p class="lgempty">불러오는 중…</p>');
+    var titled = function(){ return document.getElementById('sheetTitle').textContent === '명단 백업 내역'; };
+    var show = function(html){ var b = document.getElementById('sheetBody'); if (b && titled()) b.innerHTML = html; };
+    if (!connReady()){ show('<p class="lgempty">연결되면 볼 수 있습니다</p>'); return; }
+    var settled = false;
+    var fail = function(){ if (!settled){ settled = true; show('<p class="lgempty">불러오지 못했습니다</p>'); } };
+    setTimeout(fail, 8000);   // 응답이 없어 '불러오는 중…' 에 멈춰 있지 않게
+    fb().backupList(viewDate).then(function(map){
+      if (settled) return;
+      settled = true;
+      if (!titled()) return;
+      var body = document.getElementById('sheetBody');
+      body.innerHTML = backupSheetHtml(map);
+      [].forEach.call(body.querySelectorAll('.bkcopy'), function(btn){
+        btn.onclick = function(){
+          var s = map[btn.getAttribute('data-key')];
+          copyText(reportText(s && s.items), (s && s.n || 0) + '건 복사됨');
+        };
+      });
+    }, fail);
+  }
+  document.getElementById('backupBtn').addEventListener('click', function(){
+    hideDrawer();
+    openBackupSheet();
+  });
+
   document.getElementById('wifiBtn').addEventListener('click', function(){
     hideDrawer();
     openSheet('Wi-Fi 안내', wifiHtml());
@@ -3436,10 +3633,10 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('aboutBtn').addEventListener('click', function(){
     hideDrawer();
     openSheet('익순이란?',
-      '<p class="about">익선취향 예약 명단을 여러 직원이 함께 체크하는 앱입니다.</p>'
-      + '<p class="about">바뀐 내용은 <b>1초 안에 모든 폰에 반영</b>됩니다.</p>'
-      + '<p class="about"><b>명단 복사</b>는 단톡방 양식 그대로 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.5.2<br>© 2026 Jumin Labs</p>');
+      '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
+      + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
+      + '<p class="about">명단을 복사하면 <b>단톡방에 올라오는 양식 그대로</b> 복사됩니다.</p>'
+      + '<p class="credit">익순이 v1.6.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3499,10 +3696,12 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   // 보고용 텍스트 — 체크 안 된 건 뒤에 아무것도 안 붙임
-  function reportText(){
-    if (!state || !state.items.length) return '';
+  // items 를 주면 그 명단을, 안 주면 현재 화면 명단을 단톡방 양식 텍스트로.
+  function reportText(items){
+    var list = items || (state ? state.items : null);
+    if (!list || !list.length) return '';
     var prev = null, out = [];
-    state.items.slice().sort(sortItems).forEach(function(it){
+    list.slice().sort(sortItems).forEach(function(it){
       if (prev !== null && it.time !== prev) out.push('');
       prev = it.time;
       var tail = it.status === 'arrived' ? ' 방문'
@@ -3512,15 +3711,18 @@ window.dispatchEvent(new Event('fb-ready'));
     return out.join('\n');
   }
 
-  document.getElementById('copyBtn').addEventListener('click', function(){
-    var txt = reportText();
-    if (!txt){ toast('명단이 없습니다'); return; }
-    var done = function(){ toast(state.items.length + '건 복사됨'); };
+  function copyText(txt, okMsg){
+    if (!txt){ toast('내용이 없습니다'); return; }
+    var done = function(){ toast(okMsg); };
     if (navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).then(done).catch(function(){ fallbackCopy(txt, done); });
     } else {
       fallbackCopy(txt, done);
     }
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    copyText(reportText(), (state ? state.items.length : 0) + '건 복사됨');
   });
 
   function fallbackCopy(txt, done){
@@ -3549,7 +3751,7 @@ window.dispatchEvent(new Event('fb-ready'));
       boot._watched = true;
       fb().onConnected(function(ok){
         setSync(ok);
-        if (ok){ wakeLogOutbox(); wqWake(); }
+        if (ok){ wakeLogOutbox(); wqWake(); purgeOld(); }   // 연결됨 = 서버 시계 확보 → 부팅 때 미룬 정리 재시도
       });
     }
     setSync(hasStore());
@@ -3661,6 +3863,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (b === lastBiz) return false;
     var wasToday = (viewDate === lastBiz);   // 오늘을 보고 있었나
     lastBiz = b;
+    lastPurgeAt = 0;   // 날짜가 바뀌었으니 10분 스로틀 무시하고 반드시 한 번 정리
     purgeOld();
     // 어제·내일을 일부러 보고 있었다면 그대로 둔다. 보던 화면을 뺏지 않는다.
     if (!wasToday){ renderDrawerDays(); renderWhenIdle(); return false; }
@@ -3681,18 +3884,20 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   // 시간대 자동 전환 + 날짜 넘어감 확인
-  // 예약 시각에서 20분이 지나도 체크가 없으면 취소로 넘긴다.
+  // 예약 시각에서 15분이 지나도 체크가 없으면 취소로 넘긴다.
   // 노쇼도 취소로 처리하는 운영이라 직원이 어차피 누를 것을 대신 눌러주는 셈이다.
+  // 이 예약이 지금(now, 분 단위) 자동취소 대상인가.
+  // 대기 상태 + 예약시각 + AUTO_CANCEL_MIN 이 지난 1분 창 안. 지나간 시간대는 사람 몫이라 제외.
+  function autoCancelDue(it, now){
+    if (!it || it.status !== 'pending') return false;
+    var late = now - (slotMin(it.time) + AUTO_CANCEL_MIN);
+    return late >= 0 && late < AUTO_CANCEL_WINDOW;
+  }
   function autoCancel(){
     if (!state || dayGap(viewDate) !== 0) return false;   // 오늘 명단에서만
     var now = nowMin(), hit = [];
-    state.items.forEach(function(it){
-      if (it.status !== 'pending') return;
-      var late = now - (slotMin(it.time) + AUTO_CANCEL_MIN);
-      // 20분이 되는 그 순간에만 처리한다. 이미 지나간 시간대는 사람이 판단할 몫.
-      // (저녁에 하루치 명단을 한꺼번에 넣어도 낮 시간대가 무더기로 취소되지 않는다)
-      if (late >= 0 && late < AUTO_CANCEL_WINDOW) hit.push(it);
-    });
+    // (저녁에 하루치 명단을 한꺼번에 넣어도 낮 시간대가 무더기로 취소되지 않는다)
+    state.items.forEach(function(it){ if (autoCancelDue(it, now)) hit.push(it); });
     if (!hit.length) return false;
     hit.forEach(function(it){
       // 한 예약(=시각·이름)의 자동 취소는 하루에 딱 한 번뿐이다. 그 시각·이름으로 로그 id 를
@@ -3716,12 +3921,13 @@ window.dispatchEvent(new Event('fb-ready'));
       parse: parse, normTime: normTime, sortItems: sortItems,
       pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
       tallyStatus: tallyStatus, dayTally: dayTally,
-      slotMin: slotMin, slotLive: slotLive, groupByTime: groupByTime, liveNowTime: liveNowTime,
+      slotMin: slotMin, slotLive: slotLive, nowMin: nowMin, groupByTime: groupByTime, liveNowTime: liveNowTime,
       esc: esc, hourOptions: hourOptions,
       validLogDate: validLogDate, cleanLogEntry: cleanLogEntry, logIdentity: logIdentity,
       logKeyId: logKeyId, mergeLogRows: mergeLogRows,
       reportText: reportText, uniqueId: uniqueId, nextSeq: nextSeq, isCollapsed: isCollapsed,
-      rltSteps: rltSteps, wqEntry: wqEntry,
+      rltSteps: rltSteps, wqEntry: wqEntry, computeDev: computeDev, autoCancelDue: autoCancelDue,
+      stalePurgeDates: stalePurgeDates, kstParts: kstParts,
       consts: { COLLAPSE_DELAY: COLLAPSE_DELAY, AUTO_CANCEL_MIN: AUTO_CANCEL_MIN,
                 GRACE_ON_HOUR: GRACE_ON_HOUR, GRACE_OFF_HOUR: GRACE_OFF_HOUR,
                 HOUR_MIN: HOUR_MIN, HOUR_MAX: HOUR_MAX, KEEP_DAYS: KEEP_DAYS,
@@ -3743,6 +3949,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (editing || openMenu) return;
     if (rolloverIfNeeded()) return;
     var changed = autoCancel();
+    maybeHourlyBackup();   // autoCancel 반영된 상태를 :20 백업이 잡게 — 순서 보장
     // 명단 내용이 바뀌었으면(자동취소 포함) 통째로 다시 그린다.
     // itemsSig 는 화면에 영향 주는 필드만 본다 — ts 만 바뀐 쓰기로는 안 그린다.
     var sig = (state ? itemsSig(state.items) : '') + '|' + viewDate;
