@@ -93,7 +93,13 @@ window.setThemeChrome = function(t){
     -webkit-font-smoothing:antialiased;
     touch-action:manipulation;        /* 두 번 탭 확대 방지 */
     -webkit-text-size-adjust:100%;
+    /* 탭이 잦은 매장용 앱 — 길게 눌러도 텍스트 선택·복사·조회 팝업이 안 뜨게 한다.
+       입력칸과 Wi-Fi 정보만 예외로 선택을 허용한다(아래). */
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;user-select:none;
   }
+  input, textarea{ -webkit-user-select:text;user-select:text }
+  .wnet .v{ -webkit-user-select:text;user-select:text;-webkit-touch-callout:default }
   /* 키보드가 올라오면 하단 바를 숨긴다 (어차피 키보드 뒤라 못 쓴다).
      상단 헤더는 늘 유지 — 숨겼다 되살리면 화면이 튄다. */
   body.keyboard-open > .foot{display:none}
@@ -840,7 +846,7 @@ window.setThemeChrome = function(t){
 <div class="drawerScrim off" id="drawerScrim"></div>
 <aside class="drawer" id="drawer" aria-label="메뉴">
   <div class="dwtitle">
-    <img class="dwico" src="apple-touch-icon.png" alt="" width="36" height="36">
+    <img class="dwico" src="apple-touch-icon.png" alt="" width="36" height="36" draggable="false">
     <span class="dwnames"><span class="dwname">익순이</span><span class="dwsubtitle">익선취향 예약 매니저</span></span>
   </div>
   <div class="dwdays" id="dwDays"></div>
@@ -3203,8 +3209,10 @@ window.dispatchEvent(new Event('fb-ready'));
     document.getElementById('rltClose').addEventListener('click', close);
     rltScrim.addEventListener('click', function(e){ if (e.target === rltScrim && !spinning) close(); });
 
-    // 진입: 서랍 맨 위 아이콘 롱프레스 (0.65초)
+    // 진입: 서랍 맨 위 아이콘 롱프레스 (0.65초).
+    // <img> 라 안드로이드·데스크톱은 길게 누르면 「이미지 저장/복사」 메뉴가 떠 롱프레스를 가로챈다 → 막는다.
     var ico = document.querySelector('.dwico');
+    ico.addEventListener('contextmenu', function(e){ e.preventDefault(); });
     var timer = null, sx = 0, sy = 0;
     function cancel(){ if (timer){ clearTimeout(timer); timer = null; } }
     ico.addEventListener('pointerdown', function(e){
