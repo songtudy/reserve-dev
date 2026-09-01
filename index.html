@@ -776,7 +776,7 @@ window.setThemeChrome = function(t){
     position:fixed;left:50%;bottom:calc(84px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);
     background:var(--panel2);border:1px solid var(--line);
     padding:9px 15px;border-radius:99px;font-size:13px;
-    opacity:0;pointer-events:none;transition:.2s;z-index:40;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:.2s;z-index:200;white-space:nowrap;
   }
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
   .hide{display:none !important}
@@ -3611,7 +3611,7 @@ window.dispatchEvent(new Event('fb-ready'));
       [].forEach.call(body.querySelectorAll('.bkcopy'), function(btn){
         btn.onclick = function(){
           var s = map[btn.getAttribute('data-key')];
-          copyText(reportText(s && s.items), (s && s.n || 0) + '건 복사됨');
+          copyText(reportText(s && s.items), '명단 복사됨 · ' + (s && s.n || 0) + '건');
         };
       });
     }, fail);
@@ -3636,7 +3636,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방에 올라오는 양식 그대로</b> 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.6.2<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.6.3<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3722,7 +3722,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   document.getElementById('copyBtn').addEventListener('click', function(){
-    copyText(reportText(), (state ? state.items.length : 0) + '건 복사됨');
+    copyText(reportText(), '명단 복사됨 · ' + (state ? state.items.length : 0) + '건');
   });
 
   function fallbackCopy(txt, done){
