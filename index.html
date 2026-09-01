@@ -1019,6 +1019,8 @@ window.__fb = {
   // 명단 백업 — roster/__backup__/<날짜>/<키> = {at, sig, n, items:[...]}
   // 무료 요금제라 Firebase 자동 백업이 없어서 앱이 스스로 스냅샷을 남긴다.
   backupPut: (ds, key, data) => set(ref(db, ROOT + '/__backup__/' + ds + '/' + key), data),
+  // 이 시간 슬롯 백업이 이미 있나 — at 필드 하나만 읽는다 (덮어쓰기 전 확인용).
+  backupHas: (ds, key) => get(ref(db, ROOT + '/__backup__/' + ds + '/' + key + '/at')).then(s => s.exists()),
   backupList: ds => get(ref(db, ROOT + '/__backup__/' + ds)).then(s => s.exists() ? s.val() : {}),
   backupDates: () => get(ref(db, ROOT + '/__backup__')).then(s => s.exists() ? Object.keys(s.val()) : []),
   backupDelDate: ds => remove(ref(db, ROOT + '/__backup__/' + ds)),
@@ -1521,12 +1523,13 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   /* ---------- 명단 백업 ----------
-     roster/__backup__/<날짜>/<키> 에 명단 스냅샷을 남긴다. 매시간 :20 (자동취소 :15 뒤),
-     마지막 백업과 내용이 같으면 스킵. 키가 h12..h19 라 하루 최대 8개 + purgeOld 가
-     오늘·어제만 남기므로 별도 정리는 없다. 되돌리기도 없다 — 「명단 백업 내역」에서
-     그 시점 명단을 단톡방 양식으로 복사해 다시 붙여넣으면 된다. */
-  var BACKUP_MAX_TRIES = 3;                                               // 한 시간 안에서 백업 재시도 한도 (무한 재시도 방지)
-  var backupState = { sig: '', hour: -1, tries: 0, triesHour: -1 };       // 이 기기가 마지막으로 남긴 백업
+     roster/__backup__/<날짜>/<키> 에 명단 스냅샷을 남긴다. 매시간 :20 (자동취소 :15 뒤).
+     한 시간 슬롯(h12..h19)은 한 번 만들어지면 안 건드린다 — 첫 저장이 그 시간의 기록.
+     앱을 껐다 켜거나 다른 폰이 붙어도, 있던 스냅샷을 지금 상태로 덮어쓰지 않는다.
+     하루 최대 8개 + purgeOld 가 오늘·어제만 남기므로 별도 정리는 없다. 되돌리기도 없다 —
+     「명단 백업 내역」에서 그 시점 명단을 단톡방 양식으로 복사해 다시 붙여넣으면 된다. */
+  var BACKUP_MAX_TRIES = 3;                                        // 한 시간 안에서 재시도(확인·쓰기) 한도
+  var backupState = { hour: -1, tries: 0, triesHour: -1 };         // hour = 이번 세션에서 처리 끝난 시간
 
   function doBackup(key, done){
     if (!connReady() || !state || !state.items.length || dayGap(viewDate) !== 0){ if (done) done(false); return; }
@@ -1541,7 +1544,6 @@ window.dispatchEvent(new Event('fb-ready'));
     // wqOnce = 10초 시한. 오프라인에서 set() 프로미스가 매달려 writesPending 이 안 풀리는 걸 막는다.
     wqOnce(fb().backupPut(ds, key, snap).then(function(){ return true; })).then(function(ok){
       writesPending = Math.max(0, writesPending - 1);
-      if (ok) backupState.sig = snap.sig;
       if (done) done(ok);
     });
   }
@@ -1550,15 +1552,19 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!connReady() || !state || !state.items.length || dayGap(viewDate) !== 0) return;  // 빈 명단은 백업 안 함
     var p = nowParts(), h = p.h;                            // KST · 서버 시계
     if (h < 12 || h > 19 || p.min < 20) return;             // 영업 12~19시대, 매시 :20 이후 한 번
-    if (backupState.hour === h) return;                     // 이 시간엔 이미 처리
-    var sig = itemsSig(state.items);
-    if (sig === backupState.sig){ backupState.hour = h; return; }   // 안 바뀜 → 이 시간 스킵
+    if (backupState.hour === h) return;                     // 이 시간엔 이미 처리(서버 확인 중 포함)
     if (backupState.triesHour !== h){ backupState.tries = 0; backupState.triesHour = h; }  // 새 시간 = 카운터 리셋
-    backupState.hour = h;
-    doBackup('h' + h, function(ok){
-      if (ok){ backupState.tries = 0; return; }
-      // 실패 — 이 시간 안에서 BACKUP_MAX_TRIES 번까지만 다시 시도한다 (hour=-1 로 두면 다음 틱에 재시도).
-      // 규칙 거부처럼 계속 실패해도 5초마다 무한히 두드리지 않게. 그 다음은 다음 시간에 새로 시도.
+    backupState.hour = h;                                   // 확인 끝날 때까지 재진입 막기
+    // 이 시간 백업이 서버에 이미 있으면 그대로 둔다. 없을 때만 새로 만든다.
+    fb().backupHas(viewDate, 'h' + h).then(function(exists){
+      if (exists) return;                                   // 이미 있음 → 이 시간 끝
+      doBackup('h' + h, function(ok){
+        if (ok) return;
+        // 쓰기 실패 — 이 시간 안에서 BACKUP_MAX_TRIES 번까지만 재시도 (hour=-1 → 다음 틱).
+        if (++backupState.tries < BACKUP_MAX_TRIES) backupState.hour = -1;
+      });
+    }).catch(function(){
+      // 확인 실패 — 마찬가지로 몇 번만 다시 (계속 실패해도 5초마다 무한히 두드리지 않게).
       if (++backupState.tries < BACKUP_MAX_TRIES) backupState.hour = -1;
     });
   }
@@ -3121,7 +3127,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function resetDateScopedUi(){
     editing = null; openMenu = null; collapsed = {}; touched = {};
     deferredState = null; backgroundRenderPending = false;
-    backupState = { sig: '', hour: -1, tries: 0, triesHour: -1 };   // 백업 추적도 날짜별
+    backupState = { hour: -1, tries: 0, triesHour: -1 };   // 백업 추적도 날짜별
     stopWatch();
     rosterLoadEpoch++;
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
@@ -3636,7 +3642,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방에 올라오는 양식 그대로</b> 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.6.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.6.4<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
