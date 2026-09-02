@@ -3846,11 +3846,12 @@ window.dispatchEvent(new Event('fb-ready'));
   try {
     if (sessionStorage.getItem('ix-updated')){
       sessionStorage.removeItem('ix-updated');
-      setTimeout(function(){ toast('새 버전으로 바뀌었어요'); }, 700);
+      setTimeout(function(){ toast('업데이트되었어요'); }, 700);
     }
   } catch(e){}
 
   function checkUpdate(){
+    if (updShown) return Promise.resolve(false);   // 이미 알렸으면 더 안 물어본다
     return fetchTag().then(function(tag){
       if (!tag) return false;
       if (!buildTag){ buildTag = tag; return false; }
