@@ -662,7 +662,8 @@ window.setThemeChrome = function(t){
   .bkt{flex:0 0 46px;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .bksum{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* 방문 초록 · 취소 빨강 — 시트 안 어디서나 (목록 요약·상세 명단 공용). 상단 「방문 n·취소 n」과 동일 */
+  /* 방문 초록 · 취소 빨강 — 「지난 명단」 목록의 요약(.bksum) 용. 상단 「방문 n·취소 n」과 같은 색.
+     (상세 명단은 .bkvrow.go/.off 로 따로 처리) */
   #sheetBody em.go, #sheetBody em.off{font-style:normal;font-weight:700}
   #sheetBody em.go{color:var(--goTx)}
   #sheetBody em.off{color:var(--warn)}
