@@ -566,11 +566,20 @@ window.setThemeChrome = function(t){
     width:100%;max-width:520px;
     background:var(--panel);border:1px solid var(--line);border-bottom:0;
     border-radius:18px 18px 0 0;
-    padding:20px 18px calc(env(safe-area-inset-bottom) + 16px);
+    padding:20px 18px 0;
     max-height:82vh;overflow-y:auto;
   }
-  .sheet h3{margin:0 0 14px;font-size:17px;font-weight:800;letter-spacing:-.02em}
-  .sheetBtns{display:flex;gap:8px}
+  /* 제목·버튼은 스크롤돼도 안 사라지게 시트에 고정 (긴 FAQ·명단에서도 닫기·‹ 항상 보임) */
+  .sheet h3{
+    margin:0;padding-bottom:11px;font-size:17px;font-weight:800;letter-spacing:-.02em;
+    position:sticky;top:0;background:var(--panel);z-index:1;
+  }
+  .sheetBtns{
+    display:flex;gap:8px;
+    position:sticky;bottom:0;background:var(--panel);
+    border-top:1px solid var(--line);margin-top:6px;
+    padding:12px 0 calc(env(safe-area-inset-bottom) + 16px);
+  }
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
     flex:1;padding:13px 0;border-radius:11px;
@@ -643,7 +652,6 @@ window.setThemeChrome = function(t){
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세.
      요약 배색·굵기는 상단 「방문 n · 취소 n」(.leadsub) 과 맞춘다. */
-  .bklist{max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .bkrow{
     display:flex;align-items:center;gap:10px;
     padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
@@ -670,7 +678,7 @@ window.setThemeChrome = function(t){
   .bkback{cursor:pointer}
   .bkback::before{content:"‹ ";color:var(--dim);font-weight:400}
   .bkback:active{color:var(--dim)}
-  .bkvlist{max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 0 12px}
+  .bkvlist{margin:0 0 4px}
   .bkvt{color:var(--off);padding:11px 0 3px}
   .bkvt:first-child{padding-top:2px}
   /* 「변경 내역」(.lgrow) 과 같은 리듬 — baseline 정렬, gap 10, 다만 시간대로 묶이므로 행 구분선은 없음.
