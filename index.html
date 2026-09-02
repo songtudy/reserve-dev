@@ -499,6 +499,9 @@ window.setThemeChrome = function(t){
     background:none;color:var(--dim);border-color:transparent;
   }
   .foot button:active{background:var(--press)}
+  /* 새 버전이 감지되면 「새로고침」이 「업데이트」(주황)로 바뀐다 — 위쪽 띠와 같은 동작 */
+  .foot button.upd{background:var(--wait);color:var(--onWait);border-color:var(--wait);font-weight:700}
+  .foot button.upd:active{filter:brightness(.92);background:var(--wait)}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
@@ -824,7 +827,7 @@ window.setThemeChrome = function(t){
     </div>
   </header>
 
-<button type="button" class="updbar hide" id="updBar">새 버전이 나왔어요 · <b>눌러서 새로고침</b></button>
+<button type="button" class="updbar hide" id="updBar">새 버전이 나왔어요 · <b>업데이트</b></button>
 
 <div class="searchbar hide" id="searchbar">
   <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
@@ -3710,6 +3713,12 @@ window.dispatchEvent(new Event('fb-ready'));
 
   var refreshBtn = document.getElementById('refreshBtn');
   refreshBtn.addEventListener('click', function(){
+    // 새 버전이 감지된 상태면 이 버튼은 「업데이트」다 — 눌러서 새로 불러온다.
+    if (updShown){
+      if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
+      try { window.location.reload(); } catch(e){}
+      return;
+    }
     // 연결이 끊긴 상태면 데이터를 다시 읽어봐야 소용없다. 연결 자체를 되살린다.
     if (!online && hasStore() && fb().reconnect){
       toast('다시 연결 중…');
@@ -3724,15 +3733,7 @@ window.dispatchEvent(new Event('fb-ready'));
       return;
     }
     if (!state){ toast('명단이 없습니다'); return; }
-    // 새 버전이 올라와 있으면 그걸 먼저 — 「새로고침」은 앱까지 최신으로.
-    fetchTag().then(function(tag){
-      if (tag && buildTag && tag !== buildTag){
-        toast('새 버전 — 다시 불러옵니다');
-        setTimeout(reloadPage, 700);
-        return;
-      }
-      sync().then(function(){ toast('최신 명단입니다'); });
-    });
+    sync().then(function(){ toast('최신 명단입니다'); });
   });
 
   // 보고용 텍스트 — 체크 안 된 건 뒤에 아무것도 안 붙임
@@ -3834,6 +3835,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (updShown) return;
     updShown = true;
     if (updBar) updBar.classList.remove('hide');
+    // 아래 「새로고침」 버튼도 「업데이트」(주황)로 — 위아래로 같이 가리킨다.
+    if (refreshBtn){ refreshBtn.textContent = '업데이트'; refreshBtn.classList.add('upd'); }
   }
 
   function checkUpdate(){
