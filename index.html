@@ -199,18 +199,18 @@ window.setThemeChrome = function(t){
      새로 뜬다(띠 배경 자체는 안 눌림). flex 항목이라 목록을 아래로 밀 뿐 안 겹친다
      (키보드·시트는 전부 위에 덮이는 fixed 레이어). 저절로는 안 바뀜. */
   .updbar{
-    flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;
-    width:100%;padding:6px 8px 6px 14px;
+    flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:9px;
+    width:100%;padding:8px 14px;
     background:var(--wait);color:var(--onWait);
     border-bottom:1px solid var(--line);
-    font-size:13px;font-weight:600;
+    font-size:13px;font-weight:600;letter-spacing:.01em;
   }
   .updbar .updbtn{
-    flex:0 0 auto;border:0;border-radius:8px;padding:6px 13px;
-    background:var(--onWait);color:var(--wait);
-    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+    flex:0 0 auto;border:1px solid rgba(0,0,0,.28);border-radius:999px;padding:3px 12px;
+    background:transparent;color:var(--onWait);
+    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
   }
-  .updbar .updbtn:active{filter:brightness(1.2)}
+  .updbar .updbtn:active{background:rgba(0,0,0,.12)}
 
   /* search */
   .searchbar{
