@@ -3575,17 +3575,16 @@ window.dispatchEvent(new Event('fb-ready'));
     snaps.sort(function(a, b){ return (b.e.at || 0) - (a.e.at || 0); });
     days.sort(function(a, b){ return a.key < b.key ? 1 : -1; });   // 최근 날짜 먼저
     if (!snaps.length && !days.length) return '<p class="sheetMsg">지난 명단이 없습니다</p>';
-    var both = snaps.length && days.length;   // 두 구역이 다 있을 때만 라벨을 단다
     var html = '<div class="bklist">';
     if (snaps.length){
-      if (both) html += '<div class="bkgroup">오늘</div>';
+      html += '<div class="bkgroup">오늘</div>';
       snaps.forEach(function(r){ html += bkRowHtml(r.key, backupWhen(r.e.at), r.e); });
     }
     if (days.length){
-      if (both) html += '<div class="bkgroup">어제</div>';
+      html += '<div class="bkgroup">어제</div>';
       days.forEach(function(r){
         var d = r.key.split('-');
-        html += bkRowHtml(r.key, both ? ((+d[1]) + '/' + (+d[2])) : ('어제 ' + (+d[1]) + '/' + (+d[2])), r.e);
+        html += bkRowHtml(r.key, (+d[1]) + '/' + (+d[2]), r.e);   // 라벨이 '어제' 니 행엔 날짜만
       });
     }
     return html + '</div>';
