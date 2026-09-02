@@ -1959,6 +1959,7 @@ window.dispatchEvent(new Event('fb-ready'));
       state.items = state.items.filter(function(x){ return x.id !== id; });
       openMenu = null; render();
       delItem(id);
+      toast(it.time + ' ' + it.name + ' 삭제됨');
     }
   }
 
@@ -2192,7 +2193,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     if (it.id === oldId) writeItem(oldId, { memo: it.memo, ts: it.ts });   // 메모만 바뀜 (id 유지)
     else { delItem(oldId); putItem(it); }                                  // 시각·이름·인원 바뀜 = 다른 노드
-    toast('수정됨');
+    toast(it.time + ' ' + it.name + ' 수정됨');
   }
 
   function find(id){
@@ -2601,7 +2602,6 @@ window.dispatchEvent(new Event('fb-ready'));
       else render();
     } else if (backgroundRenderPending && !interactionActive()) render();
     writeItem(id, { status: st, ts: ts });
-    if (st === 'arrived') toast(it.name + ' 방문 체크');
   }
 
   /* ---------- 명단 등록 ---------- */
@@ -2730,7 +2730,7 @@ window.dispatchEvent(new Event('fb-ready'));
     state = { date: viewDate, items: fresh.sort(sortItems) };
     render();
     replaceItems(state.items);   // items 서브트리 통째 교체
-    toast(fresh.length + '건 등록');
+    toast('명단 등록됨 · ' + fresh.length + '건');
     return true;
   }
 
