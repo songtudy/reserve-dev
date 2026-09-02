@@ -669,13 +669,13 @@ window.setThemeChrome = function(t){
   #sheetBody em.off{color:var(--warn)}
   .bksep{color:var(--off);margin:0 5px}
   .bkchev{flex:0 0 auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
-  /* 구역 라벨(오늘/어제) · 상세 시간 헤더 — 같은 굵기 계열, 크기만 다름 */
+  /* 구역 라벨(오늘/어제) · 상세 시간 헤더 — 완전히 같은 서체·크기 */
   .bkgroup,.bkvt{
-    font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--dim);
+    font-size:13px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--dim);
   }
-  .bkgroup{font-size:12px;padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px}
+  .bkgroup{padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px}
   .bkgroup + .bkrow{border-top:0}
-  .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:2px}
+  .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:6px}  /* 첫 라벨: 제목과 숨 쉴 틈 */
   /* 상세: 그 시점 명단을 읽기 전용으로 (본 화면처럼 시간대로 묶고 방문·취소 색 구분) */
   .bkback{  /* 목록으로 — 화살표만. 제목 글자와 어울리게 (같은 색, 제목 높이에 맞춘 크기) */
     flex:0 0 auto;display:inline-flex;align-items:center;
@@ -688,7 +688,7 @@ window.setThemeChrome = function(t){
      마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
   .bkvlist{border-top:1px solid var(--line);padding:4px 0 8px}
   /* 시간대 헤더 — 구분선은 헤더에 붙는다(위 여백 margin-top, 선 아래 살짝) */
-  .bkvt{font-size:13px;border-top:1px solid var(--line);margin-top:13px;padding:4px 0 6px}
+  .bkvt{border-top:1px solid var(--line);margin-top:13px;padding:4px 0 6px}
   .bkvt:first-child{border-top:0;margin-top:0;padding-top:2px}
   /* 시간대별 읽기 전용 명단. 상태는 본 화면처럼 이름 색으로 (방문 초록 / 취소 빨강) + 작은 글자.
      칸(태그) 없이 — 밀도 높은 목록이라 색만으로 충분하고 더 깔끔하다. */
