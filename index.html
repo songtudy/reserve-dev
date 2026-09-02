@@ -597,6 +597,7 @@ window.setThemeChrome = function(t){
     font-family:inherit;font-size:14px;font-weight:700;color:var(--text);
     text-align:left;letter-spacing:-.02em;line-height:1.35;
   }
+  .qa:first-child .q{padding-top:6px}   /* 첫 질문은 제목에 붙인다 (다른 시트 제목↔내용 간격에 맞춤) */
   .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .15s}
   .qa.open .q{color:var(--waitTx)}
   .qa.open .qchev{transform:rotate(90deg);color:var(--waitTx)}
@@ -612,6 +613,7 @@ window.setThemeChrome = function(t){
     border-left:3px solid var(--off);border-radius:12px;
     padding:12px 14px 11px;margin:0 0 10px;
   }
+  .plat:last-child{margin-bottom:0}   /* 마지막 카드 밑 여백 안 쌓임 */
   .plat.ios{border-left-color:var(--wait)}
   .plat.and{border-left-color:var(--go)}
   .plat .ph{display:flex;align-items:center;gap:7px;margin-bottom:10px}
@@ -635,13 +637,13 @@ window.setThemeChrome = function(t){
     color:var(--text);line-height:0;vertical-align:middle;
   }
   .key svg{display:block}
-  .sheetNote{font-size:13px;line-height:1.6;color:var(--dim);margin:-4px 0 14px}
+  .sheetNote{font-size:13px;line-height:1.6;color:var(--dim);margin:0 0 14px}
   /* 변경 내역 */
   .lgrow{
     display:flex;align-items:baseline;gap:10px;padding:9px 0;
     border-top:1px solid var(--line);font-size:14px;
   }
-  .lgrow:first-child{border-top:0}
+  .lgrow:first-child{border-top:0;padding-top:2px}
   .lgt{flex:0 0 42px;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
   .lgk{flex:0 0 auto;font-weight:700;color:var(--text)}
   .lgk.go{color:var(--goTx)}
@@ -652,7 +654,7 @@ window.setThemeChrome = function(t){
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세.
      요약 배색·굵기는 상단 「방문 n · 취소 n」(.leadsub) 과 맞춘다. */
-  .bklist{border-top:1px solid var(--line);padding-top:2px}  /* 제목과 내용 사이 — 상세(.bkvlist)와 통일 */
+  .bklist{padding-top:2px}   /* 다른 시트처럼 제목 밑 선 없이 — 8px 뒤 바로 내용 */
   .bkrow{
     display:flex;align-items:center;gap:10px;
     padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
@@ -686,7 +688,7 @@ window.setThemeChrome = function(t){
   .bkback:active{opacity:.4}
   /* 하단 버튼 위 공백은 margin 이 아니라 padding — 스크롤 컨테이너(#sheetBody) 안에서
      마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
-  .bkvlist{border-top:1px solid var(--line);padding:4px 0 8px}
+  .bkvlist{padding:2px 0 8px}
   /* 시간대 헤더 — 구분선은 헤더에 붙는다(위 여백 margin-top, 선 아래 살짝) */
   .bkvt{border-top:1px solid var(--line);margin-top:13px;padding:4px 0 6px}
   .bkvt:first-child{border-top:0;margin-top:0;padding-top:2px}
@@ -713,16 +715,17 @@ window.setThemeChrome = function(t){
   }
   .qrcard svg{display:block;width:100%;height:auto}
   .wnet{
-    display:flex;align-items:center;gap:10px;padding:11px 13px;margin-bottom:8px;
+    display:flex;align-items:center;gap:10px;padding:11px 13px;
     background:var(--panel2);border:1px solid var(--line);border-radius:12px;
   }
+  .wnet + .wnet{margin-top:8px}   /* 카드 사이만 — 마지막 카드 밑엔 여백 안 쌓임 */
   .wnet .k{font-size:12px;font-weight:700;color:var(--dim);flex:0 0 52px}
   .wnet .v{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
   .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
   .about:last-of-type{margin-bottom:16px}
   .about b{color:var(--text);font-weight:700}
   .credit{
-    border-top:1px solid var(--line);padding-top:12px;margin:16px 0 14px;
+    border-top:1px solid var(--line);padding-top:12px;margin:16px 0 2px;
     font-size:12px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
   .sheetClose{
