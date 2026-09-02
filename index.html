@@ -573,13 +573,13 @@ window.setThemeChrome = function(t){
     display:flex;flex-direction:column;
   }
   .sheet.tall{height:82vh}   /* 열고 닫아도 높이 안 바뀌게 (FAQ) */
-  .sheet h3{flex:0 0 auto;margin:0 0 12px;font-size:17px;font-weight:800;letter-spacing:-.02em}
+  .sheet h3{flex:0 0 auto;margin:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.02em}
   #sheetBody{
     flex:1 1 auto;min-height:0;min-width:0;
     overflow-y:auto;overflow-x:hidden;
     -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   }
-  .sheetBtns{flex:0 0 auto;display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+  .sheetBtns{flex:0 0 auto;display:flex;gap:8px}
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
     flex:1;padding:13px 0;border-radius:11px;
@@ -587,7 +587,7 @@ window.setThemeChrome = function(t){
     color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
   }
   .sheetNever:active{color:var(--text)}
-  .faq{margin:0 0 4px}
+  .faq{margin:0 0 14px}
   .qa{border-bottom:1px solid var(--line)}
   .qa:last-child{border-bottom:0}
   .qa .q{
@@ -678,7 +678,7 @@ window.setThemeChrome = function(t){
   .bkback{cursor:pointer}
   .bkback::before{content:"‹ ";color:var(--dim);font-weight:400}
   .bkback:active{color:var(--dim)}
-  .bkvlist{margin:0 0 2px}
+  .bkvlist{margin:0 0 12px}
   .bkvt{color:var(--off);padding:11px 0 3px}
   .bkvt:first-child{padding-top:2px}
   /* 「변경 내역」(.lgrow) 과 같은 리듬 — baseline 정렬, gap 10, 다만 시간대로 묶이므로 행 구분선은 없음.
