@@ -591,15 +591,16 @@ window.setThemeChrome = function(t){
   .qa:last-child{border-bottom:0}
   .qa .q{
     display:flex;align-items:center;gap:8px;width:100%;
-    padding:14px 2px;background:none;border:0;cursor:pointer;
+    padding:14px 10px 14px 2px;background:none;border:0;cursor:pointer;
     font-family:inherit;font-size:14px;font-weight:700;color:var(--text);
     text-align:left;letter-spacing:-.02em;line-height:1.35;
   }
+  /* 오른쪽 10px 여백: 스크롤바(iOS 오버레이)가 화살표를 가리지 않게 */
   .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .15s}
   .qa.open .q{color:var(--waitTx)}
   .qa.open .qchev{transform:rotate(90deg);color:var(--waitTx)}
   .qa .a{
-    display:none;padding:0 2px 15px;
+    display:none;padding:0 10px 15px 2px;
     font-size:13px;line-height:1.7;color:var(--dim);white-space:pre-line;
   }
   .qa.open .a{display:block}
