@@ -1323,8 +1323,9 @@ window.dispatchEvent(new Event('fb-ready'));
   function hasStore(){ return !!fb(); }
 
   /* 명단은 예약별 노드(roster/<날짜>/items/<해시>)로 저장한다. 각 변경은 그 노드 하나만
-     즉시 쓴다 — 두 기기가 다른 예약을 동시에 바꿔도 서로 안 겹치고, 같은 예약이면 트랜잭션이
-     정리한다. 하루치를 통째로 읽고-합치고-덮어쓰던 merge/rosterTs/staging 은 없앴다. */
+     즉시 쓴다 — 두 기기가 다른 예약을 동시에 바꿔도 서로 안 겹치고, 같은 예약이면
+     itemMerge 가 get→조건부 update() 로 필드 단위로 합친다(트랜잭션 아님 — 콜드 캐시에서
+     abort). 하루치를 통째로 읽고-합치고-덮어쓰던 merge/rosterTs/staging 은 없앴다. */
   var unwatch = null;
   var rosterLoadEpoch = 0;
   function loadTicket(){ return { epoch: ++rosterLoadEpoch, date: viewDate }; }
