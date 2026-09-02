@@ -666,7 +666,7 @@ window.setThemeChrome = function(t){
   #sheetBody em.go{color:var(--goTx)}
   #sheetBody em.off{color:var(--warn)}
   .bksep{color:var(--off);margin:0 5px}
-  .bkchev{flex:0 0 auto;color:var(--off);font-size:18px;line-height:1}
+  .bkchev{flex:0 0 auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
   /* 구역 라벨 (오늘 / 어제) — 상세의 시간 헤더 .bkvt 와 같은 크기·굵기 */
   .bkgroup,.bkvt{
     font-size:12px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;
@@ -679,14 +679,20 @@ window.setThemeChrome = function(t){
   .bkback::before{content:"‹ ";color:var(--dim);font-weight:400}
   .bkback:active{color:var(--dim)}
   .bkvlist{margin:0 0 8px}
-  .bkvt{color:var(--off);padding:8px 0 3px}
+  .bkvt{color:var(--dim);padding:11px 0 5px}
   .bkvt:first-child{padding-top:2px}
-  /* 「변경 내역」(.lgrow) 과 같은 리듬 — baseline 정렬, gap 10, 다만 시간대로 묶이므로 행 구분선은 없음.
-     이름·인원·상태를 왼쪽에 붙인다(좌우로 벌어지지 않게). */
-  .bkvrow{display:flex;align-items:baseline;gap:10px;padding:4px 0;font-size:14px;line-height:1.35}
+  /* 시간대별 읽기 전용 명단. 이름·인원·상태 왼쪽 정렬(좌우로 안 벌어지게) —
+     상태는 본 화면과 같은 색 태그(.tag)라 줄이 들쭉날쭉해도 눈이 따라간다. */
+  .bkvrow{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:14px;line-height:1.35}
   .bkvrow .nm{min-width:0;color:var(--text);font-weight:600;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
+  .bkvrow .bkchip{
+    flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:.03em;
+    padding:2px 7px;border-radius:6px;line-height:1.5;
+  }
+  .bkvrow .bkchip.go{background:var(--goTag);color:var(--goTagTx);-webkit-text-fill-color:var(--goTagTx)}
+  .bkvrow .bkchip.off{background:var(--warnTag);color:var(--warnTagTx);-webkit-text-fill-color:var(--warnTagTx)}
   /* 상세 화면에서 시트 기본 하단바에 「명단 복사」를 하나 더 끼운다.
      이 화면의 주동작이므로 주황(.btn.primary 계열) — 닫기와 크기·모양은 같고 색만 다르다. */
   .sheetBtns .bkcopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
@@ -3550,7 +3556,7 @@ window.dispatchEvent(new Event('fb-ready'));
     return '<div class="bkrow" data-key="' + esc(key) + '">'
       + '<span class="bkt">' + esc(label) + '</span>'
       + '<span class="bksum">' + bkSummary(e) + '</span>'
-      + '<span class="bkchev">›</span></div>';
+      + '<span class="bkchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span></div>';
   }
   function backupSheetHtml(map){
     var snaps = [], days = [];
@@ -3591,8 +3597,8 @@ window.dispatchEvent(new Event('fb-ready'));
     return groupByTime(list.slice().sort(sortItems)).map(function(g){
       return '<div class="bkvt">' + esc(g.time) + '</div>'
         + g.items.map(function(it){
-            var tail = it.status === 'arrived' ? '<em class="go">방문</em>'
-                     : it.status === 'cancelled' ? '<em class="off">취소</em>' : '';
+            var tail = it.status === 'arrived' ? '<span class="bkchip go">방문</span>'
+                     : it.status === 'cancelled' ? '<span class="bkchip off">취소</span>' : '';
             return '<div class="bkvrow"><span class="nm">' + esc(it.name)
               + '</span><span class="px">' + esc(String(it.pax)) + '명</span>' + tail + '</div>';
           }).join('');
