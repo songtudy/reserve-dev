@@ -3495,6 +3495,11 @@ window.dispatchEvent(new Event('fb-ready'));
   var INSTALL_NOTE = '<p class="sheetNote plain" style="margin:-4px 0 14px">'
     + '「익순이」는 홈 화면에 추가하면 앱처럼 전체 화면으로 열립니다.</p>';
 
+  // 이미 앱으로 설치해 쓰는 중이면 서랍에서 「앱으로 설치하기」는 뺀다 (매장 폰은 대개 설치돼 있음)
+  if (isStandalone()){
+    var ib = document.getElementById('installBtn');
+    if (ib) ib.classList.add('hide');
+  }
   document.getElementById('installBtn').addEventListener('click', function(){
     hideDrawer();
     openSheet('앱으로 설치하기', INSTALL_NOTE + installHtml());
