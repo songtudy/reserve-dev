@@ -3799,8 +3799,9 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   /* ---------- 새 버전 알림 ---------- */
-  // 파일이 새로 올라갔는지 HEAD 요청으로 확인하고, 바뀌었으면 하단 「새로고침」
-  // 버튼을 「업데이트」(주황)로 바꾼다. 그 버튼을 눌러야 새로 뜬다 —
+  // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면
+  //  (1) 알아챈 그 순간 토스트로 한 번 알리고
+  //  (2) 하단 「새로고침」 버튼을 「업데이트」(주황)로 바꿔 둔다 — 눌러야 새로 뜬다.
   // 영업 중에 화면이 저절로 다시 뜨는 일은 없다.
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
   var updShown = false;
@@ -3821,6 +3822,8 @@ window.dispatchEvent(new Event('fb-ready'));
     // 「새로고침」 → 「업데이트」(주황). 버튼이 숨어 있어도(빈 명단·붙여넣기 화면)
     // 지금 바꿔두면 명단이 뜨는 순간 이미 「업데이트」로 보인다.
     if (refreshBtn){ refreshBtn.textContent = '업데이트'; refreshBtn.classList.add('upd'); }
+    // 알아챈 김에 한 번만 알린다 (화면 보고 있을 때만 — 자정에 조용히 넘어간 경우 제외).
+    if (!document.hidden) toast('새 버전이 있어요 · 「업데이트」');
   }
 
   function checkUpdate(){
