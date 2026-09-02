@@ -3394,6 +3394,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (nv) nv.classList.add('hide');        // '다시 보지 않기' 는 설치 안내 전용
     var bc = document.querySelector('.sheetBtns .bkcopy');
     if (bc) bc.remove();                     // '명단 복사' 는 지난 명단 상세 전용
+    var sh = document.querySelector('.sheet');
+    if (sh) sh.style.height = '';            // FAQ 에서 걸어 둔 높이 고정 해제
   }
   function openSheet(title, html){
     stopLogWatch();
@@ -3459,6 +3461,10 @@ window.dispatchEvent(new Event('fb-ready'));
             + '<div class="a">' + f[1] + '</div></div>';
         }).join('')
       + '</div>');
+    // 질문을 펼쳐도 시트가 안 흔들리게 — 지금(전부 접힌) 높이로 고정, 답은 #sheetBody 안에서 스크롤.
+    // 접힌 높이라 큰 폰에서도 아래 빈칸 없음. (max-height:82vh 로 이미 상한은 걸려 있음)
+    var sheet = document.querySelector('.sheet');
+    if (sheet) sheet.style.height = sheet.offsetHeight + 'px';
   });
   // 한 번에 하나만 펼친다
   document.getElementById('sheetBody').addEventListener('click', function(e){
