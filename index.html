@@ -3633,18 +3633,21 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function openBackupSheet(){
     bkMap = null;
-    openSheet('지난 명단', '<p class="lgempty">불러오는 중…</p>');
+    openSheet('지난 명단', '');
     var show = function(html){ var b = document.getElementById('sheetBody'); if (b && bkTitled()) b.innerHTML = html; };
     if (!connReady()){ show('<p class="lgempty">연결되면 볼 수 있습니다</p>'); return; }
     var settled = false;
-    var fail = function(){ if (!settled){ settled = true; show('<p class="lgempty">불러오지 못했습니다</p>'); } };
-    setTimeout(fail, 8000);   // 응답이 없어 '불러오는 중…' 에 멈춰 있지 않게
+    // 빠르게 오면(대개 그렇다) 자리표시가 깜빡이지 않게 — 300ms 넘게 걸릴 때만 「불러오는 중…」
+    var slow = setTimeout(function(){ if (!settled) show('<p class="lgempty">불러오는 중…</p>'); }, 300);
+    var fail = function(){ if (!settled){ settled = true; clearTimeout(slow); show('<p class="lgempty">불러오지 못했습니다</p>'); } };
+    setTimeout(fail, 8000);   // 응답이 없어 계속 비어 있지 않게
     Promise.all([
       fb().backupList(viewDate).catch(function(){ return {}; }),
       loadPastRosters()
     ]).then(function(res){
       if (settled) return;
       settled = true;
+      clearTimeout(slow);
       if (!bkTitled()) return;
       bkMap = {};
       var sm = res[0] || {};
