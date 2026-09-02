@@ -635,8 +635,7 @@ window.setThemeChrome = function(t){
     color:var(--text);line-height:0;vertical-align:middle;
   }
   .key svg{display:block}
-  .sheetNote{font-size:13px;line-height:1.6;color:var(--goTx);margin:0 0 14px;white-space:pre-line}
-  .sheetNote.plain{color:var(--dim)}
+  .sheetNote{font-size:13px;line-height:1.6;color:var(--dim);margin:-4px 0 14px}
   /* 변경 내역 */
   .lgrow{
     display:flex;align-items:baseline;gap:10px;padding:9px 0;
@@ -649,7 +648,7 @@ window.setThemeChrome = function(t){
   .lgk.off{color:var(--warn)}
   .lgs{flex:1;min-width:0;color:var(--dim);font-size:13px;
        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .lgempty{font-size:14px;color:var(--dim);padding:6px 0 14px}
+  .sheetMsg{font-size:14px;color:var(--dim);padding:6px 0 14px}
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세.
      요약 배색·굵기는 상단 「방문 n · 취소 n」(.leadsub) 과 맞춘다. */
@@ -2498,7 +2497,7 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   function logHtml(rows){
-    if (!rows.length) return '<p class="lgempty">변경 내역이 없습니다</p>';
+    if (!rows.length) return '<p class="sheetMsg">변경 내역이 없습니다</p>';
     return rows.map(function(r){
       var cls = r.k === '방문' ? ' go'
               : (r.k === '취소' || r.k === '자동 취소' || r.k === '삭제' || r.k === '명단 초기화') ? ' off' : '';
@@ -3506,7 +3505,7 @@ window.dispatchEvent(new Event('fb-ready'));
         '<b>설치</b>'
       ]);
   }
-  var INSTALL_NOTE = '<p class="sheetNote plain" style="margin:-4px 0 14px">'
+  var INSTALL_NOTE = '<p class="sheetNote">'
     + '「익순이」는 홈 화면에 추가하면 앱처럼 전체 화면으로 열립니다.</p>';
 
   // 이미 앱으로 설치해 쓰는 중이면 서랍에서 「앱으로 설치하기」는 뺀다 (매장 폰은 대개 설치돼 있음)
@@ -3573,7 +3572,7 @@ window.dispatchEvent(new Event('fb-ready'));
     });
     snaps.sort(function(a, b){ return (b.e.at || 0) - (a.e.at || 0); });
     days.sort(function(a, b){ return a.key < b.key ? 1 : -1; });   // 최근 날짜 먼저
-    if (!snaps.length && !days.length) return '<p class="lgempty">지난 명단이 없습니다</p>';
+    if (!snaps.length && !days.length) return '<p class="sheetMsg">지난 명단이 없습니다</p>';
     var html = '<div class="bklist">';
     if (snaps.length){
       html += '<div class="bkgroup">오늘</div>';
@@ -3599,7 +3598,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 상세: 그 시점 명단을 읽기 전용 목록으로 (본 화면처럼 시간대로 묶고 방문·취소 색). 복사는 단톡방 양식 그대로.
   function bkRosterHtml(items){
     var list = (items || []).filter(function(it){ return it && it.time; });
-    if (!list.length) return '<p class="lgempty">빈 명단</p>';
+    if (!list.length) return '<p class="sheetMsg">명단이 비어 있습니다</p>';
     return groupByTime(list.slice().sort(sortItems)).map(function(g){
       return '<div class="bkvt">' + esc(g.time) + '</div>'
         + g.items.map(function(it){
@@ -3654,11 +3653,11 @@ window.dispatchEvent(new Event('fb-ready'));
     bkMap = null;
     openSheet('지난 명단', '');
     var show = function(html){ var b = document.getElementById('sheetBody'); if (b && bkTitled()) b.innerHTML = html; };
-    if (!connReady()){ show('<p class="lgempty">연결되면 볼 수 있습니다</p>'); return; }
+    if (!connReady()){ show('<p class="sheetMsg">연결되면 볼 수 있습니다</p>'); return; }
     var settled = false;
     // 빠르게 오면(대개 그렇다) 자리표시가 깜빡이지 않게 — 300ms 넘게 걸릴 때만 「불러오는 중…」
-    var slow = setTimeout(function(){ if (!settled) show('<p class="lgempty">불러오는 중…</p>'); }, 300);
-    var fail = function(){ if (!settled){ settled = true; clearTimeout(slow); show('<p class="lgempty">불러오지 못했습니다</p>'); } };
+    var slow = setTimeout(function(){ if (!settled) show('<p class="sheetMsg">불러오는 중…</p>'); }, 300);
+    var fail = function(){ if (!settled){ settled = true; clearTimeout(slow); show('<p class="sheetMsg">불러오지 못했습니다</p>'); } };
     setTimeout(fail, 8000);   // 응답이 없어 계속 비어 있지 않게
     Promise.all([
       fb().backupList(viewDate).catch(function(){ return {}; }),
@@ -3676,7 +3675,7 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       var dm = res[1] || {};
       Object.keys(dm).forEach(function(k){ bkMap[k] = dm[k]; });
-      if (!Object.keys(bkMap).length){ show('<p class="lgempty">지난 명단이 없습니다</p>'); return; }
+      if (!Object.keys(bkMap).length){ show('<p class="sheetMsg">지난 명단이 없습니다</p>'); return; }
       bkRenderList();
     }, fail);
   }
