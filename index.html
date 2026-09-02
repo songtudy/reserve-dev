@@ -580,15 +580,7 @@ window.setThemeChrome = function(t){
     overflow-y:auto;overflow-x:hidden;
     -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   }
-  /* 스크롤 목록이 하단 버튼에 딱 잘리지 않게 — 맨 아래 22px 를 패널색으로 페이드.
-     sticky 라 스크롤 위치와 무관하게 늘 뷰포트 바닥에 붙어 있고, 음수 마진으로
-     스크롤 높이엔 안 더해진다. */
-  #sheetBody::after{
-    content:"";position:sticky;bottom:0;left:0;display:block;
-    height:16px;margin-top:-16px;pointer-events:none;
-    background:linear-gradient(to bottom, transparent, var(--panel));
-  }
-  .sheetBtns{flex:0 0 auto;display:flex;gap:8px;margin:8px 18px 0}
+  .sheetBtns{flex:0 0 auto;display:flex;gap:8px;margin:8px 18px 0}  /* 위 8px = 스크롤 목록과 버튼이 안 붙게 */
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
     flex:1;padding:13px 0;border-radius:11px;
@@ -596,7 +588,7 @@ window.setThemeChrome = function(t){
     color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
   }
   .sheetNever:active{color:var(--text)}
-  .faq{padding-bottom:18px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임. 하단 페이드보다 크게 */
+  .faq{padding-bottom:8px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
   .qa{border-bottom:1px solid var(--line)}
   .qa:last-child{border-bottom:0}
   .qa .q{
@@ -693,7 +685,7 @@ window.setThemeChrome = function(t){
   .bkback:active{opacity:.4}
   /* 하단 버튼 위 공백은 margin 이 아니라 padding — 스크롤 컨테이너(#sheetBody) 안에서
      마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
-  .bkvlist{border-top:1px solid var(--line);padding:4px 0 18px}  /* 하단 페이드(16px)보다 커야 마지막 줄이 안 흐려짐 */
+  .bkvlist{border-top:1px solid var(--line);padding:4px 0 8px}
   /* 시간대 헤더 — 구분선은 헤더에 붙는다(위 여백 margin-top, 선 아래 살짝) */
   .bkvt{font-size:13px;border-top:1px solid var(--line);margin-top:13px;padding:4px 0 6px}
   .bkvt:first-child{border-top:0;margin-top:0;padding-top:2px}
