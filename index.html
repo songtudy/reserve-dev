@@ -658,24 +658,27 @@ window.setThemeChrome = function(t){
   .bkback{cursor:pointer}
   .bkback::before{content:"‹ ";color:var(--dim);font-weight:400}
   .bkback:active{color:var(--dim)}
-  .bkvlist{max-height:54vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 0 12px;padding-right:4px}
+  .bkvlist{max-height:56vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 0 12px;padding-right:4px}
   .bkvt{
-    font-size:13px;font-weight:800;color:var(--dim);letter-spacing:-.01em;font-variant-numeric:tabular-nums;
-    padding:9px 0 4px;border-bottom:1px solid var(--line);margin-bottom:2px;
+    font-size:12px;font-weight:800;color:var(--off);letter-spacing:.02em;font-variant-numeric:tabular-nums;
+    padding:11px 0 3px;
   }
-  .bkvt:first-child{padding-top:0}
-  .bkvrow{display:flex;align-items:baseline;gap:9px;padding:4px 0;font-size:14px}
-  .bkvrow .nm{flex:1;min-width:0;color:var(--text);font-weight:600;
+  .bkvt:first-child{padding-top:2px}
+  /* 이름·인원·상태를 왼쪽에 붙여서 (좌우로 벌어지지 않게) */
+  .bkvrow{display:flex;align-items:baseline;gap:7px;padding:3px 0;font-size:14px}
+  .bkvrow .nm{min-width:0;color:var(--text);font-weight:600;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
   .bkvempty{font-size:14px;color:var(--dim);padding:8px 0 16px}
-  /* 「명단 복사」 — 앱 하단 #copyBtn 과 같은 중립 버튼 (주황은 등록·추가 전용) */
-  .bkcopy{
-    width:100%;padding:13px 0;border-radius:11px;
+  /* 상세 하단 버튼 — 명단 복사 · 닫기 한 줄. 앱 하단 버튼 계열(중립, 주황은 등록·추가 전용) */
+  .bkbtns{display:flex;gap:8px}
+  .bkbtns button{
+    flex:1;padding:12px 0;border-radius:11px;
     border:1px solid var(--line);background:var(--panel2);
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
   }
-  .bkcopy:active{background:var(--press)}
+  .bkbtns .bkcopy{font-weight:700}
+  .bkbtns button:active{background:var(--press)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
@@ -3380,6 +3383,8 @@ window.dispatchEvent(new Event('fb-ready'));
     document.getElementById('sheetBody').innerHTML = html;
     var nv = document.getElementById('sheetNever');
     if (nv) nv.classList.add('hide');   // '다시 보지 않기' 는 설치 안내 전용 — 다른 시트에 남지 않게
+    var sb = document.querySelector('.sheetBtns');
+    if (sb) sb.classList.remove('hide');   // 지난 명단 상세가 숨겼을 수 있음 — 새 시트엔 기본 닫기 복구
     sheetScrim.classList.remove('hide');
     backOpen(hideSheet);
   }
@@ -3589,13 +3594,20 @@ window.dispatchEvent(new Event('fb-ready'));
     title.querySelector('.bkback').onclick = bkBack;
     var body = document.getElementById('sheetBody');
     body.innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>'
-      + '<button type="button" class="bkcopy">명단 복사</button>';
+      + '<div class="bkbtns"><button type="button" class="bkcopy">명단 복사</button>'
+      + '<button type="button" class="bkx">닫기</button></div>';
+    // 이 화면은 자체 버튼 한 줄 → 시트 기본 하단 버튼은 숨긴다
+    var sb = document.querySelector('.sheetBtns');
+    if (sb) sb.classList.add('hide');
     body.querySelector('.bkcopy').onclick = function(){
       copyText(reportText(e.items), '명단 복사됨 · ' + (e.n != null ? e.n : e.items.length) + '건');
     };
+    body.querySelector('.bkx').onclick = closeSheet;
     backClose = bkBack;   // 뒤로가기 = 목록으로 (시트 닫기 아님)
   }
   function bkBack(){
+    var sb = document.querySelector('.sheetBtns');
+    if (sb) sb.classList.remove('hide');   // 목록으로 돌아가면 기본 하단 버튼 복구
     bkRenderList();
     backClose = hideSheet;
     // 하드웨어 뒤로가기(popstate)로 불려왔으면 history 항목이 소비됐으니 다시 심는다
