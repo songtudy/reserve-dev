@@ -640,9 +640,10 @@ window.setThemeChrome = function(t){
   .bkt{flex:0 0 46px;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .bksum{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bksum em{font-style:normal;font-weight:700}
-  .bksum em.go{color:var(--goTx)}
-  .bksum em.off{color:var(--warn)}
+  /* 방문 초록 · 취소 빨강 — 시트 안 어디서나 (목록 요약·상세 명단 공용). 상단 「방문 n·취소 n」과 동일 */
+  #sheetBody em.go, #sheetBody em.off{font-style:normal;font-weight:700}
+  #sheetBody em.go{color:var(--goTx)}
+  #sheetBody em.off{color:var(--warn)}
   .bksep{color:var(--off);margin:0 5px}
   .bkchev{flex:0 0 auto;color:var(--off);font-size:18px;line-height:1}
   /* 구역 라벨 (오늘 / 이전) */
@@ -653,22 +654,28 @@ window.setThemeChrome = function(t){
   .bkgroup .bksub{margin-left:6px;font-weight:500;color:var(--off);letter-spacing:0}
   .bkgroup + .bkrow{border-top:0}
   .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:2px}
-  /* 상세: 그 시점 명단을 단톡방 양식 그대로 (보이는 그대로가 복사되는 내용) */
+  /* 상세: 그 시점 명단을 읽기 전용으로 (본 화면처럼 시간대로 묶고 방문·취소 색 구분) */
   .bkback{cursor:pointer}
   .bkback::before{content:"‹ ";color:var(--dim);font-weight:400}
   .bkback:active{color:var(--dim)}
-  .bkview{
-    max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 0 12px;
-    font-family:inherit;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums;
-    white-space:pre-wrap;word-break:break-word;color:var(--text);
+  .bkvlist{max-height:54vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 0 12px;padding-right:4px}
+  .bkvt{
+    font-size:13px;font-weight:800;color:var(--dim);letter-spacing:-.01em;font-variant-numeric:tabular-nums;
+    padding:9px 0 4px;border-bottom:1px solid var(--line);margin-bottom:2px;
   }
-  /* 이 화면의 주동작이라 .btn.primary 계열(주황). 아래 고정 '닫기'와 구분됨 */
+  .bkvt:first-child{padding-top:0}
+  .bkvrow{display:flex;align-items:baseline;gap:9px;padding:4px 0;font-size:14px}
+  .bkvrow .nm{flex:1;min-width:0;color:var(--text);font-weight:600;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
+  .bkvempty{font-size:14px;color:var(--dim);padding:8px 0 16px}
+  /* 「명단 복사」 — 앱 하단 #copyBtn 과 같은 중립 버튼 (주황은 등록·추가 전용) */
   .bkcopy{
-    width:100%;padding:13px 0;border-radius:11px;border:0;
-    background:var(--wait);color:var(--onWait);
-    font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;
+    width:100%;padding:13px 0;border-radius:11px;
+    border:1px solid var(--line);background:var(--panel2);
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
-  .bkcopy:active{filter:brightness(.9)}
+  .bkcopy:active{background:var(--press)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
@@ -3557,6 +3564,20 @@ window.dispatchEvent(new Event('fb-ready'));
       row.onclick = function(){ bkRenderDetail(row.getAttribute('data-key')); };
     });
   }
+  // 상세: 그 시점 명단을 읽기 전용 목록으로 (본 화면처럼 시간대로 묶고 방문·취소 색). 복사는 단톡방 양식 그대로.
+  function bkRosterHtml(items){
+    var list = (items || []).filter(function(it){ return it && it.time; });
+    if (!list.length) return '<p class="bkvempty">빈 명단</p>';
+    return groupByTime(list.slice().sort(sortItems)).map(function(g){
+      return '<div class="bkvt">' + esc(g.time) + '</div>'
+        + g.items.map(function(it){
+            var tail = it.status === 'arrived' ? '<em class="go">방문</em>'
+                     : it.status === 'cancelled' ? '<em class="off">취소</em>' : '';
+            return '<div class="bkvrow"><span class="nm">' + esc(it.name)
+              + '</span><span class="px">' + esc(String(it.pax)) + '명</span>' + tail + '</div>';
+          }).join('');
+    }).join('');
+  }
   function bkRenderDetail(key){
     var e = bkMap && bkMap[key];
     if (!e || !e.items){ bkRenderList(); return; }
@@ -3567,8 +3588,8 @@ window.dispatchEvent(new Event('fb-ready'));
       e.kind === 'day' ? (bkDayWord(e.date) + ' (' + (+p[1]) + '/' + (+p[2]) + ')') : ('오늘 ' + backupWhen(e.at));
     title.querySelector('.bkback').onclick = bkBack;
     var body = document.getElementById('sheetBody');
-    body.innerHTML = '<pre class="bkview"></pre><button type="button" class="bkcopy">명단 복사</button>';
-    body.querySelector('.bkview').textContent = reportText(e.items) || '빈 명단';
+    body.innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>'
+      + '<button type="button" class="bkcopy">명단 복사</button>';
     body.querySelector('.bkcopy').onclick = function(){
       copyText(reportText(e.items), '명단 복사됨 · ' + (e.n != null ? e.n : e.items.length) + '건');
     };
