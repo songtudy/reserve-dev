@@ -572,6 +572,7 @@ window.setThemeChrome = function(t){
     max-height:82vh;overflow:hidden;
     display:flex;flex-direction:column;
   }
+  .sheet.tall{height:82vh}   /* 열고 닫아도 높이 안 바뀌게 (FAQ) */
   .sheet h3{flex:0 0 auto;margin:0 0 12px;font-size:17px;font-weight:800;letter-spacing:-.02em}
   #sheetBody{
     flex:1 1 auto;min-height:0;min-width:0;
@@ -3389,10 +3390,12 @@ window.dispatchEvent(new Event('fb-ready'));
     var bc = document.querySelector('.sheetBtns .bkcopy');
     if (bc) bc.remove();                     // '명단 복사' 는 지난 명단 상세 전용
   }
-  function openSheet(title, html){
+  function openSheet(title, html, tall){
     stopLogWatch();
     document.getElementById('sheetTitle').textContent = title;
     document.getElementById('sheetBody').innerHTML = html;
+    // tall = 열고 닫으며 높이가 출렁이면 안 되는 시트(FAQ) — 높이를 82vh 로 고정
+    document.querySelector('.sheet').classList.toggle('tall', !!tall);
     sheetBtnsReset();
     sheetScrim.classList.remove('hide');
     backOpen(hideSheet);
@@ -3414,14 +3417,14 @@ window.dispatchEvent(new Event('fb-ready'));
       '이름 오른쪽 ⋯ 에서 <em>방문·취소·수정·삭제</em>합니다.\n'
       + '시간을 바꾸면 그 시간대로 자동으로 옮겨갑니다.'],
     ['메모는 어떻게 남기나요?',
-      '<em>예약 추가</em>·<em>수정</em>의 메모 칸에 적습니다.\n'
+      '이름 오른쪽 ⋯ → <em>수정</em>의 메모 칸에 적습니다.\n'
       + '이름 아래에 보이고, 명단 복사에는 빠집니다.'],
     ['시간대는 언제 접히나요?',
       '남은 예약이 없으면 5초 뒤 자동으로 접힙니다.\n'
       + '체크를 풀면 다시 펼쳐집니다. 직접 접거나 편 것은 유지됩니다.'],
     ['맨 위 시간대는 언제 넘어가나요?',
       '그 시간대를 모두 체크하면 바로 넘어갑니다.\n'
-      + '남은 예약이 있으면 정각은 11분 뒤, 그 외엔 예약 시각에 넘어갑니다.'],
+      + '남은 예약이 있으면 정각 예약은 11분 뒤, 그 외엔 예약 시각에 넘어갑니다.'],
     ['손님이 오지 않으면?',
       '예약 시각 15분 뒤까지 체크가 없으면 자동으로 취소됩니다.\n'
       + '늦게 와도 체크하면 방문으로 바뀝니다.'],
@@ -3452,7 +3455,7 @@ window.dispatchEvent(new Event('fb-ready'));
             + CHEV + '</button>'
             + '<div class="a">' + f[1] + '</div></div>';
         }).join('')
-      + '</div>');
+      + '</div>', true);
   });
   // 한 번에 하나만 펼친다
   document.getElementById('sheetBody').addEventListener('click', function(e){
