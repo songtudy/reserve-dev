@@ -572,7 +572,6 @@ window.setThemeChrome = function(t){
     max-height:82vh;overflow:hidden;
     display:flex;flex-direction:column;
   }
-  .sheet.tall{height:82vh}   /* 열고 닫아도 높이 안 바뀌게 (FAQ) */
   .sheet h3{flex:0 0 auto;margin:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.02em}
   #sheetBody{
     flex:1 1 auto;min-height:0;min-width:0;
@@ -3390,12 +3389,10 @@ window.dispatchEvent(new Event('fb-ready'));
     var bc = document.querySelector('.sheetBtns .bkcopy');
     if (bc) bc.remove();                     // '명단 복사' 는 지난 명단 상세 전용
   }
-  function openSheet(title, html, tall){
+  function openSheet(title, html){
     stopLogWatch();
     document.getElementById('sheetTitle').textContent = title;
     document.getElementById('sheetBody').innerHTML = html;
-    // tall = 열고 닫으며 높이가 출렁이면 안 되는 시트(FAQ) — 높이를 82vh 로 고정
-    document.querySelector('.sheet').classList.toggle('tall', !!tall);
     sheetBtnsReset();
     sheetScrim.classList.remove('hide');
     backOpen(hideSheet);
@@ -3455,7 +3452,7 @@ window.dispatchEvent(new Event('fb-ready'));
             + CHEV + '</button>'
             + '<div class="a">' + f[1] + '</div></div>';
         }).join('')
-      + '</div>', true);
+      + '</div>');
   });
   // 한 번에 하나만 펼친다
   document.getElementById('sheetBody').addEventListener('click', function(e){
