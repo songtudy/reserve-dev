@@ -2861,15 +2861,21 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function applyViewport(){
     var h = visibleViewportH();
-    // 키보드가 가리는 높이 → 바텀시트(예약 추가) 올림·토스트 위치 등에 쓴다
+    // 키보드가 가리는 원(raw) 높이 — 아래 pendingClose(키보드 다 내려감) 판정에 쓴다
     var kb = Math.max(0, Math.round((window.innerHeight || 0) - h));
-    document.documentElement.style.setProperty('--kb', kb + 'px');
 
-    // 키보드 열림은 visualViewport 높이 감소로만 판단한다. 입력칸 포커스로 판단하면
-    // 저장 시 폼(입력칸)이 DOM 에서 사라지는 순간 키보드 애니메이션 중인데도 "닫힘"으로
-    // 오판해 레이아웃을 두 번 바꾼다(내려갔다 다시 올라감). 홈화면 PWA 는 키보드 말고는
-    // 뷰포트가 안 줄어든다.
-    var open = (kbBaseH - h) > KB_MIN;
+    // 키보드 열림 = visualViewport 높이가 KB_MIN 이상 줄어든 상태.
+    //  · 새로 "열림"이 되려면 입력칸이 실제로 포커스돼 있어야 한다 — 백그라운드에서
+    //    복귀할 때 iOS 가 잠깐 낮은 높이를 보고해도(전환 애니메이션) 하단 바가
+    //    사라지지 않게. (2주에 두 번 "복귀 후 하단 바 없음" 신고 → 이게 원인)
+    //  · 이미 열려 있었으면 높이 감소만으로 유지 — 저장 시 입력칸이 DOM 에서
+    //    사라져도 키보드 내려가는 애니메이션 동안은 "열림"을 지켜, 레이아웃이
+    //    두 번 튀지 않게 한다.
+    var shrunk = (kbBaseH - h) > KB_MIN;
+    var open = shrunk && (keyboardOpen || textKeyboardTarget(document.activeElement));
+    // 바텀시트 올림·토스트 위치용 — 실제 키보드일 때만. 복귀 시 iOS 의 잘못된
+    // 낮은 높이가 .wrap 아래를 밀지 않게 (하단 바는 위 open 가드가 지킨다).
+    document.documentElement.style.setProperty('--kb', (open ? kb : 0) + 'px');
     if (open !== keyboardOpen){
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
@@ -3899,8 +3905,10 @@ window.dispatchEvent(new Event('fb-ready'));
     setTimeout(checkUpdate, 4000);
     // 화면 높이가 달라졌을 수 있다 (키보드가 열린 채 복귀했을 수도).
     // applyViewport 가 현재 visualViewport 로 --kb 와 keyboard-open 을 다시 잡는다.
+    // iOS 복귀 애니메이션 동안 높이 보고가 흔들려서, 한 번이 아니라 여러 번 잰다
+    // (40·140·320·600ms) — "복귀 후 하단 바 사라짐" 방지.
     applyViewport();
-    setTimeout(applyViewport, 300);
+    remeasureViewport();
     // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
     // 먼저 확인하지 않으면 어제 명단을 「오늘」로 띄운 채 체크하게 된다.
     if (rolloverIfNeeded()) return;
