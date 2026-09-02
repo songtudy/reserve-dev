@@ -1014,7 +1014,7 @@ window.__fb = {
   // 오래된 날짜 정리용 (날짜 노드 목록·삭제)
   dayList: () => get(ref(db, ROOT)).then(s => s.exists() ? Object.keys(s.val()) : []),
   dayRemove: ds => remove(ref(db, ROOT + '/' + ds)),
-  // 명단 백업 — roster/__backup__/<날짜>/<키> = {at, sig, n, items:[...]}
+  // 명단 백업 — roster/__backup__/<날짜>/<키> = {at, n, items:[...]}
   // 무료 요금제라 Firebase 자동 백업이 없어서 앱이 스스로 스냅샷을 남긴다.
   backupPut: (ds, key, data) => set(ref(db, ROOT + '/__backup__/' + ds + '/' + key), data),
   // 이 시간 슬롯 백업이 이미 있나 — at 필드 하나만 읽는다 (덮어쓰기 전 확인용).
@@ -1140,7 +1140,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function setCollapsed(time, v, done){ collapsed[time] = { v: v, done: done }; }
 
   /* ---------- 날짜 · 시간 ---------- */
-  var KEEP_DAYS = 1; // roster·로그는 오늘+어제만 남긴다 (그저께부터 삭제). 어제만 「지난 명단」에 보임.
+  var KEEP_DAYS = 1; // roster 는 오늘+어제만 (어제만 「지난 명단」에 보임). 로그·백업은 오늘만.
 
   var WEEKDAYS = ['일','월','화','수','목','금','토'];
   function pad(n){ return (n<10?'0':'') + n; }
@@ -1223,8 +1223,9 @@ window.dispatchEvent(new Event('fb-ready'));
       stalePurgeDates(keys, limit).forEach(function(ds){ fb().dayRemove(ds).catch(function(){}); });
     }).catch(function(){});
     if (fb().logList){
+      // 변경 내역은 「오늘」만 화면에 뜬다 → 어제 것은 안 보이는 죽은 데이터. 오늘 것만 남긴다.
       fb().logList().then(function(keys){
-        stalePurgeDates(keys, limit, bizDate()).forEach(function(ds){ fb().logRemove(ds).catch(function(){}); });
+        stalePurgeDates(keys, bizDate(), bizDate()).forEach(function(ds){ fb().logRemove(ds).catch(function(){}); });
       }).catch(function(){});
     }
     if (fb().backupDates){
@@ -1528,7 +1529,6 @@ window.dispatchEvent(new Event('fb-ready'));
     var ds = viewDate;
     var snap = {
       at: serverNow(),   // 어느 폰이 남겼든 시트에 같은 시각으로 보이게
-      sig: itemsSig(state.items),
       n: state.items.length,
       items: state.items.map(function(it){ return wqMerge(it, {}); })
     };
@@ -2235,8 +2235,8 @@ window.dispatchEvent(new Event('fb-ready'));
     return clean;
   }
   function cleanOutboxItem(id, item){
-    if (!LOG_ID_PATTERN.test(id) || !item || !validLogDate(item.date)
-        || item.date < shiftDate(bizDate(), -KEEP_DAYS) || item.date > bizDate()) return null;
+    // 변경 내역은 오늘 것만 유지 → 어제 이전으로 밀린 로그는 버린다 (어차피 화면에 안 뜸).
+    if (!LOG_ID_PATTERN.test(id) || !item || !validLogDate(item.date) || item.date !== bizDate()) return null;
     var entry = cleanLogEntry(item.entry, true);
     if (!entry || entry.id !== id) return null;
     return { date: item.date, entry: entry };
@@ -2363,9 +2363,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var succeeded = 0;
     Promise.all(ids.map(function(id){
       var original = logOutbox[id];
-      var item = cleanOutboxItem(id, original);
-      var limit = shiftDate(bizDate(), -KEEP_DAYS);
-      if (!item || item.date < limit){
+      var item = cleanOutboxItem(id, original);   // 오늘 것이 아니면 null
+      if (!item){
         removeLogOutboxItem(id, original);
         return Promise.resolve();
       }
