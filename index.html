@@ -646,30 +646,25 @@ window.setThemeChrome = function(t){
   #sheetBody em.off{color:var(--warn)}
   .bksep{color:var(--off);margin:0 5px}
   .bkchev{flex:0 0 auto;color:var(--off);font-size:18px;line-height:1}
-  /* 구역 라벨 (오늘 / 이전) */
-  .bkgroup{
-    padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px;
-    font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.02em;
+  /* 구역 라벨 (오늘 / 어제) — 상세의 시간 헤더 .bkvt 와 같은 크기·굵기 */
+  .bkgroup,.bkvt{
+    font-size:12px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;
   }
-  .bkgroup .bksub{margin-left:6px;font-weight:500;color:var(--off);letter-spacing:0}
+  .bkgroup{padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px;color:var(--dim)}
   .bkgroup + .bkrow{border-top:0}
   .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:2px}
   /* 상세: 그 시점 명단을 읽기 전용으로 (본 화면처럼 시간대로 묶고 방문·취소 색 구분) */
   .bkback{cursor:pointer}
   .bkback::before{content:"‹ ";color:var(--dim);font-weight:400}
   .bkback:active{color:var(--dim)}
-  .bkvlist{max-height:56vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 0 12px;padding-right:4px}
-  .bkvt{
-    font-size:12px;font-weight:800;color:var(--off);letter-spacing:.02em;font-variant-numeric:tabular-nums;
-    padding:11px 0 3px;
-  }
+  .bkvlist{max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 0 12px}
+  .bkvt{color:var(--off);padding:11px 0 3px}
   .bkvt:first-child{padding-top:2px}
   /* 이름·인원·상태를 왼쪽에 붙여서 (좌우로 벌어지지 않게) */
   .bkvrow{display:flex;align-items:baseline;gap:7px;padding:3px 0;font-size:14px}
   .bkvrow .nm{min-width:0;color:var(--text);font-weight:600;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
-  .bkvempty{font-size:14px;color:var(--dim);padding:8px 0 16px}
   /* 상세 화면에서 시트 기본 하단바에 「명단 복사」를 하나 더 끼운다 → 닫기와 완전히 같은 버튼 */
   .sheetBtns .bkcopy{flex:1}
 
@@ -3547,12 +3542,15 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!snaps.length && !days.length) return '<p class="lgempty">지난 명단이 없습니다</p>';
     var html = '<div class="bklist">';
     if (snaps.length){
-      html += '<div class="bkgroup">오늘<span class="bksub">· 매시간 자동 저장</span></div>';
+      html += '<div class="bkgroup">오늘</div>';
       snaps.forEach(function(r){ html += bkRowHtml(r.key, backupWhen(r.e.at), r.e); });
     }
     if (days.length){
-      html += '<div class="bkgroup">이전</div>';
-      days.forEach(function(r){ html += bkRowHtml(r.key, bkDayWord(r.key), r.e); });
+      html += '<div class="bkgroup">어제</div>';
+      days.forEach(function(r){
+        var d = r.key.split('-');
+        html += bkRowHtml(r.key, (+d[1]) + '/' + (+d[2]), r.e);   // 라벨이 '어제' 니 행엔 날짜만
+      });
     }
     return html + '</div>';
   }
@@ -3567,7 +3565,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 상세: 그 시점 명단을 읽기 전용 목록으로 (본 화면처럼 시간대로 묶고 방문·취소 색). 복사는 단톡방 양식 그대로.
   function bkRosterHtml(items){
     var list = (items || []).filter(function(it){ return it && it.time; });
-    if (!list.length) return '<p class="bkvempty">빈 명단</p>';
+    if (!list.length) return '<p class="lgempty">빈 명단</p>';
     return groupByTime(list.slice().sort(sortItems)).map(function(g){
       return '<div class="bkvt">' + esc(g.time) + '</div>'
         + g.items.map(function(it){
@@ -3585,7 +3583,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var title = document.getElementById('sheetTitle');
     title.innerHTML = '<span class="bkback"></span>';
     title.querySelector('.bkback').textContent =
-      e.kind === 'day' ? (bkDayWord(e.date) + ' (' + (+p[1]) + '/' + (+p[2]) + ')') : ('오늘 ' + backupWhen(e.at));
+      e.kind === 'day' ? (bkDayWord(e.date) + ' ' + (+p[1]) + '/' + (+p[2])) : ('오늘 ' + backupWhen(e.at));
     title.querySelector('.bkback').onclick = bkBack;
     document.getElementById('sheetBody').innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>';
     // 시트 기본 하단바(닫기)에 「명단 복사」를 하나 끼운다 → 닫기와 완전히 같은 버튼, 한 줄
