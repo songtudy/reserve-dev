@@ -1140,7 +1140,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function setCollapsed(time, v, done){ collapsed[time] = { v: v, done: done }; }
 
   /* ---------- 날짜 · 시간 ---------- */
-  var KEEP_DAYS = 2; // 오늘 기준 이보다 오래된 날짜는 삭제
+  var KEEP_DAYS = 1; // roster·로그는 오늘+어제만 남긴다 (그저께부터 삭제). 어제만 「지난 명단」에 보임.
 
   var WEEKDAYS = ['일','월','화','수','목','금','토'];
   function pad(n){ return (n<10?'0':'') + n; }
@@ -3521,12 +3521,6 @@ window.dispatchEvent(new Event('fb-ready'));
   //   지난 날 { kind:'day',  date, n, items } 키 = 'YYYY-MM-DD'
   var bkMap = null;
   function bkTitled(){ return document.getElementById('sheetTitle').textContent === '지난 명단'; }
-  function bkDayWord(date){
-    var g = dayGap(date);
-    if (g === -1) return '어제';
-    if (g === -2) return '그저께';
-    var p = date.split('-'); return (+p[1]) + '/' + (+p[2]);
-  }
   function bkRowHtml(key, label, e){
     return '<div class="bkrow" data-key="' + esc(key) + '">'
       + '<span class="bkt">' + esc(label) + '</span>'
@@ -3586,7 +3580,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var title = document.getElementById('sheetTitle');
     title.innerHTML = '<span class="bkback"></span>';
     title.querySelector('.bkback').textContent =
-      e.kind === 'day' ? (bkDayWord(e.date) + ' ' + (+p[1]) + '/' + (+p[2])) : ('오늘 ' + backupWhen(e.at));
+      e.kind === 'day' ? ('어제 ' + (+p[1]) + '/' + (+p[2])) : ('오늘 ' + backupWhen(e.at));
     title.querySelector('.bkback').onclick = bkBack;
     document.getElementById('sheetBody').innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>';
     // 시트 기본 하단바(닫기)에 「명단 복사」를 하나 끼운다 — 닫기와 크기·모양 같고, 이 화면 주동작이라 주황
