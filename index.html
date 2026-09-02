@@ -568,17 +568,19 @@ window.setThemeChrome = function(t){
     width:100%;max-width:520px;
     background:var(--panel);border:1px solid var(--line);border-bottom:0;
     border-radius:18px 18px 0 0;
-    padding:20px 18px calc(env(safe-area-inset-bottom) + 16px);
+    padding:20px 0 calc(env(safe-area-inset-bottom) + 16px);
     max-height:82vh;overflow:hidden;
     display:flex;flex-direction:column;
   }
-  .sheet h3{flex:0 0 auto;margin:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.02em}
+  /* 좌우 여백은 .sheet 가 아니라 안쪽 요소에 준다 — #sheetBody 가 시트 가장자리까지
+     닿아, 스크롤바가 (내용 사이가 아니라) 시트 모서리에 붙는다. 내용은 좌우 대칭 18px. */
+  .sheet h3{flex:0 0 auto;margin:0 18px 8px;font-size:17px;font-weight:800;letter-spacing:-.02em}
   #sheetBody{
-    flex:1 1 auto;min-height:0;min-width:0;
+    flex:1 1 auto;min-height:0;min-width:0;padding:0 18px;
     overflow-y:auto;overflow-x:hidden;
     -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   }
-  .sheetBtns{flex:0 0 auto;display:flex;gap:8px}
+  .sheetBtns{flex:0 0 auto;display:flex;gap:8px;margin:0 18px}
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
     flex:1;padding:13px 0;border-radius:11px;
@@ -586,9 +588,7 @@ window.setThemeChrome = function(t){
     color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
   }
   .sheetNever:active{color:var(--text)}
-  /* 오른쪽 10px 안쪽 여백: 스크롤바(iOS 오버레이)가 화살표·구분선을 가리지 않게.
-     여백을 .faq 에 줘서 .qa 구분선도 같이 들여쓰기(선이 스크롤바를 뚫지 않음). */
-  .faq{margin:0 0 14px;padding:0 10px 0 2px}
+  .faq{margin:0 0 14px}
   .qa{border-bottom:1px solid var(--line)}
   .qa:last-child{border-bottom:0}
   .qa .q{
