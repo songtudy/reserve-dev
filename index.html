@@ -195,6 +195,20 @@ window.setThemeChrome = function(t){
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
 
+  /* 새 버전 알림 띠 — 헤더와 목록 사이. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다
+     (키보드·시트는 전부 위에 덮이는 fixed 레이어). 띠나 하단 「업데이트」 버튼 어느
+     쪽을 눌러도 새로 뜬다. 눌러야만 새로 뜬다 — 저절로는 안 바뀜. */
+  .updbar{
+    flex:0 0 auto;display:block;width:100%;border:0;
+    padding:10px 14px;
+    font-family:inherit;font-size:13.5px;font-weight:600;letter-spacing:.01em;
+    color:var(--onWait);background:var(--wait);
+    border-bottom:1px solid var(--line);
+    text-align:center;cursor:pointer;
+  }
+  .updbar b{font-weight:800}
+  .updbar:active{filter:brightness(.93)}
+
   /* search */
   .searchbar{
     flex:0 0 auto;position:relative;z-index:19;
@@ -813,6 +827,8 @@ window.setThemeChrome = function(t){
       <span class="leadsub num" id="leadSub"></span>
     </div>
   </header>
+
+<button type="button" class="updbar hide" id="updBar">새 버전이 나왔어요 · <b>업데이트</b></button>
 
 <div class="searchbar hide" id="searchbar">
   <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
@@ -3799,13 +3815,15 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   /* ---------- 새 버전 알림 ---------- */
-  // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면 하단 「새로고침」
-  // 버튼을 「업데이트」(주황)로 바꿔 둔다 — 그 버튼을 눌러야 새로 뜬다.
+  // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면
+  //  · 헤더 아래 「새 버전이 나왔어요 · 업데이트」 띠를 띄우고
+  //  · 하단 「새로고침」 버튼도 「업데이트」(주황)로 바꾼다.
+  // 띠나 버튼 어느 쪽이든 눌러야 새로 뜬다 — 저절로는 안 바뀜.
   // 확인 시점: 앱으로 돌아올 때 · 자정 넘어갈 때 · 켜 둔 채면 5분마다.
-  // 영업 중에 화면이 저절로 다시 뜨는 일은 없다.
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
   var updShown = false;
   var updTimer = null;
+  var updBar = document.getElementById('updBar');
 
   function fetchTag(){
     if (!window.fetch) return Promise.resolve(null);
@@ -3821,10 +3839,16 @@ window.dispatchEvent(new Event('fb-ready'));
     if (updShown) return;
     updShown = true;
     if (updTimer){ clearInterval(updTimer); updTimer = null; }   // 찾았으니 그만 확인
-    // 「새로고침」 → 「업데이트」(주황). 버튼이 숨어 있어도(빈 명단·붙여넣기 화면)
-    // 지금 바꿔두면 명단이 뜨는 순간 이미 「업데이트」로 보인다.
+    if (updBar) updBar.classList.remove('hide');
+    // 하단 버튼도 「새로고침」 → 「업데이트」(주황). 버튼이 숨어 있어도(빈 명단·붙여넣기
+    // 화면) 지금 바꿔두면 명단이 뜨는 순간 이미 「업데이트」로 보인다.
     if (refreshBtn){ refreshBtn.textContent = '업데이트'; refreshBtn.classList.add('upd'); }
   }
+
+  if (updBar) updBar.addEventListener('click', function(){
+    if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
+    try { window.location.reload(); } catch(e){}
+  });
 
   function checkUpdate(){
     return fetchTag().then(function(tag){
@@ -3847,7 +3871,7 @@ window.dispatchEvent(new Event('fb-ready'));
     wakeLogOutbox();
     wqWake();
     // 백그라운드에 있는 동안 새 버전이 배포됐을 수 있다 — 확인해서 있으면
-    // 「새로고침」 버튼을 「업데이트」로 바꾼다. 명단이 없어도(붙여넣기 화면) 확인한다.
+    // 알림 띠·「업데이트」 버튼을 띄운다. 명단이 없어도(붙여넣기 화면) 확인한다.
     // 연결이 늦게 붙는 경우가 있어 한 번 더.
     checkUpdate();
     setTimeout(checkUpdate, 4000);
@@ -3882,7 +3906,7 @@ window.dispatchEvent(new Event('fb-ready'));
     viewDate = b;
     resetDateScopedUi();
     boot();
-    // 날짜가 바뀌었으니 새 버전도 한 번 확인 — 있으면 「업데이트」 버튼이 뜬다.
+    // 날짜가 바뀌었으니 새 버전도 한 번 확인 — 있으면 알림 띠·「업데이트」 버튼이 뜬다.
     setTimeout(checkUpdate, 1500);
     return true;
   }
@@ -3974,7 +3998,7 @@ window.dispatchEvent(new Event('fb-ready'));
   if (window.__fb) boot();
   else {
     window.addEventListener('fb-ready', boot, { once: true });
-    setTimeout(function(){ if (!state) boot(); }, 4000);  // 로딩 실패 시에도 화면은 뜨게
+    setTimeout(function(){ if (!state) boot(); }, 300000);  // 로딩 실패 시에도 화면은 뜨게
   }
 })();
 </script>
