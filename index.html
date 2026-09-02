@@ -674,7 +674,7 @@ window.setThemeChrome = function(t){
     font-size:13px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--dim);
   }
   .bkgroup{padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px}
-  .bkgroup + .bkrow{border-top:0}
+  .bkgroup + .bkrow{border-top:0;padding-top:4px}  /* 라벨 바로 밑 행은 라벨에 붙인다 (상세 .bkvt→.bkvrow 간격과 맞춤) */
   .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:6px}  /* 첫 라벨: 제목과 숨 쉴 틈 */
   /* 상세: 그 시점 명단을 읽기 전용으로 (본 화면처럼 시간대로 묶고 방문·취소 색 구분) */
   .bkback{  /* 목록으로 — 화살표만. 제목 글자와 어울리게 (같은 색, 제목 높이에 맞춘 크기) */
