@@ -195,19 +195,6 @@ window.setThemeChrome = function(t){
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
 
-  /* 새 버전 알림 띠 — 헤더와 목록 사이에 얹힌다(겹치지 않고 목록을 밀어냄).
-     저절로 새로고침하지 않는다 — 직원이 눌러야 다시 뜬다. */
-  .updbar{
-    flex:0 0 auto;display:block;width:100%;border:0;
-    padding:10px 14px;
-    font-family:inherit;font-size:13.5px;font-weight:600;letter-spacing:.01em;
-    color:var(--onWait);background:var(--wait);
-    border-bottom:1px solid var(--line);
-    text-align:center;cursor:pointer;
-  }
-  .updbar b{font-weight:800}
-  .updbar:active{filter:brightness(.93)}
-
   /* search */
   .searchbar{
     flex:0 0 auto;position:relative;z-index:19;
@@ -499,7 +486,7 @@ window.setThemeChrome = function(t){
     background:none;color:var(--dim);border-color:transparent;
   }
   .foot button:active{background:var(--press)}
-  /* 새 버전이 감지되면 「새로고침」이 「업데이트」(주황)로 바뀐다 — 위쪽 띠와 같은 동작 */
+  /* 새 버전이 감지되면 「새로고침」 버튼이 「업데이트」(주황)로 바뀐다 (flagUpdate) */
   .foot button.upd{background:var(--wait);color:var(--onWait);border-color:var(--wait);font-weight:700}
   .foot button.upd:active{filter:brightness(.92);background:var(--wait)}
 
@@ -826,8 +813,6 @@ window.setThemeChrome = function(t){
       <span class="leadsub num" id="leadSub"></span>
     </div>
   </header>
-
-<button type="button" class="updbar hide" id="updBar">새 버전이 나왔어요 · <b>업데이트</b></button>
 
 <div class="searchbar hide" id="searchbar">
   <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
@@ -3814,11 +3799,10 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   /* ---------- 새 버전 알림 ---------- */
-  // 파일이 새로 올라갔는지 HEAD 요청으로 확인하고, 바뀌었으면 헤더 아래에
-  // 「새 버전이 나왔어요」 띠를 띄운다. 새로고침은 직원이 그 띠를 눌러서 한다 —
+  // 파일이 새로 올라갔는지 HEAD 요청으로 확인하고, 바뀌었으면 하단 「새로고침」
+  // 버튼을 「업데이트」(주황)로 바꾼다. 그 버튼을 눌러야 새로 뜬다 —
   // 영업 중에 화면이 저절로 다시 뜨는 일은 없다.
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
-  var updBar = document.getElementById('updBar');
   var updShown = false;
 
   function fetchTag(){
@@ -3831,11 +3815,11 @@ window.dispatchEvent(new Event('fb-ready'));
       .catch(function(){ return null; });
   }
 
-  function showUpdateBar(){
+  function flagUpdate(){
     if (updShown) return;
     updShown = true;
-    if (updBar) updBar.classList.remove('hide');
-    // 아래 「새로고침」 버튼도 「업데이트」(주황)로 — 위아래로 같이 가리킨다.
+    // 「새로고침」 → 「업데이트」(주황). 버튼이 숨어 있어도(빈 명단·붙여넣기 화면)
+    // 지금 바꿔두면 명단이 뜨는 순간 이미 「업데이트」로 보인다.
     if (refreshBtn){ refreshBtn.textContent = '업데이트'; refreshBtn.classList.add('upd'); }
   }
 
@@ -3844,16 +3828,11 @@ window.dispatchEvent(new Event('fb-ready'));
       if (!tag) return false;
       if (!buildTag){ buildTag = tag; return false; }
       if (tag === buildTag) return false;
-      showUpdateBar();
+      flagUpdate();
       return true;
     });
   }
   fetchTag().then(function(tag){ buildTag = tag; });
-
-  if (updBar) updBar.addEventListener('click', function(){
-    if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
-    try { window.location.reload(); } catch(e){}
-  });
 
   // 화면으로 돌아오면 한 번 확인 (실시간 수신은 watchRemote가 담당)
   document.addEventListener('visibilitychange', function(){
@@ -3861,7 +3840,7 @@ window.dispatchEvent(new Event('fb-ready'));
     wakeLogOutbox();
     wqWake();
     // 백그라운드에 있는 동안 새 버전이 배포됐을 수 있다 — 확인해서 있으면
-    // 상단에 새로고침 띠를 띄운다. 명단이 없어도(붙여넣기 화면) 확인한다.
+    // 「새로고침」 버튼을 「업데이트」로 바꾼다. 명단이 없어도(붙여넣기 화면) 확인한다.
     // 연결이 늦게 붙는 경우가 있어 한 번 더.
     checkUpdate();
     setTimeout(checkUpdate, 4000);
@@ -3896,7 +3875,7 @@ window.dispatchEvent(new Event('fb-ready'));
     viewDate = b;
     resetDateScopedUi();
     boot();
-    // 날짜가 바뀌었으니 새 버전도 한 번 확인 — 있으면 새로고침 띠가 뜬다.
+    // 날짜가 바뀌었으니 새 버전도 한 번 확인 — 있으면 「업데이트」 버튼이 뜬다.
     setTimeout(checkUpdate, 1500);
     return true;
   }
