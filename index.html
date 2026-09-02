@@ -588,7 +588,7 @@ window.setThemeChrome = function(t){
     color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
   }
   .sheetNever:active{color:var(--text)}
-  .faq{margin:0 0 14px}
+  .faq{padding-bottom:14px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
   .qa{border-bottom:1px solid var(--line)}
   .qa:last-child{border-bottom:0}
   .qa .q{
@@ -683,7 +683,9 @@ window.setThemeChrome = function(t){
   }
   .bkback::before{content:"‹";font-size:23px;font-weight:400;position:relative;top:-1px}
   .bkback:active{opacity:.4}
-  .bkvlist{margin:0 0 12px;border-top:1px solid var(--line);padding-top:4px}  /* 하단 버튼 위 공백 — 행 간격(10px) 리듬에 맞춘 정도 */
+  /* 하단 버튼 위 공백은 margin 이 아니라 padding — 스크롤 컨테이너(#sheetBody) 안에서
+     마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
+  .bkvlist{border-top:1px solid var(--line);padding:4px 0 16px}
   /* 시간대 헤더 — 구분선은 헤더에 붙는다(위 여백 margin-top, 선 아래 살짝) */
   .bkvt{font-size:13px;border-top:1px solid var(--line);margin-top:13px;padding:4px 0 6px}
   .bkvt:first-child{border-top:0;margin-top:0;padding-top:2px}
