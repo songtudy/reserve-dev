@@ -3815,7 +3815,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면 헤더 아래에
   // 「새 버전이 나왔어요」 안내 띠를 띄우고, 하단 「새로고침」을 「업데이트」(금색)로 바꾼다
   // — 그 버튼을 눌러야 새로 뜬다. 저절로는 안 바뀜.
-  // 확인 시점: 앱으로 돌아올 때 · 자정 넘어갈 때 · 켜 둔 채면 5분마다.
+  // 확인 시점: 앱으로 돌아올 때 · 켜 둔 채면 5분마다. (둘이 자정 케이스도 덮는다)
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
   var updShown = false;
   var updTimer = null;
@@ -3906,8 +3906,6 @@ window.dispatchEvent(new Event('fb-ready'));
     viewDate = b;
     resetDateScopedUi();
     boot();
-    // 날짜가 바뀌었으니 새 버전도 한 번 확인 — 있으면 알림 띠가 뜬다.
-    setTimeout(checkUpdate, 1500);
     return true;
   }
 
