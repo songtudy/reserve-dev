@@ -665,8 +665,10 @@ window.setThemeChrome = function(t){
   .bkvrow .nm{min-width:0;color:var(--text);font-weight:600;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
-  /* 상세 화면에서 시트 기본 하단바에 「명단 복사」를 하나 더 끼운다 → 닫기와 완전히 같은 버튼 */
-  .sheetBtns .bkcopy{flex:1}
+  /* 상세 화면에서 시트 기본 하단바에 「명단 복사」를 하나 더 끼운다.
+     이 화면의 주동작이므로 주황(.btn.primary 계열) — 닫기와 크기·모양은 같고 색만 다르다. */
+  .sheetBtns .bkcopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
+  .sheetBtns .bkcopy:active{filter:brightness(.92)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
@@ -3586,7 +3588,7 @@ window.dispatchEvent(new Event('fb-ready'));
       e.kind === 'day' ? (bkDayWord(e.date) + ' ' + (+p[1]) + '/' + (+p[2])) : ('오늘 ' + backupWhen(e.at));
     title.querySelector('.bkback').onclick = bkBack;
     document.getElementById('sheetBody').innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>';
-    // 시트 기본 하단바(닫기)에 「명단 복사」를 하나 끼운다 → 닫기와 완전히 같은 버튼, 한 줄
+    // 시트 기본 하단바(닫기)에 「명단 복사」를 하나 끼운다 — 닫기와 크기·모양 같고, 이 화면 주동작이라 주황
     var sb = document.querySelector('.sheetBtns');
     if (sb && !sb.querySelector('.bkcopy')){
       var cp = document.createElement('button');
