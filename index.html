@@ -670,15 +670,8 @@ window.setThemeChrome = function(t){
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
   .bkvempty{font-size:14px;color:var(--dim);padding:8px 0 16px}
-  /* 상세 하단 버튼 — 명단 복사 · 닫기 한 줄. 앱 하단 버튼 계열(중립, 주황은 등록·추가 전용) */
-  .bkbtns{display:flex;gap:8px}
-  .bkbtns button{
-    flex:1;padding:12px 0;border-radius:11px;
-    border:1px solid var(--line);background:var(--panel2);
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
-  }
-  .bkbtns .bkcopy{font-weight:700}
-  .bkbtns button:active{background:var(--press)}
+  /* 상세 화면에서 시트 기본 하단바에 「명단 복사」를 하나 더 끼운다 → 닫기와 완전히 같은 버튼 */
+  .sheetBtns .bkcopy{flex:1}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
@@ -3377,22 +3370,24 @@ window.dispatchEvent(new Event('fb-ready'));
 
   /* ---------- 안내 시트 ---------- */
   var sheetScrim = document.getElementById('sheetScrim');
+  function sheetBtnsReset(){                 // 시트 전용 버튼(설치·지난명단상세)을 원상복구
+    var nv = document.getElementById('sheetNever');
+    if (nv) nv.classList.add('hide');        // '다시 보지 않기' 는 설치 안내 전용
+    var bc = document.querySelector('.sheetBtns .bkcopy');
+    if (bc) bc.remove();                     // '명단 복사' 는 지난 명단 상세 전용
+  }
   function openSheet(title, html){
     stopLogWatch();
     document.getElementById('sheetTitle').textContent = title;
     document.getElementById('sheetBody').innerHTML = html;
-    var nv = document.getElementById('sheetNever');
-    if (nv) nv.classList.add('hide');   // '다시 보지 않기' 는 설치 안내 전용 — 다른 시트에 남지 않게
-    var sb = document.querySelector('.sheetBtns');
-    if (sb) sb.classList.remove('hide');   // 지난 명단 상세가 숨겼을 수 있음 — 새 시트엔 기본 닫기 복구
+    sheetBtnsReset();
     sheetScrim.classList.remove('hide');
     backOpen(hideSheet);
   }
   function hideSheet(){
     stopLogWatch();
     sheetScrim.classList.add('hide');
-    var nv = document.getElementById('sheetNever');
-    if (nv) nv.classList.add('hide');
+    sheetBtnsReset();
   }
   function closeSheet(){ hideSheet(); backDone(); }
   document.getElementById('sheetClose').addEventListener('click', closeSheet);
@@ -3592,22 +3587,21 @@ window.dispatchEvent(new Event('fb-ready'));
     title.querySelector('.bkback').textContent =
       e.kind === 'day' ? (bkDayWord(e.date) + ' (' + (+p[1]) + '/' + (+p[2]) + ')') : ('오늘 ' + backupWhen(e.at));
     title.querySelector('.bkback').onclick = bkBack;
-    var body = document.getElementById('sheetBody');
-    body.innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>'
-      + '<div class="bkbtns"><button type="button" class="bkcopy">명단 복사</button>'
-      + '<button type="button" class="bkx">닫기</button></div>';
-    // 이 화면은 자체 버튼 한 줄 → 시트 기본 하단 버튼은 숨긴다
+    document.getElementById('sheetBody').innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>';
+    // 시트 기본 하단바(닫기)에 「명단 복사」를 하나 끼운다 → 닫기와 완전히 같은 버튼, 한 줄
     var sb = document.querySelector('.sheetBtns');
-    if (sb) sb.classList.add('hide');
-    body.querySelector('.bkcopy').onclick = function(){
+    if (sb && !sb.querySelector('.bkcopy')){
+      var cp = document.createElement('button');
+      cp.type = 'button'; cp.className = 'sheetClose bkcopy'; cp.textContent = '명단 복사';
+      sb.insertBefore(cp, sb.firstChild);
+    }
+    sb.querySelector('.bkcopy').onclick = function(){
       copyText(reportText(e.items), '명단 복사됨 · ' + (e.n != null ? e.n : e.items.length) + '건');
     };
-    body.querySelector('.bkx').onclick = closeSheet;
     backClose = bkBack;   // 뒤로가기 = 목록으로 (시트 닫기 아님)
   }
   function bkBack(){
-    var sb = document.querySelector('.sheetBtns');
-    if (sb) sb.classList.remove('hide');   // 목록으로 돌아가면 기본 하단 버튼 복구
+    sheetBtnsReset();   // 상세에서 끼운 「명단 복사」 제거
     bkRenderList();
     backClose = hideSheet;
     // 하드웨어 뒤로가기(popstate)로 불려왔으면 history 항목이 소비됐으니 다시 심는다
