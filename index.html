@@ -3659,7 +3659,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방에 올라오는 양식 그대로</b> 복사됩니다.</p>'
-      + '<p class="credit">익순이 v1.6.5<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.6.6<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -3715,7 +3715,15 @@ window.dispatchEvent(new Event('fb-ready'));
       return;
     }
     if (!state){ toast('명단이 없습니다'); return; }
-    sync().then(function(){ toast('최신 명단입니다'); });
+    // 새 버전이 올라와 있으면 그걸 먼저 — 「새로고침」은 앱까지 최신으로.
+    fetchTag().then(function(tag){
+      if (tag && buildTag && tag !== buildTag){
+        toast('새 버전 — 다시 불러옵니다');
+        setTimeout(reloadPage, 700);
+        return;
+      }
+      sync().then(function(){ toast('최신 명단입니다'); });
+    });
   });
 
   // 보고용 텍스트 — 체크 안 된 건 뒤에 아무것도 안 붙임
@@ -3872,6 +3880,11 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!state) return;
     sync();          // 즉시 최신 상태 확인
     watchRemote();   // 백그라운드에서 끊겼을 수 있으니 실시간 수신도 다시 건다
+    // 백그라운드에 있는 동안 새 버전이 배포됐을 수 있다 — 조용히 확인하고,
+    // 만질 게 없는 상태면(safeToReload) 알아서 새로 불러온다.
+    // sync 로 online 이 늦게 붙는 경우가 있어 한 번 더 확인한다.
+    checkUpdate();
+    setTimeout(checkUpdate, 4000);
     // 3초 안에 연결이 안 돌아오면 소켓을 강제로 다시 붙인다
     setTimeout(function(){
       if (!online && hasStore() && fb().reconnect){ fb().reconnect(); watchRemote(); }
