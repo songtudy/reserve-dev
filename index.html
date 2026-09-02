@@ -1493,7 +1493,12 @@ window.dispatchEvent(new Event('fb-ready'));
              : e.op === 'put' ? wqOnce(fb().itemMerge(e.date, e.id, e.item, e.ts, true))
              :                  wqOnce(fb().itemMerge(e.date, e.id, e.patch, e.ts, false));
       } catch(err){ return Promise.resolve(); }   // 큐 막힘 방지 — 다음 flush 에서 재시도
-      return call.then(function(applied){ if (applied){ delete wqMap[k]; okCount++; } });
+      return call.then(function(applied){
+        if (!applied) return;
+        okCount++;
+        // 보내는 사이 같은 예약에 새 변경이 얹혔으면(wqEntry 가 새 객체 반환) 그건 다음 flush 로.
+        if (wqMap[k] === e) delete wqMap[k];
+      });
     })).then(done, done);   // Promise.all 은 여기서 거부되지 않지만(각 항목이 늘 resolve), 대비해 같은 마무리
     function done(){
       wqBusy = false;
@@ -2620,7 +2625,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var marking = false;   // 오류 표시 중인지
 
   function esc(t){
-    return t.replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
+    return String(t).replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
   }
   // 입력칸 높이는 창을 열 때 한 번만 정한다 (내용·키보드·오류와 무관).
   // → 등록 버튼이 늘 같은 자리 (버튼 씹힘 방지). 넘치는 줄은 입력칸 안에서 스크롤.
