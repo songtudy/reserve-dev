@@ -195,23 +195,15 @@ window.setThemeChrome = function(t){
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
 
-  /* 새 버전 알림 띠 — 헤더와 목록 사이. 안내 문구 + 「업데이트」 버튼. 버튼을 눌러야
-     새로 뜬다(띠 배경 자체는 안 눌림). flex 항목이라 목록을 아래로 밀 뿐 안 겹친다
-     (키보드·시트는 전부 위에 덮이는 fixed 레이어). 저절로는 안 바뀜. */
+  /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄(순수 표시, 안 눌림). 동작은 하단
+     「새로고침」→「업데이트」 버튼. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
   .updbar{
-    flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:9px;
-    width:100%;padding:8px 14px;
+    flex:0 0 auto;display:block;width:100%;
+    padding:8px 14px;text-align:center;
     background:var(--wait);color:var(--onWait);
     border-bottom:1px solid var(--line);
     font-size:13px;font-weight:600;letter-spacing:.01em;
   }
-  /* 버튼은 앱의 다른 버튼과 같은 모양 — panel 배경·line 테두리·8px 라운드 (작은 크기) */
-  .updbar .updbtn{
-    flex:0 0 auto;border:1px solid var(--line);border-radius:8px;padding:5px 13px;
-    background:var(--panel);color:var(--text);
-    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
-  }
-  .updbar .updbtn:active{background:var(--press)}
 
   /* search */
   .searchbar{
@@ -504,6 +496,9 @@ window.setThemeChrome = function(t){
     background:none;color:var(--dim);border-color:transparent;
   }
   .foot button:active{background:var(--press)}
+  /* 새 버전이 감지되면 「새로고침」이 「업데이트」(금색)로 — 이 앱의 주동작 버튼 색 (flagUpdate) */
+  .foot button.upd{background:var(--wait);color:var(--onWait);border-color:var(--wait);font-weight:700}
+  .foot button.upd:active{filter:brightness(.92);background:var(--wait)}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
@@ -829,7 +824,7 @@ window.setThemeChrome = function(t){
     </div>
   </header>
 
-<div class="updbar hide" id="updBar"><span>새 버전이 나왔어요</span><button type="button" class="updbtn" id="updBtn">업데이트</button></div>
+<div class="updbar hide" id="updBar">새 버전이 나왔어요</div>
 
 <div class="searchbar hide" id="searchbar">
   <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
@@ -3715,6 +3710,13 @@ window.dispatchEvent(new Event('fb-ready'));
 
   var refreshBtn = document.getElementById('refreshBtn');
   refreshBtn.addEventListener('click', function(){
+    // 새 버전이 감지된 상태면 이 버튼은 「업데이트」 — 눌러서 새로 불러온다.
+    if (updShown){
+      if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
+      try { sessionStorage.setItem('ix-updated', '1'); } catch(e){}   // 새로 뜬 뒤 확인 토스트용
+      try { window.location.reload(); } catch(e){}
+      return;
+    }
     // 연결이 끊긴 상태면 데이터를 다시 읽어봐야 소용없다. 연결 자체를 되살린다.
     if (!online && hasStore() && fb().reconnect){
       toast('다시 연결 중…');
@@ -3811,8 +3813,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
   /* ---------- 새 버전 알림 ---------- */
   // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면 헤더 아래에
-  // 「새 버전이 나왔어요 · [업데이트]」 띠를 띄운다 — 그 버튼을 눌러야 새로 뜬다.
-  // 저절로는 안 바뀜. 확인 시점: 앱으로 돌아올 때 · 자정 넘어갈 때 · 켜 둔 채면 5분마다.
+  // 「새 버전이 나왔어요」 안내 띠를 띄우고, 하단 「새로고침」을 「업데이트」(금색)로 바꾼다
+  // — 그 버튼을 눌러야 새로 뜬다. 저절로는 안 바뀜.
+  // 확인 시점: 앱으로 돌아올 때 · 자정 넘어갈 때 · 켜 둔 채면 5분마다.
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
   var updShown = false;
   var updTimer = null;
@@ -3833,13 +3836,19 @@ window.dispatchEvent(new Event('fb-ready'));
     updShown = true;
     if (updTimer){ clearInterval(updTimer); updTimer = null; }   // 찾았으니 그만 확인
     if (updBar) updBar.classList.remove('hide');
+    // 하단 「새로고침」 → 「업데이트」(금색). 버튼이 숨어 있어도(빈 명단·붙여넣기 화면)
+    // 지금 바꿔두면 명단이 뜨는 순간 이미 「업데이트」로 보인다.
+    if (refreshBtn){ refreshBtn.textContent = '업데이트'; refreshBtn.classList.add('upd'); }
   }
 
-  var updBtn = document.getElementById('updBtn');
-  if (updBtn) updBtn.addEventListener('click', function(){
-    if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
-    try { window.location.reload(); } catch(e){}
-  });
+  // 「업데이트」 버튼으로 새로 뜬 직후면 한 번만 확인해 준다 (앱 껐다 켠 경우엔 표식이
+  // 없어서 안 뜬다 — 매번 뜨는 잔소리 방지).
+  try {
+    if (sessionStorage.getItem('ix-updated')){
+      sessionStorage.removeItem('ix-updated');
+      setTimeout(function(){ toast('새 버전으로 바뀌었어요'); }, 700);
+    }
+  } catch(e){}
 
   function checkUpdate(){
     return fetchTag().then(function(tag){
