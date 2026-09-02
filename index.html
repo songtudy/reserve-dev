@@ -205,12 +205,13 @@ window.setThemeChrome = function(t){
     border-bottom:1px solid var(--line);
     font-size:13px;font-weight:600;letter-spacing:.01em;
   }
+  /* 버튼은 앱의 다른 버튼과 같은 모양 — panel 배경·line 테두리·8px 라운드 (작은 크기) */
   .updbar .updbtn{
-    flex:0 0 auto;border:1px solid rgba(0,0,0,.28);border-radius:999px;padding:3px 12px;
-    background:transparent;color:var(--onWait);
-    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+    flex:0 0 auto;border:1px solid var(--line);border-radius:8px;padding:5px 13px;
+    background:var(--panel);color:var(--text);
+    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
   }
-  .updbar .updbtn:active{background:rgba(0,0,0,.12)}
+  .updbar .updbtn:active{background:var(--press)}
 
   /* search */
   .searchbar{
