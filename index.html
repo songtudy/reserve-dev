@@ -4236,12 +4236,16 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function clearPin(){ pin = ''; paintPin(); }
 
+  var unlockTimer = null;   // 페이드 뒤 마무리 타이머 — lockShow 가 취소할 수 있어야 한다
+  var forcingLock = false;  // ?lock 처리 중: signOut 이 끝날 때까지 unlock 을 막는다
   function unlock(){
+    if (forcingLock) return;
     try { localStorage.setItem('ix-authed', '1'); } catch(e){}
     // boot() 을 먼저 돌린다 — 페이드가 도는 .2s 동안 명단을 받아와 빈 화면을 안 보여준다
     if (!booted){ booted = true; boot(); }
     lockEl.classList.add('out');
-    setTimeout(function(){
+    unlockTimer = setTimeout(function(){
+      unlockTimer = null;
       lockEl.classList.add('hide');
       lockEl.classList.remove('out');
       // data-authed 는 맨 마지막에 — 먼저 걸면 CSS 가 즉시 display:none 으로 만들어 페이드가 죽는다
@@ -4249,6 +4253,9 @@ window.dispatchEvent(new Event('fb-ready'));
     }, 210);
   }
   function lockShow(msg){
+    forcingLock = false;
+    if (unlockTimer){ clearTimeout(unlockTimer); unlockTimer = null; }  // 늦게 터져 다시 숨기는 것 방지
+    lockEl.classList.remove('out');
     try { localStorage.removeItem('ix-authed'); } catch(e){}
     document.documentElement.removeAttribute('data-authed');   // 표식을 지워야 잠금이 실제로 보인다
     lockEl.classList.remove('hide');
@@ -4333,7 +4340,17 @@ window.dispatchEvent(new Event('fb-ready'));
       lockShow('연결이 필요합니다');
       return;
     }
-    if (document.documentElement.getAttribute('data-authed') === '1' && !booted){
+    // 주소 끝에 ?lock 을 붙여 열면 이 기기를 다시 잠근다 — 메뉴를 늘리지 않는 초기화 수단.
+    // (테스트로 잠금 화면을 다시 보고 싶을 때, 폰을 남에게 넘길 때)
+    var forceLock = /[?&]lock(=|&|$)/.test(location.search);
+    if (forceLock){
+      try { localStorage.removeItem('ix-authed'); } catch(e){}
+      document.documentElement.removeAttribute('data-authed');
+      try { history.replaceState(null, '', location.pathname); } catch(e){}   // 주소에서 흔적 제거
+      forcingLock = true;                       // signOut 이 끝나기 전 unlock 이 끼어들지 않게
+      if (window.__fb.signOut) window.__fb.signOut();
+    }
+    if (!forceLock && document.documentElement.getAttribute('data-authed') === '1' && !booted){
       booted = true; boot();
     }
     window.__fb.authWatch(function(signedIn){
