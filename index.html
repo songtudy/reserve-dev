@@ -3096,6 +3096,21 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   window.addEventListener('resize', applyViewport);
   window.addEventListener('orientationchange', function(){ setTimeout(applyViewport, 250); });
+  // 막이 떠 있는 동안 손가락 끌기를 아예 막는다.
+  //   아이폰은 키보드가 올라와 있으면 「화면 자체」를 위아래로 끌 수 있게 해 준다.
+  //   이건 페이지 스크롤이 아니라 브라우저가 자기 창을 옮기는 것이라
+  //   html{overflow:hidden} 이나 .wrap{overflow:hidden} 으로는 막히지 않는다.
+  //   남은 수단은 touchmove 를 직접 취소하는 것뿐이다(passive:false 여야 취소된다).
+  //   단, 막 안에 진짜로 스크롤돼야 하는 칸(안내 시트 본문 등)은 살려 둔다.
+  document.addEventListener('touchmove', function(e){
+    if (!document.querySelector('.scrim:not(.hide), .panelScrim:not(.hide), .sheetScrim:not(.hide), .drawerScrim:not(.off)')) return;
+    for (var n = e.target; n && n !== document.body; n = n.parentElement){
+      var oy = getComputedStyle(n).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) return;
+    }
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+
   // 키보드가 뜨고 내려갈 때 visualViewport 갱신이 아이폰 앱 모드에서 늦거나 빠질 수 있어
   // 포커스 전환 직후 몇 번 더 강제로 잰다. applyViewport 는 여러 번 불러도 무해하다.
   function remeasureViewport(){ [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); }); }
