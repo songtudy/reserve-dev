@@ -821,10 +821,12 @@ window.setThemeChrome = function(t){
   }
   .lockkey.blank{border:0;background:none;pointer-events:none}
   /* 지우기 — 버튼으로 안 감싼다. 숫자 키패드의 공통 관습(아이폰 잠금·전화 다이얼러·
-     안드로이드 PIN 모두 지우기만 아이콘으로 둔다). 누를 때만 잠깐 면이 생긴다.
-     ※ .lockkey.dn 보다 뒤에 오므로 눌림 배경을 여기서 다시 지정해야 한다 */
+     안드로이드 PIN 모두 지우기만 아이콘으로 둔다).
+     눌림도 면을 만들지 않는다 — 평소 면이 없는데 누를 때만 원이 생기면 그 순간 숫자키처럼
+     보여 정체가 흔들린다. 대신 아이콘 자체가 밝아진다(--dim → --text).
+     ※ .lockkey.dn 이 앞에 있어 배경을 칠하므로 여기서 다시 none 으로 눌러둔다 */
   .lockkey.act{border:0;background:none;color:var(--dim)}
-  .lockkey.act.dn, .lockkey.act:active{background:var(--keyDn);color:var(--text)}
+  .lockkey.act.dn, .lockkey.act:active{background:none;color:var(--text)}
   .lockkey.act:disabled{opacity:.3}
   .lockkey svg{display:block}
   .lock.busy .lockpad{opacity:.45;pointer-events:none}
