@@ -841,7 +841,13 @@ window.setThemeChrome = function(t){
      키가 사라진 것처럼 보이다 첫 입력에 툭 나타났다. */
   .lockkey.act:disabled{color:var(--off)}
   .lockkey svg{display:block}
-  .lock.busy .lockpad{opacity:.45;pointer-events:none}
+  /* 확인 중 — 키패드를 흐리게 하지 않고 입력만 막는다.
+     45% dim 은 "작동 중"이 아니라 "멈췄다"로 읽혔다. 대신 검사 대상인 점이
+     천천히 숨쉬어 진행 중임을 알린다(인증 왕복 ≈0.7s ≒ 한 호흡).
+     prefers-reduced-motion 에서는 전역 규칙이 애니메이션을 끈다. */
+  .lock.busy .lockpad{pointer-events:none}
+  .lock.busy .lockdots i.on{animation:lockpulse .9s ease-in-out infinite}
+  @keyframes lockpulse{50%{opacity:.3}}
 
   .scrim{
     position:fixed;inset:0;z-index:50;
