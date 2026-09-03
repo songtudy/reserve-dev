@@ -4238,8 +4238,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function unlock(){
     try { localStorage.setItem('ix-authed', '1'); } catch(e){}
-    // boot() 을 먼저 돌린다 — 페이드가 도는 .2s 동안 명단을 받아와 빈 화면을 안 보여준다
-    if (!booted){ booted = true; boot(); }
+    // boot() 을 먼저 돌린다 — 페이드가 도는 .2s 동안 명단을 받아와 빈 화면을 안 보여준다.
+    // try 로 감싸는 이유: boot() 이 던지면 아래 걷어내기가 실행되지 않아 잠금에 갇힌다.
+    if (!booted){ booted = true; try { boot(); } catch(e){} }
     lockEl.classList.add('out');
     setTimeout(function(){
       lockEl.classList.add('hide');
@@ -4265,14 +4266,25 @@ window.dispatchEvent(new Event('fb-ready'));
   function submitPin(){
     lockEl.classList.add('busy');
     lockMsg.textContent = '';
+    var settled = false, timer = null;
+    function finish(msg){
+      if (settled) return;                 // 응답과 시한이 겹쳐도 한 번만
+      settled = true;
+      clearTimeout(timer);
+      lockEl.classList.remove('busy');
+      if (msg) lockFail(msg); else clearPin();   // 성공이면 authWatch 가 unlock 시킨다
+    }
+    // 응답이 영영 안 오면(매장 와이파이가 끊기는 등) 키패드가 잠긴 채 갇힌다.
+    // 앱을 강제 종료하는 것 말고 빠져나갈 길이 없으므로 시한을 둔다.
+    timer = setTimeout(function(){ finish('연결을 확인해 주세요'); }, 12000);
     window.__fb.signIn(pin).then(function(){
-      clearPin();                          // 성공 — authWatch 가 unlock 시킨다
+      finish(null);
     }).catch(function(err){
       var c = (err && err.code) || '';
-      lockFail(c === 'auth/network-request-failed' ? '연결을 확인해 주세요'
-             : c === 'auth/too-many-requests'      ? '잠시 뒤 다시 시도해 주세요'
-             : '비밀번호가 맞지 않아요');
-    }).then(function(){ lockEl.classList.remove('busy'); });
+      finish(c === 'auth/network-request-failed' ? '연결을 확인해 주세요'
+           : c === 'auth/too-many-requests'      ? '잠시 뒤 다시 시도해 주세요'
+           : '비밀번호가 맞지 않아요');
+    });
   }
   function pinPush(d){
     if (lockEl.classList.contains('busy') || pin.length >= PIN_LEN) return;
