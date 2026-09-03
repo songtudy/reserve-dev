@@ -872,7 +872,8 @@ window.setThemeChrome = function(t){
   }
   .dialog h3{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
   /* 같은 막에 뜨는 형제 창(룰렛)의 .rltsub 와 같은 크기·색 — 두 창이 같은 자리에 뜨므로 */
-  .dialog .dlgnote{margin:0 0 3px;font-size:12px;line-height:1.5;color:var(--dim)}
+  /* 아래 여백은 주지 않는다 — 인접 마진 상쇄로 .dbtn 의 margin-top(11px)에 먹혀 무의미하다 */
+  .dialog .dlgnote{margin:0;font-size:12px;line-height:1.5;color:var(--dim)}
   .dbtn{display:flex;gap:8px;margin-top:11px}
   .dbtn button{
     flex:1;padding:12px 0;border-radius:11px;
