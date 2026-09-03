@@ -866,8 +866,9 @@ window.setThemeChrome = function(t){
     transition:transform .2s ease;
     transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 125px), 0px));
   }
-  .dialog h3{margin:0 0 8px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
-  .dialog .dlgnote{margin:0 0 4px;font-size:13px;line-height:1.55;color:var(--dim)}
+  .dialog h3{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
+  /* 같은 막에 뜨는 형제 창(룰렛)의 .rltsub 와 같은 크기·색 — 두 창이 같은 자리에 뜨므로 */
+  .dialog .dlgnote{margin:0 0 3px;font-size:12px;line-height:1.5;color:var(--dim)}
   .dbtn{display:flex;gap:8px;margin-top:11px}
   .dbtn button{
     flex:1;padding:12px 0;border-radius:11px;
@@ -1079,8 +1080,9 @@ window.setThemeChrome = function(t){
     <p class="dlgnote hide" id="dlgNote"></p>
     <div class="dbtn">
       <button type="button" id="dlgNo">취소</button>
-      <!-- 입력칸 없음 — 네이티브 키보드를 안 띄워야 팝업이 안 밀린다. 길게 눌러 실행. -->
-      <button type="button" id="dlgYes"><span class="hf"></span><span class="ht">초기화</span></button>
+      <!-- 입력칸 없음 — 네이티브 키보드를 안 띄워야 팝업이 안 밀린다. 길게 눌러 실행.
+           버튼 글자가 조작법을 스스로 설명한다(안내문에 또 적지 않는다). -->
+      <button type="button" id="dlgYes"><span class="hf"></span><span class="ht">길게 눌러 초기화</span></button>
     </div>
   </div>
 </div>
@@ -3182,6 +3184,9 @@ window.dispatchEvent(new Event('fb-ready'));
 
   document.getElementById('resetBtn').addEventListener('click', function(){
     if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
+    // 안내문은 「몇 건이 사라지는지」만 알린다 — 조작법은 버튼 글자가 이미 말하고 있다.
+    // 추상적인 경고보다 실제 건수가 낫다: 기대한 수와 다르면 그 자리에서 손을 뗀다.
+    // (건수는 지우기 전에 읽혀야 하므로 콜백 밖, 호출 시점에 만든다)
     confirmDlg('오늘 명단을 초기화할까요?', function(){
       logAdd('명단 초기화', state.items.length + '건 지움');
       editing = null; openMenu = null;
@@ -3193,7 +3198,8 @@ window.dispatchEvent(new Event('fb-ready'));
       render();
       replaceItems([]);   // items 노드 삭제
 
-    }, { yes: '초기화', note: '「초기화」를 길게 누르세요 · 되돌릴 수 없어요' });
+    }, { yes: '길게 눌러 초기화',
+         note: '예약 ' + state.items.length + '건이 ' + (state.items.length > 1 ? '모두 ' : '') + '지워져요' });
   });
 
   document.getElementById('loadBtn').addEventListener('click', function(){
