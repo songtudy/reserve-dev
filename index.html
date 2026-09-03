@@ -4307,14 +4307,27 @@ window.dispatchEvent(new Event('fb-ready'));
   });
   paintPin();
 
+  // 전에 이 기기에서 로그인했다면 인증 응답(≈370ms)을 기다리지 않고 앱을 먼저 띄운다.
+  // 잠금은 어차피 head 스크립트의 data-authed 로 이미 숨겨져 있고, Firebase SDK 가
+  // 토큰이 준비될 때까지 DB 요청 순서를 알아서 맞춰 준다. 인증이 아니라고 밝혀지면
+  // 아래 authWatch 가 잠금을 되돌리고, 다시 로그인하면 화면을 새로 불러 깨끗이 복구한다.
+  var staleBoot = false;
   function lockStart(){
     if (!window.__fb || !window.__fb.authWatch){   // Auth 를 못 불러왔을 때
       lockShow('연결이 필요합니다');
       return;
     }
+    if (document.documentElement.getAttribute('data-authed') === '1' && !booted){
+      booted = true; boot();
+    }
     window.__fb.authWatch(function(signedIn){
-      if (signedIn) unlock();
-      else lockShow('');
+      if (signedIn){
+        if (staleBoot){ location.reload(); return; }   // 먼저 띄운 앱이 무인증으로 굳었으면 새로
+        unlock();
+      } else {
+        if (booted) staleBoot = true;                  // 표식만 믿고 띄웠는데 실제론 로그인 아님
+        lockShow('');
+      }
     });
   }
 
