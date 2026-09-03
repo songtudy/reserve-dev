@@ -116,6 +116,11 @@ window.setThemeChrome = function(t){
      .wrap 을 네이티브 관성으로 스크롤해 입력칸을 드러낸다 (1.4.0 방식, iOS 에 맡김).
      입력칸 높이는 taFixedH 로 열 때 한 번만 정한다 (오류가 떠도 안 움직임 = 버튼 씹힘 방지). */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
+  /* 키보드 여백은 '붙여넣기 화면일 때만'. 이 여백이 필요한 입력칸은 .wrap 안에 있는
+     붙여넣기 textarea 뿐이고, 나머지(초기화 다이얼로그·룰렛·예약 추가)는 전부
+     position:fixed 오버레이라 스스로 위치를 잡는다. 항상 주면 그 팝업들이 떴을 때
+     명단 뒤에 키보드 높이만큼 죽은 스크롤 공간이 생겨 화면이 아래로 밀린다. */
+  body.paste-open .wrap{ padding-bottom:calc(18px + var(--kb, 0px)) }
   /* 예시 문구는 .hl 오버레이에 그린다 (iOS textarea 여러 줄 placeholder 버그 회피) */
   .hl .ln.ph{ color:var(--ph); -webkit-text-fill-color:var(--ph) }
   .wrap{
@@ -123,7 +128,7 @@ window.setThemeChrome = function(t){
     width:100%;max-width:640px;margin:0 auto;
     /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
-    padding:0 14px calc(18px + var(--kb, 0px));
+    padding:0 14px 18px;
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
