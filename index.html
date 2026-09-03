@@ -705,8 +705,8 @@ window.setThemeChrome = function(t){
   .bkvrow.go .st{color:var(--goTx)}
   .bkvrow.off .nm{color:var(--dim)}   /* 취소는 흐리게 — 안 올 손님 */
   .bkvrow.off .st{color:var(--warn)}
-  /* 시트 기본 하단바(닫기) 왼쪽에 그 시트의 주동작 버튼을 하나 더 끼운다 (지난 명단 상세 =
-     「명단 복사」, 설치 안내 = 「주소 복사」). 닫기와 크기·모양은 같고 색만 주황. */
+  /* 시트 기본 하단바(닫기) 왼쪽에 그 시트의 주동작 버튼을 하나 더 끼운다
+     (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 주황. */
   .sheetBtns .sheetCopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
   .sheetBtns .sheetCopy:active{filter:brightness(.92)}
 
@@ -723,9 +723,19 @@ window.setThemeChrome = function(t){
   }
   .wnet + .wnet{margin-top:8px}   /* 카드 사이만 — 마지막 카드 밑엔 여백 안 쌓임 */
   /* 설치 안내의 주소 칸 — Wi-Fi 칸과 같은 모양. 값은 읽는 게 아니라 복사하는 것이라 조금 작게 */
-  .wnet.urlrow{margin-bottom:14px}
+  .wnet.urlrow{margin-bottom:14px;padding-right:8px}
   .wnet.urlrow .k{flex:0 0 auto}   /* 한 줄뿐이라 Wi-Fi 처럼 라벨 폭을 맞출 대상이 없다 */
   .wnet .v.url{font-size:13px;font-weight:600;letter-spacing:.01em}
+  .urlcopy{
+    flex:0 0 auto;position:relative;
+    width:32px;height:32px;padding:0;display:grid;place-items:center;
+    background:var(--line);border:0;border-radius:9px;
+    color:var(--waitTx);cursor:pointer;
+  }
+  .urlcopy svg{display:block}
+  /* 보이는 건 32px 그대로 — 누르는 영역만 넓힌다 (.bkback 과 같은 방식) */
+  .urlcopy::after{content:"";position:absolute;inset:-8px}
+  .urlcopy:active{filter:brightness(1.35)}
   .wnet .k{font-size:12px;font-weight:700;color:var(--dim);flex:0 0 52px}
   .wnet .v{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
   .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
@@ -3423,7 +3433,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var nv = document.getElementById('sheetNever');
     if (nv) nv.classList.add('hide');        // '다시 보지 않기' 는 설치 안내 전용
     var bc = document.querySelector('.sheetBtns .sheetCopy');
-    if (bc) bc.remove();                     // 시트 전용 복사 버튼(명단 복사·주소 복사)
+    if (bc) bc.remove();                     // 시트 전용 복사 버튼(지난 명단 상세의 '명단 복사')
   }
   // 하단바(닫기) 왼쪽에 그 시트의 주동작 복사 버튼을 끼운다. openSheet 이 매번 걷어내므로
   // 반드시 openSheet 뒤에 부른다.
@@ -3533,7 +3543,7 @@ window.dispatchEvent(new Event('fb-ready'));
       ]);
   }
   var INSTALL_NOTE = '<p class="sheetNote">'
-    + '「익순이」는 홈 화면에 추가해 앱으로 쓸 때 가장 잘 동작합니다.</p>';
+    + '「익순이」는 홈 화면 앱에 최적화되어 있습니다.</p>';
 
   // 이 앱의 주소. 실사용이면 /reserve/, 테스트면 /reserve-dev/ 가 저절로 나온다.
   // 앱으로 설치하면 주소창이 없어 주소를 꺼낼 데가 없다 — 다른 폰에 깔거나,
@@ -3541,19 +3551,24 @@ window.dispatchEvent(new Event('fb-ready'));
   function appUrl(){
     return location.origin + location.pathname.replace(/index\.html$/, '');
   }
+  // 복사 아이콘 — 앱의 다른 아이콘과 같은 결(24 viewBox · stroke 2.2 · 둥근 끝)
+  var ICON_COPY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"'
+    + ' stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<rect x="9" y="9" width="12" height="12" rx="3"/>'
+    + '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
   function urlRowHtml(){
-    return '<div class="wnet urlrow"><span class="k">주소</span>'
-      + '<span class="v url">' + esc(appUrl().replace(/^https?:\/\//, '')) + '</span></div>';
+    return '<div class="wnet urlrow"><span class="k">링크</span>'
+      + '<span class="v url">' + esc(appUrl().replace(/^https?:\/\//, '')) + '</span>'
+      + '<button type="button" class="urlcopy" aria-label="링크 복사">' + ICON_COPY + '</button></div>';
   }
-  // 서랍에서 열면 「주소 복사」를 달고, 자동 권유(maybeInstallHint)로 열면 안 단다 —
-  // 그쪽은 이미 브라우저로 이 주소에 들어와 있는 사람이고, 「다시 보지 않기」와 겹쳐 3개가 된다.
-  function openInstallSheet(withCopy){
+  function openInstallSheet(){
     openSheet('앱으로 설치하기', INSTALL_NOTE + urlRowHtml() + installHtml());
-    if (withCopy) sheetCopyBtn('주소 복사', function(){ copyText(appUrl(), '주소 복사됨'); });
+    var cp = document.querySelector('#sheetBody .urlcopy');
+    if (cp) cp.onclick = function(){ copyText(appUrl(), '링크 복사됨'); };
   }
   document.getElementById('installBtn').addEventListener('click', function(){
     hideDrawer();
-    openInstallSheet(true);
+    openInstallSheet();
   });
 
   /* ---------- Wi-Fi 안내 ---------- */
@@ -3747,7 +3762,7 @@ window.dispatchEvent(new Event('fb-ready'));
         return el && !el.classList.contains('hide');
       }) || drawer.classList.contains('open');
       if (blocked) return;
-      openInstallSheet(false);
+      openInstallSheet();
       sheetNever.classList.remove('hide');
     }, 1200);
   }
