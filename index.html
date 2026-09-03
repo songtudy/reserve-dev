@@ -759,41 +759,54 @@ window.setThemeChrome = function(t){
   }
 
   /* ---------- 잠금 화면 (공유 비밀번호) ----------
-     로그인 상태를 알기 전까지, 그리고 로그인 안 됐을 때 앱 전체를 덮는다.
-     토스트(200)보다 위. 앱 셸이 이미 fixed 라 여기도 fixed 로 겹친다. */
+     네이티브 키보드를 안 쓴다 — 직접 만든 숫자 키패드. iOS 는 입력칸에 포커스가 가면
+     비주얼 뷰포트를 밀어 올리는데(position:fixed 도 같이 딸려 올라감) CSS 로는 못 막는다.
+     키패드로 바꾸면 그 원인 자체가 없어져 화면이 완전히 정적이다.
+     토스트(200)보다 위. 로그인 상태를 알기 전까지, 그리고 로그인 안 됐을 때 앱 전체를 덮는다. */
   .lock{
     position:fixed;inset:0;z-index:300;
     background:var(--ink);
-    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-    /* 키보드가 떠도 화면이 '안 움직이게' 한다 — --kb 를 쓰지 않는다.
-       대신 처음부터 위쪽(14vh)에 앉혀, 키보드가 최대로 올라와도 버튼까지 다 보인다.
-       (가운데 정렬 + --kb 로 다시 앉히는 방식은 매번 미끄러져 올라가 산만했다.) */
-    padding:max(calc(env(safe-area-inset-top) + 24px), 11vh) 30px
-            calc(env(safe-area-inset-bottom) + 24px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 20px);
   }
   .lock.hide{display:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
-  .lockico{width:58px;height:58px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
-  .lockname{margin-top:16px;font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
-  .locksub{margin-top:4px;font-size:13px;color:var(--dim)}
-  .lockform{width:100%;max-width:300px;margin-top:34px}
-  .locklab{font-size:12px;color:var(--dim);margin-bottom:7px}
-  .lockin{
-    width:100%;height:46px;padding:0 14px;
-    background:var(--panel);border:1px solid var(--line);border-radius:11px;
-    color:var(--text);font-family:inherit;font-size:17px;letter-spacing:3px;
-    -webkit-appearance:none;appearance:none;
+  .lockico{width:56px;height:56px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
+  .lockname{margin-top:14px;font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+  .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
+  /* 입력한 자릿수 표시 */
+  .lockdots{display:flex;gap:14px;margin-top:26px;height:12px;align-items:center}
+  .lockdots i{
+    width:12px;height:12px;border-radius:50%;
+    border:1.5px solid var(--off);background:none;
+    transition:background .12s, border-color .12s;
   }
-  .lockin:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
-  .lock.bad .lockin{border-color:var(--warn)}
-  .lockgo{
-    width:100%;height:46px;margin-top:10px;border:0;border-radius:11px;
-    background:var(--wait);color:var(--onWait);
-    font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+  .lockdots i.on{background:var(--wait);border-color:var(--wait)}
+  .lock.bad .lockdots{animation:lockshake .32s}
+  @keyframes lockshake{
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)}
+    40%{transform:translateX(6px)}   60%{transform:translateX(-4px)} 80%{transform:translateX(2px)}
   }
-  .lockgo:active{filter:brightness(.92)}
-  .lockgo:disabled{opacity:.5}
-  .lockmsg{margin-top:9px;font-size:12.5px;color:var(--warn);min-height:1.2em}
+  .lockmsg{margin-top:12px;font-size:12.5px;color:var(--warn);min-height:1.2em;text-align:center}
+  /* 숫자 키패드 — 원형은 이 앱에서 단계 번호(.step .n)와 같은 결 */
+  .lockpad{
+    display:grid;grid-template-columns:repeat(3, 64px);gap:18px 22px;
+    margin-top:22px;
+  }
+  .lockkey{
+    width:64px;height:64px;border-radius:50%;padding:0;
+    border:1px solid var(--line);background:var(--panel2);
+    color:var(--text);font-family:inherit;font-size:25px;font-weight:500;
+    font-variant-numeric:tabular-nums;cursor:pointer;
+    display:grid;place-items:center;
+  }
+  .lockkey:active{background:var(--press)}
+  .lockkey.blank{border:0;background:none;pointer-events:none}
+  .lockkey.act{border:0;background:none;color:var(--dim)}
+  .lockkey.act:active{background:var(--press)}
+  .lockkey.act:disabled{opacity:.3}
+  .lockkey svg{display:block}
+  .lock.busy .lockpad{opacity:.45;pointer-events:none}
 
   .scrim{
     position:fixed;inset:0;z-index:50;
@@ -1034,19 +1047,28 @@ window.setThemeChrome = function(t){
 
 <div class="toast" id="toast"></div>
 
-<!-- 잠금 화면 — 로그인 상태를 확인하기 전까지 기본으로 떠 있다(=기본 잠김) -->
+<!-- 잠금 화면 — 로그인 상태를 확인하기 전까지 기본으로 떠 있다(=기본 잠김).
+     입력칸(<input>)이 없다: 네이티브 키보드를 띄우지 않아야 화면이 안 밀린다. -->
 <div class="lock" id="lock">
-  <img class="lockico" src="apple-touch-icon.png" alt="" width="58" height="58" draggable="false">
+  <img class="lockico" src="apple-touch-icon.png" alt="" width="56" height="56" draggable="false">
   <div class="lockname">익순이</div>
   <div class="locksub">익선취향 예약 매니저</div>
-  <form class="lockform" id="lockForm" autocomplete="off">
-    <div class="locklab">비밀번호</div>
-    <input class="lockin" id="lockPw" type="password" inputmode="numeric"
-           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-           enterkeyhint="go" aria-label="비밀번호">
-    <button class="lockgo" id="lockGo" type="submit">들어가기</button>
-    <div class="lockmsg" id="lockMsg" role="status"></div>
-  </form>
+  <div class="lockdots" id="lockDots" role="status" aria-label="비밀번호 입력"></div>
+  <div class="lockmsg" id="lockMsg" role="status"></div>
+  <div class="lockpad" id="lockPad">
+    <button type="button" class="lockkey" data-d="1">1</button>
+    <button type="button" class="lockkey" data-d="2">2</button>
+    <button type="button" class="lockkey" data-d="3">3</button>
+    <button type="button" class="lockkey" data-d="4">4</button>
+    <button type="button" class="lockkey" data-d="5">5</button>
+    <button type="button" class="lockkey" data-d="6">6</button>
+    <button type="button" class="lockkey" data-d="7">7</button>
+    <button type="button" class="lockkey" data-d="8">8</button>
+    <button type="button" class="lockkey" data-d="9">9</button>
+    <span class="lockkey blank"></span>
+    <button type="button" class="lockkey" data-d="0">0</button>
+    <button type="button" class="lockkey act" id="lockDel" aria-label="지우기"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6H9.5L3 12l6.5 6H20a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="M16 10l-4 4M12 10l4 4"/></svg></button>
+  </div>
 </div>
 
 <script type="module">
@@ -4156,11 +4178,22 @@ window.dispatchEvent(new Event('fb-ready'));
      ※ 실제 보안은 Firebase 규칙이 담당한다 — 이 화면은 그 앞의 문일 뿐.
      ※ 실사용에 배포할 땐 순서 주의: 앱을 먼저 올리고 매장 폰들을 로그인시킨 뒤에 규칙을 조인다.
         (규칙을 먼저 조이면 잠금 화면 없는 구버전 앱이 명단을 못 읽는다.) */
-  var lockEl  = document.getElementById('lock');
-  var lockPw  = document.getElementById('lockPw');
-  var lockGo  = document.getElementById('lockGo');
-  var lockMsg = document.getElementById('lockMsg');
-  var booted  = false;
+  var lockEl   = document.getElementById('lock');
+  var lockDots = document.getElementById('lockDots');
+  var lockMsg  = document.getElementById('lockMsg');
+  var lockDel  = document.getElementById('lockDel');
+  var booted   = false;
+  var PIN_LEN  = 6;          // 비밀번호 자릿수. 길이를 바꾸면 여기만 고치면 된다.
+  var pin      = '';
+
+  for (var i = 0; i < PIN_LEN; i++) lockDots.appendChild(document.createElement('i'));
+  var dots = lockDots.children;
+
+  function paintPin(){
+    for (var i = 0; i < PIN_LEN; i++) dots[i].classList.toggle('on', i < pin.length);
+    lockDel.disabled = pin.length === 0;
+  }
+  function clearPin(){ pin = ''; paintPin(); }
 
   function unlock(){
     try { localStorage.setItem('ix-authed', '1'); } catch(e){}
@@ -4172,9 +4205,56 @@ window.dispatchEvent(new Event('fb-ready'));
     try { localStorage.removeItem('ix-authed'); } catch(e){}
     document.documentElement.removeAttribute('data-authed');   // 표식을 지워야 잠금이 실제로 보인다
     lockEl.classList.remove('hide');
-    lockEl.classList.toggle('bad', !!msg);
     lockMsg.textContent = msg || '';
   }
+  function lockFail(msg){
+    lockMsg.textContent = msg;
+    lockEl.classList.remove('bad');
+    void lockEl.offsetWidth;              // 애니메이션 재시작
+    lockEl.classList.add('bad');
+    clearPin();
+  }
+
+  function submitPin(){
+    lockEl.classList.add('busy');
+    lockMsg.textContent = '';
+    window.__fb.signIn(pin).then(function(){
+      clearPin();                          // 성공 — authWatch 가 unlock 시킨다
+    }).catch(function(err){
+      var c = (err && err.code) || '';
+      lockFail(c === 'auth/network-request-failed' ? '연결이 안 됩니다. 잠시 뒤 다시 해 주세요.'
+             : c === 'auth/too-many-requests'      ? '시도가 많았습니다. 잠시 뒤 다시 해 주세요.'
+             : '비밀번호가 맞지 않아요.');
+    }).then(function(){ lockEl.classList.remove('busy'); });
+  }
+  function pinPush(d){
+    if (lockEl.classList.contains('busy') || pin.length >= PIN_LEN) return;
+    lockEl.classList.remove('bad');
+    lockMsg.textContent = '';
+    pin += d;
+    paintPin();
+    if (pin.length === PIN_LEN) submitPin();   // 다 채우면 바로 확인 — 별도 버튼 없음
+  }
+  function pinPop(){
+    if (lockEl.classList.contains('busy') || !pin) return;
+    pin = pin.slice(0, -1);
+    paintPin();
+  }
+
+  document.getElementById('lockPad').addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.lockkey');
+    if (!b) return;
+    if (b === lockDel) pinPop();
+    else if (b.dataset.d != null) pinPush(b.dataset.d);
+  });
+  // 물리 키보드(맥·블루투스)로도 칠 수 있게 — 잠겨 있을 때만 듣는다
+  document.addEventListener('keydown', function(e){
+    if (lockEl.classList.contains('hide')) return;
+    if (e.key >= '0' && e.key <= '9'){ pinPush(e.key); e.preventDefault(); }
+    else if (e.key === 'Backspace'){ pinPop(); e.preventDefault(); }
+  });
+  paintPin();
+
   function lockStart(){
     if (!window.__fb || !window.__fb.authWatch){   // Auth 를 못 불러왔을 때
       lockShow('연결이 필요합니다. 잠시 뒤 다시 시도해 주세요.');
@@ -4185,23 +4265,6 @@ window.dispatchEvent(new Event('fb-ready'));
       else lockShow('');
     });
   }
-  document.getElementById('lockForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    var pw = lockPw.value;
-    if (!pw){ lockShow('비밀번호를 입력해 주세요.'); return; }
-    lockGo.disabled = true;
-    lockMsg.textContent = '';
-    lockEl.classList.remove('bad');
-    window.__fb.signIn(pw).then(function(){
-      lockPw.value = '';                 // 성공 — authWatch 가 unlock 시킨다
-    }).catch(function(err){
-      var c = (err && err.code) || '';
-      lockShow(c === 'auth/network-request-failed' ? '연결이 안 됩니다. 잠시 뒤 다시 시도해 주세요.'
-             : c === 'auth/too-many-requests'      ? '시도가 많았습니다. 잠시 뒤 다시 해 주세요.'
-             : '비밀번호가 맞지 않아요.');
-      lockPw.select();
-    }).then(function(){ lockGo.disabled = false; });
-  });
 
   // Firebase 모듈이 먼저 준비되면 바로, 아니면 준비 신호를 기다린다
   if (window.__fb) lockStart();
