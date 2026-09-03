@@ -764,15 +764,18 @@ window.setThemeChrome = function(t){
   .lock{
     position:fixed;inset:0;z-index:300;
     background:var(--ink);
-    display:flex;flex-direction:column;align-items:center;
-    padding:calc(env(safe-area-inset-top) + 56px) 30px calc(env(safe-area-inset-bottom) + 26px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    /* 키보드가 올라오면 그 높이(--kb)만큼 아래를 비워, 남은 공간 '가운데'에 다시 자리잡는다.
+       위에서부터 쌓으면 iOS 가 입력칸을 보여주려고 화면을 밀어 올려 로고가 잘린다. */
+    padding:calc(env(safe-area-inset-top) + 24px) 30px
+            calc(env(safe-area-inset-bottom) + 24px + var(--kb, 0px));
   }
   .lock.hide{display:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
   .lockico{width:58px;height:58px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
   .lockname{margin-top:16px;font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .locksub{margin-top:4px;font-size:13px;color:var(--dim)}
-  .lockform{width:100%;max-width:300px;margin-top:38px}
+  .lockform{width:100%;max-width:300px;margin-top:34px}
   .locklab{font-size:12px;color:var(--dim);margin-bottom:7px}
   .lockin{
     width:100%;height:46px;padding:0 14px;
@@ -790,7 +793,6 @@ window.setThemeChrome = function(t){
   .lockgo:active{filter:brightness(.92)}
   .lockgo:disabled{opacity:.5}
   .lockmsg{margin-top:9px;font-size:12.5px;color:var(--warn);min-height:1.2em}
-  .lockfoot{margin-top:auto;font-size:12px;line-height:1.6;color:var(--off);text-align:center}
 
   .scrim{
     position:fixed;inset:0;z-index:50;
@@ -1044,7 +1046,6 @@ window.setThemeChrome = function(t){
     <button class="lockgo" id="lockGo" type="submit">들어가기</button>
     <div class="lockmsg" id="lockMsg" role="status"></div>
   </form>
-  <div class="lockfoot">처음 한 번만 입력하면<br>이 기기에서 계속 열려요</div>
 </div>
 
 <script type="module">
