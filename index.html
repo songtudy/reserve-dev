@@ -680,11 +680,14 @@ window.setThemeChrome = function(t){
   .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:6px}  /* 첫 라벨: 제목과 숨 쉴 틈 */
   /* 상세: 그 시점 명단을 읽기 전용으로 (본 화면처럼 시간대로 묶고 방문·취소 색 구분) */
   .bkback{  /* 목록으로 — 화살표만. 제목 글자와 어울리게 (같은 색, 제목 높이에 맞춘 크기) */
-    flex:0 0 auto;display:inline-flex;align-items:center;
+    flex:0 0 auto;display:inline-flex;align-items:center;position:relative;
     margin-left:-2px;padding:3px 5px 3px 0;
     color:var(--text);cursor:pointer;line-height:1;
   }
   .bkback::before{content:"‹";font-size:23px;font-weight:400;position:relative;top:-1px}
+  /* 보이는 건 화살표 그대로 — 누르는 영역만 넓힌다 (레이아웃·헤더 높이 영향 없음).
+     엄지가 왼쪽·위로 빗나가기 쉬워 그쪽을 더 준다. 오른쪽은 제목 글자 안 먹게 조금만. */
+  .bkback::after{content:"";position:absolute;inset:-11px -4px -8px -11px}
   .bkback:active{opacity:.4}
   /* 하단 버튼 위 공백은 margin 이 아니라 padding — 스크롤 컨테이너(#sheetBody) 안에서
      마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
