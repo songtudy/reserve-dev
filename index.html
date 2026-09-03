@@ -866,24 +866,36 @@ window.setThemeChrome = function(t){
     transition:transform .2s ease;
     transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 125px), 0px));
   }
-  .dialog h3{margin:0 0 13px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
-  .dialog input{
-    width:100%;background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:11px;
-    padding:12px 13px;font-family:inherit;font-size:16px;font-weight:600;
-    text-align:center;-webkit-appearance:none;appearance:none;
-  }
-  .dialog input::placeholder{color:var(--ph);font-weight:400}
-  .dialog input:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
+  .dialog h3{margin:0 0 8px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
+  .dialog .dlgnote{margin:0 0 4px;font-size:13px;line-height:1.55;color:var(--dim)}
   .dbtn{display:flex;gap:8px;margin-top:11px}
   .dbtn button{
     flex:1;padding:12px 0;border-radius:11px;
     border:1px solid var(--line);background:var(--panel2);
     color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
   }
-  .dbtn #dlgYes{background:var(--wait);color:var(--onWait);border-color:var(--wait)}
-  .dbtn #dlgYes:disabled{background:var(--panel2);color:var(--dim);border-color:var(--line);cursor:default}
   .dbtn button:active{filter:brightness(.9)}
+  /* 「초기화」는 한 번 눌러서가 아니라 「길게 눌러」 실행된다.
+     예전엔 '예' 를 타이핑하게 했는데, 그 키보드가 뜨면 아이폰이 화면(비주얼 뷰포트)을
+     밀어 올려 팝업이 위로 잘려 나갔다. 키보드를 아예 없애되 8/31 실수 방지 장치는
+     남기려고, 한 번의 탭·주머니 오작동으로는 안 되는 이 제스처로 바꿨다.
+     색은 취소된 예약 태그와 같은 --warn 계열 (경보가 아니라 '주의'). */
+  .dbtn #dlgYes{
+    --holdms:1000ms;                       /* 길게 누르기 시간 — JS 의 HOLD_MS 와 같아야 한다 */
+    position:relative;overflow:hidden;
+    background:var(--warnBg);border-color:var(--warnTag);color:var(--warnTagTx);
+    touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  }
+  .dbtn #dlgYes:active{filter:brightness(1.1)}   /* 어두운 바탕이라 취소(-)와 반대로 밝아진다 */
+  .dbtn #dlgYes .hf{                        /* hold-fill: 누르는 동안 왼쪽부터 차오른다 */
+    position:absolute;inset:0;background:var(--warn);opacity:.42;
+    transform:scaleX(0);transform-origin:left;transition:transform .18s ease;
+  }
+  .dbtn #dlgYes.hold .hf{transform:scaleX(1);transition:transform var(--holdms) linear}
+  .dbtn #dlgYes .ht{position:relative}      /* hold-text: 차오르는 판 위에 얹는다 (--warnTagTx 는 채움 위에서도 읽힌다) */
+  @media (prefers-reduced-motion:reduce){
+    .dbtn #dlgYes.hold .hf{transition:transform var(--holdms) steps(24)}
+  }
 
   /* ---------- 화장실 청소 룰렛 (이스터에그) ---------- */
   /* 서랍(61) 위 — 롱프레스로 열 때 빠져나가는 서랍이 룰렛 위를 스치지 않게 */
@@ -1064,10 +1076,11 @@ window.setThemeChrome = function(t){
 <div class="scrim hide" id="scrim">
   <div class="dialog">
     <h3 id="dlgTitle">명단을 초기화할까요?</h3>
-    <input type="text" id="dlgInput" placeholder="예" autocomplete="off" autocorrect="off" spellcheck="false">
+    <p class="dlgnote hide" id="dlgNote"></p>
     <div class="dbtn">
       <button type="button" id="dlgNo">취소</button>
-      <button type="button" id="dlgYes" disabled>확인</button>
+      <!-- 입력칸 없음 — 네이티브 키보드를 안 띄워야 팝업이 안 밀린다. 길게 눌러 실행. -->
+      <button type="button" id="dlgYes"><span class="hf"></span><span class="ht">초기화</span></button>
     </div>
   </div>
 </div>
@@ -3111,35 +3124,65 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   var scrim = document.getElementById('scrim');
-  function confirmDlg(title, onYes, yesLabel){
-    var yes = document.getElementById('dlgYes');
-    var no  = document.getElementById('dlgNo');
-    var inp = document.getElementById('dlgInput');
+  // 길게 눌러 확인하는 팝업. 입력칸(키보드)이 없다 — 한 번의 탭·주머니 오작동으로는 실행되지
+  // 않고, HOLD_MS 동안 「초기화」를 누르고 있어야 완성된다. 누르다 손을 떼거나 버튼 밖으로
+  // 밀면 처음으로 돌아간다.
+  var HOLD_MS = 1000;   // CSS 의 --holdms 와 반드시 같은 값
+  function confirmDlg(title, onYes, opts){
+    opts = opts || {};
+    var yes  = document.getElementById('dlgYes');
+    var no   = document.getElementById('dlgNo');
+    var note = document.getElementById('dlgNote');
     document.getElementById('dlgTitle').textContent = title;
-    yes.textContent = yesLabel || '확인';
-    inp.value = '';
-    yes.disabled = true;
+    yes.querySelector('.ht').textContent = opts.yes || '확인';
+    note.textContent = opts.note || '';
+    note.classList.toggle('hide', !opts.note);
     scrim.classList.remove('hide');
-    // 자동 포커스 안 함 — iOS 는 키보드를 안 올려서 커서만 깜빡일 뿐. 칸을 직접 누르면 입력.
 
-    function ok(){ return inp.value.trim() === '예'; }
+    var timer = null;
+    function stop(){                          // 손을 떼거나 버튼 밖으로 나가면 처음으로
+      if (timer){ clearTimeout(timer); timer = null; }
+      yes.classList.remove('hold');
+    }
+    function begin(){
+      stop();
+      yes.classList.add('hold');
+      timer = setTimeout(function(){
+        timer = null;
+        try { navigator.vibrate && navigator.vibrate(15); } catch(e){}
+        done(); onYes();
+      }, HOLD_MS);
+    }
     function hide(){
+      stop();
       scrim.classList.add('hide');
-      yes.onclick = null; no.onclick = null; scrim.onclick = null;
-      inp.oninput = null; inp.onkeydown = null;
+      no.onclick = scrim.onclick = null;
+      yes.onpointerdown = yes.onpointermove = yes.onpointerup = null;
+      yes.onpointercancel = yes.oncontextmenu = yes.onkeydown = yes.onkeyup = null;
     }
     function done(){ hide(); backDone(); }
     backOpen(hide);
-    inp.oninput = function(){ yes.disabled = !ok(); };
-    inp.onkeydown = function(e){ if (e.key === 'Enter' && ok()){ done(); onYes(); } };
-    yes.onclick = function(){ if (ok()){ done(); onYes(); } };
+
+    yes.onpointerdown = function(e){ if (!e.button) begin(); };
+    yes.onpointermove = function(e){          // 누른 채 버튼 밖으로 밀면 취소 — 빠져나갈 길
+      if (!timer) return;
+      var r = yes.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right ||
+          e.clientY < r.top  || e.clientY > r.bottom) stop();
+    };
+    yes.onpointerup = yes.onpointercancel = stop;
+    yes.oncontextmenu = function(e){ e.preventDefault(); };   // 길게 누를 때 뜨는 iOS 메뉴 차단
+    yes.onkeydown = function(e){                              // 키보드(데스크톱 검증용)
+      if ((e.key === ' ' || e.key === 'Enter') && !timer && !e.repeat){ e.preventDefault(); begin(); }
+    };
+    yes.onkeyup = function(e){ if (e.key === ' ' || e.key === 'Enter') stop(); };
     no.onclick  = done;
     scrim.onclick = function(e){ if (e.target === scrim) done(); };
   }
 
   document.getElementById('resetBtn').addEventListener('click', function(){
     if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
-    confirmDlg('오늘 명단을 초기화할까요?\n「예」를 입력해 주세요', function(){
+    confirmDlg('오늘 명단을 초기화할까요?', function(){
       logAdd('명단 초기화', state.items.length + '건 지움');
       editing = null; openMenu = null;
       deferredState = null; backgroundRenderPending = false;
@@ -3150,7 +3193,7 @@ window.dispatchEvent(new Event('fb-ready'));
       render();
       replaceItems([]);   // items 노드 삭제
 
-    }, '초기화');
+    }, { yes: '초기화', note: '「초기화」를 길게 누르세요 · 되돌릴 수 없어요' });
   });
 
   document.getElementById('loadBtn').addEventListener('click', function(){
