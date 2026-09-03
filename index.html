@@ -705,10 +705,10 @@ window.setThemeChrome = function(t){
   .bkvrow.go .st{color:var(--goTx)}
   .bkvrow.off .nm{color:var(--dim)}   /* 취소는 흐리게 — 안 올 손님 */
   .bkvrow.off .st{color:var(--warn)}
-  /* 상세 화면에서 시트 기본 하단바에 「명단 복사」를 하나 더 끼운다.
-     이 화면의 주동작이므로 주황(.btn.primary 계열) — 닫기와 크기·모양은 같고 색만 다르다. */
-  .sheetBtns .bkcopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
-  .sheetBtns .bkcopy:active{filter:brightness(.92)}
+  /* 시트 기본 하단바(닫기) 왼쪽에 그 시트의 주동작 버튼을 하나 더 끼운다 (지난 명단 상세 =
+     「명단 복사」, 설치 안내 = 「주소 복사」). 닫기와 크기·모양은 같고 색만 주황. */
+  .sheetBtns .sheetCopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
+  .sheetBtns .sheetCopy:active{filter:brightness(.92)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
@@ -722,6 +722,10 @@ window.setThemeChrome = function(t){
     background:var(--panel2);border:1px solid var(--line);border-radius:12px;
   }
   .wnet + .wnet{margin-top:8px}   /* 카드 사이만 — 마지막 카드 밑엔 여백 안 쌓임 */
+  /* 설치 안내의 주소 칸 — Wi-Fi 칸과 같은 모양. 값은 읽는 게 아니라 복사하는 것이라 조금 작게 */
+  .wnet.urlrow{margin-bottom:14px}
+  .wnet.urlrow .k{flex:0 0 auto}   /* 한 줄뿐이라 Wi-Fi 처럼 라벨 폭을 맞출 대상이 없다 */
+  .wnet .v.url{font-size:13px;font-weight:600;letter-spacing:.01em}
   .wnet .k{font-size:12px;font-weight:700;color:var(--dim);flex:0 0 52px}
   .wnet .v{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
   .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
@@ -3418,8 +3422,23 @@ window.dispatchEvent(new Event('fb-ready'));
   function sheetBtnsReset(){                 // 시트 전용 버튼(설치·지난명단상세)을 원상복구
     var nv = document.getElementById('sheetNever');
     if (nv) nv.classList.add('hide');        // '다시 보지 않기' 는 설치 안내 전용
-    var bc = document.querySelector('.sheetBtns .bkcopy');
-    if (bc) bc.remove();                     // '명단 복사' 는 지난 명단 상세 전용
+    var bc = document.querySelector('.sheetBtns .sheetCopy');
+    if (bc) bc.remove();                     // 시트 전용 복사 버튼(명단 복사·주소 복사)
+  }
+  // 하단바(닫기) 왼쪽에 그 시트의 주동작 복사 버튼을 끼운다. openSheet 이 매번 걷어내므로
+  // 반드시 openSheet 뒤에 부른다.
+  function sheetCopyBtn(label, onClick){
+    var sb = document.querySelector('.sheetBtns');
+    if (!sb) return;
+    var cp = sb.querySelector('.sheetCopy');
+    if (!cp){
+      cp = document.createElement('button');
+      cp.type = 'button';
+      cp.className = 'sheetClose sheetCopy';
+      sb.insertBefore(cp, sb.firstChild);
+    }
+    cp.textContent = label;
+    cp.onclick = onClick;
   }
   function openSheet(title, html){
     stopLogWatch();
@@ -3514,16 +3533,27 @@ window.dispatchEvent(new Event('fb-ready'));
       ]);
   }
   var INSTALL_NOTE = '<p class="sheetNote">'
-    + '「익순이」는 홈 화면에 추가하면 앱처럼 전체 화면으로 열립니다.</p>';
+    + '「익순이」는 홈 화면에 추가해 앱으로 쓸 때 가장 잘 동작합니다.</p>';
 
-  // 이미 앱으로 설치해 쓰는 중이면 서랍에서 「앱으로 설치하기」는 뺀다 (매장 폰은 대개 설치돼 있음)
-  if (isStandalone()){
-    var ib = document.getElementById('installBtn');
-    if (ib) ib.classList.add('hide');
+  // 이 앱의 주소. 실사용이면 /reserve/, 테스트면 /reserve-dev/ 가 저절로 나온다.
+  // 앱으로 설치하면 주소창이 없어 주소를 꺼낼 데가 없다 — 다른 폰에 깔거나,
+  // 초기화하려고 지웠다 다시 깔 때 필요하다.
+  function appUrl(){
+    return location.origin + location.pathname.replace(/index\.html$/, '');
+  }
+  function urlRowHtml(){
+    return '<div class="wnet urlrow"><span class="k">주소</span>'
+      + '<span class="v url">' + esc(appUrl().replace(/^https?:\/\//, '')) + '</span></div>';
+  }
+  // 서랍에서 열면 「주소 복사」를 달고, 자동 권유(maybeInstallHint)로 열면 안 단다 —
+  // 그쪽은 이미 브라우저로 이 주소에 들어와 있는 사람이고, 「다시 보지 않기」와 겹쳐 3개가 된다.
+  function openInstallSheet(withCopy){
+    openSheet('앱으로 설치하기', INSTALL_NOTE + urlRowHtml() + installHtml());
+    if (withCopy) sheetCopyBtn('주소 복사', function(){ copyText(appUrl(), '주소 복사됨'); });
   }
   document.getElementById('installBtn').addEventListener('click', function(){
     hideDrawer();
-    openSheet('앱으로 설치하기', INSTALL_NOTE + installHtml());
+    openInstallSheet(true);
   });
 
   /* ---------- Wi-Fi 안내 ---------- */
@@ -3627,16 +3657,9 @@ window.dispatchEvent(new Event('fb-ready'));
     title.innerHTML = '<span class="bkback" role="button" aria-label="목록으로"></span><span>' + esc(when) + '</span>';
     title.querySelector('.bkback').onclick = bkBack;
     document.getElementById('sheetBody').innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>';
-    // 시트 기본 하단바(닫기)에 「명단 복사」를 하나 끼운다 — 닫기와 크기·모양 같고, 이 화면 주동작이라 주황
-    var sb = document.querySelector('.sheetBtns');
-    if (sb && !sb.querySelector('.bkcopy')){
-      var cp = document.createElement('button');
-      cp.type = 'button'; cp.className = 'sheetClose bkcopy'; cp.textContent = '명단 복사';
-      sb.insertBefore(cp, sb.firstChild);
-    }
-    sb.querySelector('.bkcopy').onclick = function(){
+    sheetCopyBtn('명단 복사', function(){
       copyText(reportText(e.items), '명단 복사됨 · ' + (e.n != null ? e.n : e.items.length) + '건');
-    };
+    });
     backClose = bkBack;   // 뒤로가기 = 목록으로 (시트 닫기 아님)
   }
   function bkBack(){
@@ -3724,7 +3747,7 @@ window.dispatchEvent(new Event('fb-ready'));
         return el && !el.classList.contains('hide');
       }) || drawer.classList.contains('open');
       if (blocked) return;
-      openSheet('앱으로 설치하기', INSTALL_NOTE + installHtml());
+      openInstallSheet(false);
       sheetNever.classList.remove('hide');
     }, 1200);
   }
