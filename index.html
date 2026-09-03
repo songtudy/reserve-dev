@@ -48,7 +48,7 @@ window.setThemeChrome = function(t){
     --radius:14px;
     /* 바탕 */
     --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
-    --line:#252c36;     --press:#26313d;
+    --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
     --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
     --ph:#7b8695;
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
@@ -67,7 +67,7 @@ window.setThemeChrome = function(t){
   }
   html[data-theme="light"]{
     --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
-    --line:#dfe4ec;     --press:#e2e7ef;
+    --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
@@ -810,11 +810,18 @@ window.setThemeChrome = function(t){
     font-variant-numeric:tabular-nums;cursor:pointer;
     display:grid;place-items:center;
   }
-  /* .more:active 와 같은 규칙. 금색은 앱에서 「주동작/선택됨」 뜻이라 숫자키엔 안 쓴다. */
-  .lockkey:active{background:var(--press)}
+  /* 눌림 표시. :active 만 쓰면 탭이 100ms 안팎이라 실기기에서 거의 안 보인다 —
+     JS 가 .dn 을 최소 130ms 유지해 준다(:active 는 마우스/보조 입력용 폴백).
+     색은 중립(--keyDn) — 금색은 앱에서 「주동작/선택됨」 뜻이라 숫자키엔 안 쓴다.
+     --press 는 실기기에서 거의 안 보여 한 단계 더 밝은 값을 따로 뒀다. */
+  .lockkey.dn, .lockkey:active{
+    background:var(--keyDn);border-color:var(--keyDn);
+  }
+  .lockkey.act.dn, .lockkey.act:active{
+    background:var(--press);border-color:transparent;color:var(--text);
+  }
   .lockkey.blank{border:0;background:none;pointer-events:none}
   .lockkey.act{border:0;background:none;color:var(--dim)}
-  .lockkey.act:active{background:var(--press);color:var(--text)}
   .lockkey.act:disabled{opacity:.3}
   .lockkey svg{display:block}
   .lock.busy .lockpad{opacity:.45;pointer-events:none}
@@ -4251,6 +4258,20 @@ window.dispatchEvent(new Event('fb-ready'));
     pin = pin.slice(0, -1);
     paintPin();
   }
+
+  // 눌린 표시를 최소 130ms 유지한다 — 손가락이 스치듯 닿으면 :active 가 너무 짧아 안 보인다
+  (function(){
+    var pad = document.getElementById('lockPad');
+    function press(b){
+      if (!b || b.classList.contains('blank')) return;
+      b.classList.add('dn');
+      setTimeout(function(){ b.classList.remove('dn'); }, 130);
+    }
+    pad.addEventListener('pointerdown', function(e){
+      var b = e.target.closest && e.target.closest('.lockkey');
+      press(b);
+    });
+  })();
 
   document.getElementById('lockPad').addEventListener('click', function(e){
     var b = e.target.closest && e.target.closest('.lockkey');
