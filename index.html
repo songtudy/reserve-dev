@@ -885,15 +885,23 @@ window.setThemeChrome = function(t){
     --holdms:1000ms;                       /* 길게 누르기 시간 — JS 의 HOLD_MS 와 같아야 한다 */
     position:relative;overflow:hidden;
     background:var(--warnBg);border-color:var(--warnTag);color:var(--warnTagTx);
+    transition:background-color .12s;
     touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
-  .dbtn #dlgYes:active{filter:brightness(1.1)}   /* 어두운 바탕이라 취소(-)와 반대로 밝아진다 */
-  .dbtn #dlgYes .hf{                        /* hold-fill: 누르는 동안 왼쪽부터 차오른다 */
-    position:absolute;inset:0;background:var(--warn);opacity:.42;
+  /* 눌림은 면 한 단으로 — :active 는 탭이 짧으면 스쳐 지나가 못 믿는다(잠금 키패드에서 겪음).
+     글자 대비는 이 상태에서도 4.5:1 위 (다크 5.90 / 라이트 4.76). */
+  .dbtn #dlgYes.hold{background:var(--warnTag)}
+  .dbtn #dlgYes:active{filter:none}         /* 위 면 변화가 눌림을 말한다 — 공통 어두워짐과 겹치지 않게 */
+  /* 진행은 「글자 뒤」가 아니라 아래 띠로 그린다.
+     글자 뒤를 칠하면 차오를수록 글자가 묻힌다 — 라이트에서는 어떤 농도로도 4.5:1 을 못 넘겼다
+     (0.14 에서도 4.48). 띠는 글자와 겹치지 않아 대비 제약이 아예 없다. */
+  .dbtn #dlgYes .hf{
+    position:absolute;left:0;right:0;bottom:0;height:5px;   /* 3px 은 테두리에 묻혀 안 보였다 */
+    background:var(--warn);
     transform:scaleX(0);transform-origin:left;transition:transform .18s ease;
   }
   .dbtn #dlgYes.hold .hf{transform:scaleX(1);transition:transform var(--holdms) linear}
-  .dbtn #dlgYes .ht{position:relative}      /* hold-text: 차오르는 판 위에 얹는다 (--warnTagTx 는 채움 위에서도 읽힌다) */
+  .dbtn #dlgYes .ht{position:relative}
   @media (prefers-reduced-motion:reduce){
     .dbtn #dlgYes.hold .hf{transition:transform var(--holdms) steps(24)}
   }
@@ -3184,9 +3192,10 @@ window.dispatchEvent(new Event('fb-ready'));
 
   document.getElementById('resetBtn').addEventListener('click', function(){
     if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
-    // 안내문 = 「무슨 일이 일어나나 — 그래서 어떻게 하나」. 앱이 '복사 실패 — 다시 시도해 주세요'
-    // 처럼 쓰는 — 용법 그대로다. 추상적인 경고보다 실제 건수가 낫다: 기대한 수와 다르면
-    // 그 자리에서 손을 뗀다. (건수는 지우기 전에 읽혀야 하므로 콜백 밖, 호출 시점에 만든다)
+    // 안내문은 조작법 하나만 — 앱의 다른 창 보조문(#pasteHint·.rltsub)과 같은 규칙이다.
+    // 건수(「N건이 지워져요」)는 뺐다: 뒤에 명단이 그대로 보이고 상단에 16/16 이 이미 떠 있으며,
+    // 무엇보다 「명단 초기화」를 누른 사람에게 건수는 결정을 바꾸지 않는다. 실수를 막는 건
+    // 숫자가 아니라 1초를 누르고 있어야 하는 손가락 쪽이다.
     confirmDlg('오늘 명단을 초기화할까요?', function(){
       logAdd('명단 초기화', state.items.length + '건 지움');
       editing = null; openMenu = null;
@@ -3198,8 +3207,7 @@ window.dispatchEvent(new Event('fb-ready'));
       render();
       replaceItems([]);   // items 노드 삭제
 
-    }, { yes: '초기화',
-         note: '예약 ' + state.items.length + '건이 지워져요 — 「초기화」를 길게 누르세요' });
+    }, { yes: '초기화', note: '「초기화」를 길게 누르세요' });
   });
 
   document.getElementById('loadBtn').addEventListener('click', function(){
