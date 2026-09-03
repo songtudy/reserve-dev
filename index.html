@@ -803,14 +803,15 @@ window.setThemeChrome = function(t){
   }
   .lockkey{
     width:64px;height:64px;border-radius:50%;padding:0;
-    border:1px solid var(--line);background:var(--panel2);
+    /* 평소엔 테두리만(배경 투명) — 행의 ⋯ 버튼(.more)과 같은 방식.
+       채워둔 상태에서 --press 로 바꾸면 변화폭이 작아 눌린 게 잘 안 보인다. */
+    border:1px solid var(--line);background:none;
     color:var(--text);font-family:inherit;font-size:25px;font-weight:600;
     font-variant-numeric:tabular-nums;cursor:pointer;
     display:grid;place-items:center;
   }
-  /* 눌림 피드백 — 채움만으론 어두운 배경에서 잘 안 보여 테두리도 같이 밝힌다.
-     금색은 앱에서 「주동작/선택됨」 뜻이라 숫자키 10개에 쓰면 의미가 희석된다. */
-  .lockkey:active{background:var(--press);border-color:var(--dim)}
+  /* .more:active 와 같은 규칙. 금색은 앱에서 「주동작/선택됨」 뜻이라 숫자키엔 안 쓴다. */
+  .lockkey:active{background:var(--press)}
   .lockkey.blank{border:0;background:none;pointer-events:none}
   .lockkey.act{border:0;background:none;color:var(--dim)}
   .lockkey.act:active{background:var(--press);color:var(--text)}
