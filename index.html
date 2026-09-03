@@ -777,6 +777,10 @@ window.setThemeChrome = function(t){
        가운데가 그만큼 밀려 실행 직후 화면이 한 번 움직인다. 고정값이면 첫 프레임부터 확정. */
     padding:20px 24px;
   }
+  /* 해제될 때 .2s 페이드 — 서랍(.drawer)·스크림(.drawerScrim)과 같은 값.
+     페이드가 도는 동안 boot() 이 명단을 받아오므로 첫 로그인의 빈 화면도 가려진다. */
+  .lock{transition:opacity .2s}
+  .lock.out{opacity:0;pointer-events:none}
   .lock.hide{display:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
   .lockico{width:56px;height:56px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
@@ -4228,9 +4232,15 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function unlock(){
     try { localStorage.setItem('ix-authed', '1'); } catch(e){}
-    document.documentElement.setAttribute('data-authed', '1');
-    lockEl.classList.add('hide');
+    // boot() 을 먼저 돌린다 — 페이드가 도는 .2s 동안 명단을 받아와 빈 화면을 안 보여준다
     if (!booted){ booted = true; boot(); }
+    lockEl.classList.add('out');
+    setTimeout(function(){
+      lockEl.classList.add('hide');
+      lockEl.classList.remove('out');
+      // data-authed 는 맨 마지막에 — 먼저 걸면 CSS 가 즉시 display:none 으로 만들어 페이드가 죽는다
+      document.documentElement.setAttribute('data-authed', '1');
+    }, 210);
   }
   function lockShow(msg){
     try { localStorage.removeItem('ix-authed'); } catch(e){}
