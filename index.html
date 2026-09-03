@@ -4275,10 +4275,14 @@ window.dispatchEvent(new Event('fb-ready'));
   // 눌린 표시를 최소 130ms 유지한다 — 손가락이 스치듯 닿으면 :active 가 너무 짧아 안 보인다
   (function(){
     var pad = document.getElementById('lockPad');
+    var dnTimer = null, dnKey = null;
     function press(b){
-      if (!b || b.classList.contains('blank')) return;
-      b.classList.add('dn');
-      setTimeout(function(){ b.classList.remove('dn'); }, 130);
+      if (!b || b.classList.contains('blank') || b.disabled) return;
+      if (dnTimer){ clearTimeout(dnTimer); if (dnKey) dnKey.classList.remove('dn'); }
+      b.classList.add('dn'); dnKey = b;
+      dnTimer = setTimeout(function(){
+        b.classList.remove('dn'); dnTimer = null; dnKey = null;
+      }, 130);
     }
     pad.addEventListener('pointerdown', function(e){
       var b = e.target.closest && e.target.closest('.lockkey');
@@ -4294,7 +4298,10 @@ window.dispatchEvent(new Event('fb-ready'));
   });
   // 물리 키보드(맥·블루투스)로도 칠 수 있게 — 잠겨 있을 때만 듣는다
   document.addEventListener('keydown', function(e){
-    if (lockEl.classList.contains('hide')) return;
+    // .hide 만 보면 안 된다 — 재실행 기기는 html[data-authed] CSS 로 숨겨져 있고
+    // .hide 는 authWatch 응답 뒤에야 붙는다. 실제로 그려지는지를 기준으로 판단한다.
+    // (offsetParent 는 못 쓴다 — position:fixed 요소는 항상 null 이라 늘 무시돼 버린다.)
+    if (getComputedStyle(lockEl).display === 'none') return;
     if (e.key >= '0' && e.key <= '9'){ pinPush(e.key); e.preventDefault(); }
     else if (e.key === 'Backspace'){ pinPop(); e.preventDefault(); }
   });
