@@ -787,7 +787,10 @@ window.setThemeChrome = function(t){
     0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)}
     40%{transform:translateX(6px)}   60%{transform:translateX(-4px)} 80%{transform:translateX(2px)}
   }
-  .lockmsg{margin-top:12px;font-size:12.5px;color:var(--warn);min-height:1.2em;text-align:center}
+  /* 높이를 '고정'한다 — min-height 면 문구가 뜰 때 1px 늘어 점·키패드가 밀린다.
+     문구는 한 줄에 들어가는 길이로만 쓴다(320px 기준 14자 이하). */
+  .lockmsg{margin-top:12px;font-size:12.5px;line-height:18px;height:18px;
+           color:var(--warn);text-align:center;white-space:nowrap}
   /* 숫자 키패드 — 원형은 이 앱에서 단계 번호(.step .n)와 같은 결 */
   .lockpad{
     display:grid;grid-template-columns:repeat(3, 64px);gap:18px 22px;
@@ -796,7 +799,7 @@ window.setThemeChrome = function(t){
   .lockkey{
     width:64px;height:64px;border-radius:50%;padding:0;
     border:1px solid var(--line);background:var(--panel2);
-    color:var(--text);font-family:inherit;font-size:25px;font-weight:500;
+    color:var(--text);font-family:inherit;font-size:25px;font-weight:600;
     font-variant-numeric:tabular-nums;cursor:pointer;
     display:grid;place-items:center;
   }
@@ -1067,7 +1070,7 @@ window.setThemeChrome = function(t){
     <button type="button" class="lockkey" data-d="9">9</button>
     <span class="lockkey blank"></span>
     <button type="button" class="lockkey" data-d="0">0</button>
-    <button type="button" class="lockkey act" id="lockDel" aria-label="지우기"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6H9.5L3 12l6.5 6H20a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="M16 10l-4 4M12 10l4 4"/></svg></button>
+    <button type="button" class="lockkey act" id="lockDel" aria-label="지우기"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6H9.5L3 12l6.5 6H20a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="M16 10l-4 4M12 10l4 4"/></svg></button>
   </div>
 </div>
 
@@ -4222,9 +4225,9 @@ window.dispatchEvent(new Event('fb-ready'));
       clearPin();                          // 성공 — authWatch 가 unlock 시킨다
     }).catch(function(err){
       var c = (err && err.code) || '';
-      lockFail(c === 'auth/network-request-failed' ? '연결이 안 됩니다. 잠시 뒤 다시 해 주세요.'
-             : c === 'auth/too-many-requests'      ? '시도가 많았습니다. 잠시 뒤 다시 해 주세요.'
-             : '비밀번호가 맞지 않아요.');
+      lockFail(c === 'auth/network-request-failed' ? '연결을 확인해 주세요'
+             : c === 'auth/too-many-requests'      ? '잠시 뒤 다시 시도해 주세요'
+             : '비밀번호가 맞지 않아요');
     }).then(function(){ lockEl.classList.remove('busy'); });
   }
   function pinPush(d){
@@ -4257,7 +4260,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function lockStart(){
     if (!window.__fb || !window.__fb.authWatch){   // Auth 를 못 불러왔을 때
-      lockShow('연결이 필요합니다. 잠시 뒤 다시 시도해 주세요.');
+      lockShow('연결이 필요합니다');
       return;
     }
     window.__fb.authWatch(function(signedIn){
@@ -4270,7 +4273,7 @@ window.dispatchEvent(new Event('fb-ready'));
   if (window.__fb) lockStart();
   else {
     window.addEventListener('fb-ready', lockStart, { once: true });
-    setTimeout(function(){ if (!window.__fb) lockShow('연결이 안 됩니다. 앱을 다시 열어 주세요.'); }, 15000);
+    setTimeout(function(){ if (!window.__fb) lockShow('앱을 다시 열어 주세요'); }, 15000);
   }
 })();
 </script>
