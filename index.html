@@ -31,6 +31,13 @@ window.setThemeChrome = function(t){
   try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
   window.setThemeChrome(t);
 })();
+// 전에 이 기기에서 로그인했으면 잠금 화면을 아예 그리지 않는다 (앱 열 때마다 번쩍이지 않게).
+// Auth SDK 는 네트워크에서 로드된 뒤에야 로그인 상태를 알려주므로, 그때까지의 공백을 이 표식이 메운다.
+// 보안이 아니라 깜빡임 방지용 — 실제 차단은 Firebase 규칙이 한다. 표식만 조작해도 명단은 못 읽는다.
+// 로그인이 아닌 것으로 밝혀지면 아래 IIFE 가 이 속성을 지우고 잠금을 띄운다.
+(function(){
+  try { if (localStorage.getItem('ix-authed') === '1') document.documentElement.setAttribute('data-authed','1'); } catch(e){}
+})();
 </script>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -751,6 +758,40 @@ window.setThemeChrome = function(t){
     color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
   }
 
+  /* ---------- 잠금 화면 (공유 비밀번호) ----------
+     로그인 상태를 알기 전까지, 그리고 로그인 안 됐을 때 앱 전체를 덮는다.
+     토스트(200)보다 위. 앱 셸이 이미 fixed 라 여기도 fixed 로 겹친다. */
+  .lock{
+    position:fixed;inset:0;z-index:300;
+    background:var(--ink);
+    display:flex;flex-direction:column;align-items:center;
+    padding:calc(env(safe-area-inset-top) + 56px) 30px calc(env(safe-area-inset-bottom) + 26px);
+  }
+  .lock.hide{display:none}
+  html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
+  .lockico{width:58px;height:58px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
+  .lockname{margin-top:16px;font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+  .locksub{margin-top:4px;font-size:13px;color:var(--dim)}
+  .lockform{width:100%;max-width:300px;margin-top:38px}
+  .locklab{font-size:12px;color:var(--dim);margin-bottom:7px}
+  .lockin{
+    width:100%;height:46px;padding:0 14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    color:var(--text);font-family:inherit;font-size:17px;letter-spacing:3px;
+    -webkit-appearance:none;appearance:none;
+  }
+  .lockin:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
+  .lock.bad .lockin{border-color:var(--warn)}
+  .lockgo{
+    width:100%;height:46px;margin-top:10px;border:0;border-radius:11px;
+    background:var(--wait);color:var(--onWait);
+    font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .lockgo:active{filter:brightness(.92)}
+  .lockgo:disabled{opacity:.5}
+  .lockmsg{margin-top:9px;font-size:12.5px;color:var(--warn);min-height:1.2em}
+  .lockfoot{margin-top:auto;font-size:12px;line-height:1.6;color:var(--off);text-align:center}
+
   .scrim{
     position:fixed;inset:0;z-index:50;
     background:var(--scrim);
@@ -990,11 +1031,30 @@ window.setThemeChrome = function(t){
 
 <div class="toast" id="toast"></div>
 
+<!-- 잠금 화면 — 로그인 상태를 확인하기 전까지 기본으로 떠 있다(=기본 잠김) -->
+<div class="lock" id="lock">
+  <img class="lockico" src="apple-touch-icon.png" alt="" width="58" height="58" draggable="false">
+  <div class="lockname">익순이</div>
+  <div class="locksub">익선취향 예약 매니저</div>
+  <form class="lockform" id="lockForm" autocomplete="off">
+    <div class="locklab">비밀번호</div>
+    <input class="lockin" id="lockPw" type="password" inputmode="numeric"
+           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+           enterkeyhint="go" aria-label="비밀번호">
+    <button class="lockgo" id="lockGo" type="submit">들어가기</button>
+    <div class="lockmsg" id="lockMsg" role="status"></div>
+  </form>
+  <div class="lockfoot">처음 한 번만 입력하면<br>이 기기에서 계속 열려요</div>
+</div>
+
 <script type="module">
 // ---------- Firebase 연결 ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue, off, goOffline, goOnline }
   from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+         setPersistence, browserLocalPersistence }
+  from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA62A2jtIE77DgOcJ17Jb6S9gH4oTeNeKw",
@@ -1006,7 +1066,8 @@ const firebaseConfig = {
   appId: "1:456621961785:web:a2ba82fb70d6f198b5d3e8"
 };
 
-const db = getDatabase(initializeApp(firebaseConfig));
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 // dev/prod 판정 — 실제 배포 주소일 때만 prod, 그 외 전부 dev(roster-dev).
 // 실배포: songtudy.github.io/reserve/   테스트: songtudy.github.io/reserve-dev/
 // localhost·파일·미리보기·폴더 복사본·남의 fork = 전부 dev. 실명단을 건드리지 않는다.
@@ -1031,6 +1092,11 @@ const itemsRef = ds => ref(db, ROOT + '/' + ds + '/items');
 // 서버 시계를 따르게. 서버 시계는 구글 인프라(NTP)라 실제 시각과 사실상 일치한다.
 let __skewMs = 0, __skewKnown = false;
 onValue(ref(db, '.info/serverTimeOffset'), s => { __skewMs = Number(s.val()) || 0; __skewKnown = true; });
+
+// 공유 로그인 계정 — 이메일은 앱에 고정, 비밀번호만 직원이 입력한다.
+// (실제로 메일이 오가지 않는 주소. 비번 재설정은 Firebase 콘솔에서만 가능.)
+const STAFF_EMAIL = 'staff@iksuni.app';
+const auth = getAuth(app);
 
 window.__fb = {
   serverSkew: () => __skewMs,
@@ -1088,7 +1154,17 @@ window.__fb = {
   // Firebase가 알려주는 실제 연결 상태
   onConnected: cb => onValue(ref(db, '.info/connected'), s => cb(s.val() === true)),
   // 연결이 죽었을 때 소켓을 끊었다 다시 붙인다
-  reconnect: () => { try { goOffline(db); } catch(e){} setTimeout(() => { try { goOnline(db); } catch(e){} }, 150); }
+  reconnect: () => { try { goOffline(db); } catch(e){} setTimeout(() => { try { goOnline(db); } catch(e){} }, 150); },
+
+  // ---- 공유 비밀번호 로그인 ----
+  // 직원 전원이 계정 하나를 함께 쓴다. 이메일은 여기 고정하고 직원은 비밀번호만 친다.
+  // 세션은 기기에 저장(browserLocalPersistence)되므로 기기당 한 번만 입력하면 되고,
+  // 다음부터는 오프라인으로 켜도 로그인 상태가 복원된다.
+  authWatch: cb => onAuthStateChanged(auth, u => cb(!!u)),
+  signIn: pw => setPersistence(auth, browserLocalPersistence)
+                  .catch(() => {})                       // 저장 실패해도 로그인은 시도
+                  .then(() => signInWithEmailAndPassword(auth, STAFF_EMAIL, pw)),
+  signOut: () => signOut(auth)
 };
 window.dispatchEvent(new Event('fb-ready'));
 </script>
@@ -4072,11 +4148,64 @@ window.dispatchEvent(new Event('fb-ready'));
     paintHead();
   }, 5000);
 
+  /* ---------- 잠금 화면 (공유 비밀번호) ----------
+     기본은 '잠김'. 로그인 상태가 확인돼야 잠금이 풀리고 boot() 이 돈다.
+     세션은 기기에 저장되므로 기기당 한 번만 입력하면 되고, 그 뒤엔 오프라인으로 켜도 통과한다.
+     ※ 실제 보안은 Firebase 규칙이 담당한다 — 이 화면은 그 앞의 문일 뿐.
+     ※ 실사용에 배포할 땐 순서 주의: 앱을 먼저 올리고 매장 폰들을 로그인시킨 뒤에 규칙을 조인다.
+        (규칙을 먼저 조이면 잠금 화면 없는 구버전 앱이 명단을 못 읽는다.) */
+  var lockEl  = document.getElementById('lock');
+  var lockPw  = document.getElementById('lockPw');
+  var lockGo  = document.getElementById('lockGo');
+  var lockMsg = document.getElementById('lockMsg');
+  var booted  = false;
+
+  function unlock(){
+    try { localStorage.setItem('ix-authed', '1'); } catch(e){}
+    document.documentElement.setAttribute('data-authed', '1');
+    lockEl.classList.add('hide');
+    if (!booted){ booted = true; boot(); }
+  }
+  function lockShow(msg){
+    try { localStorage.removeItem('ix-authed'); } catch(e){}
+    document.documentElement.removeAttribute('data-authed');   // 표식을 지워야 잠금이 실제로 보인다
+    lockEl.classList.remove('hide');
+    lockEl.classList.toggle('bad', !!msg);
+    lockMsg.textContent = msg || '';
+  }
+  function lockStart(){
+    if (!window.__fb || !window.__fb.authWatch){   // Auth 를 못 불러왔을 때
+      lockShow('연결이 필요합니다. 잠시 뒤 다시 시도해 주세요.');
+      return;
+    }
+    window.__fb.authWatch(function(signedIn){
+      if (signedIn) unlock();
+      else lockShow('');
+    });
+  }
+  document.getElementById('lockForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var pw = lockPw.value;
+    if (!pw){ lockShow('비밀번호를 입력해 주세요.'); return; }
+    lockGo.disabled = true;
+    lockMsg.textContent = '';
+    lockEl.classList.remove('bad');
+    window.__fb.signIn(pw).then(function(){
+      lockPw.value = '';                 // 성공 — authWatch 가 unlock 시킨다
+    }).catch(function(err){
+      var c = (err && err.code) || '';
+      lockShow(c === 'auth/network-request-failed' ? '연결이 안 됩니다. 잠시 뒤 다시 시도해 주세요.'
+             : c === 'auth/too-many-requests'      ? '시도가 많았습니다. 잠시 뒤 다시 해 주세요.'
+             : '비밀번호가 맞지 않아요.');
+      lockPw.select();
+    }).then(function(){ lockGo.disabled = false; });
+  });
+
   // Firebase 모듈이 먼저 준비되면 바로, 아니면 준비 신호를 기다린다
-  if (window.__fb) boot();
+  if (window.__fb) lockStart();
   else {
-    window.addEventListener('fb-ready', boot, { once: true });
-    setTimeout(function(){ if (!state) boot(); }, 300000);  // 로딩 실패 시에도 화면은 뜨게
+    window.addEventListener('fb-ready', lockStart, { once: true });
+    setTimeout(function(){ if (!window.__fb) lockShow('연결이 안 됩니다. 앱을 다시 열어 주세요.'); }, 15000);
   }
 })();
 </script>
