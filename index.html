@@ -573,6 +573,9 @@ window.setThemeChrome = function(t){
     display:flex;align-items:flex-end;justify-content:center;
   }
   .sheetScrim.hide{display:none}
+  /* 잠금화면(300) 위로 올린다 — 설치 안내는 로그인 전에 보여야 하는 것이라 잠금보다 앞이다.
+     조건은 .lock 의 표시 조건과 정확히 짝(html[data-authed="1"] .lock{display:none}) */
+  html:not([data-authed="1"]) .sheetScrim{ z-index:310 }
   /* 메인 앱셸처럼 — 제목·버튼은 고정, 가운데(#sheetBody)만 세로 스크롤.
      긴 FAQ·명단에서도 제목·닫기가 안 사라지고 좌우 스크롤도 안 생긴다. */
   .sheet{
@@ -3953,7 +3956,8 @@ window.dispatchEvent(new Event('fb-ready'));
     try { return localStorage.getItem(HINT_KEY) === '1'; } catch(e){ return true; }
   }
   function maybeInstallHint(){
-    if (isStandalone() || hintOff()) return;
+    if (maybeInstallHint._done || isStandalone() || hintOff()) return;
+    maybeInstallHint._done = true;   // 잠금화면과 boot 양쪽에서 부르므로 여기서 한 번만 막는다
     setTimeout(function(){
       // 다른 안내·서랍·팝업이 떠 있으면 그 위에 겹쳐 띄우지 않는다 (이번엔 건너뛴다)
       var blocked = ['sheetScrim', 'scrim', 'rltScrim', 'panelScrim'].some(function(id){
@@ -4079,7 +4083,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (!ticketCurrent(ticket)) return;
       stageBackgroundState(itemsToState(ticket.date, res));
       watchRemote();   // 즉시 fire → applyRemoteItems 가 필요시 구 형식 변환도 한다
-      if (!boot._hinted){ boot._hinted = true; maybeInstallHint(); }
+      maybeInstallHint();   // 중복 방지는 maybeInstallHint 안에서 한다
     }).catch(function(){
       if (!ticketCurrent(ticket)) return;
       stageBackgroundState(state || { date: ticket.date, items: [] });
@@ -4413,6 +4417,10 @@ window.dispatchEvent(new Event('fb-ready'));
       } else {
         if (booted) staleBoot = true;                  // 표식만 믿고 띄웠는데 실제론 로그인 아님
         lockShow('');
+        // 설치 안내는 「로그인하기 전에」 봐야 한다. 아이폰은 사파리와 홈 화면 앱의 저장소가
+        // 완전히 분리돼 있어서, 사파리에서 먼저 로그인하면 앱을 설치한 뒤 비번을 또 넣어야 한다.
+        // 여기서 권해야 「설치 → 앱에서 한 번만 로그인」 순서가 된다.
+        maybeInstallHint();
       }
     });
   }
