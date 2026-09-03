@@ -803,9 +803,11 @@ window.setThemeChrome = function(t){
   }
   .lockkey{
     width:64px;height:64px;border-radius:50%;padding:0;
-    /* 평소엔 테두리만(배경 투명) — 행의 ⋯ 버튼(.more)과 같은 방식.
-       채워둔 상태에서 --press 로 바꾸면 변화폭이 작아 눌린 게 잘 안 보인다. */
-    border:1px solid var(--line);background:none;
+    /* 명단 행(.row)과 같은 면 — 앱에서 단독으로 놓인 컨트롤은 전부 배경을 갖는다
+       (행 --panel / 시트 버튼·카드 --panel2 / 링크 복사 칩 --line).
+       투명은 이미 채워진 카드 안쪽(.main·.more)이나 아이콘 버튼에만 쓴다.
+       키패드는 --ink 위에 단독으로 놓이므로 행과 같은 --panel. */
+    border:1px solid var(--line);background:var(--panel);
     color:var(--text);font-family:inherit;font-size:25px;font-weight:600;
     font-variant-numeric:tabular-nums;cursor:pointer;
     display:grid;place-items:center;
