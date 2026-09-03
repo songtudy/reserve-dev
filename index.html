@@ -764,11 +764,12 @@ window.setThemeChrome = function(t){
   .lock{
     position:fixed;inset:0;z-index:300;
     background:var(--ink);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    /* 키보드가 올라오면 그 높이(--kb)만큼 아래를 비워, 남은 공간 '가운데'에 다시 자리잡는다.
-       위에서부터 쌓으면 iOS 가 입력칸을 보여주려고 화면을 밀어 올려 로고가 잘린다. */
-    padding:calc(env(safe-area-inset-top) + 24px) 30px
-            calc(env(safe-area-inset-bottom) + 24px + var(--kb, 0px));
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    /* 키보드가 떠도 화면이 '안 움직이게' 한다 — --kb 를 쓰지 않는다.
+       대신 처음부터 위쪽(14vh)에 앉혀, 키보드가 최대로 올라와도 버튼까지 다 보인다.
+       (가운데 정렬 + --kb 로 다시 앉히는 방식은 매번 미끄러져 올라가 산만했다.) */
+    padding:max(calc(env(safe-area-inset-top) + 24px), 11vh) 30px
+            calc(env(safe-area-inset-bottom) + 24px);
   }
   .lock.hide{display:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
