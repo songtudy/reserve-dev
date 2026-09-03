@@ -764,7 +764,12 @@ window.setThemeChrome = function(t){
      키패드로 바꾸면 그 원인 자체가 없어져 화면이 완전히 정적이다.
      토스트(200)보다 위. 로그인 상태를 알기 전까지, 그리고 로그인 안 됐을 때 앱 전체를 덮는다. */
   .lock{
-    position:fixed;inset:0;z-index:300;
+    /* 높이를 svh(주소창이 펼쳐진 기준의 '작은 뷰포트')로 고정한다.
+       inset:0 이면 사파리 주소창이 접힐 때 높이가 변하고, 가운데 정렬이라
+       그 절반만큼 내용이 위로 튄다. svh 는 그 변화에 안 흔들린다.
+       (홈 화면 앱 모드엔 주소창이 없어 원래 안 튀지만, 브라우저로 열 때를 위해.) */
+    position:fixed;top:0;left:0;right:0;z-index:300;
+    height:100vh;height:100svh;
     background:var(--ink);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 20px);
@@ -803,10 +808,12 @@ window.setThemeChrome = function(t){
     font-variant-numeric:tabular-nums;cursor:pointer;
     display:grid;place-items:center;
   }
-  .lockkey:active{background:var(--press)}
+  /* 눌림 피드백 — 채움만으론 어두운 배경에서 잘 안 보여 테두리도 같이 밝힌다.
+     금색은 앱에서 「주동작/선택됨」 뜻이라 숫자키 10개에 쓰면 의미가 희석된다. */
+  .lockkey:active{background:var(--press);border-color:var(--dim)}
   .lockkey.blank{border:0;background:none;pointer-events:none}
   .lockkey.act{border:0;background:none;color:var(--dim)}
-  .lockkey.act:active{background:var(--press)}
+  .lockkey.act:active{background:var(--press);color:var(--text)}
   .lockkey.act:disabled{opacity:.3}
   .lockkey svg{display:block}
   .lock.busy .lockpad{opacity:.45;pointer-events:none}
