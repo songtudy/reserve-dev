@@ -854,6 +854,16 @@ window.setThemeChrome = function(t){
   .lock.busy .lockdots i.on{animation:lockpulse .9s ease-in-out infinite}
   @keyframes lockpulse{50%{opacity:.3}}
 
+  /* 막이 떠 있는 동안엔 뒤 명단을 잠근다.
+     막은 스크롤되는 요소가 아니라, 그 위를 끌면 브라우저가 밑의 .wrap 을 대신 굴렸다
+     — 다이얼로그를 띄운 채로 명단이 끝까지 밀려 내려가던 원인.
+     overflow:hidden 은 손가락 스크롤만 막고 scrollTop 은 그대로 둔다(닫으면 보던 자리 그대로).
+     :has() 를 못 읽는 낡은 브라우저는 이 줄만 무시하고 기존대로 동작한다. */
+  body:has(.scrim:not(.hide)) .wrap,
+  body:has(.panelScrim:not(.hide)) .wrap,
+  body:has(.sheetScrim:not(.hide)) .wrap,
+  body:has(.drawerScrim:not(.off)) .wrap{ overflow:hidden }
+
   .scrim{
     position:fixed;inset:0;z-index:50;
     background:var(--scrim);
@@ -865,10 +875,11 @@ window.setThemeChrome = function(t){
     width:100%;max-width:330px;
     background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:19px 18px 15px;
-    /* 키보드가 떠도 앱이 직접 올리지 않는다 — OS 가 이미 한다.
-       iOS 는 포커스된 칸을 보이게 하려고 화면 전체를 위로 밀고(position:fixed 도 같이 딸려 간다),
-       안드로이드는 뷰포트를 줄여 place-items:center 가 알아서 다시 가운데로 잡는다.
-       여기서 --kb 로 한 번 더 올리면 그 둘과 더해져 다이얼로그가 화면 위로 잘려 나갔다. */
+    /* 평소엔 화면 중앙. 키보드가 올라오면 딱 그 위(약 26px 틈)까지만 올라간다.
+       --kb 가 작을 땐(중앙 배치로 이미 안 가림) 0 → 안 움직임. 125 ≈ 틈 + 다이얼로그 높이 절반.
+       clamp 아래끝: 가로 모드 등 극단적으로 짧은 화면에서 위로 잘려나가는 것 방지. */
+    transition:transform .2s ease;
+    transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 125px), 0px));
   }
   .dialog h3{margin:0 0 13px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
   .dialog input{
@@ -896,7 +907,8 @@ window.setThemeChrome = function(t){
     width:100%;max-width:340px;
     background:var(--panel);border:1px solid var(--line);border-radius:16px;
     padding:20px 18px 15px;
-    /* 위 .dialog 와 같은 이유로 --kb 이동 없음 — OS 가 처리한다 */
+    transition:transform .2s ease;
+    transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px));
   }
   .rlt h3{margin:0 0 3px;font-size:18px;font-weight:800;letter-spacing:-.02em}
   .rltsub{margin:0 0 12px;font-size:12px;color:var(--dim)}
