@@ -772,7 +772,10 @@ window.setThemeChrome = function(t){
     height:100vh;height:100svh;
     background:var(--ink);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 20px);
+    /* safe-area-inset 을 쓰지 않는다 — 내용이 세로 가운데 정렬이고 위아래로 180px 넘게
+       남아서 노치/홈바에 닿을 일이 없는데, env() 가 뒤늦게 0 → 실제값으로 풀리면
+       가운데가 그만큼 밀려 실행 직후 화면이 한 번 움직인다. 고정값이면 첫 프레임부터 확정. */
+    padding:20px 24px;
   }
   .lock.hide{display:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
@@ -783,10 +786,12 @@ window.setThemeChrome = function(t){
   .lockdots{display:flex;gap:14px;margin-top:26px;height:12px;align-items:center}
   .lockdots i{
     width:12px;height:12px;border-radius:50%;
-    border:1.5px solid var(--off);background:none;
-    transition:background .12s, border-color .12s;
+    border:1.5px solid var(--off);background-color:transparent;
+    transition:background-color .12s, border-color .12s;
   }
-  .lockdots i.on{background:var(--wait);border-color:var(--wait)}
+  /* 라이트에서 --wait(#f5aa14)는 흰 배경 위 대비가 1.8:1 로 거의 안 보인다.
+     --waitTx 는 그 대비용 토큰(다크에선 --wait 와 같은 값). */
+  .lockdots i.on{background-color:var(--waitTx);border-color:var(--waitTx)}
   .lock.bad .lockdots{animation:lockshake .32s}
   @keyframes lockshake{
     0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)}
