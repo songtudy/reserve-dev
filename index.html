@@ -4354,24 +4354,42 @@ window.dispatchEvent(new Event('fb-ready'));
   // selftest.js 가 단언 검사를 돌려 결과를 화면에 뿌린다. 평소엔 이 블록을 그냥 지나간다.
   // ---------- 콜드 스타트 계측 (index.html?perf) ----------
   // 앱은 평소대로 돌리되, 6초 뒤 구간별 소요 시간을 화면 아래에 띄운다.
+  // 추가로 「REST 로 명단만 받기」를 실배포 주소에 대고 한 번 재서(읽기 전용, 무해) SDK 경로와
+  // 나란히 보여준다 — 테스트 레포에선 SDK 경로가 인증 대기라 이 비교로만 개선폭을 알 수 있다.
   if (/[?&]perf\b/.test(location.search)) {
-    setTimeout(function(){
+    var lpad = function(v, n){ v = String(v); while (v.length < n) v = ' ' + v; return v; };
+    var perfBox = null, restLine = '';
+    var drawPerf = function(){
       var m = window.__perf || [];
       if (!m.length) return;
-      var box = document.createElement('div');
-      box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;'
-        + 'background:#0f1319;border:1px solid #e8b757;border-radius:10px;padding:12px 14px;'
-        + 'font:12px/1.7 -apple-system,monospace;color:#f0f3f6;white-space:pre;overflow:auto;max-height:45vh';
-      var lpad = function(v, n){ v = String(v); while (v.length < n) v = ' ' + v; return v; };
+      if (!perfBox){
+        perfBox = document.createElement('div');
+        perfBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;'
+          + 'background:#0f1319;border:1px solid #e8b757;border-radius:10px;padding:12px 14px;'
+          + 'font:12px/1.7 -apple-system,monospace;color:#f0f3f6;white-space:pre;overflow:auto;max-height:45vh';
+        perfBox.onclick = function(){ perfBox.remove(); };
+        document.body.appendChild(perfBox);
+      }
       var t0 = m[0][1], prev = t0, out = '콜드 스타트 (직전구간 / 누적, ms)\n';
       m.forEach(function(row){
         out += lpad(Math.round(row[1] - prev), 6) + lpad(Math.round(row[1] - t0), 8) + '   ' + row[0] + '\n';
         prev = row[1];
       });
-      box.textContent = out + '\n탭하면 닫힘';
-      box.onclick = function(){ box.remove(); };
-      document.body.appendChild(box);
-    }, 6000);
+      perfBox.textContent = out + restLine + '\n탭하면 닫힘';
+    };
+    // 실배포 REST 로 오늘 명단만 받아 시간 측정 (SDK 소켓·인증 없이 순수 HTTPS GET)
+    var restUrl = 'https://ikseon-reserve-default-rtdb.asia-southeast1.firebasedatabase.app/roster/'
+      + bizDate() + '/items.json';
+    var rt = performance.now();
+    fetch(restUrl, { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(v){
+        var ms = Math.round(performance.now() - rt);
+        var n = v ? Object.keys(v).length : 0;
+        restLine = '\n[참고] 실배포 REST 명단 받기: ' + ms + ' ms (' + n + '건)\n'
+          + '      → SDK 「명단 수신」 누적과 비교. 실배포에선 이 값이 첫 화면 시간.\n';
+        drawPerf();
+      }, function(){ restLine = '\n[참고] 실배포 REST 측정 실패\n'; drawPerf(); });
+    setTimeout(drawPerf, 6000);
   }
 
   if (/[?&]selftest\b/.test(location.search)) {
