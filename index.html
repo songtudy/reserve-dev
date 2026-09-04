@@ -1061,6 +1061,8 @@ window.setThemeChrome = function(t){
   <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
   <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
   <button type="button" class="dwitem" id="installBtn">앱으로 설치하기</button>
+  <div class="dwsep"></div>
+  <button type="button" class="dwitem" id="logoutBtn">로그아웃</button>
   <div class="dwsep push"></div>
   <div class="dwtheme">
     <span class="dwthlab">테마</span>
@@ -3799,6 +3801,14 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('installBtn').addEventListener('click', function(){
     hideDrawer();
     openInstallSheet();
+  });
+
+  // 로그아웃 — 세션만 지운다. 잠금화면의 authWatch 가 이를 감지해 키패드를 띄우고,
+  // 다시 로그인하면 화면을 새로 불러 깨끗한 상태로 돌아간다. (별도 확인창 없음 —
+  // 데이터가 지워지는 게 아니라 비번만 다시 치면 되고, 서랍은 이미 일부러 열어야 한다.)
+  document.getElementById('logoutBtn').addEventListener('click', function(){
+    hideDrawer();
+    if (window.__fb && window.__fb.signOut) window.__fb.signOut();
   });
 
   /* ---------- Wi-Fi 안내 ---------- */
