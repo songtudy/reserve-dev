@@ -206,17 +206,16 @@ window.setThemeChrome = function(t){
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
 
-  /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄(순수 표시, 안 눌림). 동작은 하단
-     「새로고침」→「업데이트」 버튼. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
+  /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 순수 표시(안 눌림): 실행은 하단
+     「새로고침」→「업데이트」(금색) 버튼이 맡는다. 띠와 버튼이 같은 금색이라 한 쌍으로 읽힌다.
+     flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
   .updbar{
     flex:0 0 auto;display:block;width:100%;
     padding:8px 14px;text-align:center;
     background:var(--wait);color:var(--onWait);
     border-bottom:1px solid var(--line);
     font-size:13px;font-weight:600;letter-spacing:.01em;
-    cursor:pointer;                     /* 띠 자체가 업데이트 버튼이다 — 하단 「업데이트」가 안 보일 때(백지 화면 등)의 유일한 탈출구 */
   }
-  .updbar:active{filter:brightness(.92)}
 
   /* search */
   .searchbar{
@@ -996,7 +995,7 @@ window.setThemeChrome = function(t){
     </div>
   </header>
 
-<div class="updbar hide" id="updBar" role="button" tabindex="0">새 버전이 나왔습니다 — 눌러서 업데이트</div>
+<div class="updbar hide" id="updBar">새 버전이 나왔습니다</div>
 
 <div class="searchbar hide" id="searchbar">
   <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
@@ -4063,10 +4062,6 @@ window.dispatchEvent(new Event('fb-ready'));
     try { sessionStorage.setItem('ix-updated', '1'); } catch(e){}   // 새로 뜬 뒤 확인 토스트용
     try { window.location.reload(); } catch(e){}
   }
-  // 「새 버전이 나왔어요」 띠를 눌러도 업데이트 — 하단 「업데이트」가 안 보이는 상황
-  // (명단이 안 떠 하단 바가 숨은 백지 화면 등)에서도 빠져나올 수 있게.
-  if (updBar) updBar.addEventListener('click', function(){ if (updShown) doUpdate(); });
-
   var refreshBtn = document.getElementById('refreshBtn');
   refreshBtn.addEventListener('click', function(){
     // 새 버전이 감지된 상태면 이 버튼은 「업데이트」 — 눌러서 새로 불러온다.
