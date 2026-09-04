@@ -22,10 +22,6 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js">
 
 <script>
-// 콜드 스타트 구간별 소요 시간 — index.html?perf 로 화면에 표시된다. 평소엔 배열만 쌓고 만다.
-window.__perf = [['문서 파싱', performance.now()]];
-</script>
-<script>
 // 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
 // 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
 //
@@ -46,10 +42,11 @@ window.setThemeChrome = function(t){
   try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
   window.setThemeChrome(t);
 })();
-// 전에 이 기기에서 로그인했으면 잠금 화면을 아예 그리지 않는다 (앱 열 때마다 번쩍이지 않게).
-// Auth SDK 는 네트워크에서 로드된 뒤에야 로그인 상태를 알려주므로, 그때까지의 공백을 이 표식이 메운다.
-// 보안이 아니라 깜빡임 방지용 — 실제 차단은 Firebase 규칙이 한다. 표식만 조작해도 명단은 못 읽는다.
-// 로그인이 아닌 것으로 밝혀지면 아래 IIFE 가 이 속성을 지우고 잠금을 띄운다.
+// 전에 이 기기에서 로그인했으면 잠금 대신 「로딩 화면」(아이콘·이름만)으로 연다 — 위 CSS 참고.
+// Auth SDK 는 네트워크에서 로드된 뒤에야 로그인 상태를 알려주고, 그 사이 명단도 받아온다.
+// 그 ~1초 공백을 이 표식이 로딩 화면으로 메운다. 인증 확인되면 unlock() 이 페이드로 걷는다.
+// 보안이 아니라 연출용 — 실제 차단은 Firebase 규칙이 한다. 표식만 조작해도 명단은 못 읽는다.
+// 로그인이 아닌 것으로 밝혀지면 아래 IIFE 가 이 속성을 지우고 전체 잠금(키패드)을 띄운다.
 (function(){
   try { if (localStorage.getItem('ix-authed') === '1') document.documentElement.setAttribute('data-authed','1'); } catch(e){}
 })();
@@ -592,8 +589,8 @@ window.setThemeChrome = function(t){
     display:flex;align-items:flex-end;justify-content:center;
   }
   .sheetScrim.hide{display:none}
-  /* 잠금화면(300) 위로 올린다 — 설치 안내는 로그인 전에 보여야 하는 것이라 잠금보다 앞이다.
-     조건은 .lock 의 표시 조건과 정확히 짝(html[data-authed="1"] .lock{display:none}) */
+  /* 전체 잠금(키패드)이 떠 있을 때만(=data-authed 없음) 설치 안내를 그 위로 올린다 —
+     로그인 전에 보여야 하는 것이라. 로딩 화면(data-authed 있음)일 땐 평범한 z-index. */
   html:not([data-authed="1"]) .sheetScrim{ z-index:310 }
   /* 메인 앱셸처럼 — 제목·버튼은 고정, 가운데(#sheetBody)만 세로 스크롤.
      긴 FAQ·명단에서도 제목·닫기가 안 사라지고 좌우 스크롤도 안 생긴다. */
@@ -812,7 +809,13 @@ window.setThemeChrome = function(t){
   .lock{transition:opacity .2s ease-out}
   .lock.out{opacity:0;pointer-events:none}
   .lock.hide{display:none}
-  html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
+  /* 재로그인 상태로 열 때(data-authed): 잠금 대신 「로딩 화면」 — 아이콘·이름만 두고
+     키패드·점·문구는 숨긴다. 앱 셸은 떴지만 명단이 아직 없는 그 ~1초를 이 화면이 메운다.
+     인증이 확인되면 (authWatch → unlock) .lock.out 0.2s 페이드로 걷히고 명단이 드러난다.
+     세션이 실은 만료됐으면 IIFE 가 data-authed 를 지워 → 이 규칙이 풀려 전체 키패드가 나온다. */
+  html[data-authed="1"] .lock .lockdots,
+  html[data-authed="1"] .lock .lockmsg,
+  html[data-authed="1"] .lock .lockpad{ display:none }
   .lockico{width:56px;height:56px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
   .lockname{margin-top:14px;font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
@@ -1223,13 +1226,6 @@ window.__fb = {
     const v = s.exists() ? s.val() : null;
     return { items: v ? Object.values(v) : [], legacy: Array.isArray(v) };
   }),
-  // 콜드 스타트 단축 — SDK 의 get() 은 인증된 실시간 소켓이 붙을 때까지 기다린다(≈1초).
-  // 실배포는 roster 읽기가 열려 있어, 첫 화면만 REST 로 곧장 받아 즉시 그린다.
-  // 이후 실시간 수신(watchRemote)이 붙으면 그게 권위 있는 값으로 덮는다.
-  // roster-dev(테스트)는 읽기에 인증이 필요해 이 요청은 401 → boot 이 SDK 경로로 넘어간다.
-  itemsGetFast: ds => fetch(firebaseConfig.databaseURL + '/' + ROOT + '/' + ds + '/items.json', { cache: 'no-store' })
-    .then(r => r.ok ? r.json() : Promise.reject(r.status))
-    .then(v => ({ items: v ? Object.values(v) : [], legacy: Array.isArray(v) })),
   itemsWatch: (ds, cb) => {
     const r = itemsRef(ds);
     const h = onValue(r, s => {
@@ -1289,7 +1285,6 @@ window.__fb = {
                   .then(() => signInWithEmailAndPassword(auth, STAFF_EMAIL, pw)),
   signOut: () => signOut(auth)
 };
-try { window.__perf && window.__perf.push(['Firebase 모듈 로드', performance.now()]); } catch(e){}
 window.dispatchEvent(new Event('fb-ready'));
 </script>
 
@@ -1303,10 +1298,6 @@ window.dispatchEvent(new Event('fb-ready'));
     return !(host === 'songtudy.github.io' && /^\/reserve(\/|$)/.test(path));
   }
   var IS_DEV = computeDev(location.hostname, location.pathname);
-  // 콜드 스타트 구간 표시 — 같은 라벨은 처음 한 번만 (boot·render 는 여러 번 불린다).
-  function perfMark(label){
-    try { if (window.__perf && !perfMark[label]){ perfMark[label] = 1; window.__perf.push([label, performance.now()]); } } catch(e){}
-  }
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
   var state = null;      // {date, items:[]}
@@ -1951,7 +1942,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function render(){
-    perfMark('첫 렌더');
     if (!interactionActive() && deferredState){
       state = deferredState;
       deferredState = null;
@@ -4166,12 +4156,11 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 시작 ---------- */
   var BOOT_WAIT = 8000;   // boot() 의 첫 명단 읽기 제한 시간 (아래 설명)
   function boot(){
-    perfMark('boot 시작');
     if (hasStore() && fb().onConnected && !boot._watched){
       boot._watched = true;
       fb().onConnected(function(ok){
         setSync(ok);
-        if (ok){ perfMark('서버 연결'); wakeLogOutbox(); wqWake(); purgeOld(); }   // 연결됨 = 서버 시계 확보 → 부팅 때 미룬 정리 재시도
+        if (ok){ wakeLogOutbox(); wqWake(); purgeOld(); }   // 연결됨 = 서버 시계 확보 → 부팅 때 미룬 정리 재시도
       });
     }
     setSync(hasStore());
@@ -4186,22 +4175,11 @@ window.dispatchEvent(new Event('fb-ready'));
     // 되살린다. 실시간 수신(watchRemote)이 붙으면 곧 실제 데이터로 채워진다.
     var got = fb().itemsGet(ticket.date);
     got.catch(function(){});   // 시간 초과 뒤 뒤늦게 거부돼도 「미처리 거부」 경고가 안 뜨게
-    // 실배포에서 첫 화면을 앞당기는 REST 경로. 명단이 「들어 있을 때만」 race 에 낀다 —
-    // REST 가 순간적으로 빈 값을 줘도 빈 화면이 번쩍하지 않게, 빈 결과·실패(테스트 401)는
-    // 영영 안 끝나는 프로미스로 만들어 조용히 빠진다 (SDK get / 시한이 그 경우를 맡는다).
-    var never = function(){ return new Promise(function(){}); };
-    var fast = (fb().itemsGetFast ? fb().itemsGetFast(ticket.date) : Promise.reject())
-      .then(function(r){
-        if (r && r.items && r.items.length){ perfMark('명단(REST)'); return r; }
-        return never();
-      }, never);
     Promise.race([
       got,
-      fast,
       new Promise(function(_, rej){ setTimeout(rej, BOOT_WAIT, new Error('boot timeout')); })
     ]).then(function(res){
       if (!ticketCurrent(ticket)) return;
-      perfMark('명단 수신');
       stageBackgroundState(itemsToState(ticket.date, res));
       watchRemote();   // 즉시 fire → applyRemoteItems 가 필요시 구 형식 변환도 한다
       maybeInstallHint();   // 중복 방지는 maybeInstallHint 안에서 한다
@@ -4352,46 +4330,6 @@ window.dispatchEvent(new Event('fb-ready'));
   // ---------- 셀프테스트 모드 ----------
   // 주소에 ?selftest 가 있으면 앱을 띄우지 않고, 실제 배포되는 순수 함수들을 노출한 뒤
   // selftest.js 가 단언 검사를 돌려 결과를 화면에 뿌린다. 평소엔 이 블록을 그냥 지나간다.
-  // ---------- 콜드 스타트 계측 (index.html?perf) ----------
-  // 앱은 평소대로 돌리되, 6초 뒤 구간별 소요 시간을 화면 아래에 띄운다.
-  // 추가로 「REST 로 명단만 받기」를 실배포 주소에 대고 한 번 재서(읽기 전용, 무해) SDK 경로와
-  // 나란히 보여준다 — 테스트 레포에선 SDK 경로가 인증 대기라 이 비교로만 개선폭을 알 수 있다.
-  if (/[?&]perf\b/.test(location.search)) {
-    var lpad = function(v, n){ v = String(v); while (v.length < n) v = ' ' + v; return v; };
-    var perfBox = null, restLine = '';
-    var drawPerf = function(){
-      var m = window.__perf || [];
-      if (!m.length) return;
-      if (!perfBox){
-        perfBox = document.createElement('div');
-        perfBox.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;'
-          + 'background:#0f1319;border:1px solid #e8b757;border-radius:10px;padding:12px 14px;'
-          + 'font:12px/1.7 -apple-system,monospace;color:#f0f3f6;white-space:pre;overflow:auto;max-height:45vh';
-        perfBox.onclick = function(){ perfBox.remove(); };
-        document.body.appendChild(perfBox);
-      }
-      var t0 = m[0][1], prev = t0, out = '콜드 스타트 (직전구간 / 누적, ms)\n';
-      m.forEach(function(row){
-        out += lpad(Math.round(row[1] - prev), 6) + lpad(Math.round(row[1] - t0), 8) + '   ' + row[0] + '\n';
-        prev = row[1];
-      });
-      perfBox.textContent = out + restLine + '\n탭하면 닫힘';
-    };
-    // 실배포 REST 로 오늘 명단만 받아 시간 측정 (SDK 소켓·인증 없이 순수 HTTPS GET)
-    var restUrl = 'https://ikseon-reserve-default-rtdb.asia-southeast1.firebasedatabase.app/roster/'
-      + bizDate() + '/items.json';
-    var rt = performance.now();
-    fetch(restUrl, { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(v){
-        var ms = Math.round(performance.now() - rt);
-        var n = v ? Object.keys(v).length : 0;
-        restLine = '\n[참고] 실배포 REST 명단 받기: ' + ms + ' ms (' + n + '건)\n'
-          + '      → SDK 「명단 수신」 누적과 비교. 실배포에선 이 값이 첫 화면 시간.\n';
-        drawPerf();
-      }, function(){ restLine = '\n[참고] 실배포 REST 측정 실패\n'; drawPerf(); });
-    setTimeout(drawPerf, 6000);
-  }
-
   if (/[?&]selftest\b/.test(location.search)) {
     window.__ixTest = {
       parse: parse, normTime: normTime, sortItems: sortItems,
