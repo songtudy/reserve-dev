@@ -2951,8 +2951,31 @@ window.dispatchEvent(new Event('fb-ready'));
   var panel = document.getElementById('pastePanel');
   var panelScrim = document.getElementById('panelScrim');
   panelScrim.addEventListener('click', function(){
-    if (!document.getElementById('addPanel').classList.contains('hide')) closeAdd();
+    var ap = document.getElementById('addPanel');
+    if (ap.classList.contains('hide')) return;
+    // 입력 중이면 먼저 키보드만 내린다. 한 번의 헛터치로 쓰던 내용이 날아가지 않게 —
+    // 창을 닫으려면 키보드가 내려간 뒤 한 번 더 누르거나 「취소」를 쓴다.
+    var a = document.activeElement;
+    if (a && ap.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT')){
+      a.blur();
+      return;
+    }
+    closeAdd();
   });
+  // 예약 추가 창이 떠 있는 동안 손가락 끌기를 막는다.
+  //   아이폰은 키보드가 올라와 있으면 「화면 자체」를 위아래로 끌 수 있게 해 준다.
+  //   이건 페이지 스크롤이 아니라 브라우저가 자기 창을 옮기는 것이라 overflow 로는 안 막힌다.
+  //   남은 수단은 touchmove 를 직접 취소하는 것뿐이다(passive:false 여야 취소된다).
+  //   단, 창 안에 진짜로 스크롤돼야 하는 칸이 있으면 그건 살려 둔다.
+  document.addEventListener('touchmove', function(e){
+    var ap = document.getElementById('addPanel');
+    if (!ap || ap.classList.contains('hide')) return;
+    for (var n = e.target; n && n !== document.body; n = n.parentElement){
+      var oy = getComputedStyle(n).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) return;
+    }
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
   // 명단이 비었을 때의 전체 화면 폼. 한 건 추가는 「예약 추가」 폼이 맡는다.
   function openPaste(silent){
     if (discardEditing()) render();
