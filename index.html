@@ -852,13 +852,12 @@ window.setThemeChrome = function(t){
      키가 사라진 것처럼 보이다 첫 입력에 툭 나타났다. */
   .lockkey.act:disabled{color:var(--off)}
   .lockkey svg{display:block}
-  /* 확인 중 — 키패드를 흐리게 하지 않고 입력만 막는다.
-     45% dim 은 "작동 중"이 아니라 "멈췄다"로 읽혔다. 대신 검사 대상인 점이
-     천천히 숨쉬어 진행 중임을 알린다(인증 왕복 ≈0.7s ≒ 한 호흡).
-     prefers-reduced-motion 에서는 전역 규칙이 애니메이션을 끈다. */
+  /* 확인 중(.busy) — 키패드를 흐리게 하지 않고 입력만 막는다.
+     45% dim 은 "작동 중"이 아니라 "멈췄다"로 읽혔다. */
   .lock.busy .lockpad{pointer-events:none}
-  /* 채워진 점이 천천히 숨쉬어 「검사 중」을 알린다 (인증 왕복 ≈0.7s ≒ 한 호흡).
-     .checking 은 마지막 점의 채움 전환이 끝난 뒤에 붙는다 (submitPin 참고). */
+  /* 대신 검사 대상인 점이 천천히 숨쉬어 진행 중임을 알린다(인증 왕복 ≈0.7s ≒ 한 호흡).
+     .checking 은 마지막 점의 채움 전환(.12s)이 끝난 뒤에 붙는다 — 겹치면 그 점만 따로
+     깜빡이는 것처럼 보인다 (submitPin 참고). reduced-motion 은 아래 전역 규칙이 끈다. */
   .lock.checking .lockdots i.on{animation:lockpulse .9s ease-in-out infinite}
   @keyframes lockpulse{50%{opacity:.3}}
 
@@ -4429,8 +4428,11 @@ window.dispatchEvent(new Event('fb-ready'));
            : '비밀번호가 맞지 않아요');
     });
   }
+  // busy(확인 중) / out(잠금 걷히는 중)에는 입력을 받지 않는다 —
+  // 화면 탭은 .lock.out{pointer-events:none} 이 막지만 물리 키보드는 여기서 막는다.
+  function pinLocked(){ return lockEl.classList.contains('busy') || lockEl.classList.contains('out'); }
   function pinPush(d){
-    if (lockEl.classList.contains('busy') || pin.length >= PIN_LEN) return;
+    if (pinLocked() || pin.length >= PIN_LEN) return;
     lockEl.classList.remove('bad');
     lockMsg.textContent = '';
     pin += d;
@@ -4438,7 +4440,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (pin.length === PIN_LEN) submitPin();   // 다 채우면 바로 확인 — 별도 버튼 없음
   }
   function pinPop(){
-    if (lockEl.classList.contains('busy') || !pin) return;
+    if (pinLocked() || !pin) return;
     pin = pin.slice(0, -1);
     paintPin();
   }
