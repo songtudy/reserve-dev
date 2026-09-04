@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="익순이">
 
 <!-- 콜드 스타트 단축 — Firebase 모듈 다운로드와 서버 연결을 HTML 파싱 중에 미리 시작한다.
-     (평소엔 문서 끝의 <script type="module"> 까지 파싱이 도달해서야 시작됐다.)
+     (평소엔 문서 끝의 모듈 스크립트까지 파싱이 도달해서야 시작됐다.)
      로직은 하나도 안 바뀐다. 버전은 아래 import 문과 반드시 같아야 한다. -->
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://ikseon-reserve-default-rtdb.asia-southeast1.firebasedatabase.app">
@@ -1223,6 +1223,13 @@ window.__fb = {
     const v = s.exists() ? s.val() : null;
     return { items: v ? Object.values(v) : [], legacy: Array.isArray(v) };
   }),
+  // 콜드 스타트 단축 — SDK 의 get() 은 인증된 실시간 소켓이 붙을 때까지 기다린다(≈1초).
+  // 실배포는 roster 읽기가 열려 있어, 첫 화면만 REST 로 곧장 받아 즉시 그린다.
+  // 이후 실시간 수신(watchRemote)이 붙으면 그게 권위 있는 값으로 덮는다.
+  // roster-dev(테스트)는 읽기에 인증이 필요해 이 요청은 401 → boot 이 SDK 경로로 넘어간다.
+  itemsGetFast: ds => fetch(firebaseConfig.databaseURL + '/' + ROOT + '/' + ds + '/items.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(v => ({ items: v ? Object.values(v) : [], legacy: Array.isArray(v) })),
   itemsWatch: (ds, cb) => {
     const r = itemsRef(ds);
     const h = onValue(r, s => {
@@ -4179,8 +4186,18 @@ window.dispatchEvent(new Event('fb-ready'));
     // 되살린다. 실시간 수신(watchRemote)이 붙으면 곧 실제 데이터로 채워진다.
     var got = fb().itemsGet(ticket.date);
     got.catch(function(){});   // 시간 초과 뒤 뒤늦게 거부돼도 「미처리 거부」 경고가 안 뜨게
+    // 실배포에서 첫 화면을 앞당기는 REST 경로. 명단이 「들어 있을 때만」 race 에 낀다 —
+    // REST 가 순간적으로 빈 값을 줘도 빈 화면이 번쩍하지 않게, 빈 결과·실패(테스트 401)는
+    // 영영 안 끝나는 프로미스로 만들어 조용히 빠진다 (SDK get / 시한이 그 경우를 맡는다).
+    var never = function(){ return new Promise(function(){}); };
+    var fast = (fb().itemsGetFast ? fb().itemsGetFast(ticket.date) : Promise.reject())
+      .then(function(r){
+        if (r && r.items && r.items.length){ perfMark('명단(REST)'); return r; }
+        return never();
+      }, never);
     Promise.race([
       got,
+      fast,
       new Promise(function(_, rej){ setTimeout(rej, BOOT_WAIT, new Error('boot timeout')); })
     ]).then(function(res){
       if (!ticketCurrent(ticket)) return;
