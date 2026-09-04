@@ -127,7 +127,11 @@ window.setThemeChrome = function(t){
     width:100%;max-width:640px;margin:0 auto;
     /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
-    padding:0 14px calc(18px + var(--kb, 0px));
+    /* 여백은 --kb 가 아니라 --kbPad 를 쓴다. 키보드가 떠 있는 동안 아이폰의 「자동 완성」 막대는
+       칸에 따라 떴다 사라지는데(이름 칸엔 뜨고 메모엔 안 뜬다), 그때마다 --kb 가 ≈48px 오르내린다.
+       여백이 줄면 스크롤 범위도 줄어 브라우저가 스크롤 위치를 강제로 당기고, 그게 화면 흔들림으로
+       보였다. --kbPad 는 키보드가 떠 있는 동안 줄지 않아 그 당김이 아예 생기지 않는다. */
+    padding:0 14px calc(18px + var(--kbPad, 0px));
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
@@ -3081,6 +3085,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var KB_MIN = 90;                       // 이보다 크게 줄면 키보드로 본다
   var FOCUS_QUIET = 400;                 // 칸을 옮긴 뒤 이만큼은 스크롤을 되돌리지 않는다
   var lastFocusAt = 0;                   // 마지막으로 포커스가 오간 시각
+  var kbPad = 0;                         // .wrap 아래 여백 — 키보드가 떠 있는 동안 줄지 않는다
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
   function applyViewport(){
@@ -3100,6 +3105,10 @@ window.dispatchEvent(new Event('fb-ready'));
     // 바텀시트 올림·토스트 위치용 — 실제 키보드일 때만. 복귀 시 iOS 의 잘못된
     // 낮은 높이가 .wrap 아래를 밀지 않게 (하단 바는 위 open 가드가 지킨다).
     document.documentElement.style.setProperty('--kb', (open ? kb : 0) + 'px');
+    // .wrap 아래 여백용 — 키보드가 떠 있는 동안에는 줄이지 않는다 (위 .wrap 주석 참고).
+    // 자동완성 막대가 오르내려도 스크롤 범위가 안 줄어 화면이 당겨지지 않는다.
+    kbPad = open ? Math.max(kbPad, kb) : 0;
+    document.documentElement.style.setProperty('--kbPad', kbPad + 'px');
     if (open !== keyboardOpen){
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
