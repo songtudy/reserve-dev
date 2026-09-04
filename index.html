@@ -214,7 +214,9 @@ window.setThemeChrome = function(t){
     background:var(--wait);color:var(--onWait);
     border-bottom:1px solid var(--line);
     font-size:13px;font-weight:600;letter-spacing:.01em;
+    cursor:pointer;                     /* 띠 자체가 업데이트 버튼이다 — 하단 「업데이트」가 안 보일 때(백지 화면 등)의 유일한 탈출구 */
   }
+  .updbar:active{filter:brightness(.93)}
 
   /* search */
   .searchbar{
@@ -983,7 +985,7 @@ window.setThemeChrome = function(t){
     </div>
   </header>
 
-<div class="updbar hide" id="updBar">새 버전이 나왔어요</div>
+<div class="updbar hide" id="updBar" role="button" tabindex="0">새 버전이 나왔어요 — 눌러서 업데이트</div>
 
 <div class="searchbar hide" id="searchbar">
   <button type="button" id="qBack" aria-label="검색 닫기"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg></button>
@@ -4014,15 +4016,19 @@ window.dispatchEvent(new Event('fb-ready'));
     try { window.location.reload(); } catch(e){}
   }
 
+  function doUpdate(){
+    if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
+    try { sessionStorage.setItem('ix-updated', '1'); } catch(e){}   // 새로 뜬 뒤 확인 토스트용
+    try { window.location.reload(); } catch(e){}
+  }
+  // 「새 버전이 나왔어요」 띠를 눌러도 업데이트 — 하단 「업데이트」가 안 보이는 상황
+  // (명단이 안 떠 하단 바가 숨은 백지 화면 등)에서도 빠져나올 수 있게.
+  if (updBar) updBar.addEventListener('click', function(){ if (updShown) doUpdate(); });
+
   var refreshBtn = document.getElementById('refreshBtn');
   refreshBtn.addEventListener('click', function(){
     // 새 버전이 감지된 상태면 이 버튼은 「업데이트」 — 눌러서 새로 불러온다.
-    if (updShown){
-      if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
-      try { sessionStorage.setItem('ix-updated', '1'); } catch(e){}   // 새로 뜬 뒤 확인 토스트용
-      try { window.location.reload(); } catch(e){}
-      return;
-    }
+    if (updShown){ doUpdate(); return; }
     // 연결이 끊긴 상태면 데이터를 다시 읽어봐야 소용없다. 연결 자체를 되살린다.
     if (!online && hasStore() && fb().reconnect){
       toast('다시 연결 중…');
@@ -4091,6 +4097,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   /* ---------- 시작 ---------- */
+  var BOOT_WAIT = 8000;   // boot() 의 첫 명단 읽기 제한 시간 (아래 설명)
   function boot(){
     if (hasStore() && fb().onConnected && !boot._watched){
       boot._watched = true;
@@ -4105,7 +4112,16 @@ window.dispatchEvent(new Event('fb-ready'));
     wqWake();
     var ticket = loadTicket();
     if (!hasStore()){ stageBackgroundState(state || { date: ticket.date, items: [] }); return; }
-    fb().itemsGet(ticket.date).then(function(res){
+    // 첫 명단 읽기에 시간 제한을 둔다. 아이폰이 백그라운드에서 오래 얼렸다 깨우면 Firebase
+    // 소켓과 그 내부 타이머까지 멈춰 있다가 엉켜, get() 이 응답도 거부도 없이 영영 매달릴 수
+    // 있다 (→ 백지 화면). 그 경우 BOOT_WAIT 뒤 캐시/빈 명단으로 화면부터 띄우고 소켓을
+    // 되살린다. 실시간 수신(watchRemote)이 붙으면 곧 실제 데이터로 채워진다.
+    var got = fb().itemsGet(ticket.date);
+    got.catch(function(){});   // 시간 초과 뒤 뒤늦게 거부돼도 「미처리 거부」 경고가 안 뜨게
+    Promise.race([
+      got,
+      new Promise(function(_, rej){ setTimeout(rej, BOOT_WAIT, new Error('boot timeout')); })
+    ]).then(function(res){
       if (!ticketCurrent(ticket)) return;
       stageBackgroundState(itemsToState(ticket.date, res));
       watchRemote();   // 즉시 fire → applyRemoteItems 가 필요시 구 형식 변환도 한다
@@ -4114,6 +4130,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (!ticketCurrent(ticket)) return;
       stageBackgroundState(state || { date: ticket.date, items: [] });
       watchRemote();
+      if (hasStore() && fb().reconnect) fb().reconnect();
     });
   }
 
@@ -4173,8 +4190,14 @@ window.dispatchEvent(new Event('fb-ready'));
   updTimer = setInterval(function(){ if (!document.hidden) checkUpdate(); }, 300000);
 
   // 화면으로 돌아오면 한 번 확인 (실시간 수신은 watchRemote가 담당)
+  var hiddenAt = 0;
   document.addEventListener('visibilitychange', function(){
-    if (document.hidden) return;
+    if (document.hidden){ hiddenAt = Date.now(); return; }
+    // 30초 넘게 백그라운드였으면 소켓이 살아 있다고 보고돼도(online 이 stale-true 여도)
+    // 실제로는 얼어 죽었을 가능성이 높다 — 조건 없이 한 번 되살린다.
+    var wasLong = hiddenAt && (Date.now() - hiddenAt) > 30000;
+    hiddenAt = 0;
+    if (wasLong && hasStore() && fb().reconnect){ fb().reconnect(); }
     wakeLogOutbox();
     wqWake();
     // 백그라운드에 있는 동안 새 버전이 배포됐을 수 있다 — 확인해서 있으면
@@ -4191,13 +4214,18 @@ window.dispatchEvent(new Event('fb-ready'));
     // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
     // 먼저 확인하지 않으면 어제 명단을 「오늘」로 띄운 채 체크하게 된다.
     if (rolloverIfNeeded()) return;
-    if (!state) return;
+    // 얼었다 깨어나 첫 명단조차 못 받은 채였다면(state 없음) 처음부터 다시 시도한다.
+    // boot() 은 BOOT_WAIT 제한이 있어 소켓이 죽어 있어도 곧 캐시로 화면을 띄운다.
+    if (!state){ if (hasStore()) boot(); return; }
     sync();          // 즉시 최신 상태 확인
     watchRemote();   // 백그라운드에서 끊겼을 수 있으니 실시간 수신도 다시 건다
-    // 3초 안에 연결이 안 돌아오면 소켓을 강제로 다시 붙인다
-    setTimeout(function(){
-      if (!online && hasStore() && fb().reconnect){ fb().reconnect(); watchRemote(); }
-    }, 3000);
+    // 복귀 직후엔 소켓이 죽어 있는 게 기본이라, 3초 기다렸다 안 붙어 있으면 강제로 다시 붙인다.
+    // 한 번 더(8초) — 첫 reconnect 도 얼어붙은 상태에서 나갈 수 있다.
+    [3000, 8000].forEach(function(t){
+      setTimeout(function(){
+        if (!online && hasStore() && fb().reconnect){ fb().reconnect(); watchRemote(); sync(); }
+      }, t);
+    });
   });
 
   // 영업일이 바뀌었으면 오늘로 옮겨가고 명단을 다시 불러온다.
