@@ -3606,7 +3606,7 @@ window.dispatchEvent(new Event('fb-ready'));
     function spin(){
       if (spinning) return;
       var ns = names();
-      if (ns.length < 2){ say('이름을 2명 이상 넣어 주세요', true); return; }
+      if (ns.length < 2){ say('이름을 2명 이상 입력해 주세요', true); return; }
       spinning = true;
       inp.blur();                     // 키보드 내려 칩 안 가리게
       inp.disabled = true;            // 스핀 중 이름·키보드 못 건드리게
@@ -3731,21 +3731,21 @@ window.dispatchEvent(new Event('fb-ready'));
       '예약 시각 15분 뒤까지 방문 체크가 없으면 자동으로 취소됩니다.\n'
       + '늦게 와도 체크하면 방문으로 바뀝니다.'],
     ['상단 시간은 언제 바뀌나요?',
-      '정각 예약은 11분 뒤, 그 외 예약은 예약 시각이 되면 다음 시간대로 넘어갑니다.\n'
-      + '또는 해당 시간대 예약을 모두 처리하면 바로 넘어갑니다.'],
+      '정각 예약은 11분 뒤, 그 외는 예약 시각이 되면 다음 시간대로 넘어갑니다.\n'
+      + '또는 그 시간대 예약을 모두 처리하면 바로 넘어갑니다.'],
     ['시간대는 왜 자동으로 접히나요?',
       '남은 예약이 없으면 5초 뒤 자동으로 접힙니다.'],
     ['메모는 어떻게 쓰나요?',
-      '예약 <em>수정</em>에서 입력할 수 있으며 이름 아래에 표시됩니다.\n'
-      + '메모는 명단 복사에는 포함되지 않습니다.'],
+      '예약 <em>수정</em>에서 입력하면 이름 아래에 표시됩니다.\n'
+      + '메모는 명단 복사에 포함되지 않습니다.'],
     ['연결이 끊기면?',
       '화면에 <em>연결 안 됨</em>이 표시됩니다.\n'
       + '개별 예약 변경은 기기에 저장됐다가 다시 연결되면 반영됩니다.'],
     ['명단이 사라지면?',
       '메뉴 → <em>지난 명단</em>에서 원하는 시점의 명단을 복사해 다시 등록하면 됩니다.'],
     ['업데이트 알림이 뜨면?',
-      '<em>업데이트</em> 버튼을 누르거나, 앱을 완전히 종료한 뒤 다시 실행하면 업데이트가 적용됩니다.\n'
-      + '당장 업데이트하지 않아도 문제없습니다.']
+      '<em>업데이트</em> 버튼을 누르거나, 앱을 완전히 종료했다가 다시 열면 적용됩니다.\n'
+      + '당장 하지 않아도 괜찮습니다.']
   ];
   var CHEV = '<span class="qchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>';
 
@@ -4016,7 +4016,7 @@ window.dispatchEvent(new Event('fb-ready'));
     openSheet('익순이란?',
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
-      + '<p class="about">명단을 복사하면 <b>단톡방에 올라오는 양식 그대로</b> 복사됩니다.</p>'
+      + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
       + '<p class="credit">익순이 v1.6.3<br>© 2026 Jumin Labs</p>');
   });
 
@@ -4105,7 +4105,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function copyText(txt, okMsg){
-    if (!txt){ toast('내용이 없습니다'); return; }
+    if (!txt){ toast('명단이 없습니다'); return; }
     var done = function(){ toast(okMsg); };
     if (navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).then(done).catch(function(){ fallbackCopy(txt, done); });
@@ -4211,7 +4211,7 @@ window.dispatchEvent(new Event('fb-ready'));
   try {
     if (sessionStorage.getItem('ix-updated')){
       sessionStorage.removeItem('ix-updated');
-      setTimeout(function(){ toast('최신 버전으로 업데이트되었습니다'); }, 700);
+      setTimeout(function(){ toast('업데이트되었습니다'); }, 700);
     }
   } catch(e){}
 
