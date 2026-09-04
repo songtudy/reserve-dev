@@ -3064,25 +3064,40 @@ window.dispatchEvent(new Event('fb-ready'));
   // 높이를 알려 주는 API 가 없어 실측값(≈48pt)을 쓴다.
   var KB_BAR = 48;
 
+  // 이 기기의 키보드 높이. 한 번 보고 나면 「뜨기 전에」 자리를 잡는 데 쓴다.
+  var lastKb = 0;
+
   // 편집 폼 아래끝을 「실제로 가려지는 선」에 맞춘다. 남으면 끌어올리고(버튼이 덮인 경우),
   // 모자라면 내려서(다음 행이 걸치는 경우) 폼이 마지막으로 보이게 한다.
   // 폼이 화면보다 크면 위가 잘리지 않게 위쪽을 우선한다.
-  function fitEditToKb(){
+  // kb 를 넘기면 그 값으로 계산한다 — 키보드가 아직 안 올라온 시점에 미리 맞출 때 쓴다.
+  function fitEditToKb(kb){
     if (!editing || !wrapEl) return;
     var row = rowForId(editing);
     if (!row) return;
-    var kbNow = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0;
+    var kbNow = kb || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0;
     if (!kbNow) return;
     var er = row.getBoundingClientRect();
     var wr = wrapEl.getBoundingClientRect();
     var topEdge = wr.top + 8;
-    var bottomEdge = wr.bottom - kbNow - KB_BAR - 10;
+    // 키보드가 아직 안 떴으면 하단 바가 아직 자리를 차지하고 있다 — 곧 사라질 그 높이를 미리 빼 준다.
+    var foot = document.querySelector('.foot');
+    var footH = keyboardOpen ? 0 : (foot ? foot.offsetHeight : 0);
+    var bottomEdge = wr.bottom + footH - kbNow - KB_BAR - 10;
     var move = Math.min(er.bottom - bottomEdge, er.top - topEdge);
     if (Math.abs(move) < 8) return;      // 미세한 값으로 흔들지 않는다
-    // 툭 튀지 않게 — 짧은 이동만 즉시로 (roomScroll 과 같은 규칙)
-    if (Math.abs(move) >= SMOOTH_MIN && wrapEl.scrollTo) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
-    else wrapEl.scrollTop += move;
+    wrapEl.scrollTop += move;            // 즉시 — 키보드 애니메이션에 묻혀야 따로 움직여 보이지 않는다
   }
+
+  // 편집 폼 안을 누르면 키보드가 올라오기 시작한다. 「올라온 뒤 고치는」 대신
+  // 그 전에 미리 자리를 잡아, 이동이 키보드 애니메이션과 함께 끝나게 한다.
+  // 높이를 모르는 첫 한 번만 아래 applyViewport 의 사후 보정이 대신한다.
+  document.addEventListener('focusin', function(e){
+    if (!editing || !lastKb) return;
+    var t = e.target;
+    if (!t || !t.closest || !t.closest('.row .edit')) return;
+    fitEditToKb(lastKb);
+  });
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
   function applyViewport(){
@@ -3102,6 +3117,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 바텀시트 올림·토스트 위치용 — 실제 키보드일 때만. 복귀 시 iOS 의 잘못된
     // 낮은 높이가 .wrap 아래를 밀지 않게 (하단 바는 위 open 가드가 지킨다).
     document.documentElement.style.setProperty('--kb', (open ? kb : 0) + 'px');
+    if (open && kb) lastKb = kb;   // 다음 번엔 이 값으로 키보드가 뜨기 전에 미리 자리를 잡는다
     if (open !== keyboardOpen){
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
