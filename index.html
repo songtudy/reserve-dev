@@ -3059,7 +3059,12 @@ window.dispatchEvent(new Event('fb-ready'));
   var KB_SETTLE = 260;                   // 뷰포트가 이만큼 조용하면 키보드가 다 올라온 걸로 본다
   var kbFitTimer = null, kbFitFor = null;   // kbFitFor = 이미 맞춰 준 편집 건의 id
 
-  // 편집 폼 아래끝을 키보드 윗선에 맞춘다. 남으면 끌어올리고(버튼이 덮인 경우),
+  // 아이폰이 키보드 위에 얹는 「자동 완성 연락처」 막대. visualViewport 는 이걸 빼 주지 않아서
+  // --kb 만 믿으면 폼 아래끝이 이 막대 뒤로 들어가 저장·취소가 가려진다 (실기기 영상에서 확인).
+  // 높이를 알려 주는 API 가 없어 실측값(≈48pt)을 쓴다.
+  var KB_BAR = 48;
+
+  // 편집 폼 아래끝을 「실제로 가려지는 선」에 맞춘다. 남으면 끌어올리고(버튼이 덮인 경우),
   // 모자라면 내려서(다음 행이 걸치는 경우) 폼이 마지막으로 보이게 한다.
   // 폼이 화면보다 크면 위가 잘리지 않게 위쪽을 우선한다.
   function fitEditToKb(){
@@ -3071,10 +3076,12 @@ window.dispatchEvent(new Event('fb-ready'));
     var er = row.getBoundingClientRect();
     var wr = wrapEl.getBoundingClientRect();
     var topEdge = wr.top + 8;
-    var bottomEdge = wr.bottom - kbNow - 10;
+    var bottomEdge = wr.bottom - kbNow - KB_BAR - 10;
     var move = Math.min(er.bottom - bottomEdge, er.top - topEdge);
     if (Math.abs(move) < 8) return;      // 미세한 값으로 흔들지 않는다
-    wrapEl.scrollTop += move;
+    // 툭 튀지 않게 — 짧은 이동만 즉시로 (roomScroll 과 같은 규칙)
+    if (Math.abs(move) >= SMOOTH_MIN && wrapEl.scrollTo) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
+    else wrapEl.scrollTop += move;
   }
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
