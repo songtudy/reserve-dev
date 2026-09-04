@@ -855,7 +855,9 @@ window.setThemeChrome = function(t){
      천천히 숨쉬어 진행 중임을 알린다(인증 왕복 ≈0.7s ≒ 한 호흡).
      prefers-reduced-motion 에서는 전역 규칙이 애니메이션을 끈다. */
   .lock.busy .lockpad{pointer-events:none}
-  .lock.busy .lockdots i.on{animation:lockpulse .9s ease-in-out infinite}
+  /* 채워진 점이 천천히 숨쉬어 「검사 중」을 알린다 (인증 왕복 ≈0.7s ≒ 한 호흡).
+     .checking 은 마지막 점의 채움 전환이 끝난 뒤에 붙는다 (submitPin 참고). */
+  .lock.checking .lockdots i.on{animation:lockpulse .9s ease-in-out infinite}
   @keyframes lockpulse{50%{opacity:.3}}
 
   .scrim{
@@ -892,9 +894,11 @@ window.setThemeChrome = function(t){
     --holdms:1000ms;                       /* 길게 누르기 시간 — JS 의 HOLD_MS 와 같아야 한다 */
     position:relative;overflow:hidden;
     background:var(--warnBg);border-color:var(--warnTag);color:var(--onWarn);
-    touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
-  .dbtn #dlgYes:active{filter:none}         /* 차오르는 면이 눌림을 말한다 — 공통 어두워짐과 겹치지 않게 */
+  .dbtn #dlgYes.holdmode{ touch-action:none }            /* 길게 누르기 제스처를 스크롤로 뺏기지 않게 */
+  .dbtn #dlgYes.holdmode:active{filter:none}             /* 차오르는 면이 눌림을 말한다 — 겹치지 않게 */
+  .dbtn #dlgYes:not(.holdmode):active{filter:brightness(1.12)}   /* 탭 모드는 눌림에 밝아진다 */
   /* 누르는 동안 버튼 전체가 왼쪽부터 차오른다. 글자는 --onWarn 이라 채움 위에서도 읽힌다
      (다크 4.68:1 / 라이트 4.62:1) — 글자색을 안 바꾸면 여기서 3.65 / 2.90 으로 묻혔다. */
   .dbtn #dlgYes .hf{
@@ -3170,15 +3174,19 @@ window.dispatchEvent(new Event('fb-ready'));
   // 않고, HOLD_MS 동안 「초기화」를 누르고 있어야 완성된다. 누르다 손을 떼거나 버튼 밖으로
   // 밀면 처음으로 돌아간다.
   var HOLD_MS = 1000;   // CSS 의 --holdms 와 반드시 같은 값
+  // opts.hold: true 면 「길게 눌러」 실행(초기화 — 8/31 실수 방지). 아니면 평범한 탭(로그아웃 등).
+  // 두 방식 모두 같은 창(#scrim/.dialog)·같은 취소/실행 배치를 쓴다 — 상호작용만 다르다.
   function confirmDlg(title, onYes, opts){
     opts = opts || {};
     var yes  = document.getElementById('dlgYes');
     var no   = document.getElementById('dlgNo');
     var note = document.getElementById('dlgNote');
+    var hold = !!opts.hold;
     document.getElementById('dlgTitle').textContent = title;
     yes.querySelector('.ht').textContent = opts.yes || '확인';
     note.textContent = opts.note || '';
     note.classList.toggle('hide', !opts.note);
+    yes.classList.toggle('holdmode', hold);
     scrim.classList.remove('hide');
 
     var timer = null;
@@ -3186,38 +3194,42 @@ window.dispatchEvent(new Event('fb-ready'));
       if (timer){ clearTimeout(timer); timer = null; }
       yes.classList.remove('hold');
     }
-    function begin(){
-      stop();
-      yes.classList.add('hold');
-      timer = setTimeout(function(){
-        timer = null;
-        try { navigator.vibrate && navigator.vibrate(15); } catch(e){}
-        done(); onYes();
-      }, HOLD_MS);
+    function fire(){
+      if (hold){ try { navigator.vibrate && navigator.vibrate(15); } catch(e){} }
+      done(); onYes();
     }
     function hide(){
       stop();
       scrim.classList.add('hide');
-      no.onclick = scrim.onclick = null;
+      no.onclick = scrim.onclick = yes.onclick = null;
       yes.onpointerdown = yes.onpointermove = yes.onpointerup = null;
       yes.onpointercancel = yes.oncontextmenu = yes.onkeydown = yes.onkeyup = null;
     }
     function done(){ hide(); backDone(); }
     backOpen(hide);
 
-    yes.onpointerdown = function(e){ if (!e.button) begin(); };
-    yes.onpointermove = function(e){          // 누른 채 버튼 밖으로 밀면 취소 — 빠져나갈 길
-      if (!timer) return;
-      var r = yes.getBoundingClientRect();
-      if (e.clientX < r.left || e.clientX > r.right ||
-          e.clientY < r.top  || e.clientY > r.bottom) stop();
-    };
-    yes.onpointerup = yes.onpointercancel = stop;
-    yes.oncontextmenu = function(e){ e.preventDefault(); };   // 길게 누를 때 뜨는 iOS 메뉴 차단
-    yes.onkeydown = function(e){                              // 키보드(데스크톱 검증용)
-      if ((e.key === ' ' || e.key === 'Enter') && !timer && !e.repeat){ e.preventDefault(); begin(); }
-    };
-    yes.onkeyup = function(e){ if (e.key === ' ' || e.key === 'Enter') stop(); };
+    if (hold){
+      var begin = function(){
+        stop();
+        yes.classList.add('hold');
+        timer = setTimeout(function(){ timer = null; fire(); }, HOLD_MS);
+      };
+      yes.onpointerdown = function(e){ if (!e.button) begin(); };
+      yes.onpointermove = function(e){        // 누른 채 버튼 밖으로 밀면 취소 — 빠져나갈 길
+        if (!timer) return;
+        var r = yes.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right ||
+            e.clientY < r.top  || e.clientY > r.bottom) stop();
+      };
+      yes.onpointerup = yes.onpointercancel = stop;
+      yes.oncontextmenu = function(e){ e.preventDefault(); };   // 길게 누를 때 뜨는 iOS 메뉴 차단
+      yes.onkeydown = function(e){                              // 키보드(데스크톱 검증용)
+        if ((e.key === ' ' || e.key === 'Enter') && !timer && !e.repeat){ e.preventDefault(); begin(); }
+      };
+      yes.onkeyup = function(e){ if (e.key === ' ' || e.key === 'Enter') stop(); };
+    } else {
+      yes.onclick = fire;
+    }
     no.onclick  = done;
     scrim.onclick = function(e){ if (e.target === scrim) done(); };
   }
@@ -3241,7 +3253,7 @@ window.dispatchEvent(new Event('fb-ready'));
       // 한 건 지워도 「…삭제됨」을 띄우면서 전부 지울 땐 아무 말이 없었다.
       // 「명단 등록됨 · N건」과 짝이 되는 문구 — 같은 주어(명단)·같은 「· 건수」 꼴.
       toast('명단 초기화됨 · ' + n + '건');
-    }, { yes: '초기화', note: '「초기화」를 길게 누르세요' });
+    }, { yes: '초기화', note: '「초기화」를 길게 누르세요', hold: true });
   });
 
   document.getElementById('loadBtn').addEventListener('click', function(){
@@ -3804,11 +3816,15 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   // 로그아웃 — 세션만 지운다. 잠금화면의 authWatch 가 이를 감지해 키패드를 띄우고,
-  // 다시 로그인하면 화면을 새로 불러 깨끗한 상태로 돌아간다. (별도 확인창 없음 —
-  // 데이터가 지워지는 게 아니라 비번만 다시 치면 되고, 서랍은 이미 일부러 열어야 한다.)
+  // 다시 로그인하면 화면을 새로 불러 깨끗한 상태로 돌아간다.
   document.getElementById('logoutBtn').addEventListener('click', function(){
     hideDrawer();
-    if (window.__fb && window.__fb.signOut) window.__fb.signOut();
+    // 서랍이 다 닫힌(0.2s) 뒤 확인창을 띄운다 — #scrim(z50)이 서랍(z61) 뒤에 깔리지 않게.
+    setTimeout(function(){
+      confirmDlg('로그아웃할까요?', function(){
+        if (window.__fb && window.__fb.signOut) window.__fb.signOut();
+      }, { yes: '로그아웃', note: '비밀번호를 다시 입력하게 됩니다' });
+    }, 210);
   });
 
   /* ---------- Wi-Fi 안내 ---------- */
@@ -4384,14 +4400,17 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function submitPin(){
-    lockEl.classList.add('busy');
+    lockEl.classList.add('busy');           // 키패드 즉시 잠금
     lockMsg.textContent = '';
     var settled = false, timer = null;
+    // 「검사 중」 맥동은 마지막 점이 채워지는 전환(.12s)이 끝난 뒤에 건다.
+    // 전환과 맥동이 겹치면 그 점 하나만 따로 깜빡이는 것처럼 보인다.
+    var pulseT = setTimeout(function(){ if (!settled) lockEl.classList.add('checking'); }, 140);
     function finish(msg){
       if (settled) return;                 // 응답과 시한이 겹쳐도 한 번만
       settled = true;
-      clearTimeout(timer);
-      lockEl.classList.remove('busy');
+      clearTimeout(timer); clearTimeout(pulseT);
+      lockEl.classList.remove('busy', 'checking');
       if (msg) lockFail(msg); else clearPin();   // 성공이면 authWatch 가 unlock 시킨다
     }
     // 응답이 영영 안 오면(매장 와이파이가 끊기는 등) 키패드가 잠긴 채 갇힌다.
