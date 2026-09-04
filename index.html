@@ -2956,16 +2956,23 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- UI 연결 ---------- */
   var panel = document.getElementById('pastePanel');
   var panelScrim = document.getElementById('panelScrim');
+  // 예약 추가 막을 탭했을 때: 키보드가 떠 있었으면 「키보드 닫기」로만 쓰고 창은 안 닫는다.
+  // 한 번의 헛터치로 쓰던 내용이 날아가지 않게 — 창을 닫으려면 키보드 내려간 뒤 한 번 더
+  // 누르거나 「취소」. 키보드 여부는 touchstart 에서 미리 잡는다: iOS 는 click 이 오기 전에
+  // 이미 입력칸을 blur 시켜 키보드를 내리므로, click 시점의 activeElement 로는 판별 못 한다.
+  var scrimTapHadKb = false;
+  panelScrim.addEventListener('touchstart', function(){
+    scrimTapHadKb = document.body.classList.contains('keyboard-open');
+  }, { passive: true });
   panelScrim.addEventListener('click', function(){
     var ap = document.getElementById('addPanel');
     if (ap.classList.contains('hide')) return;
-    // 입력 중이면 먼저 키보드만 내린다. 한 번의 헛터치로 쓰던 내용이 날아가지 않게 —
-    // 창을 닫으려면 키보드가 내려간 뒤 한 번 더 누르거나 「취소」를 쓴다.
+    var hadKb = scrimTapHadKb || document.body.classList.contains('keyboard-open');
+    scrimTapHadKb = false;
+    if (hadKb) return;                 // 이 탭은 키보드만 내렸다 — 창은 그대로
+    // 데스크톱 등 포커스가 유지되는 환경: 입력칸이 아직 살아 있으면 그것부터 푼다
     var a = document.activeElement;
-    if (a && ap.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT')){
-      a.blur();
-      return;
-    }
+    if (a && ap.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')){ a.blur(); return; }
     closeAdd();
   });
   // 예약 추가 창이 떠 있는 동안 손가락 끌기를 막는다.
