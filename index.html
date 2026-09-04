@@ -66,16 +66,6 @@ window.setThemeChrome = function(t){
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <title>익순이</title>
 <style>
-  /* 스플래시 워드마크(익순이) 전용 서체 — 배달의민족 도현체(Do Hyeon), OFL 라이선스.
-     구글 폰트가 이 세 글자(익·순·이)만 남겨 잘라준 서브셋 — 1.4KB, 로딩 지연 없음.
-     스플래시 전용이라 본문 폰트 스택은 안 바뀐다. font-display:block — 어차피 화면에
-     나타나기 전에(head) 파싱되므로 대체 글꼴이 잠깐 보였다 바뀌는 일이 없다. */
-  @font-face{
-    font-family:'IksuniMark';
-    src:url(data:font/woff2;base64,d09GMgABAAAAAAVcAA0AAAAACYgAAAULAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGwwcHgZgAHQRCAqKFIdoCx4AATYCJAM4BCAFgxoHIBtZBxHVpB7INFIWzt/viK02w3K1S/2rmBlfUaDNWZ28GX0+/+9lt/CwcLIvOdlCHBRkOtvJiv4C9F9/LlFr9/9O5XtnsQDnffG8qK2ONe2oe9BdRAsWsEUNdmPKrVBfreDaYXpBE3RxABAAKItBEioDTbBLtz5DwA48kLTL5c0Az33EyWDBoXO4Clg+MEQKIZwDmRC8VEeBinEqDO7YrwschgonMkkFVwv4TSrASbAvRIDLJYNRpEJGGQORSlEgmlAUeAgMKfwUHiqYJc0y5j3z4fEtx7efSDuRualjFcwSZhnzrvnw+Obj20+kVpzhetf2VdsXbWu0rdbSo+XQFjNbTF9ovzmIgC4XyAhLkTIbGQWcDYBv22Ke5SwxeTnwvN0m2yQbb3PY7LYSdkmVJVWSSpTgHaqqlLAHcCIJlnkpREAZBKARdNgQGsEShlAPARlijnmUfVhKowNSEEEiFBNkyzhqYZHenjSA+cX1GBAJ46O9qpc9RAvjJWQ+6dMD9G2HzjDReerAFgBt8/6TVDBOH9yKSWO6C+ijHWCi8xDqB6lg7M/osk3UgTpRq/qBcGM1aGuY6FyH+lrang3bMOsjvyPGWL56NnDanDUrGHOuWjcPiT537Urq4bx26Rpw2tWLVyk1rl++jkS/ceUGi6KWa7EVCYvVt124wZzXzu1l8exValw/vxU9RlIJRnX83gBjP4B2gKcP4e5ovABMtZXGfM/r3zO/7bTp0157dO7SGXqerBS1Oarsw6Sc6TM23Fh/Y4abbwCszys3PaPc9Cf+XxqXC98cXq7xF+Xy7KXnl5yf/a72bLiRG6JoSdqowofxQxo2C5nRc/bSnUt2zn5XZDbsUxO+JbT5GP8q/lX6xrexG9/CAvXDVfS9v1V/v62Mb466umJbVXdl97arK9CZs3r3kvGy8aXC7MUTGyvmKuc2XDgBdSTZef0U48ecur6T+JFd104xfsypa7vIQb0a8kJ4QWoOOdLurD7rTlPurD7rDuYdFcIXMaSQD6EUVAhfSJgiPoRqL6aPraSP/Sgb9abr7tbR3qPth0VNttZNIoWo2Nq2WATmHRXMFxCmsDGYUtDBhY0MaSgKpqdXakx5DX/q0t9FOeIgzSOxqMnaRiNSiEpsrItFQJP847JXckH+cvlHOSd/mfdSJsheKttk+oud4xdwjipnwZlSLlTSzs6uakpBK10FV1qpUNOuz8fWjq/FizPUvVWn8bTNV9juJLWti6vKtqibTWK7i1S2ri5q26RuVpBKW6p7ZPKe6hapW8zJZV7gL++gcMiwVzpE2+faZzjk2Gu52cHbXAZ3Z2CGi+ZmBt5Q59eDs5z9tg27hfGyCeEWR3Qc67jjlrmicmnEuLGD3t+ydtfkwf7A9Fv7dMz/tv9Zegd1p2HE8DVSB/heLeN3/rf9/6p38CXpkuh+hUoP0i4OckecHluFIsJhMKfjsZmORDcO/lvba5aNUfcWpvRNcC0PnxPQgQztoAsJ3oIeArAP9EGgAQPYIwsMQSMgJGGPAA1YhmUQEAZveGMpqrEEjRCwDPJeWOqFBl7QYgnq4Y10qJACBbRIwGrUQotmeCILutVjOTSoxBLkoRZLBikNdgS+8IIPfOCr0oRLka1O3xKObMQiDQqEL7Qns3dyEg8tBKgcJ1J/zAqBH/5UCAhy0IBakC3ZZWAJtOBRi+ruoVhUWYaGK4gs/aVk6eD/R/D7VgAAAA==) format('woff2');
-    font-display:block;
-    unicode-range:U+C21C,U+C774-C775;   /* 순, 익, 이 — 이 서체는 이 세 글자에만 쓰인다 */
-  }
   :root{
     --radius:14px;
     /* 바탕 */
@@ -902,6 +892,16 @@ window.setThemeChrome = function(t){
      그 상태에선 첫 프레임부터 떠 있고, app IIFE 의 첫 render() 가 .out 로 0.25s 페이드시켜 걷는다
      (안전망: 12초). 로그인 안 됐으면 잠금 키패드가 그 역할을 하므로 스플래시는 안 띄운다.
      접속을 빠르게 하지는 않는다 — 빈 화면을 브랜드 화면으로 바꿀 뿐, 고정 지연 없이 준비되면 사라진다. */
+  /* 스플래시 워드마크(익순이) 전용 서체 — 배달의민족 도현체(Do Hyeon), OFL 라이선스.
+     구글 폰트가 이 세 글자(익·순·이)만 남겨 잘라준 서브셋 — 1.4KB, 로딩 지연 없음.
+     스플래시 전용이라 본문 폰트 스택은 안 바뀐다. font-display:block — 어차피 화면에
+     나타나기 전에(head) 파싱되므로 대체 글꼴이 잠깐 보였다 바뀌는 일이 없다. */
+  @font-face{
+    font-family:'IksuniMark';
+    src:url(data:font/woff2;base64,d09GMgABAAAAAAVcAA0AAAAACYgAAAULAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGwwcHgZgAHQRCAqKFIdoCx4AATYCJAM4BCAFgxoHIBtZBxHVpB7INFIWzt/viK02w3K1S/2rmBlfUaDNWZ28GX0+/+9lt/CwcLIvOdlCHBRkOtvJiv4C9F9/LlFr9/9O5XtnsQDnffG8qK2ONe2oe9BdRAsWsEUNdmPKrVBfreDaYXpBE3RxABAAKItBEioDTbBLtz5DwA48kLTL5c0Az33EyWDBoXO4Clg+MEQKIZwDmRC8VEeBinEqDO7YrwschgonMkkFVwv4TSrASbAvRIDLJYNRpEJGGQORSlEgmlAUeAgMKfwUHiqYJc0y5j3z4fEtx7efSDuRualjFcwSZhnzrvnw+Obj20+kVpzhetf2VdsXbWu0rdbSo+XQFjNbTF9ovzmIgC4XyAhLkTIbGQWcDYBv22Ke5SwxeTnwvN0m2yQbb3PY7LYSdkmVJVWSSpTgHaqqlLAHcCIJlnkpREAZBKARdNgQGsEShlAPARlijnmUfVhKowNSEEEiFBNkyzhqYZHenjSA+cX1GBAJ46O9qpc9RAvjJWQ+6dMD9G2HzjDReerAFgBt8/6TVDBOH9yKSWO6C+ijHWCi8xDqB6lg7M/osk3UgTpRq/qBcGM1aGuY6FyH+lrang3bMOsjvyPGWL56NnDanDUrGHOuWjcPiT537Urq4bx26Rpw2tWLVyk1rl++jkS/ceUGi6KWa7EVCYvVt124wZzXzu1l8exValw/vxU9RlIJRnX83gBjP4B2gKcP4e5ovABMtZXGfM/r3zO/7bTp0157dO7SGXqerBS1Oarsw6Sc6TM23Fh/Y4abbwCszys3PaPc9Cf+XxqXC98cXq7xF+Xy7KXnl5yf/a72bLiRG6JoSdqowofxQxo2C5nRc/bSnUt2zn5XZDbsUxO+JbT5GP8q/lX6xrexG9/CAvXDVfS9v1V/v62Mb466umJbVXdl97arK9CZs3r3kvGy8aXC7MUTGyvmKuc2XDgBdSTZef0U48ecur6T+JFd104xfsypa7vIQb0a8kJ4QWoOOdLurD7rTlPurD7rDuYdFcIXMaSQD6EUVAhfSJgiPoRqL6aPraSP/Sgb9abr7tbR3qPth0VNttZNIoWo2Nq2WATmHRXMFxCmsDGYUtDBhY0MaSgKpqdXakx5DX/q0t9FOeIgzSOxqMnaRiNSiEpsrItFQJP847JXckH+cvlHOSd/mfdSJsheKttk+oud4xdwjipnwZlSLlTSzs6uakpBK10FV1qpUNOuz8fWjq/FizPUvVWn8bTNV9juJLWti6vKtqibTWK7i1S2ri5q26RuVpBKW6p7ZPKe6hapW8zJZV7gL++gcMiwVzpE2+faZzjk2Gu52cHbXAZ3Z2CGi+ZmBt5Q59eDs5z9tg27hfGyCeEWR3Qc67jjlrmicmnEuLGD3t+ydtfkwf7A9Fv7dMz/tv9Zegd1p2HE8DVSB/heLeN3/rf9/6p38CXpkuh+hUoP0i4OckecHluFIsJhMKfjsZmORDcO/lvba5aNUfcWpvRNcC0PnxPQgQztoAsJ3oIeArAP9EGgAQPYIwsMQSMgJGGPAA1YhmUQEAZveGMpqrEEjRCwDPJeWOqFBl7QYgnq4Y10qJACBbRIwGrUQotmeCILutVjOTSoxBLkoRZLBikNdgS+8IIPfOCr0oRLka1O3xKObMQiDQqEL7Qns3dyEg8tBKgcJ1J/zAqBH/5UCAhy0IBakC3ZZWAJtOBRi+ruoVhUWYaGK4gs/aVk6eD/R/D7VgAAAA==) format('woff2');
+    font-display:block;
+    unicode-range:U+C21C,U+C774-C775;   /* 순, 익, 이 — 이 서체는 이 세 글자에만 쓰인다 */
+  }
   .splash{ display:none }
   html[data-authed="1"] .splash{
     position:fixed;inset:0;z-index:290;
