@@ -4387,7 +4387,8 @@ window.dispatchEvent(new Event('fb-ready'));
   function lockShow(msg){
     try { localStorage.removeItem('ix-authed'); } catch(e){}
     document.documentElement.removeAttribute('data-authed');   // 표식을 지워야 잠금이 실제로 보인다
-    lockEl.classList.remove('hide');
+    clearPin();                          // 키패드는 늘 빈 상태로 나타난다 (finish 는 성공 시 안 비우므로 여기서)
+    lockEl.classList.remove('hide', 'out', 'busy', 'checking', 'bad');
     lockMsg.textContent = msg || '';
   }
   function lockFail(msg){
@@ -4410,7 +4411,9 @@ window.dispatchEvent(new Event('fb-ready'));
       settled = true;
       clearTimeout(timer); clearTimeout(pulseT);
       lockEl.classList.remove('busy', 'checking');
-      if (msg) lockFail(msg); else clearPin();   // 성공이면 authWatch 가 unlock 시킨다
+      // 성공이면 점을 비우지 않는다 — 채워진 채로 unlock() 의 페이드에 녹아 사라진다 (아이폰 방식).
+      // 따로 비우면 전환이 시작되는 그 순간과 겹쳐 어차피 안 보이고, 어정쩡하게만 남는다.
+      if (msg) lockFail(msg);              // 실패는 lockFail 안에서 흔들고 clearPin 한다
     }
     // 응답이 영영 안 오면(매장 와이파이가 끊기는 등) 키패드가 잠긴 채 갇힌다.
     // 앱을 강제 종료하는 것 말고 빠져나갈 길이 없으므로 시한을 둔다.
