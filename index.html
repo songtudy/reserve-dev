@@ -42,11 +42,10 @@ window.setThemeChrome = function(t){
   try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
   window.setThemeChrome(t);
 })();
-// 전에 이 기기에서 로그인했으면 잠금 대신 「로딩 화면」(아이콘·이름만)으로 연다 — 위 CSS 참고.
-// Auth SDK 는 네트워크에서 로드된 뒤에야 로그인 상태를 알려주고, 그 사이 명단도 받아온다.
-// 그 ~1초 공백을 이 표식이 로딩 화면으로 메운다. 인증 확인되면 unlock() 이 페이드로 걷는다.
-// 보안이 아니라 연출용 — 실제 차단은 Firebase 규칙이 한다. 표식만 조작해도 명단은 못 읽는다.
-// 로그인이 아닌 것으로 밝혀지면 아래 IIFE 가 이 속성을 지우고 전체 잠금(키패드)을 띄운다.
+// 전에 이 기기에서 로그인했으면 잠금 화면을 아예 그리지 않는다 (앱 열 때마다 키패드가 번쩍이지 않게).
+// 그 사이(Auth SDK 로드 + 명단 수신, ~1초)는 아래 .splash 스플래시가 화면을 덮는다.
+// 보안이 아니라 깜빡임 방지용 — 실제 차단은 Firebase 규칙이 한다. 표식만 조작해도 명단은 못 읽는다.
+// 로그인이 아닌 것으로 밝혀지면 아래 IIFE 가 이 속성을 지우고 잠금을 띄운다.
 (function(){
   try { if (localStorage.getItem('ix-authed') === '1') document.documentElement.setAttribute('data-authed','1'); } catch(e){}
 })();
@@ -589,8 +588,8 @@ window.setThemeChrome = function(t){
     display:flex;align-items:flex-end;justify-content:center;
   }
   .sheetScrim.hide{display:none}
-  /* 전체 잠금(키패드)이 떠 있을 때만(=data-authed 없음) 설치 안내를 그 위로 올린다 —
-     로그인 전에 보여야 하는 것이라. 로딩 화면(data-authed 있음)일 땐 평범한 z-index. */
+  /* 잠금화면(300) 위로 올린다 — 설치 안내는 로그인 전에 보여야 하는 것이라 잠금보다 앞이다.
+     조건은 .lock 의 표시 조건과 정확히 짝(html[data-authed="1"] .lock{display:none}) */
   html:not([data-authed="1"]) .sheetScrim{ z-index:310 }
   /* 메인 앱셸처럼 — 제목·버튼은 고정, 가운데(#sheetBody)만 세로 스크롤.
      긴 FAQ·명단에서도 제목·닫기가 안 사라지고 좌우 스크롤도 안 생긴다. */
@@ -809,13 +808,7 @@ window.setThemeChrome = function(t){
   .lock{transition:opacity .2s ease-out}
   .lock.out{opacity:0;pointer-events:none}
   .lock.hide{display:none}
-  /* 재로그인 상태로 열 때(data-authed): 잠금 대신 「로딩 화면」 — 아이콘·이름만 두고
-     키패드·점·문구는 숨긴다. 앱 셸은 떴지만 명단이 아직 없는 그 ~1초를 이 화면이 메운다.
-     인증이 확인되면 (authWatch → unlock) .lock.out 0.2s 페이드로 걷히고 명단이 드러난다.
-     세션이 실은 만료됐으면 IIFE 가 data-authed 를 지워 → 이 규칙이 풀려 전체 키패드가 나온다. */
-  html[data-authed="1"] .lock .lockdots,
-  html[data-authed="1"] .lock .lockmsg,
-  html[data-authed="1"] .lock .lockpad{ display:none }
+  html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) — 그 사이는 .splash 가 덮는다 */
   .lockico{width:56px;height:56px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
   .lockname{margin-top:14px;font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
@@ -882,6 +875,25 @@ window.setThemeChrome = function(t){
      깜빡이는 것처럼 보인다 (submitPin 참고). reduced-motion 은 아래 전역 규칙이 끈다. */
   .lock.checking .lockdots i.on{animation:lockpulse .9s ease-in-out infinite}
   @keyframes lockpulse{50%{opacity:.3}}
+
+  /* ---------- 스플래시 (앱 로딩) ----------
+     재로그인 상태(data-authed)로 앱을 열면 명단이 뜨기 전 ~1초가 빈다 — 그 사이를 앱 아이콘·이름으로 덮는다.
+     그 상태에선 첫 프레임부터 떠 있고, app IIFE 의 첫 render() 가 .out 로 0.25s 페이드시켜 걷는다
+     (안전망: 12초). 로그인 안 됐으면 잠금 키패드가 그 역할을 하므로 스플래시는 안 띄운다.
+     접속을 빠르게 하지는 않는다 — 빈 화면을 브랜드 화면으로 바꿀 뿐, 고정 지연 없이 준비되면 사라진다. */
+  .splash{ display:none }
+  html[data-authed="1"] .splash{
+    position:fixed;inset:0;z-index:290;
+    background:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    transition:opacity .25s ease-out;
+  }
+  .splash.out{opacity:0;pointer-events:none}
+  .splashMark{
+    width:112px;height:112px;border-radius:26px;   /* iOS 아이콘 곡률에 맞춘 라운드 */
+    -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;
+  }
+  .splashName{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--text)}
 
   .scrim{
     position:fixed;inset:0;z-index:63;    /* 서랍(61)·룰렛막(62) 위 — 로그아웃 확인창이 서랍에서 바로 뜬다 */
@@ -1141,6 +1153,12 @@ window.setThemeChrome = function(t){
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 스플래시 — 앱이 첫 명단을 받기 전까지 화면을 덮는다 (위 CSS 참고). 첫 render() 에서 걷힌다. -->
+<div class="splash" id="splash">
+  <img class="splashMark" src="icon-512.png" alt="" width="112" height="112" draggable="false">
+  <div class="splashName">익순이</div>
+</div>
 
 <!-- 잠금 화면 — 로그인 상태를 확인하기 전까지 기본으로 떠 있다(=기본 잠김).
      입력칸(<input>)이 없다: 네이티브 키보드를 띄우지 않아야 화면이 안 밀린다. -->
@@ -1941,7 +1959,19 @@ window.dispatchEvent(new Event('fb-ready'));
       + (all.length && done === all.length ? ' full' : '');
   }
 
+  // 스플래시 걷기 — 첫 render() 에서(명단이든 붙여넣기 화면이든 「보여줄 게 준비됨」) 페이드.
+  // 무슨 일이 있어도 12초 뒤엔 걷는다 (연결이 영영 안 될 때 스플래시에 갇히지 않게).
+  var splashEl = document.getElementById('splash');
+  function hideSplash(){
+    if (!splashEl || hideSplash._done) return;
+    hideSplash._done = true;
+    splashEl.classList.add('out');
+    setTimeout(function(){ splashEl.classList.add('hide'); }, 300);
+  }
+  setTimeout(hideSplash, 12000);
+
   function render(){
+    hideSplash();
     if (!interactionActive() && deferredState){
       state = deferredState;
       deferredState = null;
@@ -4331,6 +4361,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 주소에 ?selftest 가 있으면 앱을 띄우지 않고, 실제 배포되는 순수 함수들을 노출한 뒤
   // selftest.js 가 단언 검사를 돌려 결과를 화면에 뿌린다. 평소엔 이 블록을 그냥 지나간다.
   if (/[?&]selftest\b/.test(location.search)) {
+    if (splashEl) splashEl.classList.add('hide');   // 결과 화면을 가리지 않게
     window.__ixTest = {
       parse: parse, normTime: normTime, sortItems: sortItems,
       pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
