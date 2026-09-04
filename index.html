@@ -114,6 +114,14 @@ window.setThemeChrome = function(t){
   /* 키보드가 올라오면 하단 바를 숨긴다 (어차피 키보드 뒤라 못 쓴다).
      상단 헤더는 늘 유지 — 숨겼다 되살리면 화면이 튄다. */
   body.keyboard-open > .foot{display:none}
+  /* 명단 수정 중에는 폼 아래로 이어지는 행을 그리지 않는다.
+     폼이 목록 '안'에 있어서, iOS 가 포커스 칸만 드러내고 멈추면 그 아래 남는 자리에
+     다음 행이 들어와 키보드에 반쯤 잘린 박스처럼 보였다.
+     visibility 는 「자리는 그대로 두고 그리지만 않는」 것이라 레이아웃도 스크롤도 안 건드린다
+     — --kb·roomScroll 을 손대다 다른 동작까지 깨뜨린 앞선 시도들과 성격이 다르다.
+     :has() 를 못 읽는 낡은 사파리는 이 두 줄만 무시하고 기존대로 동작한다. */
+  body.keyboard-open .row:has(.edit) ~ .row,
+  body.keyboard-open .group:has(.edit) ~ .group{ visibility:hidden }
   /* 붙여넣기 화면(명단이 비었을 때)은 카드 하나짜리 폼이다. 명단 관리 화면과 달리
      '고정'하지 않는다 — .wrap 이 (--kb 만큼 여유를 두고) 정상 스크롤되게 두고,
      openPaste 에서 scrollIntoView 로 부드럽게 이동한다. 키보드가 올라오면 iOS 가
