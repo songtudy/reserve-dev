@@ -798,6 +798,18 @@ window.setThemeChrome = function(t){
      비주얼 뷰포트를 밀어 올리는데(position:fixed 도 같이 딸려 올라감) CSS 로는 못 막는다.
      키패드로 바꾸면 그 원인 자체가 없어져 화면이 완전히 정적이다.
      토스트(200)보다 위. 로그인 상태를 알기 전까지, 그리고 로그인 안 됐을 때 앱 전체를 덮는다. */
+  /* 워드마크(익순이) 전용 서체 — 카페24 써라운드(Cafe24 Ssurround), 상업적 임베드 자유
+     (noonnu.cc 배포, Cafe24 자체 라이선스). 로컬에서 fonttools 로 이 세 글자(익·순·이)만 남겨
+     서브셋 — 2KB, 로딩 지연 없음. 잠금 화면과 스플래시 둘 다 같은 이름을 보여주는 화면이라
+     같은 서체·굵기를 공유해 통일감을 준다(본문 폰트 스택은 안 바뀐다).
+     font-display:block — 화면에 나타나기 전에(head) 파싱되므로 대체 글꼴이 잠깐 보였다
+     바뀌는 일이 없다. */
+  @font-face{
+    font-family:'IksuniMark';
+    src:url(data:font/woff2;base64,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) format('woff2');
+    font-display:block;
+    unicode-range:U+C21C,U+C774-C775;   /* 순, 익, 이 — 이 서체는 이 세 글자에만 쓰인다 */
+  }
   .lock{
     /* 높이를 svh(주소창이 펼쳐진 기준의 '작은 뷰포트')로 고정한다.
        inset:0 이면 사파리 주소창이 접힐 때 높이가 변하고, 가운데 정렬이라
@@ -820,8 +832,11 @@ window.setThemeChrome = function(t){
   .lock.out{opacity:0;pointer-events:none}
   .lock.hide{display:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) — 그 사이는 .splash 가 덮는다 */
-  .lockico{width:56px;height:56px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
-  .lockname{margin-top:14px;font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+  /* 마크 — 스플래시와 같은 인라인 SVG(타일·테두리 없음). 전엔 apple-touch-icon.png 를
+     타일에 넣어 썼는데, 이제 이름도 스플래시와 같은 서체를 쓰므로 그림도 맞춘다. */
+  .lockmark{display:block;width:64px;height:auto}
+  .lockname{margin-top:14px;font-size:21px;font-weight:400;letter-spacing:0;color:var(--text);
+    font-family:'IksuniMark',-apple-system,"Apple SD Gothic Neo",system-ui,sans-serif}
   .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
   /* 입력한 자릿수 표시 */
   .lockdots{display:flex;gap:14px;margin-top:26px;height:12px;align-items:center}
@@ -892,17 +907,6 @@ window.setThemeChrome = function(t){
      그 상태에선 첫 프레임부터 떠 있고, app IIFE 의 첫 render() 가 .out 로 0.25s 페이드시켜 걷는다
      (안전망: 12초). 로그인 안 됐으면 잠금 키패드가 그 역할을 하므로 스플래시는 안 띄운다.
      접속을 빠르게 하지는 않는다 — 빈 화면을 브랜드 화면으로 바꿀 뿐, 고정 지연 없이 준비되면 사라진다. */
-  /* 스플래시 워드마크(익순이) 전용 서체 — 카페24 써라운드(Cafe24 Ssurround), 상업적 임베드 자유
-     (noonnu.cc 배포, Cafe24 자체 라이선스). 로컬에서 fonttools 로 이 세 글자(익·순·이)만 남겨
-     서브셋 — 2KB, 로딩 지연 없음. 스플래시 전용이라 본문 폰트 스택은 안 바뀐다.
-     font-display:block — 화면에 나타나기 전에(head) 파싱되므로 대체 글꼴이 잠깐 보였다
-     바뀌는 일이 없다. */
-  @font-face{
-    font-family:'IksuniMark';
-    src:url(data:font/woff2;base64,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) format('woff2');
-    font-display:block;
-    unicode-range:U+C21C,U+C774-C775;   /* 순, 익, 이 — 이 서체는 이 세 글자에만 쓰인다 */
-  }
   .splash{ display:none }
   html[data-authed="1"] .splash{
     position:fixed;inset:0;z-index:290;
@@ -1209,7 +1213,16 @@ window.setThemeChrome = function(t){
 <!-- 잠금 화면 — 로그인 상태를 확인하기 전까지 기본으로 떠 있다(=기본 잠김).
      입력칸(<input>)이 없다: 네이티브 키보드를 띄우지 않아야 화면이 안 밀린다. -->
 <div class="lock" id="lock">
-  <img class="lockico" src="apple-touch-icon.png" alt="" width="56" height="56" draggable="false">
+  <svg class="lockmark" viewBox="16 12.5 68 73" aria-hidden="true">
+    <g fill="var(--wait)">
+      <rect x="30" y="12.5" width="8" height="15" rx="4"/>
+      <rect x="62" y="12.5" width="8" height="15" rx="4"/>
+      <path d="M16 36.5a16 16 0 0 1 16-16h36a16 16 0 0 1 16 16z"/>
+    </g>
+    <rect x="20" y="24.5" width="60" height="57" rx="12" fill="none" stroke="var(--wait)" stroke-width="8"/>
+    <path d="M32.1 57.8 43.6 69.3 68.1 44.8" fill="none" stroke="var(--go)" stroke-width="8"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
   <div class="lockname">익순이</div>
   <div class="locksub">익선취향 예약 매니저</div>
   <div class="lockdots" id="lockDots" role="status" aria-label="비밀번호 입력"></div>
