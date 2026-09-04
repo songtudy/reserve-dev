@@ -58,6 +58,11 @@ window.setThemeChrome = function(t){
 //    그러면 보정이 통째로 빠져 스플래시가 ~31pt 아래로 처져 보인다(실기기에서 확인된 간헐 버그).
 //    그래서 한 번으로 안 끝내고, 화면이 다시 보일 때마다(pageshow·visibilitychange) 몇 차례
 //    다시 잰다 — 키보드 뷰포트 보정(remeasureViewport, 아래 app IIFE)과 같은 방식.
+// ※※ 이 재측정은 스플래시가 떠 있는 동안만 의미가 있다. 리스너를 계속 살려두면, 스플래시가
+//     이미 걷힌 뒤에도(=평소 쓰다가) 백그라운드→복귀할 때마다 visibilitychange 가 불필요하게
+//     한 번 더 돈다 — 화면엔 안 보이지만(스플래시가 display:none) 사장님이 "복귀할 때 간헐적으로
+//     번쩍인다"고 느낀 원인이 이거였을 수 있어, 스플래시가 걷히는 hideSplash() 시점에
+//     stopSbcutRemeasure() 로 리스너 자체를 뗀다(아래 app IIFE 의 hideSplash 참고).
 function applySbcut(){
   try {
     if (navigator.standalone !== true) return;
@@ -67,8 +72,13 @@ function applySbcut(){
 }
 applySbcut();
 function remeasureSbcut(){ [0, 60, 200, 500].forEach(function(t){ setTimeout(applySbcut, t); }); }
-document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') remeasureSbcut(); });
+function onSbcutVisible(){ if (document.visibilityState === 'visible') remeasureSbcut(); }
+document.addEventListener('visibilitychange', onSbcutVisible);
 window.addEventListener('pageshow', remeasureSbcut);
+window.stopSbcutRemeasure = function(){
+  document.removeEventListener('visibilitychange', onSbcutVisible);
+  window.removeEventListener('pageshow', remeasureSbcut);
+};
 </script>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -925,7 +935,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
     padding-bottom:var(--sbcut, 0px);   /* standalone 상태바 보정 (위 head 스크립트). 가운데 락업만
                                            그 절반만큼 올라간다 — 회사명은 absolute 라 하단 고정 유지 */
-    transition:opacity .25s ease-out;
+    /* padding-bottom 도 같이 트랜지션 — --sbcut 재측정(위 head 스크립트)이 스플래시가 뜬 채로
+       뒤늦게 값을 고치면, 이게 없으면 락업이 순간 툭 튄다. 있으면 스르륵 자리를 잡아 티가 안 난다. */
+    transition:opacity .25s ease-out, padding-bottom .2s ease-out;
   }
   .splash.out{opacity:0;pointer-events:none}
   /* 스플래시는 「홈화면 아이콘」이 아니라 마크만 보여준다 (카카오·네이버·KT 등 통용되는 방식).
@@ -2030,6 +2042,10 @@ window.dispatchEvent(new Event('fb-ready'));
     hideSplash._done = true;
     splashEl.classList.add('out');
     setTimeout(function(){ splashEl.classList.add('hide'); }, 300);
+    // 스플래시가 다시 뜰 일이 없으니, --sbcut 재측정 리스너(위 head 스크립트)도 여기서 뗀다 —
+    // 안 떼면 평소 쓰다가 백그라운드→복귀할 때마다 화면엔 안 보이는(display:none) 재측정이
+    // 계속 돎(무해하지만 불필요) — 「복귀할 때 간헐적으로 번쩍인다」던 원인이 이거였을 수 있다.
+    if (window.stopSbcutRemeasure) window.stopSbcutRemeasure();
   }
   setTimeout(hideSplash, 12000);
 
@@ -4425,6 +4441,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // selftest.js 가 단언 검사를 돌려 결과를 화면에 뿌린다. 평소엔 이 블록을 그냥 지나간다.
   if (/[?&]selftest\b/.test(location.search)) {
     if (splashEl) splashEl.classList.add('hide');   // 결과 화면을 가리지 않게
+    if (window.stopSbcutRemeasure) window.stopSbcutRemeasure();
     window.__ixTest = {
       parse: parse, normTime: normTime, sortItems: sortItems,
       pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
