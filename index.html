@@ -4190,14 +4190,8 @@ window.dispatchEvent(new Event('fb-ready'));
   updTimer = setInterval(function(){ if (!document.hidden) checkUpdate(); }, 300000);
 
   // 화면으로 돌아오면 한 번 확인 (실시간 수신은 watchRemote가 담당)
-  var hiddenAt = 0;
   document.addEventListener('visibilitychange', function(){
-    if (document.hidden){ hiddenAt = Date.now(); return; }
-    // 30초 넘게 백그라운드였으면 소켓이 살아 있다고 보고돼도(online 이 stale-true 여도)
-    // 실제로는 얼어 죽었을 가능성이 높다 — 조건 없이 한 번 되살린다.
-    var wasLong = hiddenAt && (Date.now() - hiddenAt) > 30000;
-    hiddenAt = 0;
-    if (wasLong && hasStore() && fb().reconnect){ fb().reconnect(); }
+    if (document.hidden) return;
     wakeLogOutbox();
     wqWake();
     // 백그라운드에 있는 동안 새 버전이 배포됐을 수 있다 — 확인해서 있으면
@@ -4214,13 +4208,13 @@ window.dispatchEvent(new Event('fb-ready'));
     // 백그라운드에 있는 동안 날짜가 넘어갔을 수 있다.
     // 먼저 확인하지 않으면 어제 명단을 「오늘」로 띄운 채 체크하게 된다.
     if (rolloverIfNeeded()) return;
-    // 얼었다 깨어나 첫 명단조차 못 받은 채였다면(state 없음) 처음부터 다시 시도한다.
+    // 얼었다 깨어나 첫 명단조차 못 받은 채였다면(state 없음) 처음부터 다시 부른다.
     // boot() 은 BOOT_WAIT 제한이 있어 소켓이 죽어 있어도 곧 캐시로 화면을 띄운다.
-    if (!state){ if (hasStore()) boot(); return; }
+    if (!state){ boot(); return; }
     sync();          // 즉시 최신 상태 확인
     watchRemote();   // 백그라운드에서 끊겼을 수 있으니 실시간 수신도 다시 건다
-    // 복귀 직후엔 소켓이 죽어 있는 게 기본이라, 3초 기다렸다 안 붙어 있으면 강제로 다시 붙인다.
-    // 한 번 더(8초) — 첫 reconnect 도 얼어붙은 상태에서 나갈 수 있다.
+    // 복귀 직후엔 소켓이 죽어 있는 게 흔하다. 3초 뒤 아직 안 붙어 있으면 강제로 다시 붙이고,
+    // 그래도 안 되면 한 번 더(8초) — 첫 reconnect 도 얼어붙은 상태에서 못 나갈 수 있다.
     [3000, 8000].forEach(function(t){
       setTimeout(function(){
         if (!online && hasStore() && fb().reconnect){ fb().reconnect(); watchRemote(); sync(); }
