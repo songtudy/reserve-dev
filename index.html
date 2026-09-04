@@ -3135,6 +3135,23 @@ window.dispatchEvent(new Event('fb-ready'));
     fn();
   });
 
+  // 아이폰의 「화면 왼쪽 끝에서 오른쪽으로 쓸기」(뒤로가기)는 팝업이 떠 있을 때
+  // 앱 전체를 오른쪽으로 밀어내는 페이지 전환을 보여 준다 — 팝업만 닫히면 되는데
+  // 앱이 통째로 미끄러지는 것처럼 보인다. 그래서 그 순간에만 제스처를 막는다.
+  //   · 팝업이 떠 있을 때 왼쪽 끝에 있는 건 막(scrim)뿐이라 막아도 잃는 게 없다.
+  //     (평소엔 그 자리에 시간대 머리글·방문 체크가 있어서 늘 막으면 탭이 죽는다)
+  //   · 서랍은 제외 — 스스로 왼쪽으로 끌어 닫는 제스처가 있다.
+  document.addEventListener('touchstart', function(e){
+    if (e.touches.length !== 1 || e.touches[0].clientX > 24) return;
+    var dw = document.getElementById('drawer');
+    if (dw && dw.classList.contains('open')) return;
+    var overlay = ['scrim', 'rltScrim', 'panelScrim', 'sheetScrim'].some(function(id){
+      var el = document.getElementById(id);
+      return el && !el.classList.contains('hide');
+    });
+    if (overlay && e.cancelable) e.preventDefault();
+  }, { passive: false });
+
   var scrim = document.getElementById('scrim');
   // 길게 눌러 확인하는 팝업. 입력칸(키보드)이 없다 — 한 번의 탭·주머니 오작동으로는 실행되지
   // 않고, HOLD_MS 동안 「초기화」를 누르고 있어야 완성된다. 누르다 손을 떼거나 버튼 밖으로
