@@ -49,6 +49,17 @@ window.setThemeChrome = function(t){
 (function(){
   try { if (localStorage.getItem('ix-authed') === '1') document.documentElement.setAttribute('data-authed','1'); } catch(e){}
 })();
+// 홈 화면 앱(standalone)에서는 iOS 가 상태바 높이만큼 웹 영역을 「위에서」 잘라낸다.
+// 그래서 웹 영역의 한가운데는 기기 화면 한가운데보다 그 절반만큼 아래다 (아이폰 17 기준 31pt).
+// 잘린 만큼을 아래 여백으로 돌려주면 스플래시가 실제 화면 한가운데로 온다.
+// 기기에서 읽는 값이라 기종이 달라도 맞는다. 사파리는 아래 툴바까지 빠져 값이 커지므로 제외.
+(function(){
+  try {
+    if (navigator.standalone !== true) return;
+    var cut = Math.round(screen.height - window.innerHeight);
+    if (cut > 0 && cut < 120) document.documentElement.style.setProperty('--sbcut', cut + 'px');
+  } catch(e){}
+})();
 </script>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -887,6 +898,8 @@ window.setThemeChrome = function(t){
     background:var(--ink);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
+    padding-bottom:var(--sbcut, 0px);   /* standalone 상태바 보정 (위 head 스크립트). 가운데 락업만
+                                           그 절반만큼 올라간다 — 회사명은 absolute 라 하단 고정 유지 */
     transition:opacity .25s ease-out;
   }
   .splash.out{opacity:0;pointer-events:none}
