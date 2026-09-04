@@ -53,13 +53,22 @@ window.setThemeChrome = function(t){
 // 그래서 웹 영역의 한가운데는 기기 화면 한가운데보다 그 절반만큼 아래다 (아이폰 17 기준 31pt).
 // 잘린 만큼을 아래 여백으로 돌려주면 스플래시가 실제 화면 한가운데로 온다.
 // 기기에서 읽는 값이라 기종이 달라도 맞는다. 사파리는 아래 툴바까지 빠져 값이 커지므로 제외.
-(function(){
+// ※ 완전 종료 후 재실행 등 일부 재시작 경로에서는 이 스크립트가 실행되는 시점에
+//    window.innerHeight 가 아직 상태바 제외 전 값(=screen.height, cut=0)일 때가 있다 —
+//    그러면 보정이 통째로 빠져 스플래시가 ~31pt 아래로 처져 보인다(실기기에서 확인된 간헐 버그).
+//    그래서 한 번으로 안 끝내고, 화면이 다시 보일 때마다(pageshow·visibilitychange) 몇 차례
+//    다시 잰다 — 키보드 뷰포트 보정(remeasureViewport, 아래 app IIFE)과 같은 방식.
+function applySbcut(){
   try {
     if (navigator.standalone !== true) return;
     var cut = Math.round(screen.height - window.innerHeight);
-    if (cut > 0 && cut < 120) document.documentElement.style.setProperty('--sbcut', cut + 'px');
+    document.documentElement.style.setProperty('--sbcut', (cut > 0 && cut < 120 ? cut : 0) + 'px');
   } catch(e){}
-})();
+}
+applySbcut();
+function remeasureSbcut(){ [0, 60, 200, 500].forEach(function(t){ setTimeout(applySbcut, t); }); }
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') remeasureSbcut(); });
+window.addEventListener('pageshow', remeasureSbcut);
 </script>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
