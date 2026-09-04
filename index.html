@@ -3079,6 +3079,8 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   var KB_MIN = 90;                       // 이보다 크게 줄면 키보드로 본다
+  var FOCUS_QUIET = 400;                 // 칸을 옮긴 뒤 이만큼은 스크롤을 되돌리지 않는다
+  var lastFocusAt = 0;                   // 마지막으로 포커스가 오간 시각
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
   function applyViewport(){
@@ -3117,7 +3119,12 @@ window.dispatchEvent(new Event('fb-ready'));
     // 키보드가 올라와 있을 때 iOS 가 .wrap 을 유효 범위 밖으로 스크롤해두는 경우가 있다
     // (화면이 과하게 올라감 → 손으로 스크롤해야 풀림). 매번 유효 범위로 되돌린다.
     // scrollTop 을 코드로 set 하면 iOS 도 다시 클램프한다 (손 스크롤과 같은 효과).
-    if (open && wrapEl){
+    //
+    // 단, 칸을 옮기는 중에는 쉰다. 포커스가 바뀌면 remeasureViewport 가 40·140·320·600ms 에
+    // applyViewport 를 걸어 두는데, 이름↔메모를 오가면 focusout+focusin 으로 600ms 안에 8번이
+    // 겹친다. 그 사이 iOS 는 새 칸을 보이게 스크롤하는 중이라, 여기서 되돌리면 서로 싸워
+    // 화면이 흔들린다. 이동이 끝난 뒤(FOCUS_QUIET) 되돌려도 늦지 않다.
+    if (open && wrapEl && (Date.now() - lastFocusAt) > FOCUS_QUIET){
       var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
       if (wrapEl.scrollTop > maxST + 1) wrapEl.scrollTop = Math.max(0, maxST);
     }
@@ -3133,9 +3140,13 @@ window.dispatchEvent(new Event('fb-ready'));
   // 포커스 전환 직후 몇 번 더 강제로 잰다. applyViewport 는 여러 번 불러도 무해하다.
   function remeasureViewport(){ [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); }); }
   document.addEventListener('focusin', function(e){
+    lastFocusAt = Date.now();
     if (textKeyboardTarget(e.target)) remeasureViewport();
   });
-  document.addEventListener('focusout', remeasureViewport);
+  document.addEventListener('focusout', function(){
+    lastFocusAt = Date.now();
+    remeasureViewport();
+  });
   applyViewport();
 
   /* ---------- 뒤로가기 ---------- */
