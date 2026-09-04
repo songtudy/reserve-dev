@@ -2570,7 +2570,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   function warnLogPersistence(){
-    setTimeout(function(){ toast('변경 내역 저장 실패'); }, 0);
+    setTimeout(function(){ toast('변경 내역 저장 실패 — 다시 시도합니다'); }, 0);
   }
   function scheduleLogRetry(){
     if (logRetryTimer || !Object.keys(logOutbox).length || document.hidden || !online
@@ -3952,8 +3952,10 @@ window.dispatchEvent(new Event('fb-ready'));
     sheetBtnsReset();   // 상세에서 끼운 「명단 복사」 제거
     bkRenderList();
     backClose = hideSheet;
-    // 하드웨어 뒤로가기(popstate)로 불려왔으면 history 항목이 소비됐으니 다시 심는다
-    if (!(history.state && history.state.ov)){ try { history.pushState({ ov: 1 }, ''); } catch(e){} }
+    // 안드로이드: 하드웨어 뒤로가기(popstate)로 불려왔으면 history 항목이 소비됐으니 다시 심는다.
+    // 아이폰은 backOpen 과 마찬가지로 항목을 심지 않는다 (심으면 화면 끝 쓸기가 「이전 페이지」
+    // 전환을 그려 앱 전체가 밀리는 것처럼 보인다 — HAS_BACK_KEY 설명 참고).
+    if (HAS_BACK_KEY && !(history.state && history.state.ov)){ try { history.pushState({ ov: 1 }, ''); } catch(e){} }
   }
   // 「지난 명단」 = 어제 하나만 보여준다. (DB 엔 정리 여유로 며칠 더 남지만 화면엔 어제만)
   function loadPastRosters(){
@@ -4016,7 +4018,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.6.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
