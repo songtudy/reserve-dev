@@ -886,14 +886,14 @@ window.setThemeChrome = function(t){
     position:fixed;inset:0;z-index:290;
     background:var(--ink);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:38px;                    /* 마크 높이(150px)의 0.25배 — 로고 락업의 표준 간격 */
+    gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
     transition:opacity .25s ease-out;
   }
   .splash.out{opacity:0;pointer-events:none}
   /* 스플래시는 「홈화면 아이콘」이 아니라 마크만 보여준다 (카카오·네이버·KT 등 통용되는 방식).
      타일·테두리 없음 — 색은 토큰이라 두 테마에서 같은 그림이 된다. */
-  .splashMark{ display:block;width:140px;height:auto }   /* 화면폭의 35% — 「마크+이름」 스플래시(KT 38%·타다 40%)와 같은 대역 */
-  .splashName{font-size:35px;font-weight:800;letter-spacing:-.03em;color:var(--text)}   /* 잉크폭이 마크폭의 0.65배 — 마크가 주도 */
+  .splashMark{ display:block;width:100px;height:auto }   /* 화면폭의 25% — 실측한 심볼형 스플래시 대역(카카오 24%·초록앱 23%) */
+  .splashName{font-size:25px;font-weight:800;letter-spacing:-.03em;color:var(--text)}   /* 잉크폭이 마크폭의 0.65배 — 마크가 주도 */
   /* 만든 곳 — 화면 아래 작게. 제품 이름(익순이)과 만든 회사(Jumin Labs)가 다를 때 적는
      통용 방식 (Claude→ANTHROPIC, 요기요→Delivery Hero, 타다→VCNC 와 같은 자리·크기).
      가운데 락업과 겹치지 않게 absolute — 마크·이름의 세로 중앙 정렬에 영향을 주지 않는다. */
