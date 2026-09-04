@@ -861,7 +861,7 @@ window.setThemeChrome = function(t){
   @keyframes lockpulse{50%{opacity:.3}}
 
   .scrim{
-    position:fixed;inset:0;z-index:50;
+    position:fixed;inset:0;z-index:63;    /* 서랍(61)·룰렛막(62) 위 — 로그아웃 확인창이 서랍에서 바로 뜬다 */
     background:var(--scrim);
     display:grid;place-items:center;
     padding:22px;
@@ -3819,12 +3819,11 @@ window.dispatchEvent(new Event('fb-ready'));
   // 다시 로그인하면 화면을 새로 불러 깨끗한 상태로 돌아간다.
   document.getElementById('logoutBtn').addEventListener('click', function(){
     hideDrawer();
-    // 서랍이 다 닫힌(0.2s) 뒤 확인창을 띄운다 — #scrim(z50)이 서랍(z61) 뒤에 깔리지 않게.
-    setTimeout(function(){
-      confirmDlg('로그아웃할까요?', function(){
-        if (window.__fb && window.__fb.signOut) window.__fb.signOut();
-      }, { yes: '로그아웃', note: '비밀번호를 다시 입력하게 됩니다' });
-    }, 210);
+    confirmDlg('로그아웃할까요?', function(){
+      if (window.__fb && window.__fb.signOut) window.__fb.signOut();
+      // 나머지는 잠금화면 authWatch 가 처리한다: signOut → 키패드,
+      // 재로그인 → boot() 을 다시 돌려 새 명단으로 잠금만 부드럽게 걷어낸다 (새로고침 없음).
+    }, { yes: '로그아웃', note: '비밀번호를 다시 입력해야 해요' });
   });
 
   /* ---------- Wi-Fi 안내 ---------- */
@@ -4489,7 +4488,10 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     window.__fb.authWatch(function(signedIn){
       if (signedIn){
-        if (staleBoot){ location.reload(); return; }   // 먼저 띄운 앱이 무인증으로 굳었으면 새로
+        // 로그아웃했다 다시 로그인한 경우(staleBoot). 페이지를 새로 띄우지 않고,
+        // booted 를 풀어 unlock() 안에서 boot() 이 다시 돌게 한다 — 새 명단을 받아
+        // 잠금만 부드럽게 걷힌다. (예전엔 location.reload() 라 로그인 뒤 잠금화면이 한 번 더 번쩍였다.)
+        if (staleBoot){ staleBoot = false; booted = false; }
         unlock();
       } else {
         if (booted) staleBoot = true;                  // 표식만 믿고 띄웠는데 실제론 로그인 아님
