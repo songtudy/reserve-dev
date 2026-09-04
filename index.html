@@ -413,15 +413,18 @@ window.setThemeChrome = function(t){
   .menu button:active{background:var(--press)}
   .menu .del{color:var(--warn)}
 
-  /* 바텀시트 (예약 추가) — --kb 만큼 위로 올려 키보드에 안 가리게 한다 */
+  /* 바텀시트 (예약 추가) — 키보드 높이만큼 위로 올려 안 가리게 한다.
+     --kb 가 아니라 --kbPad 를 쓴다: 아이폰 자동완성 막대가 칸마다 떴다 사라지며 --kb 를
+     ≈48px 오르내리게 하는데, 그걸 그대로 따라가면 칸을 옮길 때마다 시트가 위아래로 튄다.
+     --kbPad 는 키보드가 떠 있는 동안 줄지 않아, 막대가 없을 땐 그만큼 틈이 생기지만 안 흔들린다. */
   .panel.asSheet{
     position:fixed;left:50%;bottom:0;
-    transform:translateX(-50%) translateY(calc(-1 * var(--kb, 0px)));
+    transform:translateX(-50%) translateY(calc(-1 * var(--kbPad, 0px)));
     transition:transform .2s ease;
     z-index:71;width:100%;max-width:520px;margin:0;
     border-radius:18px 18px 0 0;border-bottom:0;
     display:flex;flex-direction:column;
-    max-height:calc(100dvh - var(--kb, 0px) - 8px);overflow-y:auto;
+    max-height:calc(100dvh - var(--kbPad, 0px) - 8px);overflow-y:auto;
     padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
   }
   .panel.asSheet.kb{ padding-bottom:14px }
@@ -952,7 +955,7 @@ window.setThemeChrome = function(t){
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
 
   .toast{
-    position:fixed;left:50%;bottom:calc(84px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);
+    position:fixed;left:50%;bottom:calc(84px + var(--kbPad, 0px));transform:translateX(-50%) translateY(8px);
     background:var(--panel2);border:1px solid var(--line);
     padding:9px 15px;border-radius:99px;font-size:13px;
     opacity:0;pointer-events:none;transition:.2s;z-index:200;white-space:nowrap;
