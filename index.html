@@ -893,12 +893,6 @@ window.setThemeChrome = function(t){
      타일·테두리 없음 — 색은 토큰이라 두 테마에서 같은 그림이 된다. */
   .splashMark{ display:block;width:150px;height:150px }
   .splashName{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--text)}
-  /* 만든 곳 — 화면 아래 작게 (스플래시의 「made by」 관습 자리). */
-  .splashBy{
-    position:absolute;left:0;right:0;text-align:center;
-    bottom:calc(env(safe-area-inset-bottom) + 30px);
-    font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--off);
-  }
 
   .scrim{
     position:fixed;inset:0;z-index:63;    /* 서랍(61)·룰렛막(62) 위 — 로그아웃 확인창이 서랍에서 바로 뜬다 */
@@ -1176,7 +1170,6 @@ window.setThemeChrome = function(t){
           stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
   <div class="splashName">익순이</div>
-  <div class="splashBy">Jumin Labs</div>
 </div>
 
 <!-- 잠금 화면 — 로그인 상태를 확인하기 전까지 기본으로 떠 있다(=기본 잠김).
