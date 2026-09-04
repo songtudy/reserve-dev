@@ -3056,6 +3056,26 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   var KB_MIN = 90;                       // 이보다 크게 줄면 키보드로 본다
+  var KB_SETTLE = 260;                   // 뷰포트가 이만큼 조용하면 키보드가 다 올라온 걸로 본다
+  var kbFitTimer = null, kbFitFor = null;   // kbFitFor = 이미 맞춰 준 편집 건의 id
+
+  // 편집 폼 아래끝을 키보드 윗선에 맞춘다. 남으면 끌어올리고(버튼이 덮인 경우),
+  // 모자라면 내려서(다음 행이 걸치는 경우) 폼이 마지막으로 보이게 한다.
+  // 폼이 화면보다 크면 위가 잘리지 않게 위쪽을 우선한다.
+  function fitEditToKb(){
+    if (!editing || !wrapEl) return;
+    var row = rowForId(editing);
+    if (!row) return;
+    var kbNow = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb')) || 0;
+    if (!kbNow) return;
+    var er = row.getBoundingClientRect();
+    var wr = wrapEl.getBoundingClientRect();
+    var topEdge = wr.top + 8;
+    var bottomEdge = wr.bottom - kbNow - 10;
+    var move = Math.min(er.bottom - bottomEdge, er.top - topEdge);
+    if (Math.abs(move) < 8) return;      // 미세한 값으로 흔들지 않는다
+    wrapEl.scrollTop += move;
+  }
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
   function applyViewport(){
@@ -3082,6 +3102,21 @@ window.dispatchEvent(new Event('fb-ready'));
       // 폼이 아직 열려 있으면 키보드 내려간 직후 한 번 화면에 맞춘다 (즉시 — 키보드 꼬리와 안 겹치게).
       if (!open && editing) roomScroll(rowForId(editing));
     }
+    // 키보드가 다 올라온 뒤 딱 한 번, 편집 폼을 키보드 바로 위에 맞춘다.
+    // iOS 는 「포커스된 칸이 보이게」까지만 하고, 그 아래 저장/취소가 가리는지·
+    // 다음 행이 걸치는지는 보지 않는다. 그래서 상황에 따라 버튼이 보조바에 덮이거나
+    // 다음 행이 키보드 위에 잘려 보였다.
+    // 반드시 「멈춘 뒤」에 한 번만 — 올라오는 도중에 끼어들면 iOS 스크롤과 싸운다.
+    // 키보드가 뜬 채로 다른 행 수정을 열 수도 있어, 편집 건마다 한 번씩 맞춘다.
+    if (open && editing && kbFitFor !== editing){
+      clearTimeout(kbFitTimer);
+      var fitId = editing;
+      kbFitTimer = setTimeout(function(){
+        if (editing !== fitId) return;   // 그 사이 다른 걸 열었으면 다음 호출에 맡긴다
+        kbFitFor = fitId; fitEditToKb();
+      }, KB_SETTLE);
+    }
+    if (!open){ clearTimeout(kbFitTimer); kbFitFor = null; }
     // 저장/취소로 폼이 닫혔으면, 키보드가 완전히 내려앉아(--kb 0) 레이아웃이 멈춘 뒤
     // 딱 한 번 스크롤한다. 전환 시점(KB_MIN)은 아직 키보드가 90px 남아 흔들린다.
     if (!open && kb === 0 && pendingClose){
