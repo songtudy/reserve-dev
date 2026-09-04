@@ -3116,13 +3116,19 @@ window.dispatchEvent(new Event('fb-ready'));
   applyViewport();
 
   /* ---------- 뒤로가기 ---------- */
-  // 앱 모드에서는 뒤로가기를 누르면 앱이 그대로 꺼진다.
-  // 서랍·시트·팝업이 열려 있으면 그것부터 닫는다. (아이폰의 화면 끝 쓸기도 같다)
+  // 안드로이드는 뒤로가기 버튼을 누르면 앱이 그대로 꺼진다. 그래서 서랍·시트·팝업을 열 때
+  // 가짜 방문 기록을 하나 심어, 그 버튼이 앱을 끄는 대신 열린 것부터 닫게 만든다.
+  //
+  // 아이폰에는 그 버튼이 없다. 대신 화면 끝 쓸기가 있는데, 기록이 있으면 iOS 가
+  // 「이전 페이지로 가는 전환」을 그려서 앱 전체가 오른쪽으로 밀리는 것처럼 보인다.
+  // 그래서 아이폰에서는 기록을 심지 않는다 — 돌아갈 데가 없으니 쓸어도 아무 일이 없다.
+  // 닫는 길은 이미 다 있다: 서랍은 왼쪽으로 끌기, 팝업은 취소 버튼과 막 바깥 탭.
+  var HAS_BACK_KEY = /Android/i.test(navigator.userAgent || '');
   var backClose = null;
   function backOpen(fn){
     if (backClose){ backClose = fn; return; }   // 서랍 → 시트처럼 갈아탈 땐 기록을 늘리지 않는다
     backClose = fn;
-    try { history.pushState({ ov: 1 }, ''); } catch(e){}
+    if (HAS_BACK_KEY){ try { history.pushState({ ov: 1 }, ''); } catch(e){} }
   }
   function backDone(){                           // 화면에서 직접 닫았을 때
     if (!backClose) return;
@@ -3134,23 +3140,6 @@ window.dispatchEvent(new Event('fb-ready'));
     var fn = backClose; backClose = null;
     fn();
   });
-
-  // 아이폰의 「화면 왼쪽 끝에서 오른쪽으로 쓸기」(뒤로가기)는 팝업이 떠 있을 때
-  // 앱 전체를 오른쪽으로 밀어내는 페이지 전환을 보여 준다 — 팝업만 닫히면 되는데
-  // 앱이 통째로 미끄러지는 것처럼 보인다. 그래서 그 순간에만 제스처를 막는다.
-  //   · 팝업이 떠 있을 때 왼쪽 끝에 있는 건 막(scrim)뿐이라 막아도 잃는 게 없다.
-  //     (평소엔 그 자리에 시간대 머리글·방문 체크가 있어서 늘 막으면 탭이 죽는다)
-  //   · 서랍은 제외 — 스스로 왼쪽으로 끌어 닫는 제스처가 있다.
-  document.addEventListener('touchstart', function(e){
-    if (e.touches.length !== 1 || e.touches[0].clientX > 24) return;
-    var dw = document.getElementById('drawer');
-    if (dw && dw.classList.contains('open')) return;
-    var overlay = ['scrim', 'rltScrim', 'panelScrim', 'sheetScrim'].some(function(id){
-      var el = document.getElementById(id);
-      return el && !el.classList.contains('hide');
-    });
-    if (overlay && e.cancelable) e.preventDefault();
-  }, { passive: false });
 
   var scrim = document.getElementById('scrim');
   // 길게 눌러 확인하는 팝업. 입력칸(키보드)이 없다 — 한 번의 탭·주머니 오작동으로는 실행되지
