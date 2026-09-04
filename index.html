@@ -929,7 +929,10 @@ window.setThemeChrome = function(t){
   .splashBy{
     position:absolute;left:0;right:0;text-align:center;
     bottom:calc(env(safe-area-inset-bottom) + 34px);
-    font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--off);
+    /* --off(가장 흐린 토큰)로는 대비가 다크 3.7:1 · 라이트 3.3:1 이라 「공식 표기」로 넣은 줄이
+       배경에 묻혔다. --dim 은 5.9:1 · 5.3:1 로 읽히면서도, 이름(25px·16:1)과는 크기·밝기
+       양쪽으로 충분히 벌어져 위계가 그대로다. */
+    font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--dim);
   }
 
   .scrim{
