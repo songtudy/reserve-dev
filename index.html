@@ -10,6 +10,21 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="익순이">
+
+<!-- 콜드 스타트 단축 — Firebase 모듈 다운로드와 서버 연결을 HTML 파싱 중에 미리 시작한다.
+     (평소엔 문서 끝의 <script type="module"> 까지 파싱이 도달해서야 시작됐다.)
+     로직은 하나도 안 바뀐다. 버전은 아래 import 문과 반드시 같아야 한다. -->
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://ikseon-reserve-default-rtdb.asia-southeast1.firebasedatabase.app">
+<link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js">
+
+<script>
+// 콜드 스타트 구간별 소요 시간 — index.html?perf 로 화면에 표시된다. 평소엔 배열만 쌓고 만다.
+window.__perf = [['문서 파싱', performance.now()]];
+</script>
 <script>
 // 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
 // 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
@@ -1267,6 +1282,7 @@ window.__fb = {
                   .then(() => signInWithEmailAndPassword(auth, STAFF_EMAIL, pw)),
   signOut: () => signOut(auth)
 };
+try { window.__perf && window.__perf.push(['Firebase 모듈 로드', performance.now()]); } catch(e){}
 window.dispatchEvent(new Event('fb-ready'));
 </script>
 
@@ -1280,6 +1296,10 @@ window.dispatchEvent(new Event('fb-ready'));
     return !(host === 'songtudy.github.io' && /^\/reserve(\/|$)/.test(path));
   }
   var IS_DEV = computeDev(location.hostname, location.pathname);
+  // 콜드 스타트 구간 표시 — 같은 라벨은 처음 한 번만 (boot·render 는 여러 번 불린다).
+  function perfMark(label){
+    try { if (window.__perf && !perfMark[label]){ perfMark[label] = 1; window.__perf.push([label, performance.now()]); } } catch(e){}
+  }
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
   var state = null;      // {date, items:[]}
@@ -1924,6 +1944,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function render(){
+    perfMark('첫 렌더');
     if (!interactionActive() && deferredState){
       state = deferredState;
       deferredState = null;
@@ -4138,11 +4159,12 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 시작 ---------- */
   var BOOT_WAIT = 8000;   // boot() 의 첫 명단 읽기 제한 시간 (아래 설명)
   function boot(){
+    perfMark('boot 시작');
     if (hasStore() && fb().onConnected && !boot._watched){
       boot._watched = true;
       fb().onConnected(function(ok){
         setSync(ok);
-        if (ok){ wakeLogOutbox(); wqWake(); purgeOld(); }   // 연결됨 = 서버 시계 확보 → 부팅 때 미룬 정리 재시도
+        if (ok){ perfMark('서버 연결'); wakeLogOutbox(); wqWake(); purgeOld(); }   // 연결됨 = 서버 시계 확보 → 부팅 때 미룬 정리 재시도
       });
     }
     setSync(hasStore());
@@ -4162,6 +4184,7 @@ window.dispatchEvent(new Event('fb-ready'));
       new Promise(function(_, rej){ setTimeout(rej, BOOT_WAIT, new Error('boot timeout')); })
     ]).then(function(res){
       if (!ticketCurrent(ticket)) return;
+      perfMark('명단 수신');
       stageBackgroundState(itemsToState(ticket.date, res));
       watchRemote();   // 즉시 fire → applyRemoteItems 가 필요시 구 형식 변환도 한다
       maybeInstallHint();   // 중복 방지는 maybeInstallHint 안에서 한다
@@ -4312,6 +4335,28 @@ window.dispatchEvent(new Event('fb-ready'));
   // ---------- 셀프테스트 모드 ----------
   // 주소에 ?selftest 가 있으면 앱을 띄우지 않고, 실제 배포되는 순수 함수들을 노출한 뒤
   // selftest.js 가 단언 검사를 돌려 결과를 화면에 뿌린다. 평소엔 이 블록을 그냥 지나간다.
+  // ---------- 콜드 스타트 계측 (index.html?perf) ----------
+  // 앱은 평소대로 돌리되, 6초 뒤 구간별 소요 시간을 화면 아래에 띄운다.
+  if (/[?&]perf\b/.test(location.search)) {
+    setTimeout(function(){
+      var m = window.__perf || [];
+      if (!m.length) return;
+      var box = document.createElement('div');
+      box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;'
+        + 'background:#0f1319;border:1px solid #e8b757;border-radius:10px;padding:12px 14px;'
+        + 'font:12px/1.7 -apple-system,monospace;color:#f0f3f6;white-space:pre;overflow:auto;max-height:45vh';
+      var lpad = function(v, n){ v = String(v); while (v.length < n) v = ' ' + v; return v; };
+      var t0 = m[0][1], prev = t0, out = '콜드 스타트 (직전구간 / 누적, ms)\n';
+      m.forEach(function(row){
+        out += lpad(Math.round(row[1] - prev), 6) + lpad(Math.round(row[1] - t0), 8) + '   ' + row[0] + '\n';
+        prev = row[1];
+      });
+      box.textContent = out + '\n탭하면 닫힘';
+      box.onclick = function(){ box.remove(); };
+      document.body.appendChild(box);
+    }, 6000);
+  }
+
   if (/[?&]selftest\b/.test(location.search)) {
     window.__ixTest = {
       parse: parse, normTime: normTime, sortItems: sortItems,
