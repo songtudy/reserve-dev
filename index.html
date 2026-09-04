@@ -127,11 +127,7 @@ window.setThemeChrome = function(t){
     width:100%;max-width:640px;margin:0 auto;
     /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
-    /* 여백은 --kb 가 아니라 --kbPad 를 쓴다. 키보드가 떠 있는 동안 아이폰의 「자동 완성」 막대는
-       칸에 따라 떴다 사라지는데(이름 칸엔 뜨고 메모엔 안 뜬다), 그때마다 --kb 가 ≈48px 오르내린다.
-       여백이 줄면 스크롤 범위도 줄어 브라우저가 스크롤 위치를 강제로 당기고, 그게 화면 흔들림으로
-       보였다. --kbPad 는 키보드가 떠 있는 동안 줄지 않아 그 당김이 아예 생기지 않는다. */
-    padding:0 14px calc(18px + var(--kbPad, 0px));
+    padding:0 14px calc(18px + var(--kb, 0px));
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
@@ -413,18 +409,15 @@ window.setThemeChrome = function(t){
   .menu button:active{background:var(--press)}
   .menu .del{color:var(--warn)}
 
-  /* 바텀시트 (예약 추가) — 키보드 높이만큼 위로 올려 안 가리게 한다.
-     --kb 가 아니라 --kbPad 를 쓴다: 아이폰 자동완성 막대가 칸마다 떴다 사라지며 --kb 를
-     ≈48px 오르내리게 하는데, 그걸 그대로 따라가면 칸을 옮길 때마다 시트가 위아래로 튄다.
-     --kbPad 는 키보드가 떠 있는 동안 줄지 않아, 막대가 없을 땐 그만큼 틈이 생기지만 안 흔들린다. */
+  /* 바텀시트 (예약 추가) — --kb 만큼 위로 올려 키보드에 안 가리게 한다 */
   .panel.asSheet{
     position:fixed;left:50%;bottom:0;
-    transform:translateX(-50%) translateY(calc(-1 * var(--kbPad, 0px)));
+    transform:translateX(-50%) translateY(calc(-1 * var(--kb, 0px)));
     transition:transform .2s ease;
     z-index:71;width:100%;max-width:520px;margin:0;
     border-radius:18px 18px 0 0;border-bottom:0;
     display:flex;flex-direction:column;
-    max-height:calc(100dvh - var(--kbPad, 0px) - 8px);overflow-y:auto;
+    max-height:calc(100dvh - var(--kb, 0px) - 8px);overflow-y:auto;
     padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
   }
   .panel.asSheet.kb{ padding-bottom:14px }
@@ -955,7 +948,7 @@ window.setThemeChrome = function(t){
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
 
   .toast{
-    position:fixed;left:50%;bottom:calc(84px + var(--kbPad, 0px));transform:translateX(-50%) translateY(8px);
+    position:fixed;left:50%;bottom:calc(84px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);
     background:var(--panel2);border:1px solid var(--line);
     padding:9px 15px;border-radius:99px;font-size:13px;
     opacity:0;pointer-events:none;transition:.2s;z-index:200;white-space:nowrap;
@@ -3086,9 +3079,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   var KB_MIN = 90;                       // 이보다 크게 줄면 키보드로 본다
-  var FOCUS_QUIET = 400;                 // 칸을 옮긴 뒤 이만큼은 스크롤을 되돌리지 않는다
-  var lastFocusAt = 0;                   // 마지막으로 포커스가 오간 시각
-  var kbPad = 0;                         // .wrap 아래 여백 — 키보드가 떠 있는 동안 줄지 않는다
   var kbBaseH = visibleViewportH();      // 키보드가 없을 때의 기준 높이
 
   function applyViewport(){
@@ -3108,10 +3098,6 @@ window.dispatchEvent(new Event('fb-ready'));
     // 바텀시트 올림·토스트 위치용 — 실제 키보드일 때만. 복귀 시 iOS 의 잘못된
     // 낮은 높이가 .wrap 아래를 밀지 않게 (하단 바는 위 open 가드가 지킨다).
     document.documentElement.style.setProperty('--kb', (open ? kb : 0) + 'px');
-    // .wrap 아래 여백용 — 키보드가 떠 있는 동안에는 줄이지 않는다 (위 .wrap 주석 참고).
-    // 자동완성 막대가 오르내려도 스크롤 범위가 안 줄어 화면이 당겨지지 않는다.
-    kbPad = open ? Math.max(kbPad, kb) : 0;
-    document.documentElement.style.setProperty('--kbPad', kbPad + 'px');
     if (open !== keyboardOpen){
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
@@ -3131,12 +3117,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 키보드가 올라와 있을 때 iOS 가 .wrap 을 유효 범위 밖으로 스크롤해두는 경우가 있다
     // (화면이 과하게 올라감 → 손으로 스크롤해야 풀림). 매번 유효 범위로 되돌린다.
     // scrollTop 을 코드로 set 하면 iOS 도 다시 클램프한다 (손 스크롤과 같은 효과).
-    //
-    // 단, 칸을 옮기는 중에는 쉰다. 포커스가 바뀌면 remeasureViewport 가 40·140·320·600ms 에
-    // applyViewport 를 걸어 두는데, 이름↔메모를 오가면 focusout+focusin 으로 600ms 안에 8번이
-    // 겹친다. 그 사이 iOS 는 새 칸을 보이게 스크롤하는 중이라, 여기서 되돌리면 서로 싸워
-    // 화면이 흔들린다. 이동이 끝난 뒤(FOCUS_QUIET) 되돌려도 늦지 않다.
-    if (open && wrapEl && (Date.now() - lastFocusAt) > FOCUS_QUIET){
+    if (open && wrapEl){
       var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
       if (wrapEl.scrollTop > maxST + 1) wrapEl.scrollTop = Math.max(0, maxST);
     }
@@ -3152,13 +3133,9 @@ window.dispatchEvent(new Event('fb-ready'));
   // 포커스 전환 직후 몇 번 더 강제로 잰다. applyViewport 는 여러 번 불러도 무해하다.
   function remeasureViewport(){ [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); }); }
   document.addEventListener('focusin', function(e){
-    lastFocusAt = Date.now();
     if (textKeyboardTarget(e.target)) remeasureViewport();
   });
-  document.addEventListener('focusout', function(){
-    lastFocusAt = Date.now();
-    remeasureViewport();
-  });
+  document.addEventListener('focusout', remeasureViewport);
   applyViewport();
 
   /* ---------- 뒤로가기 ---------- */
