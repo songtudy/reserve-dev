@@ -786,16 +786,13 @@ window.setThemeChrome = function(t){
        가운데가 그만큼 밀려 실행 직후 화면이 한 번 움직인다. 고정값이면 첫 프레임부터 확정. */
     padding:20px 24px;
   }
-  /* 해제될 때 살짝 커지며 .2s 페이드 — 「제자리에서 녹는」 대신 「물러나며 걷히는」 느낌이라
-     뒤 명단이 비쳐 보이는 순간이 덜 눈에 띈다 (아이폰 잠금 해제와 같은 결).
+  /* 해제될 때 .2s 페이드. 이 앱은 화면 전체를 덮는 것(팝업·룰렛·잠금)은 순수 페이드,
+     떠 있는 오버레이(서랍·시트)만 슬라이드한다 — 잠금은 전자라 transform 없이 페이드만.
+     ease-out 이라 빠르게 시작해 부드럽게 잦아든다(dismiss 에 맞는 결).
      .2s 는 그 사이 boot() 이 명단을 받아 첫 로그인의 빈 화면을 가리는 시간도 겸한다. */
-  .lock{transition:opacity .2s ease-out, transform .2s ease-out}
-  .lock.out{opacity:0;transform:scale(1.04);pointer-events:none}
+  .lock{transition:opacity .2s ease-out}
+  .lock.out{opacity:0;pointer-events:none}
   .lock.hide{display:none}
-  @media (prefers-reduced-motion:reduce){
-    .lock{transition:opacity .12s}
-    .lock.out{transform:none}
-  }
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) */
   .lockico{width:56px;height:56px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
   .lockname{margin-top:14px;font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
