@@ -951,9 +951,13 @@ window.stopSbcutRemeasure = function(){
     gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
     padding-bottom:var(--sbcut, 0px);   /* standalone 상태바 보정 (위 head 스크립트). 가운데 락업만
                                            그 절반만큼 올라간다 — 회사명은 absolute 라 하단 고정 유지 */
-    /* padding-bottom 도 같이 트랜지션 — --sbcut 재측정(위 head 스크립트)이 스플래시가 뜬 채로
-       뒤늦게 값을 고치면, 이게 없으면 락업이 순간 툭 튄다. 있으면 스르륵 자리를 잡아 티가 안 난다. */
-    transition:opacity .25s ease-out, padding-bottom .2s ease-out;
+    /* padding-bottom 은 일부러 트랜지션 안 건다 — 한 번 해봤다가(v1.7.3) 오히려 역효과였다:
+       --sbcut 재측정이 뒤늦게 값을 고칠 때 "순간 스냅"보다 눈에 덜 띌 줄 알았는데, 실제론
+       락업이 0.2초에 걸쳐 위로 스르륵 미끄러지는 게 똑똑히 보여서 "로고가 올라온다"는
+       새 증상으로 나타났다(오너 실기기 확인). 지금은 --sbcut 이 "처음 찾은 유효값에 고정"
+       방식이라 애초에 뒤늦은 보정 자체가 드물다 — 혹시 나더라도 트랜지션 없이 스냅되는
+       쪽이(순간이라 안 보임) 애니메이션으로 티나는 것보다 낫다. */
+    transition:opacity .25s ease-out;
   }
   .splash.out{opacity:0;pointer-events:none}
   /* 스플래시는 「홈화면 아이콘」이 아니라 마크만 보여준다 (카카오·네이버·KT 등 통용되는 방식).
@@ -4161,7 +4165,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.7.4<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.5<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
