@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<!-- background — 앱 복귀·재실행 때 iOS 가 원래 화면을 다시 그리기 직전 한두 프레임 흰 화면을
+     보여준다(WKWebView 기본색). <style> 가 파싱되기 전에도 이 인라인 값이 먼저 적용되니, 그
+     흰 프레임이 흰색 대신 앱 배경색으로 보인다 — manifest.json 의 background_color 와 같은 값
+     (다크 고정 — 라이트 테마 사용자는 그 잠깐만 다크로 보이지만, 흰 화면보다는 낫다). -->
+<html lang="ko" style="background:#0f1319">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
