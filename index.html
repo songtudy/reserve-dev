@@ -867,15 +867,12 @@ window.setThemeChrome = function(t){
     width:100%;max-width:330px;
     background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:19px 18px 15px;
-    /* 평소엔 화면 중앙. 키보드가 올라오면 딱 그 위(약 26px 틈)까지만 올라간다.
-       --kb 가 작을 땐(중앙 배치로 이미 안 가림) 0 → 안 움직임. 125 ≈ 틈 + 다이얼로그 높이 절반.
-       clamp 아래끝: 가로 모드 등 극단적으로 짧은 화면에서 위로 잘려나가는 것 방지. */
-    transition:transform .2s ease;
-    transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 125px), 0px));
+    /* 세로 위치는 .scrim 의 place-items:center 가 잡는다. 입력칸이 없어 키보드가 안 뜨므로
+       예전의 --kb 이동은 필요 없다. */
   }
   .dialog h3{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
-  /* 같은 막에 뜨는 형제 창(룰렛)의 .rltsub 와 같은 크기·색 — 두 창이 같은 자리에 뜨므로 */
-  /* 아래 여백은 주지 않는다 — 인접 마진 상쇄로 .dbtn 의 margin-top(11px)에 먹혀 무의미하다 */
+  /* 같은 막에 뜨는 형제 창(룰렛)의 .rltsub 와 같은 크기·색. 아래 여백은 안 준다
+     — 인접 마진 상쇄로 .dbtn 의 margin-top 에 먹혀 무의미하다. */
   .dialog .dlgnote{margin:0;font-size:12px;line-height:1.5;color:var(--dim)}
   .dbtn{display:flex;gap:8px;margin-top:11px}
   .dbtn button{
