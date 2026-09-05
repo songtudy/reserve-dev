@@ -938,7 +938,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
     padding-bottom:var(--sbcut, 0px);   /* standalone 상태바 보정 (위 head 스크립트). 가운데 락업만
                                            그 절반만큼 올라간다 — 회사명은 absolute 라 하단 고정 유지 */
-    /* padding-bottom 에는 일부러 트랜지션을 걸지 않는다 — 걸어봤더니(v1.7.3) --sbcut 이
+    /* padding-bottom 에는 일부러 트랜지션을 걸지 않는다 — 한때 걸어봤더니 --sbcut 이
        뒤늦게 고쳐질 때 락업이 위로 스르륵 미끄러지는 게 그대로 보여서 「로고가 올라온다」는
        새 증상이 됐다. 보정은 순간 스냅이라야 눈에 안 띈다. */
     transition:opacity .25s ease-out;
@@ -1008,9 +1008,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .dbtn #dlgYes.hold .hf{transform:scaleX(1);transition:transform var(--holdms) linear}
   .dbtn #dlgYes .ht{position:relative}
-  @media (prefers-reduced-motion:reduce){
-    .dbtn #dlgYes.hold .hf{transition:transform var(--holdms) steps(24)}
-  }
+  /* reduced-motion 예외는 스타일시트 맨 아래(전역 차단 규칙 바로 뒤)에 둔다 — 여기 두면
+     전역의 !important 에 밀려 죽는다. 왜 예외인지는 그 자리 주석 참고. */
 
   /* ---------- 화장실 청소 룰렛 (이스터에그) ---------- */
   /* 서랍(61) 위 — 롱프레스로 열 때 빠져나가는 서랍이 룰렛 위를 스치지 않게 */
@@ -1059,7 +1058,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
   .hide{display:none !important}
-  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important}
+    /* 단 하나의 예외 — 「길게 눌러 초기화」의 차오르는 면.
+       이건 장식이 아니라 «얼마나 더 붙잡고 있어야 하는지»를 알려주는 유일한 표시다.
+       전역 규칙에 같이 쓸려 나가면 누르는 순간 통째로 꽉 찬 것처럼 보이는데, 실행은 JS 의
+       HOLD_MS(1초) 뒤라 손을 먼저 떼게 되고 「눌러도 안 된다」가 된다.
+       그래서 되살리되 24칸으로 끊어 올린다 — 미끄러지는 움직임이 아니라 눈금이 차는 것에 가깝다. */
+    .dbtn #dlgYes.hold .hf{transition:transform var(--holdms) steps(24) !important}
+  }
 </style>
 </head>
 <body>
@@ -4153,7 +4160,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.7.2<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.3<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
