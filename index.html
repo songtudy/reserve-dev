@@ -2291,8 +2291,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     if (action === 'edit'){
       if (typeof searchbar !== 'undefined' && !searchbar.classList.contains('hide')){
-        closeSearch(false);
-        backDone();
+        closeSearch(false);   // 뒤로가기 기록 해제는 closeSearch 안에서 같이 한다
       }
       pendingClose = null;   // 이전 폼 닫힘 보정이 남아 새 편집을 튀게 하지 않도록
       editing = id; openMenu = null; render();
@@ -3510,6 +3509,11 @@ window.dispatchEvent(new Event('fb-ready'));
     searchBtn.classList.remove('on');
     qEl.value = ''; query = '';
     qClear.classList.add('hide');
+    // 검색을 열 때 잡아둔 뒤로가기 기록은 어떤 경로로 닫히든 여기서 함께 놓는다 —
+    // 호출부(명단이 비어 render 가 닫을 때·명단 초기화 등)마다 챙기면 빠뜨리기 쉽고,
+    // 빠뜨리면 화면엔 아무 변화도 없는 「유령 기록」이 남아 뒤로가기 한 번을 먹는다.
+    // (이미 놓았거나 popstate 로 들어온 경우엔 backDone 이 알아서 아무 일도 안 한다.)
+    if (wasOpen) backDone();
     if (wasOpen && restore && wrapEl){
       requestAnimationFrame(function(){ wrapEl.scrollTop = scrollBeforeSearch; });
     }
@@ -3525,11 +3529,15 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   }
   searchBtn.addEventListener('click', function(){
+    // 명단이 없으면 검색 버튼은 흐리게(.off) 꺼져 있다 — 그때는 아무 일도 하지 않는다.
+    // (안 막으면 openSearch 가 뒤로가기 기록을 쌓은 직후 render 가 검색바를 도로 닫아,
+    //  화면엔 아무 변화가 없는데 다음 뒤로가기 한 번이 그 유령 기록에 먹힌다.)
+    if (searchBtn.classList.contains('off')) return;
     if (searchbar.classList.contains('hide')) openSearch();
-    else { closeSearch(true); backDone(); render(); }
+    else { closeSearch(true); render(); }
   });
   document.getElementById('qBack').addEventListener('click', function(){
-    closeSearch(true); backDone(); render();
+    closeSearch(true); render();
   });
   qEl.addEventListener('input', function(){
     query = qEl.value;
