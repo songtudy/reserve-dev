@@ -211,6 +211,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .tools button:active{background:var(--press)}
   .tools button.on{color:var(--waitTx);background:var(--panel2)}
+  /* 헤더 아이콘 버튼(메뉴·검색)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
+     보이는 크기·눌림 배경은 그대로 두고 «닿는 범위»만 투명하게 2px 씩 넓힌다 — 겉모습 무변화.
+     (.off 일 때는 pointer-events:none 이라 이 영역도 같이 죽는다 = 꺼진 버튼은 안 눌린다.) */
+  .nav button, .tools button{position:relative}
+  .nav button::after, .tools button::after{content:"";position:absolute;inset:-2px}
   /* 실사용이 아닌 곳(테스트·로컬·복사본)에서만 뜨는 빨간 경고 배지.
      실DB 격리는 computeDev 라우팅이 담당 — 이건 "실사용 아님" 을 못 놓치게 하는 표시. */
   .devtag{
@@ -4148,7 +4153,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.7.0<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.1<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
