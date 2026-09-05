@@ -3801,7 +3801,18 @@ window.dispatchEvent(new Event('fb-ready'));
     inp.addEventListener('input', function(){ if (!spinning){ reset(); drawChips(names()); } });
     goBtn.addEventListener('click', spin);
     document.getElementById('rltClose').addEventListener('click', close);
-    rltScrim.addEventListener('click', function(e){ if (e.target === rltScrim && !spinning) close(); });
+    rltScrim.addEventListener('click', function(e){
+      if (e.target !== rltScrim || spinning) return;
+      // 키보드가 떠 있으면 첫 탭은 키보드만 내린다 — 배경을 잘못 스쳐 창까지 닫히지 않게.
+      // 한 번 더 탭하면 닫힌다 (닫기 버튼은 늘 바로 닫는다).
+      if (document.body.classList.contains('keyboard-open')){ inp.blur(); return; }
+      close();
+    });
+    // 키보드가 올라오면 iOS 가 이 고정 막을 손끝 따라 위아래로 끈다(빈 배경이 딸려 오며 창이 흔들린다).
+    // 세로로 넘칠 수 있는 곳은 이름 칩 목록뿐 — 거기서 시작한 스크롤만 통과시키고 나머지 드래그는 막는다.
+    rltScrim.addEventListener('touchmove', function(e){
+      if (!namesBox.contains(e.target)) e.preventDefault();
+    }, { passive: false });
 
     // 진입: 서랍 맨 위 아이콘 롱프레스 (0.65초).
     // <img> 라 안드로이드·데스크톱은 길게 누르면 「이미지 저장/복사」 메뉴가 떠 롱프레스를 가로챈다 → 막는다.
@@ -3943,7 +3954,7 @@ window.dispatchEvent(new Event('fb-ready'));
       ]);
   }
   var INSTALL_NOTE = '<p class="sheetNote">'
-    + '「익순이」는 홈 화면에 설치해 쓰는 앱입니다.</p>';
+    + '「익순이」는 홈 화면 앱에 최적화되어 있습니다.</p>';
 
   // 이 앱의 주소. 실사용이면 /reserve/, 테스트면 /reserve-dev/ 가 저절로 나온다.
   // 앱으로 설치하면 주소창이 없어 주소를 꺼낼 데가 없다 — 다른 폰에 깔거나,
