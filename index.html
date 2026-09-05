@@ -2995,7 +2995,7 @@ window.dispatchEvent(new Event('fb-ready'));
   taEl.addEventListener('scroll', syncHl, { passive: true });
 
   // 예시 문구는 .hl 오버레이에 직접 그린다 (iOS <textarea> 여러 줄 placeholder 버그 회피).
-  var PH_LINES = ['14:00 임동현 2명','15:00 김동현 4명 방문','15:00 박동현 2명','17:00 Donghyun Lee 3명 취소','19:00 송동현 5명'];
+  var PH_LINES = ['14:00 임동현 2명','15:00 김동현 4명 방문','15:00 베토벤 2명','17:00 Dong Hyun 3명 취소','19:00 송동현 5명'];
   function renderHl(){
     if (marking) return;                 // 오류 표시 중이면 paintBad 가 .hl 을 관리
     hl.innerHTML = taEl.value ? '<div class="hlmove"></div>' :
