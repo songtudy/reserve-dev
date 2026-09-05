@@ -4516,13 +4516,19 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function clearPin(){ pin = ''; paintPin(); }
 
+  // 걷어내기 지연 타이머는 반드시 붙잡아 둔다 — 이게 도는 210ms 사이에 로그아웃/세션만료로
+  // 잠금이 다시 떠야 하면(lockShow), 이 타이머가 나중에 터져 잠금을 도로 숨기고 data-authed 를
+  // 되살려 「로그아웃했는데 앱이 열려 있는」 상태가 된다. lockShow 에서 취소한다.
+  var unlockTimer = null;
   function unlock(){
     try { localStorage.setItem('ix-authed', '1'); } catch(e){}
     // boot() 을 먼저 돌린다 — 페이드가 도는 .2s 동안 명단을 받아와 빈 화면을 안 보여준다.
     // try 로 감싸는 이유: boot() 이 던지면 아래 걷어내기가 실행되지 않아 잠금에 갇힌다.
     if (!booted){ booted = true; try { boot(); } catch(e){} }
     lockEl.classList.add('out');
-    setTimeout(function(){
+    clearTimeout(unlockTimer);
+    unlockTimer = setTimeout(function(){
+      unlockTimer = null;
       lockEl.classList.add('hide');
       lockEl.classList.remove('out');
       // data-authed 는 맨 마지막에 — 먼저 걸면 CSS 가 즉시 display:none 으로 만들어 페이드가 죽는다
@@ -4530,6 +4536,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }, 210);
   }
   function lockShow(msg){
+    if (unlockTimer){ clearTimeout(unlockTimer); unlockTimer = null; }   // 위 경합 차단
     try { localStorage.removeItem('ix-authed'); } catch(e){}
     document.documentElement.removeAttribute('data-authed');   // 표식을 지워야 잠금이 실제로 보인다
     clearPin();                          // 키패드는 늘 빈 상태로 나타난다 (finish 는 성공 시 안 비우므로 여기서)
