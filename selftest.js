@@ -367,6 +367,72 @@
         && h.indexOf('value="' + T.pad(T.consts.HOUR_MIN - 1) + '"') < 0;
   })());
 
+  /* ==================== sortItems — 명단 표시 순서 ====================
+     화면에 보이는 줄 순서를 정하는 비교 함수다(arr.sort(sortItems) 로 쓴다).
+     시간이 먼저, 같은 시간대 안에서는 붙여넣은 순서(seq)를 지킨다 — 직원이 종이 명단과
+     같은 순서로 읽을 수 있어야 하므로 상태(방문/취소)로는 자리를 바꾸지 않는다. */
+  group('sortItems — 명단 표시 순서');
+  (function(){
+    var mk = function(id, time, seq, status){ return { id: id, time: time, seq: seq, status: status || 'pending', name: id, pax: 2 }; };
+    var got = [mk('c','17:00',5), mk('a','12:00',2), mk('b','12:00',1), mk('d','09:30',9)]
+                .sort(T.sortItems).map(function(x){ return x.id; });
+    check('시간 오름차순 → 같은 시간대는 seq 순', got, ['d','b','a','c']);
+
+    // 상태가 순서를 바꾸면 안 된다 (방문 처리했다고 줄이 튀어오르면 읽던 자리를 잃는다)
+    var st = [mk('x','12:00',1,'cancelled'), mk('y','12:00',2,'arrived'), mk('z','12:00',3,'pending')]
+                .sort(T.sortItems).map(function(x){ return x.id; });
+    check('상태는 순서에 영향 없음', st, ['x','y','z']);
+
+    // 자정 넘김 표기(예: 00:30)도 문자열 비교로 맨 앞에 온다
+    var mid = [mk('late','23:00',1), mk('early','00:30',2)].sort(T.sortItems).map(function(x){ return x.id; });
+    check('00:30 은 23:00 보다 앞', mid, ['early','late']);
+  })();
+
+  /* ==================== dayTally — 하루 집계 문구 ==================== */
+  group('dayTally — 하루 집계');
+  (function(){
+    var items = [
+      { id:'1', time:'12:00', status:'arrived',   seq:0 },
+      { id:'2', time:'12:00', status:'cancelled', seq:1 },
+      { id:'3', time:'17:00', status:'pending',   seq:2 }
+    ];
+    var html = T.dayTally(items);
+    tru('방문 건수가 들어간다', html.indexOf('방문 1') >= 0, html);
+    tru('취소 건수가 들어간다', html.indexOf('취소 1') >= 0, html);
+    // 대기는 「남은 예약」쪽에서 따로 보여주므로 이 집계엔 안 넣는다
+    tru('대기는 이 집계에 없다', html.indexOf('대기') < 0, html);
+    // 아무도 안 왔어도 「방문 0」은 보여준다 — 빈칸이면 "아직 아무 일 없음"인지
+    // "집계가 안 된 건지" 구분이 안 된다. 반대로 취소가 없으면 취소 칸은 아예 뺀다.
+    var none = T.dayTally([{ id:'1', time:'12:00', status:'pending', seq:0 }]);
+    tru('아무도 안 왔으면 「방문 0」', none.indexOf('방문 0') >= 0, none);
+    tru('취소가 없으면 취소 칸은 없다', none.indexOf('취소') < 0, none);
+  })();
+
+  /* ==================== parseYmd — 날짜 문자열 → Date ==================== */
+  group('parseYmd — 날짜 문자열');
+  (function(){
+    var d = T.parseYmd('2026-09-05');
+    check('연·월·일이 그대로 (월은 0부터)', { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() },
+          { y: 2026, m: 8, d: 5 });
+    // ymd 와 왕복이 맞아야 날짜 계산(dayGap·shiftDate)이 어긋나지 않는다
+    check('ymd 와 왕복', T.ymd(T.parseYmd('2026-01-31')), '2026-01-31');
+    check('윤년 2월 29일 왕복', T.ymd(T.parseYmd('2028-02-29')), '2028-02-29');
+  })();
+
+  /* ==================== logIdentity — 같은 사건은 같은 id ====================
+     여러 폰이 같은 체크를 해도 로그가 한 줄로 합쳐지도록, 사건 내용이 같으면 같은 id 가 나와야 한다. */
+  group('logIdentity — 같은 사건 = 같은 id');
+  (function(){
+    var a = T.logIdentity({ k: '방문', s: '12:00 하나' });
+    var b = T.logIdentity({ k: '방문', s: '12:00 하나' });
+    var c = T.logIdentity({ k: '취소', s: '12:00 하나' });
+    var d = T.logIdentity({ k: '방문', s: '12:00 두리' });
+    tru('같은 내용 → 같은 id', a === b, a + ' / ' + b);
+    tru('종류가 다르면 다른 id', a !== c, a + ' / ' + c);
+    tru('대상이 다르면 다른 id', a !== d, a + ' / ' + d);
+    tru('문자열을 돌려준다', typeof a === 'string' && a.length > 0, a);
+  })();
+
   /* ==================== 렌더 ==================== */
   render();
 
