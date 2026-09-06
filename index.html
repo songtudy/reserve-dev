@@ -28,16 +28,22 @@
 // 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
 // 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
 //
-// 아이폰 노치: status-bar-style="black" 고정, theme-color 만 바꾼다. iOS 홈화면 앱은
-// 이 앱셸(body position:fixed)에서 테마를 바꿔도 노치 색을 다음 실행 전까지 다시 안 칠한다
-// (iOS 한계 — black-translucent·문서 스크롤 트릭 등 여러 방법 시도했으나 실기기에서 안 됨).
-// 앱 켤 때는 정확하고, iOS 가 PWA 를 자주 종료해 대개 저절로 보정된다.
+// 아이폰 노치(상태바)는 status-bar-style 이 정한다 — 다크는 black(검정 바·흰 글씨),
+// 라이트는 default(밝은 바·검은 글씨). theme-color 만 바꾸면 style="black" 이 이겨서
+// 라이트로 가도 노치가 검은 채로 남는다.
+//   · v1.5.0 까지 있던 줄인데 v1.5.3 리팩터링에서 빠졌다(그때 「iOS 한계」라고 적어둔 건
+//     실기기 확인 없이 쓴 말이었다 — 오너가 "1.4 땐 바로 바뀌었다"고 해서 이력을 뒤져 찾음).
+//   · 그때는 이 줄이 앱 켤 때만 돌았다. 여기(setThemeChrome)에 두면 서랍에서 바꿀 때도 같이 돈다.
+//   · black ↔ default 는 둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다.
+//     뷰포트를 바꾸는 건 black-translucent 뿐이고, 그건 안 쓴다.
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   if (themeMeta) themeMeta.content = (t === 'light') ? '#f4f6f9' : '#0f1319';
+  var barMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (barMeta) barMeta.content = (t === 'light') ? 'default' : 'black';
 };
 // 화면이 그려지기 전에 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
 (function(){
