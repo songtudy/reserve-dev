@@ -121,6 +121,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     --onWait:#241a05;   --mark:#463a13;
     /* 방문 — 초록 */
     --go:#5fb08a;       --goTx:var(--go);      --goName:#94a49c;
+    --goBg:#141d19;
     /* 취소·경고 — 붉은색 */
     --warn:#c9736a;     --warnBg:#1a1618;   --warnTag:#332323;
     --warnName:#b8938e; --warnPax:#a8837e;
@@ -145,6 +146,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
     --onWait:#2a1d02;   --mark:#fdf1d8;
     --go:#2f9c6e;       --goTx:#1d7a54;     --goName:#4a6a5b;
+    --goBg:#eefaf3;
     --warn:#b43f36;     --warnBg:#fdf1ef;   --warnTag:#fadedb;
     --warnName:#855c55; --warnPax:#7a4f48;
     --onWarn:#7a2a20;   /* 8.72:1 / 4.62:1 */
@@ -433,25 +435,23 @@ window.addEventListener('pageshow', remeasureSbcut);
   .more svg{display:block}
   .more:active{background:var(--press)}
 
-  /* ── 상태의 «세기» 순서: 할 일 > 끝난 일 ──
-     예전엔 거꾸로였다. 방문·취소 행이 색 띠 + 색 배경 + 꽉 찬 아이콘으로 화려하고, 정작
-     조치가 필요한 대기 행은 회색이라 눈이 끝난 쪽으로 먼저 갔다. 체크리스트 도구에서
-     이건 뒤집힌 우선순위다 — 남은 일이 눈에 띄어야 한다.
-     (--wait 토큰은 이름부터 「대기」인데 정작 대기 행엔 안 쓰이고 머리글에만 쓰이고 있었다.)
-     라이트에서 --wait(#f5aa14)은 흰 카드 위 1.97 로 도형 기준 3:1 미달이라 --waitBig 을 쓴다
-     (라이트 3.63 / 다크 9.34). */
-  .row.pend{border-left-color:var(--waitBig)}
-  .row.pend .check{border-color:var(--waitBig)}
-
-  /* 끝난 행은 띠·배경을 두지 않고 기본 카드로 둔다 — 아이콘과 이름 색만으로 충분히 말한다.
-     체크는 채우지 않고 테두리만: 채움 위 흰 아이콘은 라이트에서 3.44 였는데
-     테두리 방식은 5.3(라이트)/6.6(다크) 으로 오히려 잘 보인다. */
+  /* ── 대기는 «기본 상태» 라 조용하게, 방문·취소는 «일어난 사건» 이라 표시한다 ──
+     한때 이걸 뒤집어 대기 행에 금색 띠를 줘봤다(v1.8.1). 「할 일이 눈에 띄어야 한다」는
+     논리였는데 실기기 화면에서 틀렸음이 드러났다: 시간대가 시작될 땐 전부 대기라
+     다섯 줄이 통째로 금색이 된다 = 전부 강조면 아무것도 강조가 아니다.
+     반대로 끝나갈 무렵 남은 한둘은, 색깔 진 행들 사이에서 «중성인 쪽» 이 오히려 튄다.
+     즉 흔한 경우엔 원래가 조용하고 결정적 순간엔 성능이 같다. 체크박스가 세상 어디서나
+     이렇게 동작하는 이유이기도 하다. 되돌리지 말 것. */
+  .row.arrived{border-left-color:var(--go);background:var(--goBg)}
+  /* 체크는 채우지 않고 테두리만 — 채운 면 위 흰 아이콘은 라이트에서 3.44 로 이 앱에서
+     여유가 가장 없는 조합이었다. 테두리 방식은 5.3(라이트)/6.6(다크) 으로 더 잘 보인다. */
   .row.arrived .check{border-color:var(--goTx);color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
   .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
   .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
 
   /* 취소는 이름에 취소선 — 「안 올 사람」이 한눈에 읽히고 방문과도 즉시 갈린다.
      색에만 기대지 않으므로 색각 이상에서도 구분된다. */
+  .row.cancelled{border-left-color:var(--warn);background:var(--warnBg)}
   .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600;
                        text-decoration:line-through;text-decoration-thickness:1px}
   .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax)}
@@ -4199,7 +4199,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.8.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.8.2<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
