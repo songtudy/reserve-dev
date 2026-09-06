@@ -35,16 +35,18 @@
 // 써서 상태가 갈라지지 않게 한다.
 //
 // ★ 아이폰 노치(상태바 띠) — 「앱을 켤 때는 테마대로, 켜 둔 채 테마를 바꾸면 다음 실행까지 그대로」.
-//   이건 고치려다 실패한 것이지 안 해 본 게 아니다. 2026-09-06 에 실기기로 세 가지를 시도했고
-//   전부 효과 없었다: ① status-bar-style 을 테마별로 전환(v1.5.0 까지 있던 줄 복구)
-//   ② 루트 캔버스 배경을 테마에 맞춰 덮어쓰기 ③ 메타를 값만 고치지 말고 노드째 교체.
-//   v1.4.0 head 와 전체 diff 까지 떠서 대조했는데 지금 head 에 빠진 건 없다 —
-//   남은 차이는 «앱 셸» 하나뿐이다:
-//       v1.4  html{min-height:100%} + body{min-height:100dvh}  → 문서 자체가 스크롤됨
-//       지금  html{overflow:hidden} + body{position:fixed;inset:0} → 문서 스크롤 없음
-//   iOS 가 상태바를 다시 칠하는 계기가 문서 스크롤/레이아웃인 듯한데 지금 셸엔 그게 없다.
-//   셸을 되돌리면 헤더·하단바 고정, .wrap 스크롤, --kb 키보드 처리, --sbcut 보정이 전부 흔들린다
-//   → 노치 색 하나와 바꿀 값이 아니라고 판단(오너 합의). **다시 시도하지 말 것.**
+//   이건 고치려다 실패한 것이지 안 해 본 게 아니다. 2026-09-06 에 실기기로 네 가지를 시도했고
+//   전부 효과 없었다:
+//     ① status-bar-style 을 테마별로 전환 (v1.5.0 까지 있던 줄 복구)
+//     ② 루트 캔버스 배경을 테마에 맞춰 덮어쓰기
+//     ③ 메타를 값만 고치지 말고 노드째 교체
+//     ④ 테마 바꿀 때 문서를 강제로 1px 스크롤 (<html> 밑에 임시 스페이서 → scrollTo → 원복).
+//        「문서가 스크롤되면 iOS 가 다시 칠한다」는 가설을 셸을 안 뜯고 확인한 탐침이었다.
+//        문서 스크롤이 실제로 일어났는데도(실측 확인) 노치는 그대로 → **가설 기각**.
+//   v1.4.0 head 와 전체 diff 까지 떠서 대조했고 지금 head 에 빠진 건 없다. ④ 로 앱 셸(v1.4 의
+//   문서 스크롤 구조)도 후보에서 빠졌으므로, 남은 수단은 black-translucent 로 상태바를 웹 영역
+//   안에 넣어 «우리가 직접 칠하는» 것뿐이다 — 그건 --sbcut 보정·스플래시/잠금 중앙정렬을
+//   전부 다시 짜야 해서 노치 색 하나와 바꿀 값이 아니라고 판단(오너 합의). **다시 시도하지 말 것.**
 //
 // 아래 두 줄은 노치와 별개로 각각 옳아서 남긴다:
 //   · d.style.background — <html> 에 박아둔 인라인 배경(흰 번쩍임 방지용)이 스타일시트를 이겨서
@@ -3634,38 +3636,11 @@ window.dispatchEvent(new Event('fb-ready'));
       btn.classList.toggle('on', btn.getAttribute('data-theme-set') === t);
     });
   }
-  // ── 실험 (v1.7.4) — 노치 색을 켜 둔 채로 갱신시킬 수 있는지 찌르는 탐침.
-  // 가설: iOS 는 「문서가 스크롤될 때」 상태바를 다시 칠하는데, 이 앱은 body{position:fixed} 라
-  //       문서 스크롤이 아예 없어서 그 계기가 없다 (v1.4 는 문서가 스크롤되는 구조였고 됐었다).
-  // 셸을 통째로 되돌리기 전에 그 가설만 확인한다 — 셸(body)은 건드리지 않고, <html> 밑에
-  // 잠깐 키 큰 투명 요소를 넣어 문서를 1px 스크롤했다가 원위치시킨다. body 가 위를 덮고
-  // 있어서 화면엔 아무 변화도 안 보이고, 두 프레임 뒤 흔적 없이 사라진다.
-  // ★ 효과가 없으면 앱 셸을 되돌려도 소용없다는 뜻이므로, 이 실험째로 걷어낸다.
-  function nudgeStatusBar(){
-    var h = document.documentElement;
-    if (h.__nudging) return;                 // 연타 시 겹치지 않게
-    h.__nudging = true;
-    var pad = document.createElement('div');
-    pad.style.cssText = 'height:calc(100vh + 2px);width:1px;visibility:hidden;pointer-events:none';
-    h.style.overflow = 'auto';               // 스타일시트의 html{overflow:hidden} 을 잠깐 연다
-    h.appendChild(pad);
-    window.scrollTo(0, 1);
-    requestAnimationFrame(function(){
-      window.scrollTo(0, 0);
-      requestAnimationFrame(function(){
-        if (pad.parentNode) pad.parentNode.removeChild(pad);
-        h.style.overflow = '';               // 인라인 해제 → 스타일시트 값(hidden)으로 복귀
-        h.__nudging = false;
-      });
-    });
-  }
-
   // 서랍 안에서 바로 고른다. 서랍을 열어둔 채라 바뀌는 색이 그 자리에서 보인다.
   [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
     btn.addEventListener('click', function(){
       try { localStorage.setItem(THEME_KEY, btn.getAttribute('data-theme-set')); } catch(e){}
       applyTheme();
-      nudgeStatusBar();          // 위 실험 — 앱 켤 때(applyTheme 단독 호출)에는 안 부른다
     });
   });
   applyTheme();
@@ -4221,7 +4196,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.7.4<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.3<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
