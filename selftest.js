@@ -453,6 +453,23 @@
     check('없는 값도 빈 문자열', T.rosterSig(null), '');
   })();
 
+  group('mergeRuns — 같은 명단이 이어지면 한 줄로');
+  (function(){
+    var A=[{id:'a',time:'14:00',name:'가',pax:2,memo:'',status:'pend'}];
+    var B=[{id:'a',time:'14:00',name:'가',pax:2,memo:'',status:'arrived'}];
+    var mk=function(k,at,items){ return { key:k, e:{ at:at, items:items } }; };
+    // 목록은 «최근 먼저» 로 정렬된 상태로 들어온다
+    var r1=T.mergeRuns([mk('h17',400,A),mk('h16',300,A),mk('h15',200,A),mk('h14',100,B)]);
+    check('같은 게 이어지면 한 묶음', r1.map(function(g){return g.length}), [3,1]);
+    var r2=T.mergeRuns([mk('h17',400,A),mk('h16',300,B),mk('h15',200,A)]);
+    check('사이에 다른 게 끼면 안 묶음', r2.map(function(g){return g.length}), [1,1,1]);
+    var r3=T.mergeRuns([mk('h12',100,A)]);
+    check('하나뿐이면 그대로', r3.map(function(g){return g.length}), [1]);
+    check('빈 목록', T.mergeRuns([]).length, 0);
+    tru('묶음의 첫 항목이 가장 최근', r1[0][0].key === 'h17');
+    tru('묶음의 마지막이 가장 이름', r1[0][r1[0].length-1].key === 'h15');
+  })();
+
   /* ==================== 렌더 ==================== */
   render();
 
