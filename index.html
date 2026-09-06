@@ -328,27 +328,31 @@ window.addEventListener('pageshow', remeasureSbcut);
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
   /* time group */
-  .group{margin-top:10px}
+  .group{margin-top:22px}   /* 시간대 사이 숨. 큰 시각 머리글과 함께 화면의 리듬을 만든다 */
 
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;align-items:center;gap:7px;
-    width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 8px;
+    display:flex;align-items:center;gap:9px;
+    width:calc(100% + 28px);margin:0 -14px;padding:10px 16px 12px;
     border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
   .chev{
     color:var(--dim);flex:0 0 auto;
-    display:grid;place-items:center;width:14px;height:14px;line-height:0;
+    display:grid;place-items:center;width:16px;height:16px;line-height:0;
     transform:rotate(90deg);transition:transform .15s;
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
   /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
-  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
-  .gline{flex:1;height:1px;background:var(--line)}
-  .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
+  /* 시각은 이 화면의 «앵커» 다 — 19px 이던 것을 29px 로 키웠다.
+     그전엔 모든 글자가 12~19px 안에 몰려 있어 화면이 평평했고, 어디가 한 덩어리인지
+     눈이 잡을 데가 없었다. 큰 시각 하나로 시간대가 시각적으로 갈리고 리듬이 생긴다.
+     밀도 손해는 없다(실측: 한 시간대 안에서 보이는 행 수 11 → 11 동일).
+     29px·800 은 «큰 글씨» 라 대비 기준이 3:1 이어서 지금 색을 그대로 쓸 수 있다. */
+  .gtime{font-size:29px;font-weight:800;letter-spacing:-.04em;line-height:1.05;color:var(--dim)}
+  .gmeta{margin-left:auto;font-size:13px;letter-spacing:.02em;color:var(--dim);display:flex;align-items:center;gap:7px}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px}
   /* 「지금」 표시는 머리글(금색 시각)이 맡는다. 예전엔 .group.now .row 로 행의 왼쪽 띠까지
@@ -411,7 +415,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   #addPanel .edit{padding:0}
   #addPanel h2{margin-bottom:12px}
   .name{
-    display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;
+    display:block;font-size:19px;font-weight:700;letter-spacing:-.025em;
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
@@ -2177,7 +2181,6 @@ window.dispatchEvent(new Event('fb-ready'));
       head.type = 'button';
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
-        + '<span class="gline"></span>'
         + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(e){
