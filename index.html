@@ -333,7 +333,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
   /* time group */
-  .group{margin-top:16px}
+  .group{margin-top:10px}
 
   .ghead{
     position:sticky;top:0;z-index:10;
@@ -357,36 +357,32 @@ window.addEventListener('pageshow', remeasureSbcut);
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px}
   .group.now .gtime{color:var(--waitBig)}
+  .group.now .row{border-left-color:var(--waitBig)}
   .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
   /* row */
-  /* 행은 «카드»가 아니라 목록의 한 줄이다 — 테두리·둥근 모서리·행간 8px 을 걷고
-     화면 폭을 꽉 쓰며 얇은 선 하나로만 나눈다. 상태는 왼쪽 3px 띠 대신 «면 전체»가 말한다.
-     ★ 활자 크기는 1px 도 안 건드렸다(시각 19 · 이름 17 · 인원 15 · 태그 12) — 오너가
-     조밀한 활자를 선호하고, 예전에 키웠다가 「글씨가 너무 크다」로 거절당했다.
-     결과: 행 70 → 53px, 한 화면 11 → 14행. 최대 12건 시간대가 스크롤 없이 다 들어온다.
-     .ghead 와 같은 음수 마진으로 .wrap 의 좌우 14px 을 넘어 편다 — .wrap 자체 여백은
-     붙여넣기 창 등이 쓰므로 건드리지 않는다. */
   .row{
     display:flex;align-items:stretch;gap:0;
-    background:transparent;
-    border:0;border-top:1px solid var(--line);
-    width:calc(100% + 28px);margin:0 -14px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:8px;
     overflow:hidden;
     transition:border-color .15s,opacity .15s,background .15s;
   }
   /* 눌리는 곳은 여기뿐. 60x60 이라 손가락에 넉넉하다 */
   .main{
-    width:56px;flex:0 0 auto;display:grid;place-items:center;
-    min-height:52px;cursor:pointer;padding:0 0 0 16px;
-    background:none;border:0;
+    width:60px;flex:0 0 auto;display:grid;place-items:center;
+    min-height:60px;cursor:pointer;padding:0;
+    background:none;border:0;border-right:1px solid var(--line);
     color:inherit;font:inherit;
   }
   .main:active{background:var(--press)}
   .info{
-    flex:1;min-width:0;display:flex;align-items:center;gap:10px;
-    padding:9px 16px 9px 0;
+    flex:1;min-width:0;display:flex;align-items:center;gap:12px;
+    padding:14px 12px;
   }
   /* min-width:0 이 없으면 긴 이름이 있을 때 행이 화면 밖으로 넘친다 */
   .rbody{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -433,26 +429,25 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--panel2);border-radius:8px;padding:0 10px;flex:0 0 auto;
   }
   .more{
-    width:44px;flex:0 0 auto;border:0;margin-right:4px;
+    width:44px;flex:0 0 auto;border:0;border-left:1px solid var(--line);
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .more svg{display:block}
   .more:active{background:var(--press)}
 
-  .row.open{background:var(--panel)}   /* 수정·메뉴가 펼쳐진 행 — 카드가 없어진 만큼 면으로 묶는다 */
-  .row.arrived{background:var(--goBg)}
+  .row.arrived{border-left-color:var(--go);background:var(--goBg)}
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
   .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
   .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
 
-  .row.cancelled{background:var(--warnBg)}
+  .row.cancelled{border-left-color:var(--warn);background:var(--warnBg)}
   .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600}
   .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax);background:var(--warnPaxBg)}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
 
 
-  .edit{padding:0 16px 12px}   /* 행 내용이 16px 에서 시작하므로 맞춘다 */
+  .edit{padding:0 10px 11px}
   .erow{display:flex;gap:6px}
   .erow label{
     display:flex;flex-direction:column;gap:4px;
@@ -486,7 +481,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .ebtn #e-ok:active{filter:brightness(.92)}
   .ebtn #e-no:active{background:var(--press)}
 
-  .menu{display:flex;gap:6px;padding:0 16px 12px}
+  .menu{display:flex;gap:6px;padding:0 10px 10px}
   .menu button{
     flex:1;padding:10px 0;border-radius:11px;border:1px solid var(--line);
     background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
@@ -2473,9 +2468,6 @@ window.dispatchEvent(new Event('fb-ready'));
     } else if (openMenu === it.id){
       body.appendChild(buildMenu(it.id));
     }
-    // 펼쳐진 행은 면을 살짝 띄운다 — 카드 시절엔 카드 테두리가 「이 행을 다루는 중」을 말했는데,
-    // 행이 화면 폭 밴드가 되면서 그 경계가 없어졌다.
-    if (editing === it.id || openMenu === it.id) row.classList.add('open');
 
     row.appendChild(body);
     return row;
@@ -4212,7 +4204,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.8.0<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.3<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
