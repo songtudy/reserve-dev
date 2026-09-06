@@ -111,6 +111,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 바탕 */
     --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
     --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
+    /* --dim / --ph / --off 는 「흐림」 3단계다 (패널 위 대비 5.5 > 4.7 > 3.4, 라이트도 같은 순서).
+       ph 가 dim 보다 한 단 흐린 건 의도 — 입력칸의 예시 글자가 실제 내용처럼 보이면 안 된다. */
     --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
     --ph:#7b8695;
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
@@ -132,6 +134,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   html[data-theme="light"]{
     --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
+    /* ★ --press 를 이보다 어둡게 하지 말 것 — 이미 천장이다.
+       눌린 면 «위에» 글자가 올라가는 자리가 있다: .sheetNever(다시 보지 않기)·.gbreak(방문 1)의
+       --dim, .menu .del(삭제)의 --warn. 지금이 각각 4.65 / 4.56 으로 4.5 를 겨우 넘는다.
+       한 단만 어둡게 해도(#e0e5ee) 4.48 로 떨어진다. 「눌림이 좀 약한데?」 싶어도 그대로 둘 것 —
+       약한 게 아니라 눌린 글자 가독성을 먼저 지킨 결과다(다크는 바탕이 어두워 이 제약이 없어 더 세다). */
     --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
@@ -139,6 +146,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
     --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
     --onWait:#2a1d02;   --mark:#fdf1d8;
+    /* --onGo(흰색)가 --go 채움 위에서 3.44 — 이 앱에서 여유가 가장 적은 조합이다.
+       쓰이는 곳이 방문 체크 «아이콘» 하나뿐이라 기준이 3:1(도형)이어서 통과한다.
+       여기에 «글자»를 올리려면 4.5 가 필요하므로 --go 를 더 어둡게 잡아야 한다. */
     --go:#2f9c6e;       --goTx:#1d7a54;     --onGo:#ffffff;
     --goBg:#eefaf3;     --goTag:#d9f2e5;
     --goTagTx:#176b49;  --goName:#4a6a5b;
