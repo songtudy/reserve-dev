@@ -423,8 +423,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     flex:0 0 auto;
   }
   .more{
-    width:36px;flex:0 0 auto;border:0;margin-right:6px;opacity:.55;
-    background:none;color:var(--dim);cursor:pointer;
+    /* 투명도로 흐리게 하지 않는다 — opacity:.55 로 해봤더니 페이지 바탕에서 2.6/2.2 로
+       도형 기준(3:1) 미달이었다. 색 토큰으로 낮추면 흐리면서도 기준을 지킨다(3.4/3.6). */
+    width:36px;flex:0 0 auto;border:0;margin-right:6px;
+    background:none;color:var(--off);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .more svg{display:block}
