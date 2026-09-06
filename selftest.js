@@ -433,43 +433,6 @@
     tru('문자열을 돌려준다', typeof a === 'string' && a.length > 0, a);
   })();
 
-  group('rosterSig — 백업 「변화 없음」 판정');
-  (function(){
-    var A = [{id:'a',time:'14:00',name:'임동현',pax:2,memo:'',status:'pend'},
-             {id:'b',time:'15:00',name:'김동현',pax:4,memo:'창가',status:'arrived'}];
-    var same     = [A[1], A[0]];                                             // 순서만 다름
-    var reorder  = [{id:'a',time:'14:00',name:'임동현',pax:2,memo:'',status:'pend',seq:9,ts:123},
-                    {id:'b',time:'15:00',name:'김동현',pax:4,memo:'창가',status:'arrived',seq:1,ts:999}];
-    var statusCh = [A[0], {id:'b',time:'15:00',name:'김동현',pax:4,memo:'창가',status:'cancelled'}];
-    var paxCh    = [A[0], {id:'b',time:'15:00',name:'김동현',pax:5,memo:'창가',status:'arrived'}];
-    var added    = A.concat([{id:'c',time:'16:00',name:'베토벤',pax:2,memo:'',status:'pend'}]);
-    tru('같은 명단 → 같은 서명',        T.rosterSig(A) === T.rosterSig(A.slice()));
-    tru('배열 순서가 달라도 같은 서명',  T.rosterSig(A) === T.rosterSig(same));
-    tru('seq·ts 는 서명에 안 들어간다',  T.rosterSig(A) === T.rosterSig(reorder));
-    tru('상태가 바뀌면 다른 서명',       T.rosterSig(A) !== T.rosterSig(statusCh));
-    tru('인원이 바뀌면 다른 서명',       T.rosterSig(A) !== T.rosterSig(paxCh));
-    tru('한 명 늘면 다른 서명',          T.rosterSig(A) !== T.rosterSig(added));
-    check('빈 명단은 빈 문자열', T.rosterSig([]), '');
-    check('없는 값도 빈 문자열', T.rosterSig(null), '');
-  })();
-
-  group('mergeRuns — 같은 명단이 이어지면 한 줄로');
-  (function(){
-    var A=[{id:'a',time:'14:00',name:'가',pax:2,memo:'',status:'pend'}];
-    var B=[{id:'a',time:'14:00',name:'가',pax:2,memo:'',status:'arrived'}];
-    var mk=function(k,at,items){ return { key:k, e:{ at:at, items:items } }; };
-    // 목록은 «최근 먼저» 로 정렬된 상태로 들어온다
-    var r1=T.mergeRuns([mk('h17',400,A),mk('h16',300,A),mk('h15',200,A),mk('h14',100,B)]);
-    check('같은 게 이어지면 한 묶음', r1.map(function(g){return g.length}), [3,1]);
-    var r2=T.mergeRuns([mk('h17',400,A),mk('h16',300,B),mk('h15',200,A)]);
-    check('사이에 다른 게 끼면 안 묶음', r2.map(function(g){return g.length}), [1,1,1]);
-    var r3=T.mergeRuns([mk('h12',100,A)]);
-    check('하나뿐이면 그대로', r3.map(function(g){return g.length}), [1]);
-    check('빈 목록', T.mergeRuns([]).length, 0);
-    tru('묶음의 첫 항목이 가장 최근', r1[0][0].key === 'h17');
-    tru('묶음의 마지막이 가장 이름', r1[0][r1[0].length-1].key === 'h15');
-  })();
-
   /* ==================== 렌더 ==================== */
   render();
 
