@@ -41,16 +41,24 @@
 //      확인 없이 쓴 말이었다). 이것만 되살려서는 ① 때문에 안 먹혔다 — 둘 다 있어야 한다.
 //      black ↔ default 는 둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다.
 //   ③ theme-color — 브라우저 탭·안드로이드 몫.
+// 메타는 값만 고치지 않고 노드째 갈아끼운다 — WebKit 이 content 변경은 흘려보내고
+// 노드 교체만 알아채는 경우가 있어서다(확실치 않음. 레이아웃은 안 건드리니 밑져야 본전).
+function swapMeta(name, content){
+  var old = document.querySelector('meta[name="' + name + '"]');
+  var m = document.createElement('meta');
+  m.setAttribute('name', name);
+  m.setAttribute('content', content);
+  if (old && old.parentNode) old.parentNode.replaceChild(m, old);
+  else document.head.appendChild(m);
+}
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   d.style.background = ink;                            // ① 캔버스 = 노치 띠
-  var themeMeta = document.querySelector('meta[name="theme-color"]');
-  if (themeMeta) themeMeta.content = ink;              // ③
-  var barMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-  if (barMeta) barMeta.content = (t === 'light') ? 'default' : 'black';   // ②
+  swapMeta('theme-color', ink);                                                   // ③
+  swapMeta('apple-mobile-web-app-status-bar-style', (t === 'light') ? 'default' : 'black');  // ②
 };
 // 화면이 그려지기 전에 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
 (function(){
