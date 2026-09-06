@@ -47,9 +47,10 @@
 //   · d.style.background — 루트(html)의 인라인 배경(흰 번쩍임 방지용)이 스타일시트를 이겨서
 //     라이트 테마에서 루트만 어둡게 남던 것을 바로잡는다.
 //   · status-bar-style — 이건 상태바 «글자» 색이다 (black=흰 글자 / default=검은 글자).
-//     배경은 theme-color 몫이라, 라이트인데 black 이면 밝은 바에 흰 글자가 된다.
+//     배경은 theme-color 몫이라, 라이트인데 black 이면 「밝은 바 + 흰 글자」가 되어 시계·배터리가
+//     안 읽힌다. 그걸 막는 게 이 줄의 값어치다 — 실기기 확인 완료(2026-09-06, 라이트로 켰을 때
+//     잘 읽힘). 런타임 전환이 안 되는 것과는 별개로, 「켤 때」는 제 몫을 한다.
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
-//     ※ 켤 때 실제로 어떻게 보이는지는 실기기 재확인 안 함 — 런타임 전환이 안 되는 것과는 별개.
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
