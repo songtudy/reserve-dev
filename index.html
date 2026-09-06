@@ -3634,11 +3634,38 @@ window.dispatchEvent(new Event('fb-ready'));
       btn.classList.toggle('on', btn.getAttribute('data-theme-set') === t);
     });
   }
+  // ── 실험 (v1.7.4) — 노치 색을 켜 둔 채로 갱신시킬 수 있는지 찌르는 탐침.
+  // 가설: iOS 는 「문서가 스크롤될 때」 상태바를 다시 칠하는데, 이 앱은 body{position:fixed} 라
+  //       문서 스크롤이 아예 없어서 그 계기가 없다 (v1.4 는 문서가 스크롤되는 구조였고 됐었다).
+  // 셸을 통째로 되돌리기 전에 그 가설만 확인한다 — 셸(body)은 건드리지 않고, <html> 밑에
+  // 잠깐 키 큰 투명 요소를 넣어 문서를 1px 스크롤했다가 원위치시킨다. body 가 위를 덮고
+  // 있어서 화면엔 아무 변화도 안 보이고, 두 프레임 뒤 흔적 없이 사라진다.
+  // ★ 효과가 없으면 앱 셸을 되돌려도 소용없다는 뜻이므로, 이 실험째로 걷어낸다.
+  function nudgeStatusBar(){
+    var h = document.documentElement;
+    if (h.__nudging) return;                 // 연타 시 겹치지 않게
+    h.__nudging = true;
+    var pad = document.createElement('div');
+    pad.style.cssText = 'height:calc(100vh + 2px);width:1px;visibility:hidden;pointer-events:none';
+    h.style.overflow = 'auto';               // 스타일시트의 html{overflow:hidden} 을 잠깐 연다
+    h.appendChild(pad);
+    window.scrollTo(0, 1);
+    requestAnimationFrame(function(){
+      window.scrollTo(0, 0);
+      requestAnimationFrame(function(){
+        if (pad.parentNode) pad.parentNode.removeChild(pad);
+        h.style.overflow = '';               // 인라인 해제 → 스타일시트 값(hidden)으로 복귀
+        h.__nudging = false;
+      });
+    });
+  }
+
   // 서랍 안에서 바로 고른다. 서랍을 열어둔 채라 바뀌는 색이 그 자리에서 보인다.
   [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
     btn.addEventListener('click', function(){
       try { localStorage.setItem(THEME_KEY, btn.getAttribute('data-theme-set')); } catch(e){}
       applyTheme();
+      nudgeStatusBar();          // 위 실험 — 앱 켤 때(applyTheme 단독 호출)에는 안 부른다
     });
   });
   applyTheme();
@@ -4194,7 +4221,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.7.3<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.7.4<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
