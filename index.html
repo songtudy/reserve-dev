@@ -4087,6 +4087,27 @@ window.dispatchEvent(new Event('fb-ready'));
     });
     return runs;
   }
+  // 묶음 하나의 라벨. 목록과 상세 제목이 «같은 함수»를 쓴다 —
+  // 「14:20 ~ 16:20」을 눌렀는데 제목이 「16:20」이면 누른 것과 달라 보인다.
+  function runLabel(g){
+    return g.length > 1
+      ? backupWhen(g[g.length - 1].e.at) + ' ~ ' + backupWhen(g[0].e.at)
+      : backupWhen(g[0].e.at);
+  }
+  // 오늘 스냅샷들을 목록과 같은 방식으로 묶어, 이 키가 속한 묶음의 라벨을 돌려준다.
+  function bkSnapLabel(key){
+    var snaps = [];
+    Object.keys(bkMap || {}).forEach(function(k){
+      var e = bkMap[k];
+      if (e && e.items && e.items.length && e.kind !== 'day') snaps.push({ key: k, e: e });
+    });
+    snaps.sort(function(a, b){ return (b.e.at || 0) - (a.e.at || 0); });
+    var runs = mergeRuns(snaps), i, j;
+    for (i = 0; i < runs.length; i++)
+      for (j = 0; j < runs[i].length; j++)
+        if (runs[i][j].key === key) return runLabel(runs[i]);
+    return backupWhen((bkMap && bkMap[key] || {}).at);
+  }
   function backupSheetHtml(map){
     var snaps = [], days = [];
     Object.keys(map || {}).forEach(function(k){
@@ -4106,10 +4127,7 @@ window.dispatchEvent(new Event('fb-ready'));
       // 「14:20 ~ 17:20」처럼 범위를 보인다 — 「이 사이엔 아무 변화도 없었다」가 곧바로 읽힌다.
       // 여는 건 그 구간의 «가장 최근» 스냅샷 (내용이 같으니 어느 것이든 결과는 같다).
       mergeRuns(snaps).forEach(function(g){
-        var label = g.length > 1
-          ? backupWhen(g[g.length - 1].e.at) + ' ~ ' + backupWhen(g[0].e.at)
-          : backupWhen(g[0].e.at);
-        html += bkRowHtml(g[0].key, label, g[0].e);
+        html += bkRowHtml(g[0].key, runLabel(g), g[0].e);
       });
     }
     if (days.length){
@@ -4149,7 +4167,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!e || !e.items){ bkRenderList(); return; }
     var p = e.kind === 'day' ? e.date.split('-') : null;
     var title = document.getElementById('sheetTitle');
-    var when = e.kind === 'day' ? ('어제 ' + (+p[1]) + '/' + (+p[2])) : ('오늘 ' + backupWhen(e.at));
+    var when = e.kind === 'day' ? ('어제 ' + (+p[1]) + '/' + (+p[2])) : ('오늘 ' + bkSnapLabel(key));
     title.innerHTML = '<span class="bkback" role="button" aria-label="목록으로"></span><span>' + esc(when) + '</span>';
     title.querySelector('.bkback').onclick = bkBack;
     document.getElementById('sheetBody').innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>';
