@@ -1941,9 +1941,16 @@ window.dispatchEvent(new Event('fb-ready'));
       // 매시간 같은 명단이 하나씩 쌓여 「지난 명단」이 의미 없는 항목으로 채워진다.
       // 건너뛰어도 잃는 게 없다: 내용이 같은 «먼저 남긴» 스냅샷이 그대로 남아 있으므로
       // 복구 지점은 그대로다(오히려 그 시점이 더 이르다).
-      return fb().backupList(viewDate).then(function(map){
+      // 이 읽기에는 시한을 둔다 — 오프라인에서 매달리면 그 시간 백업이 조용히 빠진다.
+      // 늦거나 실패하면 «건너뛰지 않고» 그냥 남긴다: 안전망은 중복보다 누락이 나쁘다.
+      var listed = new Promise(function(res){
+        var t = setTimeout(function(){ res(null); }, WQ_OP_TIMEOUT);
+        fb().backupList(viewDate).then(function(m){ clearTimeout(t); res(m); },
+                                       function(){ clearTimeout(t); res(null); });
+      });
+      return listed.then(function(map){
         var last = null;
-        Object.keys(map || {}).forEach(function(k){
+        if (map) Object.keys(map).forEach(function(k){
           var e = map[k];
           if (e && e.items && (!last || (e.at || 0) > (last.at || 0))) last = e;
         });
