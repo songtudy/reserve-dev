@@ -1937,29 +1937,14 @@ window.dispatchEvent(new Event('fb-ready'));
     // 이 시간 백업이 서버에 이미 있으면 그대로 둔다. 없을 때만 새로 만든다.
     fb().backupHas(viewDate, 'h' + h).then(function(exists){
       if (exists) return;                                   // 이미 있음 → 이 시간 끝
-      // 내용이 직전 스냅샷과 똑같으면 남기지 않는다 — 예약이 없거나 아무도 안 왔다 갔으면
-      // 매시간 같은 명단이 하나씩 쌓여 「지난 명단」이 의미 없는 항목으로 채워진다.
-      // 건너뛰어도 잃는 게 없다: 내용이 같은 «먼저 남긴» 스냅샷이 그대로 남아 있으므로
-      // 복구 지점은 그대로다(오히려 그 시점이 더 이르다).
-      // 이 읽기에는 시한을 둔다 — 오프라인에서 매달리면 그 시간 백업이 조용히 빠진다.
-      // 늦거나 실패하면 «건너뛰지 않고» 그냥 남긴다: 안전망은 중복보다 누락이 나쁘다.
-      var listed = new Promise(function(res){
-        var t = setTimeout(function(){ res(null); }, WQ_OP_TIMEOUT);
-        fb().backupList(viewDate).then(function(m){ clearTimeout(t); res(m); },
-                                       function(){ clearTimeout(t); res(null); });
-      });
-      return listed.then(function(map){
-        var last = null;
-        if (map) Object.keys(map).forEach(function(k){
-          var e = map[k];
-          if (e && e.items && (!last || (e.at || 0) > (last.at || 0))) last = e;
-        });
-        if (last && rosterSig(last.items) === rosterSig(state.items)) return;   // 변화 없음 → 통과
-        doBackup('h' + h, function(ok){
-          if (ok) return;
-          // 쓰기 실패 — 이 시간 안에서 BACKUP_MAX_TRIES 번까지만 재시도 (hour=-1 → 다음 틱).
-          if (++backupState.tries < BACKUP_MAX_TRIES) backupState.hour = -1;
-        });
+      // ★ 「내용이 같으면 안 남기기」를 여기 넣지 말 것 — 한때 넣었다가 되돌렸다.
+      //   중복은 «목록에서» 합쳐 보여주면 된다(backupSheetHtml). 이 경로는 8/31 사고 대비
+      //   안전망이라, 하루 8번 쓰는 걸 아끼자고 조건 분기와 네트워크 읽기를 더 넣을 값이 없다.
+      //   실제로 넣어봤을 때 읽기 시한을 빠뜨려 「그 시간 백업이 조용히 누락」될 뻔했다.
+      doBackup('h' + h, function(ok){
+        if (ok) return;
+        // 쓰기 실패 — 이 시간 안에서 BACKUP_MAX_TRIES 번까지만 재시도 (hour=-1 → 다음 틱).
+        if (++backupState.tries < BACKUP_MAX_TRIES) backupState.hour = -1;
       });
     }).catch(function(){
       // 확인 실패 — 마찬가지로 몇 번만 다시 (계속 실패해도 5초마다 무한히 두드리지 않게).
@@ -4091,6 +4076,17 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<span class="bksum">' + bkSummary(e) + '</span>'
       + '<span class="bkchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span></div>';
   }
+  // 정렬된 스냅샷 목록에서 «내용이 같은 연속 구간»끼리 묶는다. 떨어져 있으면 안 묶는다
+  // (14시와 17시가 같아도 그 사이 15시가 다르면 별개 — 「그때는 이랬다」가 사실이어야 한다).
+  function mergeRuns(list){
+    var runs = [];
+    list.forEach(function(r){
+      var cur = runs[runs.length - 1];
+      if (cur && rosterSig(cur[0].e.items) === rosterSig(r.e.items)) cur.push(r);
+      else runs.push([r]);
+    });
+    return runs;
+  }
   function backupSheetHtml(map){
     var snaps = [], days = [];
     Object.keys(map || {}).forEach(function(k){
@@ -4104,7 +4100,17 @@ window.dispatchEvent(new Event('fb-ready'));
     var html = '<div class="bklist">';
     if (snaps.length){
       html += '<div class="bkgroup">오늘</div>';
-      snaps.forEach(function(r){ html += bkRowHtml(r.key, backupWhen(r.e.at), r.e); });
+      // 스냅샷은 «매시간 빠짐없이» 남긴다(안전망이라 그게 맞다). 대신 여기서 합쳐 보여준다 —
+      // 아무도 안 오고 아무것도 안 바뀐 시간대가 이어지면 똑같은 줄이 서너 개씩 쌓여
+      // 목록이 의미 없는 항목으로 채워졌다. 내용이 같은 «연속» 구간은 한 줄로 묶고
+      // 「14:20 ~ 17:20」처럼 범위를 보인다 — 「이 사이엔 아무 변화도 없었다」가 곧바로 읽힌다.
+      // 여는 건 그 구간의 «가장 최근» 스냅샷 (내용이 같으니 어느 것이든 결과는 같다).
+      mergeRuns(snaps).forEach(function(g){
+        var label = g.length > 1
+          ? backupWhen(g[g.length - 1].e.at) + ' ~ ' + backupWhen(g[0].e.at)
+          : backupWhen(g[0].e.at);
+        html += bkRowHtml(g[0].key, label, g[0].e);
+      });
     }
     if (days.length){
       html += '<div class="bkgroup">어제</div>';
@@ -4527,7 +4533,7 @@ window.dispatchEvent(new Event('fb-ready'));
       validLogDate: validLogDate, cleanLogEntry: cleanLogEntry, logIdentity: logIdentity,
       logKeyId: logKeyId, mergeLogRows: mergeLogRows,
       reportText: reportText, uniqueId: uniqueId, nextSeq: nextSeq, isCollapsed: isCollapsed,
-      rosterSig: rosterSig,
+      rosterSig: rosterSig, mergeRuns: mergeRuns,
       rltSteps: rltSteps, wqEntry: wqEntry, computeDev: computeDev, autoCancelDue: autoCancelDue,
       stalePurgeDates: stalePurgeDates, kstParts: kstParts,
       consts: { COLLAPSE_DELAY: COLLAPSE_DELAY, AUTO_CANCEL_MIN: AUTO_CANCEL_MIN,
