@@ -433,6 +433,26 @@
     tru('문자열을 돌려준다', typeof a === 'string' && a.length > 0, a);
   })();
 
+  group('rosterSig — 백업 「변화 없음」 판정');
+  (function(){
+    var A = [{id:'a',time:'14:00',name:'임동현',pax:2,memo:'',status:'pend'},
+             {id:'b',time:'15:00',name:'김동현',pax:4,memo:'창가',status:'arrived'}];
+    var same     = [A[1], A[0]];                                             // 순서만 다름
+    var reorder  = [{id:'a',time:'14:00',name:'임동현',pax:2,memo:'',status:'pend',seq:9,ts:123},
+                    {id:'b',time:'15:00',name:'김동현',pax:4,memo:'창가',status:'arrived',seq:1,ts:999}];
+    var statusCh = [A[0], {id:'b',time:'15:00',name:'김동현',pax:4,memo:'창가',status:'cancelled'}];
+    var paxCh    = [A[0], {id:'b',time:'15:00',name:'김동현',pax:5,memo:'창가',status:'arrived'}];
+    var added    = A.concat([{id:'c',time:'16:00',name:'베토벤',pax:2,memo:'',status:'pend'}]);
+    tru('같은 명단 → 같은 서명',        T.rosterSig(A) === T.rosterSig(A.slice()));
+    tru('배열 순서가 달라도 같은 서명',  T.rosterSig(A) === T.rosterSig(same));
+    tru('seq·ts 는 서명에 안 들어간다',  T.rosterSig(A) === T.rosterSig(reorder));
+    tru('상태가 바뀌면 다른 서명',       T.rosterSig(A) !== T.rosterSig(statusCh));
+    tru('인원이 바뀌면 다른 서명',       T.rosterSig(A) !== T.rosterSig(paxCh));
+    tru('한 명 늘면 다른 서명',          T.rosterSig(A) !== T.rosterSig(added));
+    check('빈 명단은 빈 문자열', T.rosterSig([]), '');
+    check('없는 값도 빈 문자열', T.rosterSig(null), '');
+  })();
+
   /* ==================== 렌더 ==================== */
   render();
 
