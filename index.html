@@ -257,18 +257,25 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot.stale{background:var(--warn)}
 
   /* 인라인 흐름 — 자리가 모자란 조각만 다음 줄로 넘어간다 */
-  .lead{display:block;margin-top:8px;line-height:1.5}
+  .lead{display:block;position:relative;margin-top:8px;line-height:1.5;padding-right:88px}
   .lead.hide{display:none}
+  /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다. 늘 우상단 고정. */
+  .viewseg{position:absolute;right:0;top:-1px;display:inline-flex;
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .viewseg button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:700;
+    color:var(--dim);padding:6px 11px;cursor:pointer}
+  .viewseg button[aria-pressed="true"]{background:var(--panel2);color:var(--waitTx)}
+  .viewseg button:active{background:var(--press)}
   /* 「12:00 예약」과 「3팀 2인 1팀…」 두 덩어리로 읽히게 여백을 나눈다 */
   .slotlab{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-right:14px}
   .slottime{font-size:22px;font-weight:800;color:var(--waitBig);letter-spacing:-.03em;margin-right:2px}
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-right:1px}
   /* 「남은 예약 없음」은 상태 설명이라 본문색. 초록은 옆의 방문 집계에만 쓴다 */
   .leadmain.done{font-size:16px;font-weight:600;color:var(--text)}
-  /* 인원 요약은 자리가 모자란 조각만 다음 줄로 내린다 */
-  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:inline}
+  /* 인원 요약은 「지금 …팀」 아랫줄로 내린다 (우상단 토글과 안 겹치게) */
+  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:4px}
+  .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
-  .leadsub.tally{margin-left:11px}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
@@ -1120,6 +1127,10 @@ window.addEventListener('pageshow', remeasureSbcut);
       <span class="slottime num" id="slotTime"></span>
       <span class="slotlab"></span>
       <span class="leadmain num" id="leadMain"></span>
+      <div class="viewseg" role="group" aria-label="예약 표시">
+        <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
+        <button type="button" id="viewPendBtn" aria-pressed="false">대기</button>
+      </div>
       <span class="leadsub num" id="leadSub"></span>
     </div>
   </header>
@@ -1438,6 +1449,10 @@ window.dispatchEvent(new Event('fb-ready'));
   var query = '';
   var backgroundRenderPending = false;
   var deferredState = null;
+  // 목록 표시 범위 — 'all'(전체) / 'pending'(대기만: 방문·취소 행 숨김). 우상단 토글로 바꾼다.
+  // 저장값이 남아 재실행에도 유지된다 (토글이 늘 보여서 「왜 행이 없지」 헷갈릴 일은 없다).
+  var viewMode = 'all';
+  try { if (localStorage.getItem('ix-view') === 'pending') viewMode = 'pending'; } catch(e){}
 
   function interactionActive(){ return !!(editing || openMenu); }
   function renderWhenIdle(){
@@ -2138,8 +2153,14 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!panel.classList.contains('hide') && !taEl.value.trim()) closePaste();
 
     var openCount = 0;
+    var shownRows = 0;
     groups.forEach(function(g){
       var pendN = tallyStatus(g.items).pend;
+      // 대기 모드 — 방문·취소 행은 숨긴다. 그 시간대가 통째로 처리됐으면 헤더째 건너뛴다.
+      var rows = (viewMode === 'pending')
+        ? g.items.filter(function(it){ return it.status === 'pending'; })
+        : g.items;
+      if (viewMode === 'pending' && !rows.length) return;
       var shut = q ? false : isCollapsed(g.time, pendN);
       // 완료됐는데 아직 5초 유예 중이면, 유예가 끝나는 시점에 접히도록 타이머를 걸어둔다.
       // (직접 체크한 폰은 keepSlotOpenForId 가 이미 걸었고, 다른 폰·자동취소는 여기서 건다)
@@ -2166,10 +2187,17 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       sec.appendChild(head);
 
-      if (!shut) g.items.forEach(function(it){ sec.appendChild(rowEl(it)); });
+      if (!shut){ rows.forEach(function(it){ sec.appendChild(rowEl(it)); }); shownRows += rows.length; }
       list.appendChild(sec);
       openCount += shut ? 0 : 1;
     });
+
+    // 대기 모드인데 대기 중인 예약이 하나도 없으면 — 다 확인했다는 뜻
+    if (viewMode === 'pending' && !shownRows && !q){
+      list.innerHTML = '';
+      em.classList.remove('hide');
+      em.textContent = '대기 중인 예약이 없습니다\n모두 확인했어요';
+    }
 
     var foldBtnEl = document.getElementById('foldBtn');
     if (foldBtnEl) foldBtnEl.textContent = openCount ? '전체 접기' : '전체 펼치기';
@@ -2882,6 +2910,8 @@ window.dispatchEvent(new Event('fb-ready'));
   // 바뀐 행과 그 시간대 머리글만 손본다. 요소를 새로 만들지 않고 내용만 고친다.
   // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
   function patchStatus(it){
+    // 대기 모드에서는 방금 처리한 행이 목록에서 빠져야 하므로 부분 갱신을 포기하고 통째로 다시 그린다.
+    if (viewMode === 'pending') return false;
     var row = rowForId(it.id);
     if (!row) return false;
 
@@ -3599,6 +3629,25 @@ window.dispatchEvent(new Event('fb-ready'));
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
     collapseTimers = {};
   }
+  // 전체 / 대기 토글
+  var viewAllBtn = document.getElementById('viewAllBtn');
+  var viewPendBtn = document.getElementById('viewPendBtn');
+  function syncViewSeg(){
+    viewAllBtn.setAttribute('aria-pressed', String(viewMode === 'all'));
+    viewPendBtn.setAttribute('aria-pressed', String(viewMode === 'pending'));
+  }
+  function setViewMode(m){
+    if (viewMode === m) return;
+    viewMode = m;
+    try { localStorage.setItem('ix-view', m); } catch(e){}
+    syncViewSeg();
+    if (interactionActive()){ editing = null; openMenu = null; }
+    render();
+  }
+  viewAllBtn.addEventListener('click', function(){ setViewMode('all'); });
+  viewPendBtn.addEventListener('click', function(){ setViewMode('pending'); });
+  syncViewSeg();
+
   var foldBtn = document.getElementById('foldBtn');
   foldBtn.addEventListener('click', function(){
     if (!state || !state.items.length) return;
