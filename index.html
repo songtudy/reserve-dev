@@ -349,15 +349,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar button:active{background:var(--press)}
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
-  /* time group — 시간대마다 한 장짜리 슬래브 (카드 더미가 아니라 「명단」) */
-  .group{margin-top:14px}
+  /* time group */
+  .group{margin-top:9px}
 
   /* 시간바 — 구역 머리. 관통선 없이 시간 왼쪽·집계 오른쪽, 아래 얇은 선으로 구역을 앉힌다. */
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
-    width:calc(100% + 28px);margin:0 -14px;padding:10px 16px 9px;
+    width:calc(100% + 28px);margin:0 -14px;padding:6px 16px 6px;
     border:0;border-bottom:1px solid var(--line);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
@@ -369,7 +369,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
-  .gtime{font-size:19px;font-weight:700;letter-spacing:-.02em;color:var(--dim)}
+  .gtime{font-size:19px;font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--dim)}
   .gmeta{margin-left:auto;font-size:12px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:7px}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px;font-weight:600}
