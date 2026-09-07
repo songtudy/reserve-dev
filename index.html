@@ -463,13 +463,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .more svg{display:block}
   .more:active{background:var(--press)}
 
-  .row.arrived{background:var(--goBg)}
+  /* 방문/취소 = «행 전체를 색으로 칠하지» 않는다 (카드가 없어 색 띠가 줄에 쏟아진 것처럼 어색).
+     상태는 채운 원 체크 + 태그 + 흐린 이름 / (취소)취소선·반높이 로만. */
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
   .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
   .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
 
   /* 취소 = 서빙 중엔 죽은 정보. 반높이 한 줄 + 취소선. */
-  .row.cancelled{background:var(--warnBg)}
   .row.cancelled .main{min-height:0}
   .row.cancelled .info{padding-top:7px;padding-bottom:7px}
   .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600;
