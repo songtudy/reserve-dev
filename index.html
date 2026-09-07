@@ -377,8 +377,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px}
   .group.now .gtime{color:var(--waitBig)}
-  /* 「지금」 시간대 = 살아있는 구역. 행에 은은한 금색 웨이시 (레일도 카드도 아님). */
-  .group.now .row{background:var(--nowZone)}
   .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
@@ -415,6 +413,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     transition:.15s;
   }
   .check svg{display:block}
+  /* 직접 체크한 순간에만 — 채워지며 탁 튄다 (이 앱의 핵심 동작에 손맛). 로컬 체크만 이 클래스가 붙는다.
+     다른 폰 변경·최초 로딩은 통째 render 라 여기 안 옴. reduced-motion 에선 아래 블록이 죽인다. */
+  @keyframes checkpop{ 0%{transform:scale(.55)} 55%{transform:scale(1.16)} 100%{transform:scale(1)} }
+  .check.pop{animation:checkpop .26s cubic-bezier(.34,1.56,.64,1)}
   /* 누르는 요소에는 직접 지정한다. body 에만 걸면 아이폰에서 두 번 탭 판정이 남는다 */
   .main, .more, .ghead, .foot button, .menu button, .tools button, .nav button{
     touch-action:manipulation;
@@ -2938,8 +2940,16 @@ window.dispatchEvent(new Event('fb-ready'));
 
     row.className = 'row ' + it.status;
     var chk = row.querySelector('.check');
-    if (chk) chk.innerHTML = it.status === 'arrived' ? ICON_GO
-                           : it.status === 'cancelled' ? ICON_OFF : '';
+    if (chk){
+      chk.innerHTML = it.status === 'arrived' ? ICON_GO
+                    : it.status === 'cancelled' ? ICON_OFF : '';
+      // 「방문/취소로 넘어가는」 순간에만 팝 (체크 해제엔 안 함). 애니메이션 재시작 위해 리플로.
+      chk.classList.remove('pop');
+      if (it.status === 'arrived' || it.status === 'cancelled'){
+        void chk.offsetWidth;
+        chk.classList.add('pop');
+      }
+    }
     closeRowMenu();   // 부분 갱신이라 다른 행에 열려 있던 ⋯ 메뉴 DOM 이 남는다 — 지운다
     var info = row.querySelector('.info');
     var old = info.querySelector('.tag');
