@@ -369,12 +369,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   .chev svg{display:block;transform:rotate(90deg);transition:transform .15s}
   .group.shut .chev svg{transform:rotate(0)}
   .gtime{font-size:19px;font-weight:700;line-height:1;letter-spacing:-.02em;color:var(--dim)}
-  .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:6px;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.01em}
+  .gmeta{margin-left:auto;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.01em}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim)}
   /* 활성 구역 = 금색 시간 (하단바처럼 채움·배지 없이 색만으로). 왼쪽 레일의 대체. */
+  /* 「지금」만 금색. 완료 시간대도 --dim 유지 (색까지 흐리면 화면이 뿌예짐 — 완료는 오른쪽 N/M팀 숫자가 말한다) */
   .group.now .gtime{color:var(--waitBig)}
-  .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
