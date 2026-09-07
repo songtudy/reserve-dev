@@ -256,24 +256,34 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
-  /* 인라인 흐름 — 자리가 모자란 조각만 다음 줄로 넘어간다 */
-  .lead{display:block;position:relative;margin-top:8px;line-height:1.5;padding-right:88px}
+  /* 상단 요약 — 「17:00 예약 5팀」 한 줄 + 그 아래 인원 구성 칩 */
+  .lead{display:block;margin-top:11px}
   .lead.hide{display:none}
-  /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다. 늘 우상단 고정. */
-  .viewseg{position:absolute;right:0;top:-1px;display:inline-flex;
-    background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
-  .viewseg button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:700;
-    color:var(--dim);padding:6px 11px;cursor:pointer}
-  .viewseg button[aria-pressed="true"]{background:var(--panel2);color:var(--waitTx)}
-  .viewseg button:active{background:var(--press)}
-  /* 「12:00 예약」과 「3팀 2인 1팀…」 두 덩어리로 읽히게 여백을 나눈다 */
-  .slotlab{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-right:14px}
-  .slottime{font-size:22px;font-weight:800;color:var(--waitBig);letter-spacing:-.03em;margin-right:2px}
-  .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-right:1px}
-  /* 「남은 예약 없음」은 상태 설명이라 본문색. 초록은 옆의 방문 집계에만 쓴다 */
-  .leadmain.done{font-size:16px;font-weight:600;color:var(--text)}
-  /* 인원 요약은 「지금 …팀」 아랫줄로 내린다 (우상단 토글과 안 겹치게) */
-  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:4px}
+  .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
+  .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em;margin-right:8px}
+  .slotlab{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--dim);margin-right:8px}
+  .leadmain{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+  /* 「남은 예약 없음」도 같은 크기·색 — 상태 설명이라 초록 안 씀 */
+  .leadmain.done{font-size:15px;font-weight:700;color:var(--text)}
+  /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
+     iOS 세그먼트 컨트롤 꼴: 어두운 트랙 + 밝게 돋운 선택칸 → 「누를 수 있는 것」으로 읽힌다. */
+  .viewseg{
+    margin-left:auto;flex:0 0 auto;align-self:center;
+    display:inline-flex;gap:3px;padding:3px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  }
+  .viewseg button{
+    border:0;border-radius:7px;background:transparent;
+    font:inherit;font-size:12px;font-weight:700;color:var(--dim);
+    padding:6px 13px;cursor:pointer;transition:background .12s,color .12s;
+  }
+  .viewseg button[aria-pressed="true"]{
+    background:var(--panel2);color:var(--waitTx);
+    box-shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+  .viewseg button:active{opacity:.6}
+  /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
+  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
@@ -1124,12 +1134,14 @@ window.addEventListener('pageshow', remeasureSbcut);
       </div>
     </div>
     <div class="lead hide">
-      <span class="slottime num" id="slotTime"></span>
-      <span class="slotlab"></span>
-      <span class="leadmain num" id="leadMain"></span>
-      <div class="viewseg" role="group" aria-label="예약 표시">
-        <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
-        <button type="button" id="viewPendBtn" aria-pressed="false">대기</button>
+      <div class="leadrow">
+        <span class="slottime num" id="slotTime"></span>
+        <span class="slotlab"></span>
+        <span class="leadmain num" id="leadMain"></span>
+        <div class="viewseg" role="group" aria-label="예약 표시">
+          <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
+          <button type="button" id="viewPendBtn" aria-pressed="false">대기</button>
+        </div>
       </div>
       <span class="leadsub num" id="leadSub"></span>
     </div>
