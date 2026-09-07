@@ -4,12 +4,12 @@
      여기 적힌 건 스크립트가 돌기 전의 씨앗값(다크 = 대개 맞는 쪽)이고, 바로 아래 head 스크립트의
      setThemeChrome 이 저장된 테마로 곧바로 덮어쓴다 — 고정값으로 두면 이 인라인이
      스타일시트(html,body{background:var(--ink)})를 이겨 라이트에서 루트만 어둡게 남는다. -->
-<html lang="ko" style="background:#0f1319">
+<html lang="ko" style="background:#14161b">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow"><!-- 매장 내부용 — 검색 색인 차단 (robots.txt 와 함께) -->
-<meta name="theme-color" content="#0f1319">
+<meta name="theme-color" content="#14161b">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -53,7 +53,7 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#f4f2ec' : '#14161b';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   d.style.background = ink;
@@ -109,9 +109,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   :root{
     --radius:14px;
     /* 바탕 */
-    --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
-    --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
-    --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
+    --ink:#14161b;      --panel:#1b1e24;    --panel2:#24272e;
+    --line:#2b2e35;     --press:#2b333c;   --keyDn:#434e5c;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
+    --text:#eef0f1;     --dim:#8a9099;      --off:#666d78;
     --ph:#7b8695;
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
@@ -131,10 +131,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   html[data-theme="light"]{
-    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
-    --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
-    --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
-    --ph:#676f7d;
+    --ink:#f4f2ec;      --panel:#fdfcf9;    --panel2:#ece9e2;
+    --line:#e1ddd3;     --press:#eae6dd;   --keyDn:#d4cec1;
+    --text:#1b1e22;     --dim:#5f6067;      --off:#84837d;
+    --ph:#6b6c70;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
     --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
@@ -261,10 +261,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lead.hide{display:none}
   /* 「12:00 예약」과 「3팀 2인 1팀…」 두 덩어리로 읽히게 여백을 나눈다 */
   .slotlab{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--dim);margin-right:14px}
-  .slottime{font-size:22px;font-weight:800;color:var(--waitBig);letter-spacing:-.03em;margin-right:2px}
-  .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-right:1px}
+  .slottime{font-size:19px;font-weight:800;color:var(--waitBig);letter-spacing:-.03em;margin-right:2px}
+  .leadmain{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-right:1px}
   /* 「남은 예약 없음」은 상태 설명이라 본문색. 초록은 옆의 방문 집계에만 쓴다 */
-  .leadmain.done{font-size:16px;font-weight:600;color:var(--text)}
+  .leadmain.done{font-size:15px;font-weight:600;color:var(--text)}
   /* 인원 요약은 자리가 모자란 조각만 다음 줄로 내린다 */
   .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:inline}
   .leadsub .pc{white-space:nowrap}
@@ -323,7 +323,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
   /* time group */
-  .group{margin-top:10px}
+  .group{margin-top:6px}
 
   .ghead{
     position:sticky;top:0;z-index:10;
@@ -340,46 +340,42 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
-  /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
-  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
+  .gtime{font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
   .gline{flex:1;height:1px;background:var(--line)}
   .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px}
-  .group.now .gtime{color:var(--waitBig)}
+  .group.now .gtime{color:var(--waitTx)}
   .group.now .row{border-left-color:var(--waitBig)}
   .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
-  /* row */
+  /* row — 카드가 아니라 한 장짜리 명단. 시간대마다 --panel 슬래브, 행 사이는 헤어라인. */
   .row{
     display:flex;align-items:stretch;gap:0;
     background:var(--panel);
-    border:1px solid var(--line);
-    border-left:3px solid var(--line);
-    border-radius:var(--radius);
-    margin-bottom:8px;
-    overflow:hidden;
+    border-left:3px solid transparent;
+    border-bottom:1px solid var(--line);
     transition:border-color .15s,opacity .15s,background .15s;
   }
-  /* 눌리는 곳은 여기뿐. 60x60 이라 손가락에 넉넉하다 */
+  /* 눌리는 곳은 여기뿐. 왼쪽 52 칸이라 손가락에 넉넉하다 */
   .main{
-    width:60px;flex:0 0 auto;display:grid;place-items:center;
-    min-height:60px;cursor:pointer;padding:0;
-    background:none;border:0;border-right:1px solid var(--line);
+    width:52px;flex:0 0 auto;display:grid;place-items:center;
+    min-height:52px;cursor:pointer;padding:0;
+    background:none;border:0;
     color:inherit;font:inherit;
   }
   .main:active{background:var(--press)}
   .info{
-    flex:1;min-width:0;display:flex;align-items:center;gap:12px;
-    padding:14px 12px;
+    flex:1;min-width:0;display:flex;align-items:center;gap:10px;
+    padding:10px 12px 10px 2px;
   }
   /* min-width:0 이 없으면 긴 이름이 있을 때 행이 화면 밖으로 넘친다 */
   .rbody{flex:1;min-width:0;display:flex;flex-direction:column}
   .rtop{display:flex;align-items:stretch;min-width:0}
   .check{
-    width:28px;height:28px;border-radius:9px;flex:0 0 auto;
-    border:2.5px solid var(--off);
+    width:26px;height:26px;border-radius:8px;flex:0 0 auto;
+    border:2px solid var(--off);
     display:grid;place-items:center;line-height:0;color:transparent;
     transition:.15s;
   }
@@ -393,46 +389,57 @@ window.addEventListener('pageshow', remeasureSbcut);
   .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
   .memo{
     margin-top:2px;font-size:12px;font-weight:600;line-height:1.3;
-    color:var(--waitTx);text-align:left;
+    color:var(--dim);text-align:left;
     word-break:break-all;
   }
+  .memo::before{
+    content:"";display:inline-block;width:3px;height:3px;border-radius:50%;
+    background:var(--waitTx);vertical-align:middle;margin:0 6px 2px 1px;
+  }
   .row.arrived .memo, .row.cancelled .memo{color:var(--dim)}
+  .row.arrived .memo::before, .row.cancelled .memo::before{background:var(--off)}
   .erow.memorow{margin-top:6px}
   #addPanel .edit{padding:0}
   #addPanel h2{margin-bottom:12px}
   .name{
-    display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;
+    display:block;font-size:15px;font-weight:700;letter-spacing:-.01em;
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  /* 태그·인원칸·체크박스를 28px 한 줄에 맞춘다 */
+  /* 태그·인원칸·체크박스를 26px 한 줄에 맞춘다 */
   .tag{
-    height:28px;display:inline-flex;align-items:center;
-    font-size:12px;font-weight:800;letter-spacing:.04em;
-    padding:0 9px;border-radius:8px;flex:0 0 auto;white-space:nowrap;
+    height:26px;display:inline-flex;align-items:center;
+    font-size:11px;font-weight:800;letter-spacing:.02em;
+    padding:0 8px;border-radius:7px;flex:0 0 auto;white-space:nowrap;
   }
   .tag.arrived{background:var(--goTag);color:var(--goTagTx);-webkit-text-fill-color:var(--goTagTx)}
   .tag.cancelled{background:var(--warnTag);color:var(--warnTagTx);-webkit-text-fill-color:var(--warnTagTx)}
   .pax{
-    height:28px;display:inline-flex;align-items:center;
-    font-size:15px;font-weight:700;color:var(--text);
-    background:var(--panel2);border-radius:8px;padding:0 10px;flex:0 0 auto;
+    height:26px;display:inline-flex;align-items:center;
+    font-size:13px;font-weight:700;color:var(--text);
+    background:var(--panel2);border-radius:7px;padding:0 9px;flex:0 0 auto;
   }
   .more{
-    width:44px;flex:0 0 auto;border:0;border-left:1px solid var(--line);
+    width:42px;flex:0 0 auto;border:0;
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .more svg{display:block}
   .more:active{background:var(--press)}
 
+  /* 방문 = 지금 서빙 중인 팀. 이름은 안 흐린다. 초록 체크·초록 인원으로만 표시. */
   .row.arrived{border-left-color:var(--go);background:var(--goBg)}
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
-  .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
-  .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
+  .row.arrived .name{color:var(--text);-webkit-text-fill-color:var(--text);font-weight:600}
+  .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx);background:var(--goTag)}
 
+  /* 취소 = 서빙 중엔 죽은 정보. 반높이 한 줄로 접고 취소선. */
   .row.cancelled{border-left-color:var(--warn);background:var(--warnBg)}
-  .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600}
+  .row.cancelled .main{min-height:0}
+  .row.cancelled .info{padding-top:6px;padding-bottom:6px}
+  .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600;
+    font-size:13px;text-decoration:line-through;text-decoration-thickness:1px}
+  .row.cancelled .memo{display:none}
   .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax);background:var(--warnPaxBg)}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
 
@@ -4194,7 +4201,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.7.2<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v1.8.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
