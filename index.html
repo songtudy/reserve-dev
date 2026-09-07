@@ -352,26 +352,26 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* time group */
   .group{margin-top:9px}
 
-  /* 시간바 — 구역 머리. 셰브론은 체크칸 자리(왼쪽 거터), 시간은 이름줄에 맞춘다. 아래 얇은 선. */
+  /* 시간바 — 구역 머리. 셰브론+시간을 붙여 한 덩어리로 왼쪽에, 진행도는 오른쪽, 아래 얇은 선. */
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;align-items:center;gap:0;
-    width:calc(100% + 28px);margin:0 -14px;padding:6px 16px 6px 14px;
+    display:flex;align-items:center;gap:6px;
+    width:calc(100% + 28px);margin:0 -14px;padding:7px 16px 7px 15px;
     border:0;border-bottom:1px solid var(--line);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
   .chev{
     color:var(--off);flex:0 0 auto;
-    display:grid;place-items:center;width:54px;line-height:0;
+    display:grid;place-items:center;width:12px;height:19px;line-height:0;
   }
   .chev svg{display:block;transform:rotate(90deg);transition:transform .15s}
   .group.shut .chev svg{transform:rotate(0)}
-  .gtime{font-size:19px;font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--dim);margin-left:4px}
-  .gmeta{margin-left:auto;font-size:12px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:7px}
+  .gtime{font-size:19px;font-weight:700;line-height:1;letter-spacing:-.02em;color:var(--dim)}
+  .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:6px;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.01em}
   .gmeta b{font-weight:800;color:var(--text)}
-  .gbreak{color:var(--dim);font-size:12px;font-weight:600}
+  .gbreak{color:var(--dim)}
   /* 활성 구역 = 금색 시간 (하단바처럼 채움·배지 없이 색만으로). 왼쪽 레일의 대체. */
   .group.now .gtime{color:var(--waitBig)}
   .group.done .gtime{color:var(--off)}
@@ -2074,8 +2074,8 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시간대 머리글의 「n/n · 방문 n · 취소 n」 — render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
-    return '<b>' + (t.came + t.off) + '/' + t.total + '</b>'
-      + '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>';
+    // 시간바엔 진행도만 — 방문/취소 세부는 행 상태·상단 요약에 이미 있다.
+    return '<b>' + (t.came + t.off) + '</b>/' + t.total + '팀';
   }
 
   // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
