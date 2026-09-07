@@ -352,24 +352,23 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* time group */
   .group{margin-top:9px}
 
-  /* 시간바 — 구역 머리. 관통선 없이 시간 왼쪽·집계 오른쪽, 아래 얇은 선으로 구역을 앉힌다. */
+  /* 시간바 — 구역 머리. 셰브론은 체크칸 자리(왼쪽 거터), 시간은 이름줄에 맞춘다. 아래 얇은 선. */
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;align-items:center;gap:8px;
-    width:calc(100% + 28px);margin:0 -14px;padding:6px 16px 6px;
+    display:flex;align-items:center;gap:0;
+    width:calc(100% + 28px);margin:0 -14px;padding:6px 16px 6px 14px;
     border:0;border-bottom:1px solid var(--line);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
   .chev{
     color:var(--off);flex:0 0 auto;
-    display:grid;place-items:center;width:13px;height:13px;line-height:0;
-    transform:rotate(90deg);transition:transform .15s;
+    display:grid;place-items:center;width:54px;line-height:0;
   }
-  .chev svg{display:block}
-  .group.shut .chev{transform:rotate(0)}
-  .gtime{font-size:19px;font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--dim)}
+  .chev svg{display:block;transform:rotate(90deg);transition:transform .15s}
+  .group.shut .chev svg{transform:rotate(0)}
+  .gtime{font-size:19px;font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--dim);margin-left:4px}
   .gmeta{margin-left:auto;font-size:12px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:7px}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px;font-weight:600}
@@ -439,7 +438,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   #addPanel .edit{padding:0}
   #addPanel h2{margin-bottom:12px}
   .name{
-    display:block;font-size:16px;font-weight:700;letter-spacing:-.01em;
+    display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
@@ -452,8 +451,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .tag.arrived{background:var(--goTag);color:var(--goTagTx);-webkit-text-fill-color:var(--goTagTx)}
   .tag.cancelled{background:var(--warnTag);color:var(--warnTagTx);-webkit-text-fill-color:var(--warnTagTx)}
   .pax{
-    height:24px;display:inline-flex;align-items:center;
-    font-size:14px;font-weight:700;color:var(--text);
+    height:25px;display:inline-flex;align-items:center;
+    font-size:15px;font-weight:700;color:var(--text);
     background:var(--panel2);border-radius:7px;padding:0 9px;flex:0 0 auto;
   }
   .more{
