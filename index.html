@@ -599,22 +599,28 @@ window.addEventListener('pageshow', remeasureSbcut);
   .btn.ghost:active{background:var(--press)}
   textarea::placeholder{ color:var(--ph) }
 
-  /* footer — 앱 셸의 고정 항목. 스크롤은 위 .wrap 안에서만 일어난다 */
+  /* footer — 앱 셸의 고정 항목. 스크롤은 위 .wrap 안에서만. 툴바 꼴(아이콘+라벨, 테두리 없음). */
   .foot.hide{display:none}
   .foot{
     flex:0 0 auto;z-index:30;
     background:var(--ink);
     border-top:1px solid var(--line);
-    padding:9px 14px calc(9px + env(safe-area-inset-bottom));
+    padding:0 6px env(safe-area-inset-bottom);
   }
   .foot .inner{max-width:640px;margin:0 auto}
-  .frow{display:flex;gap:7px}
+  .frow{display:flex}
   .foot button{
-    flex:1;padding:12px 0;border-radius:11px;
-    border:1px solid var(--line);background:var(--panel);
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    flex:1;height:52px;border:0;background:transparent;cursor:pointer;
+    color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;
+    display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
-  .foot button:active{background:var(--press)}
+  .foot button svg{display:block}
+  .foot button:active{background:var(--press);color:var(--text)}
+  .foot button + button::before{
+    content:"";position:absolute;left:0;top:14px;bottom:14px;width:1px;background:var(--line);
+  }
+  .foldico{transition:transform .2s ease}
+  .foot button.expanded .foldico{transform:scaleY(-1)}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
@@ -1193,8 +1199,14 @@ window.addEventListener('pageshow', remeasureSbcut);
 <div class="foot hide">
   <div class="inner">
     <div class="frow">
-      <button id="foldBtn">전체 접기</button>
-      <button id="copyBtn">명단 복사</button>
+      <button id="copyBtn" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>명단 복사</span>
+      </button>
+      <button id="foldBtn" type="button">
+        <svg class="foldico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 L12 9 L16 5"/><path d="M8 19 L12 15 L16 19"/></svg>
+        <span class="foldlbl">전체 접기</span>
+      </button>
     </div>
   </div>
 </div>
@@ -2227,7 +2239,11 @@ window.dispatchEvent(new Event('fb-ready'));
     }
 
     var foldBtnEl = document.getElementById('foldBtn');
-    if (foldBtnEl) foldBtnEl.textContent = openCount ? '전체 접기' : '전체 펼치기';
+    if (foldBtnEl){
+      foldBtnEl.classList.toggle('expanded', !openCount);   // 펼치기 상태면 아이콘 뒤집기
+      var fl = foldBtnEl.querySelector('.foldlbl');
+      if (fl) fl.textContent = openCount ? '전체 접기' : '전체 펼치기';
+    }
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
     document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
