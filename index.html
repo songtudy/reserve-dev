@@ -349,8 +349,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar button:active{background:var(--press)}
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
-  /* time group */
-  .group{margin-top:10px}
+  /* time group — 시간대마다 한 장짜리 슬래브 (카드 더미가 아니라 「명단」) */
+  .group{margin-top:14px}
 
   .ghead{
     position:sticky;top:0;z-index:10;
@@ -378,34 +378,33 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
-  /* row */
+  /* row — 카드 아님. --panel 슬래브 위에 헤어라인으로 나뉜 행. 왼쪽 3px = 상태 레일. */
   .row{
     display:flex;align-items:stretch;gap:0;
     background:var(--panel);
-    border:1px solid var(--line);
-    border-left:3px solid var(--line);
-    border-radius:var(--radius);
-    margin-bottom:8px;
-    overflow:hidden;
+    border-left:3px solid transparent;
+    border-bottom:1px solid var(--line);
     transition:border-color .15s,opacity .15s,background .15s;
   }
-  /* 눌리는 곳은 여기뿐. 60x60 이라 손가락에 넉넉하다 */
+  .ghead + .row{border-top-left-radius:13px;border-top-right-radius:13px}
+  .group .row:last-child{border-bottom:0;border-bottom-left-radius:13px;border-bottom-right-radius:13px}
+  /* 눌리는 곳은 여기뿐. 왼쪽 54칸이라 손가락에 넉넉하다 */
   .main{
-    width:60px;flex:0 0 auto;display:grid;place-items:center;
-    min-height:60px;cursor:pointer;padding:0;
-    background:none;border:0;border-right:1px solid var(--line);
+    width:54px;flex:0 0 auto;display:grid;place-items:center;
+    min-height:52px;cursor:pointer;padding:0;
+    background:none;border:0;
     color:inherit;font:inherit;
   }
   .main:active{background:var(--press)}
   .info{
-    flex:1;min-width:0;display:flex;align-items:center;gap:12px;
-    padding:14px 12px;
+    flex:1;min-width:0;display:flex;align-items:center;gap:10px;
+    padding:12px 12px 12px 4px;
   }
   /* min-width:0 이 없으면 긴 이름이 있을 때 행이 화면 밖으로 넘친다 */
   .rbody{flex:1;min-width:0;display:flex;flex-direction:column}
   .rtop{display:flex;align-items:stretch;min-width:0}
   .check{
-    width:28px;height:28px;border-radius:9px;flex:0 0 auto;
+    width:26px;height:26px;border-radius:8px;flex:0 0 auto;
     border:2.5px solid var(--off);
     display:grid;place-items:center;line-height:0;color:transparent;
     transition:.15s;
@@ -428,7 +427,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   #addPanel .edit{padding:0}
   #addPanel h2{margin-bottom:12px}
   .name{
-    display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;
+    display:block;font-size:16px;font-weight:700;letter-spacing:-.01em;
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
@@ -446,7 +445,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--panel2);border-radius:8px;padding:0 10px;flex:0 0 auto;
   }
   .more{
-    width:44px;flex:0 0 auto;border:0;border-left:1px solid var(--line);
+    width:42px;flex:0 0 auto;border:0;
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
@@ -458,8 +457,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
   .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
 
+  /* 취소 = 서빙 중엔 죽은 정보. 반높이 한 줄 + 취소선. */
   .row.cancelled{border-left-color:var(--warn);background:var(--warnBg)}
-  .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600}
+  .row.cancelled .main{min-height:0}
+  .row.cancelled .info{padding-top:7px;padding-bottom:7px}
+  .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600;
+    font-size:13px;text-decoration:line-through;text-decoration-thickness:1px}
+  .row.cancelled .memo{display:none}
   .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax);background:var(--warnPaxBg)}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
 
