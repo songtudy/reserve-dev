@@ -371,7 +371,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .gtime{font-size:19px;font-weight:700;line-height:1;letter-spacing:-.02em;color:var(--dim)}
   .gmeta{margin-left:auto;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.01em}
   .gmeta b{font-weight:800;color:var(--text)}
-  .gbreak{color:var(--dim)}
+  .gbreak{color:var(--dim);margin-left:7px}
   /* 활성 구역 = 금색 시간 (하단바처럼 채움·배지 없이 색만으로). 왼쪽 레일의 대체. */
   /* 「지금」만 금색. 완료 시간대도 --dim 유지 (색까지 흐리면 화면이 뿌예짐 — 완료는 오른쪽 N/M팀 숫자가 말한다) */
   .group.now .gtime{color:var(--waitBig)}
@@ -2074,8 +2074,8 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시간대 머리글의 「n/n · 방문 n · 취소 n」 — render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
-    // 시간바엔 진행도만 — 방문/취소 세부는 행 상태·상단 요약에 이미 있다.
-    return '<b>' + (t.came + t.off) + '</b>/' + t.total + '팀';
+    return '<b>' + (t.came + t.off) + '/' + t.total + '</b>'
+      + '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>';
   }
 
   // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
