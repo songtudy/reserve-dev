@@ -352,28 +352,35 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* time group — 시간대마다 한 장짜리 슬래브 (카드 더미가 아니라 「명단」) */
   .group{margin-top:14px}
 
+  /* 시간바 — 구역 머리. 관통선 없이 시간 왼쪽·집계 오른쪽, 아래 얇은 선으로 구역을 앉힌다. */
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;align-items:center;gap:7px;
-    width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 8px;
-    border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
+    display:flex;align-items:center;gap:8px;
+    width:calc(100% + 28px);margin:0 -14px;padding:10px 16px 9px;
+    border:0;border-bottom:1px solid var(--line);
+    font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
   .chev{
-    color:var(--dim);flex:0 0 auto;
-    display:grid;place-items:center;width:14px;height:14px;line-height:0;
+    color:var(--off);flex:0 0 auto;
+    display:grid;place-items:center;width:13px;height:13px;line-height:0;
     transform:rotate(90deg);transition:transform .15s;
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
-  /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
-  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
-  .gline{flex:1;height:1px;background:var(--line)}
-  .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
+  .gtime{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
+  .gmeta{margin-left:auto;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px}
   .group.now .gtime{color:var(--waitBig)}
+  /* 「지금」 배지 — 왼쪽 색 레일을 뺀 대신, 활성 구역을 시간바에서 표시 */
+  .group.now .gtime::after{
+    content:"지금";font-size:10px;font-weight:800;letter-spacing:.06em;
+    color:var(--onWait);background:var(--wait);
+    padding:2px 6px 1px;border-radius:4px;margin-left:8px;
+    position:relative;top:-2px;
+  }
   .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
@@ -2217,7 +2224,6 @@ window.dispatchEvent(new Event('fb-ready'));
       head.type = 'button';
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
-        + '<span class="gline"></span>'
         + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(e){
