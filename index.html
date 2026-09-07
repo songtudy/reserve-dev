@@ -378,16 +378,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
-  /* row — 카드 아님. --panel 슬래브 위에 헤어라인으로 나뉜 행. 왼쪽 3px = 상태 레일. */
+  /* row — 카드도 슬래브도 아님. 바탕 위에 헤어라인으로만 나뉜 「명단」. 왼쪽 3px = 상태 레일. */
   .row{
     display:flex;align-items:stretch;gap:0;
-    background:var(--panel);
     border-left:3px solid transparent;
     border-bottom:1px solid var(--line);
     transition:border-color .15s,opacity .15s,background .15s;
   }
-  .ghead + .row{border-top-left-radius:13px;border-top-right-radius:13px}
-  .group .row:last-child{border-bottom:0;border-bottom-left-radius:13px;border-bottom-right-radius:13px}
   /* 눌리는 곳은 여기뿐. 왼쪽 54칸이라 손가락에 넉넉하다 */
   .main{
     width:54px;flex:0 0 auto;display:grid;place-items:center;
