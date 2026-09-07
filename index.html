@@ -352,13 +352,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* time group */
   .group{margin-top:9px}
 
-  /* 시간바 — 구역 머리. 셰브론+시간 왼쪽, 관통선, 진행도 오른쪽 (원본 구조, 높이만 축소). */
+  /* 시간바 — 구역 머리. 셰브론+시간 왼쪽, 진행도 오른쪽, 아래 얇은 선. */
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
     display:flex;align-items:center;gap:6px;
     width:calc(100% + 28px);margin:0 -14px;padding:7px 16px 7px 15px;
-    border:0;
+    border:0;border-bottom:1px solid var(--line);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
@@ -368,9 +368,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .chev svg{display:block;transform:rotate(90deg);transition:transform .15s}
   .group.shut .chev svg{transform:rotate(0)}
-  .gtime{font-size:19px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--dim)}
-  .gline{flex:1;height:1px;background:var(--line);margin:0 11px}
-  .gmeta{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.01em}
+  .gtime{font-size:19px;font-weight:700;line-height:1;letter-spacing:-.02em;color:var(--dim)}
+  .gmeta{margin-left:auto;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.01em}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);margin-left:7px}
   /* 활성 구역 = 금색 시간 (하단바처럼 채움·배지 없이 색만으로). 왼쪽 레일의 대체. */
@@ -2218,7 +2217,6 @@ window.dispatchEvent(new Event('fb-ready'));
       head.type = 'button';
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
-        + '<span class="gline"></span>'
         + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(e){
