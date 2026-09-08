@@ -4,12 +4,12 @@
      여기 적힌 건 스크립트가 돌기 전의 씨앗값(다크 = 대개 맞는 쪽)이고, 바로 아래 head 스크립트의
      setThemeChrome 이 저장된 테마로 곧바로 덮어쓴다 — 고정값으로 두면 이 인라인이
      스타일시트(html,body{background:var(--ink)})를 이겨 라이트에서 루트만 어둡게 남는다. -->
-<html lang="ko" style="background:#0b0f12">
+<html lang="ko" style="background:#0f1319">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow"><!-- 매장 내부용 — 검색 색인 차단 (robots.txt 와 함께) -->
-<meta name="theme-color" content="#0b0f12">
+<meta name="theme-color" content="#0f1319">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -53,7 +53,7 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f5f4f0' : '#0b0f12';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   d.style.background = ink;
@@ -109,21 +109,21 @@ window.addEventListener('pageshow', remeasureSbcut);
   :root{
     --radius:14px;
     /* 바탕 */
-    --ink:#0b0f12;      --panel:#11171b;    --panel2:#1a2126;
-    --line:#252d32;     --press:#20292f;   --keyDn:#435158;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
-    --text:#f4f2ed;     --dim:#929ca1;      --off:#647077;
-    --ph:#7f8a90;
-    --scrim:rgba(3,6,8,.78);   --scrimLite:rgba(3,6,8,.66);
-    /* 익순이 시그니처 골드. 넓은 면을 칠하지 않고 시간·인원 같은 핵심 숫자에만 쓴다. */
-    --wait:#f1b63f;     --waitTx:#f2bd50;  --waitBig:#ffc95c;
-    --onWait:#241700;   --mark:#45330c;
+    --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
+    --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
+    --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
+    --ph:#7b8695;
+    --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
+    /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
+    --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
+    --onWait:#241a05;   --mark:#463a13;
     /* 방문 — 초록 */
-    --go:#63b38a;       --goTx:#79c79f;      --onGo:#071f16;
-    --goBg:#151c19;     --goTag:#1b2b24;
-    --goTagTx:#7dc9a2;  --goName:#a5b4ac;
+    --go:#5fb08a;       --goTx:var(--go);      --onGo:#08241a;
+    --goBg:#141d19;     --goTag:#1b2f27;
+    --goTagTx:#7fc9a5;  --goName:#94a49c;
     /* 취소·경고 — 붉은색 */
-    --warn:#cf7168;     --warnBg:#1c1516;   --warnTag:#322020;  --warnTagTx:#da8e86;
-    --warnName:#bf9994; --warnPax:#ad8580;  --warnPaxBg:#251a1b;
+    --warn:#c9736a;     --warnBg:#1a1618;   --warnTag:#332323;  --warnTagTx:#d2938c;
+    --warnName:#b8938e; --warnPax:#a8837e;  --warnPaxBg:#241c1d;
     /* 초기화 버튼 글자 — 아래 바탕(--warnBg)에서도, 그 위로 --warn 이 42% 차올라도 읽힌다
        (9.06:1 / 4.68:1). --warnTagTx 는 채움 위에서 3.65:1 로 묻혔다. --onWait·--onGo 와 같은 작명 */
     --onWarn:#e0aca6;
@@ -131,15 +131,16 @@ window.addEventListener('pageshow', remeasureSbcut);
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   html[data-theme="light"]{
-    --ink:#f5f4f0;      --panel:#fffefa;    --panel2:#ececea;
-    --line:#dcddd8;     --press:#e5e6e1;   --keyDn:#ced1cc;
-    --text:#181c1e;     --dim:#616b6f;      --off:#879095;
-    --ph:#70797d;
+    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
+    --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
+    --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
+    --ph:#676f7d;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
-    --wait:#ad8032;     --waitTx:#7b591c;   --waitBig:#94691f;
-    --onWait:#ffffff;   --mark:#eee4cf;
-    --go:#347f61;       --goTx:#286c51;     --onGo:#ffffff;
-    --goBg:#eff7f2;     --goTag:#dfeee6;
+    /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
+    --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
+    --onWait:#2a1d02;   --mark:#fdf1d8;
+    --go:#2f9c6e;       --goTx:#1d7a54;     --onGo:#ffffff;
+    --goBg:#eefaf3;     --goTag:#d9f2e5;
     --goTagTx:#176b49;  --goName:#4a6a5b;
     --warn:#b43f36;     --warnBg:#fdf1ef;   --warnTag:#fadedb;  --warnTagTx:#a2463c;
     --warnName:#855c55; --warnPax:#7a4f48;  --warnPaxBg:#f6e7e5;
@@ -197,13 +198,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* header */
   header{
     flex:0 0 auto;z-index:20;
-    width:100%;max-width:640px;margin:0 auto;
     background:var(--ink);
-    border-bottom:0;
-    padding:calc(env(safe-area-inset-top) + 8px) 14px 0;
+    border-bottom:1px solid var(--line);
+    padding:calc(env(safe-area-inset-top) + 12px) 14px 8px;
   }
-  .toprow{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
-  .nav{display:flex;align-items:center;gap:0;margin-left:-10px;min-width:40px}
+  .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
+  .nav{display:flex;align-items:center;gap:0;margin-left:-10px;min-width:0}
   .nav button{
     width:40px;height:40px;flex:0 0 auto;padding:0;
     display:grid;place-items:center;
@@ -214,16 +214,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   .nav button:active{background:var(--press)}
   .nav button:disabled{opacity:.22}
   .date{
-    position:absolute;left:50%;transform:translateX(-50%);
-    max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    font-size:15px;color:var(--text);font-weight:700;letter-spacing:-.01em;
+    min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:15px;color:var(--text);font-weight:600;letter-spacing:.01em;
   }
   .dayprog{
-    flex:0 0 auto;display:flex;align-items:center;line-height:1;
-    margin-left:auto;font-size:15px;font-weight:850;color:var(--waitTx);
-    background:transparent;border:0;padding:3px 0;
+    display:flex;align-items:center;line-height:1;
+    font-size:14px;font-weight:800;color:var(--text);
+    background:var(--panel);border:1px solid var(--line);
+    padding:5px 10px;border-radius:8px;
   }
-  .dayprog.full{color:var(--goTx)}
+  .dayprog.full{color:var(--goTx);border-color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   .tools button.off{visibility:hidden;pointer-events:none}
   .tools button{
@@ -242,12 +242,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 실사용이 아닌 곳(테스트·로컬·복사본)에서만 뜨는 빨간 경고 배지.
      실DB 격리는 computeDev 라우팅이 담당 — 이건 "실사용 아님" 을 못 놓치게 하는 표시. */
   .devtag{
-    flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;
-    padding:0;background:transparent;color:#d88882;
-    font-size:10px;font-weight:800;letter-spacing:.06em;line-height:1;
-    text-transform:uppercase;
+    flex:0 0 auto;padding:5px 11px;border-radius:7px;
+    background:#e5484d;color:#fff;
+    font-size:13px;font-weight:800;letter-spacing:.01em;line-height:1.2;
   }
-  .devtag::before{content:"";width:5px;height:5px;border-radius:50%;background:#e45d55}
   .offtag{
     display:none;align-items:center;flex:0 0 auto;
     padding:4px 9px;border-radius:8px;
@@ -258,49 +256,48 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
-  /* 상단 요약 — 네비게이션 헤더와 분리된 하나의 정보 면. */
-  .lead{display:block;margin:3px -14px 0;padding:9px 14px 10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel)}
+  /* 상단 요약 — 「17:00 예약 5팀」 한 줄 + 그 아래 인원 구성 칩 */
+  .lead{display:block;margin-top:11px}
   .lead.hide{display:none}
-  .leadrow{display:flex;align-items:center;gap:0;min-height:28px}
-  .leadtail{display:flex;align-items:center;gap:10px;margin-top:4px;min-height:29px}
-  .slotlab{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--dim);margin-right:7px}
-  .slottime{font-size:18px;font-weight:850;color:var(--waitBig);letter-spacing:-.025em;margin-right:6px}
-  .leadmain{font-size:13px;font-weight:750;color:var(--text);letter-spacing:-.01em}
+  .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
+  .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em;margin-right:8px}
+  .slotlab{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--dim);margin-right:8px}
+  .leadmain{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
   /* 「남은 예약 없음」도 같은 크기·색 — 상태 설명이라 초록 안 씀 */
   .leadmain.done{font-size:15px;font-weight:700;color:var(--text)}
   /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      iOS 세그먼트 컨트롤 꼴: 어두운 트랙 + 밝게 돋운 선택칸 → 「누를 수 있는 것」으로 읽힌다. */
   .viewseg{
     margin-left:auto;flex:0 0 auto;align-self:center;
-    display:inline-flex;gap:2px;padding:2px;
-    background:var(--ink);border:1px solid var(--line);border-radius:9px;
+    display:inline-flex;gap:3px;padding:3px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
   }
   .viewseg button{
-    min-width:45px;border:0;border-radius:6px;background:transparent;
+    border:0;border-radius:7px;background:transparent;
     font:inherit;font-size:12px;font-weight:700;color:var(--dim);
-    padding:5px 10px;cursor:pointer;transition:background .12s,color .12s;
+    padding:6px 13px;cursor:pointer;transition:background .12s,color .12s;
   }
   .viewseg button[aria-pressed="true"]{
-    background:var(--panel2);color:var(--text);
-    box-shadow:0 1px 2px rgba(0,0,0,.18);
+    background:var(--panel2);color:var(--waitTx);
+    box-shadow:0 1px 2px rgba(0,0,0,.3);
   }
   .viewseg button:active{opacity:.6}
   /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
-  .leadsub{font-size:12px;font-weight:600;color:var(--dim);display:block;min-width:0}
+  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
-  /* 인원 구성은 칩 더미 대신 한 줄 요약으로 두어 목록 높이를 돌려준다. */
-  .leadsub.comp{display:flex;flex:1;flex-wrap:wrap;column-gap:16px;row-gap:3px;min-height:24px}
+  /* 대기 팀의 「인원 구성」 — 줄글이 아니라 칩. 테이블 미리 빼는 데 쓰는 핵심 정보라
+     낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다. 개수만 금색으로 도드라지게. */
+  .leadsub.comp{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
   .leadsub.comp .pc{
-    display:inline-flex;align-items:center;
-    background:transparent;border:0;border-radius:0;
-    padding:0;color:var(--dim);
+    display:inline-block;
+    background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+    padding:4px 9px;font-size:13px;font-weight:700;color:var(--text);
   }
-  .leadsub.comp .party-size{font-size:17px;line-height:22px;color:var(--waitBig);font-weight:850;letter-spacing:-.025em}
-  .leadsub.comp .party-count{margin-left:4px;font-size:13px;color:var(--text);font-weight:750}
+  .leadsub.comp .pc b{color:var(--waitTx);font-weight:800;margin:0 1px 0 5px}
 
   /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 띠 자체가 「업데이트」 버튼이다 (누르면 새로 불러옴).
      하단에 별도 새로고침 버튼은 없앴다. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
@@ -352,67 +349,65 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar button:active{background:var(--press)}
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
-  /* time group — 상자나 긴 선 대신 얇은 평면형 시간바로 단락만 나눈다. */
-  .group{margin-top:6px}
-  .group:first-child{margin-top:4px}
+  /* time group — 시간대마다 한 장짜리 슬래브 (카드 더미가 아니라 「명단」) */
+  .group{margin-top:14px}
 
   .ghead{
     position:sticky;top:0;z-index:10;
-    background:var(--panel);
-    display:flex;align-items:center;gap:8px;
-    width:calc(100% + 28px);min-height:38px;margin:0 -14px;padding:7px 14px;
-    border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-    font:inherit;color:inherit;text-align:left;cursor:pointer;
+    background:var(--ink);
+    display:flex;align-items:center;gap:7px;
+    width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 8px;
+    border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
-  .ghead::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:transparent}
-  .group.now .ghead::before{background:var(--wait)}
   .ghead:active{background:var(--press)}
   .chev{
-    color:var(--off);flex:0 0 auto;
-    display:grid;place-items:center;width:18px;height:18px;line-height:0;
+    color:var(--dim);flex:0 0 auto;
+    display:grid;place-items:center;width:14px;height:14px;line-height:0;
     transform:rotate(90deg);transition:transform .15s;
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
-  .gtime{font-size:17px;font-weight:850;letter-spacing:-.025em;color:var(--dim)}
-  .gline{display:none}
-  .gmeta{margin-left:auto;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px;white-space:nowrap}
+  /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
+  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
+  .gline{flex:1;height:1px;background:var(--line)}
+  .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
   .gmeta b{font-weight:800;color:var(--text)}
   .gbreak{color:var(--dim);font-size:12px}
   .group.now .gtime{color:var(--waitBig)}
   .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
-  /* row — 왼쪽 체크와 오른쪽 메뉴 사이에서 이름 폭을 최대한 확보한 평면 명단. */
+  /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
+     (체크 칸 54px 다음부터 그어 이름줄에 맞춘다). 상태는 체크·태그·옅은 배경으로만. */
   .row{
     position:relative;
     display:flex;align-items:stretch;gap:0;
     transition:opacity .15s,background .15s;
   }
   .row + .row::before{
-    content:"";position:absolute;left:46px;right:0;top:-1px;height:1px;
+    content:"";position:absolute;left:54px;right:0;top:-1px;height:1px;
     background:var(--line);
   }
-  /* 명단은 한 줄 54px. 한 손 터치와 한 화면 정보량의 균형점이다. */
+  /* 눌리는 곳은 여기뿐. 왼쪽 54칸이라 손가락에 넉넉하다 */
   .main{
-    width:46px;flex:0 0 auto;display:grid;place-items:center;
+    width:54px;flex:0 0 auto;display:grid;place-items:center;
     min-height:54px;cursor:pointer;padding:0;
     background:none;border:0;
     color:inherit;font:inherit;
   }
   .main:active{background:var(--press)}
   .info{
-    flex:1;min-width:0;display:flex;align-items:center;gap:7px;
-    padding:12px 5px 12px 2px;
+    flex:1;min-width:0;display:flex;align-items:center;gap:10px;
+    padding:13px 12px 13px 4px;
   }
   /* min-width:0 이 없으면 긴 이름이 있을 때 행이 화면 밖으로 넘친다 */
   .rbody{flex:1;min-width:0;display:flex;flex-direction:column}
   .rtop{display:flex;align-items:stretch;min-width:0}
-  /* 체크 = 작업 체크로 즉시 인지되는 작은 둥근 네모.
-     완전한 원보다 명단과 잘 맞고, 각진 네모보다 손가락 터치에 부드럽다. */
+  /* 체크 = 동그라미. 카드 없는 평평한 목록엔 채운 «사각형»이 어색해서 원으로.
+     대기 = 얇은 테두리 / 방문 = 초록 채움 + 흰 체크 (미리 알림·투두앱 관습). */
   .check{
-    width:24px;height:24px;border-radius:5px;flex:0 0 auto;
-    border:1.6px solid var(--off);
+    width:24px;height:24px;border-radius:50%;flex:0 0 auto;
+    border:2px solid var(--off);
     display:grid;place-items:center;line-height:0;color:transparent;
     transition:.15s;
   }
@@ -443,22 +438,22 @@ window.addEventListener('pageshow', remeasureSbcut);
   #addPanel .edit{padding:0}
   #addPanel h2{margin-bottom:12px}
   .name{
-    display:block;font-size:16px;font-weight:720;letter-spacing:-.016em;
+    display:block;font-size:16px;font-weight:700;letter-spacing:-.01em;
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  /* 상태는 색면이 아니라 짧은 글자로, 인원은 숫자로만 보여 칩 과잉을 피한다. */
+  /* 태그·인원칸을 체크(24)와 한 줄에 맞춘다 */
   .tag{
-    height:22px;display:inline-flex;align-items:center;
-    font-size:11px;font-weight:800;letter-spacing:.01em;
-    padding:0 2px;border-radius:0;flex:0 0 auto;white-space:nowrap;
+    height:24px;display:inline-flex;align-items:center;
+    font-size:11px;font-weight:800;letter-spacing:.03em;
+    padding:0 8px;border-radius:7px;flex:0 0 auto;white-space:nowrap;
   }
-  .tag.arrived{background:transparent;color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
-  .tag.cancelled{background:transparent;color:var(--warnTagTx);-webkit-text-fill-color:var(--warnTagTx)}
+  .tag.arrived{background:var(--goTag);color:var(--goTagTx);-webkit-text-fill-color:var(--goTagTx)}
+  .tag.cancelled{background:var(--warnTag);color:var(--warnTagTx);-webkit-text-fill-color:var(--warnTagTx)}
   .pax{
-    height:22px;display:inline-flex;align-items:center;
-    font-size:13px;font-weight:700;color:var(--text);
-    background:transparent;border-radius:0;padding:0 2px;flex:0 0 auto;
+    height:24px;display:inline-flex;align-items:center;
+    font-size:14px;font-weight:700;color:var(--text);
+    background:var(--panel2);border-radius:7px;padding:0 9px;flex:0 0 auto;
   }
   .more{
     width:42px;flex:0 0 auto;border:0;
@@ -472,15 +467,15 @@ window.addEventListener('pageshow', remeasureSbcut);
      상태는 채운 원 체크 + 태그 + 흐린 이름 / (취소)취소선·반높이 로만. */
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
   .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
-  .row.arrived .pax{color:var(--dim);-webkit-text-fill-color:var(--dim)}
+  .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
 
   /* 취소 = 서빙 중엔 죽은 정보. 반높이 한 줄 + 취소선. */
   .row.cancelled .main{min-height:0}
-  .row.cancelled .info{padding-top:8px;padding-bottom:8px}
+  .row.cancelled .info{padding-top:7px;padding-bottom:7px}
   .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600;
     font-size:13px;text-decoration:line-through;text-decoration-thickness:1px}
   .row.cancelled .memo{display:none}
-  .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax);background:transparent}
+  .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax);background:var(--warnPaxBg)}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
 
 
@@ -615,13 +610,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   .foot .inner{max-width:640px;margin:0 auto}
   .frow{display:flex}
   .foot button{
-    flex:1;height:50px;border:0;background:transparent;cursor:pointer;
+    flex:1;height:52px;border:0;background:transparent;cursor:pointer;
     color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;
     display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
   .foot button svg{display:block}
   .foot button:active{background:var(--press);color:var(--text)}
-  .foot button + button::before{display:none}
+  .foot button + button::before{
+    content:"";position:absolute;left:0;top:14px;bottom:14px;width:1px;background:var(--line);
+  }
   .foldico{transition:transform .2s ease}
   .foot button.expanded .foldico{transform:scaleY(-1)}
 
@@ -1147,8 +1144,9 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="date num" id="dateLabel"></span>
       </div>
       <div class="tools">
+        <span class="dayprog num hide" id="dayProg"></span>
         <span class="offtag">연결 안 됨</span>
-        <span class="devtag hide" id="devTag">TEST</span>
+        <span class="devtag hide" id="devTag">테스트</span>
         <button type="button" id="searchBtn" class="off" aria-label="이름 검색">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
             <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/>
@@ -1158,18 +1156,15 @@ window.addEventListener('pageshow', remeasureSbcut);
     </div>
     <div class="lead hide">
       <div class="leadrow">
-        <span class="slotlab"></span>
         <span class="slottime num" id="slotTime"></span>
+        <span class="slotlab"></span>
         <span class="leadmain num" id="leadMain"></span>
-        <span class="dayprog num hide" id="dayProg"></span>
-      </div>
-      <div class="leadtail">
-        <span class="leadsub num" id="leadSub"></span>
         <div class="viewseg" role="group" aria-label="예약 표시">
           <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
           <button type="button" id="viewPendBtn" aria-pressed="false">대기</button>
         </div>
       </div>
+      <span class="leadsub num" id="leadSub"></span>
     </div>
   </header>
 
@@ -1209,7 +1204,7 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span>명단 복사</span>
       </button>
       <button id="foldBtn" type="button">
-        <svg class="foldico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h8M4 12h8M4 17h8"/><path d="M18 17V7M15 10l3-3 3 3"/></svg>
+        <svg class="foldico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 L12 9 L16 5"/><path d="M8 19 L12 15 L16 19"/></svg>
         <span class="foldlbl">전체 접기</span>
       </button>
     </div>
@@ -1370,13 +1365,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-// TEST BUILD: 이 파일은 주소와 무관하게 roster-dev 만 사용한다.
-// 실배포 경로에 잘못 올려도 실명단(roster)으로 전환되지 않도록 의도적으로 고정한다.
-// (아래 IIFE 의 computeDev 와 같은 판정 — 둘 다 true 여야 함)
-const FORCE_TEST_BUILD = true;
-const DEV = FORCE_TEST_BUILD || !(location.hostname === 'songtudy.github.io'
+// dev/prod 판정 — 실제 배포 주소일 때만 prod, 그 외 전부 dev(roster-dev).
+// 실배포: songtudy.github.io/reserve/   테스트: songtudy.github.io/reserve-dev/
+// localhost·파일·미리보기·폴더 복사본·남의 fork = 전부 dev. 실명단을 건드리지 않는다.
+// (아래 IIFE 의 computeDev 와 같은 판정 — 둘 다 고쳐야 함)
+const DEV = !(location.hostname === 'songtudy.github.io'
   && /^\/reserve(\/|$)/.test(location.pathname));
-const ROOT = 'roster-dev';
+const ROOT = DEV ? 'roster-dev' : 'roster';
 // Firebase 규칙이 허용하는 명단 영역 안에 변경 내역 전용 가지를 둔다.
 const LOGROOT = ROOT + '/__logs__';
 // 예약 id 를 Firebase 키로 (id 엔 ':' '|' 가, 이름엔 '.' 이 들어갈 수 있어 해시한다)
@@ -1475,11 +1470,10 @@ window.dispatchEvent(new Event('fb-ready'));
 (function(){
   'use strict';
 
-  // TEST BUILD: 주소와 무관하게 개발 데이터 영역만 쓴다.
+  // dev/prod 판정 — 실제 배포(songtudy.github.io/reserve/) 일 때만 prod, 그 외 전부 dev.
   // 모듈 스크립트의 DEV 와 반드시 같은 판정 (둘 다 고쳐야 함). localStorage 스코프만 여기서 분리.
-  var FORCE_TEST_BUILD = true;
   function computeDev(host, path){
-    return FORCE_TEST_BUILD || !(host === 'songtudy.github.io' && /^\/reserve(\/|$)/.test(path));
+    return !(host === 'songtudy.github.io' && /^\/reserve(\/|$)/.test(path));
   }
   var IS_DEV = computeDev(location.hostname, location.pathname);
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
@@ -2077,33 +2071,11 @@ window.dispatchEvent(new Event('fb-ready'));
     if (t.off) out.push('<span class="pc tally-off">취소 ' + t.off + '</span>');
     return out.join('<span class="pcsep"> · </span>');
   }
-
-  // 다음 시간대의 테이블 준비 수. 인원 규모를 먼저, 필요한 테이블 수를 바로 뒤에 둔다.
-  function partyBreakdownHtml(items){
-    var byPax = {};
-    (items || []).forEach(function(x){
-      var pax = Number(x.pax);
-      if (!isFinite(pax) || pax <= 0) return;
-      byPax[pax] = (byPax[pax] || 0) + 1;
-    });
-    return Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
-      .map(function(p){
-        return '<span class="pc"><b class="party-size">' + p + '인</b>'
-          + '<span class="party-count">' + byPax[p] + '팀</span></span>';
-      }).join('');
-  }
   // 시간대 머리글의 「n/n · 방문 n · 취소 n」 — render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
     return '<b>' + (t.came + t.off) + '/' + t.total + '</b>'
       + '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>';
-  }
-
-  // 시간바 전체가 접기 버튼이므로 시간·처리량·상태를 한 번에 읽어 준다.
-  function slotHeaderAriaLabel(time, items, shut){
-    var t = tallyStatus(items);
-    return time + ', ' + (t.came + t.off) + '/' + t.total + ' 처리, 방문 ' + t.came
-      + (t.off ? ', 취소 ' + t.off : '') + ', ' + (shut ? '접힘' : '펼쳐짐');
   }
 
   // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
@@ -2126,11 +2098,15 @@ window.dispatchEvent(new Event('fb-ready'));
 
     if (slotPend.length){
       st.textContent = nowTime;
-      lb.textContent = '다음 예약';
+      lb.textContent = '예약';
       lm.className = 'leadmain num';
-      lm.textContent = '· 총 ' + slotPend.length + '팀';
+      lm.textContent = slotPend.length + '팀';
+      var byPax = {};
+      slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
       ls.className = 'leadsub num comp';
-      ls.innerHTML = partyBreakdownHtml(slotPend);
+      ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
+        .map(function(p){ return '<span class="pc">' + p + '인 <b>' + byPax[p] + '</b>팀</span>'; })
+        .join('');
     } else {
       st.textContent = ''; lb.textContent = '';
       lm.className = 'leadmain num done';
@@ -2239,12 +2215,11 @@ window.dispatchEvent(new Event('fb-ready'));
       var head = document.createElement('button');
       head.className = 'ghead';
       head.type = 'button';
-      head.innerHTML = '<span class="gtime num">' + g.time + '</span>'
-        + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>'
-        + '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>';
+      head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
+        + '<span class="gtime num">' + g.time + '</span>'
+        + '<span class="gline"></span>'
+        + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('data-time', g.time);
-      head.setAttribute('aria-expanded', String(!shut));
-      head.setAttribute('aria-label', slotHeaderAriaLabel(g.time, g.items, shut));
       head.addEventListener('click', function(e){
         if (takeGhostClick(e)) return;
         toggleSlot(g.time);
@@ -2268,7 +2243,6 @@ window.dispatchEvent(new Event('fb-ready'));
       foldBtnEl.classList.toggle('expanded', !openCount);   // 펼치기 상태면 아이콘 뒤집기
       var fl = foldBtnEl.querySelector('.foldlbl');
       if (fl) fl.textContent = openCount ? '전체 접기' : '전체 펼치기';
-      foldBtnEl.setAttribute('aria-label', openCount ? '모든 시간대 접기' : '모든 시간대 펼치기');
     }
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
@@ -4595,7 +4569,6 @@ window.dispatchEvent(new Event('fb-ready'));
     if (splashEl) splashEl.classList.add('hide');   // 결과 화면을 가리지 않게
     window.__ixTest = {
       parse: parse, normTime: normTime, sortItems: sortItems,
-      partyBreakdownHtml: partyBreakdownHtml, slotHeaderAriaLabel: slotHeaderAriaLabel,
       pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
       tallyStatus: tallyStatus, dayTally: dayTally,
       slotMin: slotMin, slotLive: slotLive, nowMin: nowMin, groupByTime: groupByTime, liveNowTime: liveNowTime,
