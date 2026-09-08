@@ -261,9 +261,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lead{display:block;margin:7px -14px -8px;padding:8px 14px 9px;border-top:1px solid var(--line);background:var(--panel)}
   .lead.hide{display:none}
   .leadrow{display:flex;align-items:center;gap:0;min-height:31px}
-  .slottime{font-size:21px;font-weight:800;color:var(--waitBig);letter-spacing:-.035em;margin-right:7px}
-  .slotlab{font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--dim);margin-right:7px}
-  .leadmain{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+  .slotlab{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--dim);margin-right:7px}
+  .slottime{font-size:14px;font-weight:800;color:var(--text);letter-spacing:-.015em;margin-right:5px}
+  .leadmain{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:-.01em}
   /* 「남은 예약 없음」도 같은 크기·색 — 상태 설명이라 초록 안 씀 */
   .leadmain.done{font-size:15px;font-weight:700;color:var(--text)}
   /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
@@ -291,14 +291,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
   /* 인원 구성은 칩 더미 대신 한 줄 요약으로 두어 목록 높이를 돌려준다. */
-  .leadsub.comp{display:flex;flex-wrap:wrap;gap:0;margin-top:2px}
+  .leadsub.comp{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:3px;margin-top:3px;min-height:25px}
   .leadsub.comp .pc{
     display:inline-flex;align-items:center;
     background:transparent;border:0;border-radius:0;
-    padding:0;font-size:12px;font-weight:650;color:var(--dim);
+    padding:0;color:var(--dim);
   }
-  .leadsub.comp .pc + .pc::before{content:"·";color:var(--off);margin:0 7px}
-  .leadsub.comp .pc b{color:var(--text);font-weight:800;margin:0 1px 0 4px}
+  .leadsub.comp .party-size{font-size:17px;line-height:22px;color:var(--waitBig);font-weight:850;letter-spacing:-.025em}
+  .leadsub.comp .party-count{margin-left:4px;font-size:13px;color:var(--text);font-weight:750}
 
   /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 띠 자체가 「업데이트」 버튼이다 (누르면 새로 불러옴).
      하단에 별도 새로고침 버튼은 없앴다. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
@@ -408,7 +408,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 체크 = 동그라미. 카드 없는 평평한 목록엔 채운 «사각형»이 어색해서 원으로.
      대기 = 얇은 테두리 / 방문 = 초록 채움 + 흰 체크 (미리 알림·투두앱 관습). */
   .check{
-    width:23px;height:23px;border-radius:50%;flex:0 0 auto;
+    width:23px;height:23px;border-radius:7px;flex:0 0 auto;
     border:1.75px solid var(--off);
     display:grid;place-items:center;line-height:0;color:transparent;
     transition:.15s;
@@ -1158,8 +1158,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     </div>
     <div class="lead hide">
       <div class="leadrow">
-        <span class="slottime num" id="slotTime"></span>
         <span class="slotlab"></span>
+        <span class="slottime num" id="slotTime"></span>
         <span class="leadmain num" id="leadMain"></span>
         <div class="viewseg" role="group" aria-label="예약 표시">
           <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
@@ -2074,6 +2074,21 @@ window.dispatchEvent(new Event('fb-ready'));
     if (t.off) out.push('<span class="pc tally-off">취소 ' + t.off + '</span>');
     return out.join('<span class="pcsep"> · </span>');
   }
+
+  // 다음 시간대의 테이블 준비 수. 인원 규모를 먼저, 필요한 테이블 수를 바로 뒤에 둔다.
+  function partyBreakdownHtml(items){
+    var byPax = {};
+    (items || []).forEach(function(x){
+      var pax = Number(x.pax);
+      if (!isFinite(pax) || pax <= 0) return;
+      byPax[pax] = (byPax[pax] || 0) + 1;
+    });
+    return Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
+      .map(function(p){
+        return '<span class="pc"><b class="party-size">' + p + '인</b>'
+          + '<span class="party-count">' + byPax[p] + '팀</span></span>';
+      }).join('');
+  }
   // 시간대 머리글의 「n/n · 방문 n · 취소 n」 — render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
@@ -2101,15 +2116,11 @@ window.dispatchEvent(new Event('fb-ready'));
 
     if (slotPend.length){
       st.textContent = nowTime;
-      lb.textContent = '예약';
+      lb.textContent = '다음 예약';
       lm.className = 'leadmain num';
-      lm.textContent = slotPend.length + '팀';
-      var byPax = {};
-      slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
+      lm.textContent = '· 총 ' + slotPend.length + '팀';
       ls.className = 'leadsub num comp';
-      ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
-        .map(function(p){ return '<span class="pc">' + p + '인 <b>' + byPax[p] + '</b>팀</span>'; })
-        .join('');
+      ls.innerHTML = partyBreakdownHtml(slotPend);
     } else {
       st.textContent = ''; lb.textContent = '';
       lm.className = 'leadmain num done';
@@ -4572,6 +4583,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (splashEl) splashEl.classList.add('hide');   // 결과 화면을 가리지 않게
     window.__ixTest = {
       parse: parse, normTime: normTime, sortItems: sortItems,
+      partyBreakdownHtml: partyBreakdownHtml,
       pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
       tallyStatus: tallyStatus, dayTally: dayTally,
       slotMin: slotMin, slotLive: slotLive, nowMin: nowMin, groupByTime: groupByTime, liveNowTime: liveNowTime,
