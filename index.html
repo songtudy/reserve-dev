@@ -225,8 +225,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* ── 누름 규칙 (앱 공통) ──
      ① 면 있는 버튼 → 면이 --press (채운 금색은 brightness)   ② 면 없는 글자·아이콘 → 흐려짐
      ③ 체크 원 → 원이 눌려 들어감.   누르면 즉시, 떼면 .12s 에 돌아온다(:active 에서만 transition 끔). */
-  .nav button, .tools button, .foot button{transition:opacity .12s}
-  .nav button:active, .tools button:active, .foot button:active{opacity:.4;transition:none}
+  .nav button, .tools button, .more, .foot button{transition:opacity .12s}
+  .nav button:active, .tools button:active, .more:active, .foot button:active{opacity:.4;transition:none}
   .nav button:disabled{opacity:.22}
   .date{
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -270,32 +270,47 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
-  /* 상단 요약 — 「18:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 오른쪽 전체/남은 팀 토글 + 그 아래 인원 구성 칩.
-     헤더 안이라 목록이 스크롤돼도 고정. 남은 예약이 없으면 「남은 예약 없음 · 방문 n · 취소 n」. */
-  .lead{display:block;margin-top:8px}
+  /* 상단 요약 — 「16:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 그 아래 인원 구성 칩 */
+  .lead{display:block;margin-top:10px}
   .lead.hide{display:none}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
-  .lead .seg{margin-left:auto;flex:0 0 auto}
   .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
-  .slottime:empty{display:none}
-  .slottime:not(:empty)::after{content:"·";color:var(--off);margin:0 7px}
+  .slotlab{font-size:20px;font-weight:800;color:var(--off);margin:0 7px}
+  .slotlab:empty{display:none}
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em}
   /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
-  .leadmain.done{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .leadmain.done{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+  /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
+     트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
+  .viewseg{
+    margin-left:auto;flex:0 0 auto;align-self:center;
+    display:inline-flex;gap:2px;padding:2px;
+    background:var(--panel2);border-radius:10px;
+  }
+  .viewseg button{
+    border:0;border-radius:8px;background:transparent;
+    font:inherit;font-size:12px;font-weight:700;color:var(--off);
+    height:28px;padding:0 11px;cursor:pointer;transition:opacity .12s;
+  }
+  .viewseg button[aria-pressed="true"]{background:var(--btnPress);color:var(--text)}
+  .viewseg button:active{opacity:.4;transition:none}
+  /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
   .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
-  /* 대기 팀의 「인원 구성」 — 줄글이 아니라 칩. 테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을
-     눈으로 합산하지 않게 앱이 모아 보여준다. 보통 3~4종, 많아야 5종 — 5종까지 375px 한 줄.
-     개수는 색이 아니라 굵기로(포인트는 작은 글자엔 안 씀). */
+  /* 대기 팀의 「인원 구성」 — 줄글이 아니라 칩. 테이블 미리 빼는 데 쓰는 핵심 정보라
+     낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다. 개수만 금색으로 도드라지게. */
+  /* 보통 3~4종, 많아야 5종(드물게 6) — 5종까지 375px 폭 한 줄에 들어가게 조였다 */
   .leadsub.comp{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
   .leadsub.comp .pc{
-    display:inline-block;background:var(--panel2);border-radius:8px;
+    display:inline-block;
+    background:var(--panel2);border-radius:8px;   /* 칩 = 면만 (인원칸과 같은 꼴) */
     padding:5px 9px;font-size:13px;font-weight:700;color:var(--dim);
   }
+  /* 개수는 색이 아니라 굵기·밝기로 — 포인트 색은 작은 글자엔 안 쓴다(라이트 대비) */
   .leadsub.comp .pc b{color:var(--text);font-weight:800;margin-left:4px}
 
   /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 띠 자체가 「업데이트」 버튼이다 (누르면 새로 불러옴).
@@ -383,7 +398,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.done .gtime{color:var(--dim)}
   .group.done .gmeta b{color:var(--goTx)}
 
-
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
      (체크 칸 54px 다음부터 그어 이름줄에 맞춘다). 상태는 체크·태그·옅은 배경으로만. */
   .row{
@@ -404,15 +418,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:inherit;font:inherit;
   }
   .main:active .check{transform:scale(.84);border-color:var(--dim);transition:none}
-  /* 행 본문을 누르면 그 예약의 시트(방문·취소·수정·삭제)가 뜬다 — 추가·수정과 같은 시트 문법.
-     체크는 왼쪽 원에서만: 본문 탭은 되돌릴 수 있는 창을 열 뿐이라 잘못 눌러도 안전하다. */
   .info{
     flex:1;min-width:0;display:flex;align-items:center;gap:10px;
-    padding:13px 0 13px 4px;
-    background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;
-    transition:opacity .12s;
+    padding:13px 12px 13px 4px;
   }
-  .info:active{opacity:.5;transition:none}
   /* min-width:0 이 없으면 긴 이름이 있을 때 행이 화면 밖으로 넘친다 */
   .rbody{flex:1;min-width:0;display:flex;flex-direction:column}
   .rtop{display:flex;align-items:stretch;min-width:0}
@@ -430,7 +439,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   @keyframes checkpop{ 0%{transform:scale(.55)} 55%{transform:scale(1.16)} 100%{transform:scale(1)} }
   .check.pop{animation:checkpop .26s cubic-bezier(.34,1.56,.64,1)}
   /* 누르는 요소에는 직접 지정한다. body 에만 걸면 아이폰에서 두 번 탭 판정이 남는다 */
-  .main, .info, .ghead, .foot button, .tools button, .nav button{
+  .main, .more, .ghead, .foot button, .menu button, .tools button, .nav button{
     touch-action:manipulation;
   }
   /* stretch 로 두어야 이름이 칸 폭에 맞춰 «...» 로 줄어든다.
@@ -460,6 +469,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-size:14px;font-weight:700;color:var(--text);
     background:var(--panel2);border-radius:8px;padding:0 9px;flex:0 0 auto;
   }
+  .more{
+    width:42px;flex:0 0 auto;border:0;
+    background:none;color:var(--dim);cursor:pointer;
+    display:grid;place-items:center;line-height:0;padding:0;
+  }
+  .more svg{display:block}
 
   /* 방문/취소 — 상태 색은 «원 하나에만». 행을 칠하지도, 태그를 붙이지도 않는다
      (원 안의 ✓/✕ 가 이미 같은 말). 처리된 행은 글자가 같이 가라앉을 뿐 크기·높이는 그대로
@@ -495,6 +510,16 @@ window.addEventListener('pageshow', remeasureSbcut);
     background-size:5px 5px,5px 5px;background-repeat:no-repeat;
     padding-right:22px;
   }
+  /* ⋯ 행 메뉴 — 앱의 보조 버튼(면만)을 «작게» 넷. 새 부품을 만들지 않는다. 행 안의 작은 버튼 = 높이 40.
+     목록 폭 그대로(좌우 여백 대칭). 이름 열(54px)에서 시작하면 왼쪽만 비어 오른쪽으로 쏠려 보였다. */
+  .menu{display:flex;gap:6px;margin:0 0 10px}
+  .menu button{
+    flex:1;height:40px;border:0;border-radius:12px;background:var(--btn);cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:13px;font-weight:700;
+  }
+  .menu button:active{background:var(--btnPress)}
+  .menu .del{color:var(--warn)}
+
   /* 바텀시트 (예약 추가) — --kb 만큼 위로 올려 키보드에 안 가리게 한다 */
   .panel.asSheet{
     position:fixed;left:50%;bottom:0;
@@ -588,24 +613,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   .frow{display:flex}
   .foot button{
     flex:1;height:52px;border:0;background:transparent;cursor:pointer;
-    color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;white-space:nowrap;
+    color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;
     display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
   .foot button svg{display:block}
   .foot button + button::before{
     content:"";position:absolute;left:0;top:16px;bottom:16px;width:1px;background:var(--line);
   }
-  /* 가운데 「예약 추가」 — 이 바의 주동작. 아이콘만 포인트색(면은 안 씌운다) */
+  /* 가운데 「예약 추가」 — 이 바의 주동작. 아이콘만 금색으로 표시(면은 안 씌운다) */
   .foot #addBtn svg{color:var(--waitTx)}
   .foot #addBtn{color:var(--text)}
-
-  /* 예약 시트 — 행을 누르면. 제목 = 이름, 그 아래 시각·인원·메모, 동작 2×2 + 닫기 */
-  .actsub{margin:0 0 14px;font-size:13px;color:var(--dim);line-height:1.5}
-  .actsub b{color:var(--text);font-weight:700}
-  .actgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .actgrid .btn{flex:none}
-  .btn.danger{background:var(--btn);color:var(--warn)}
-  .btn.danger:active{background:var(--btnPress)}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
@@ -645,7 +662,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 세그먼트 토글 — 테마 다크/라이트, Wi-Fi 본관/별관 공용.
      강조색(--wait)은 두 테마 모두 「켜짐」으로 읽힌다. .wide 는 시트 안에서 꽉 차게. */
   /* 고르기(선택)는 «누르기(동작)»와 달라 보여야 한다 — 금색 채움이면 「저장」 같은 주동작 버튼으로 읽힌다.
-     트랙 꼴: 오목한 트랙 + 고른 칸만 면·밝은 글자. */
+     그래서 상단 「전체 / 남은 팀」(.viewseg)과 같은 트랙 꼴: 오목한 트랙 + 고른 칸만 면·밝은 글자. */
   .seg{display:inline-flex;gap:2px;padding:2px;background:var(--panel2);border-radius:10px}
   .seg button{
     height:30px;padding:0 13px;border-radius:8px;
@@ -1142,15 +1159,14 @@ window.addEventListener('pageshow', remeasureSbcut);
         </button>
       </div>
     </div>
-    <!-- 지금 준비할 시간대 요약 — 헤더에 «고정». 「18:00 · 7팀」 + 인원 구성 칩. 목록이 스크롤돼도 늘 보인다. -->
     <div class="lead hide">
       <div class="leadrow">
         <span class="slottime num" id="slotTime"></span>
+        <span class="slotlab"></span>
         <span class="leadmain num" id="leadMain"></span>
-        <!-- 전체 / 남은 팀 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다. 서랍 테마 토글과 같은 부품(.seg) -->
-        <div class="seg" role="group" aria-label="예약 표시">
-          <button type="button" id="viewAllBtn" class="on">전체</button>
-          <button type="button" id="viewPendBtn">남은 팀</button>
+        <div class="viewseg" role="group" aria-label="예약 표시">
+          <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
+          <button type="button" id="viewPendBtn" aria-pressed="false">남은 팀</button>
         </div>
       </div>
       <span class="leadsub num" id="leadSub"></span>
@@ -1223,19 +1239,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     <button class="btn primary" id="addOk">추가</button>
     <button class="btn ghost" id="addNo">취소</button>
   </div>
-</div>
-
-<!-- 예약 시트 — 행을 누르면. 상태에 따라 첫 두 버튼이 바뀐다 (대기: 방문·취소 / 방문: 체크 해제·취소 / 취소: 방문·취소 해제) -->
-<div class="panel asSheet hide" id="actPanel">
-  <h2 id="actName"></h2>
-  <p class="actsub num" id="actSub"></p>
-  <div class="actgrid">
-    <button class="btn ghost" type="button" id="actA"></button>
-    <button class="btn ghost" type="button" id="actB"></button>
-    <button class="btn ghost" type="button" id="actEdit">수정</button>
-    <button class="btn danger" type="button" id="actDel">삭제</button>
-  </div>
-  <div class="btns"><button class="btn ghost" type="button" id="actClose">닫기</button></div>
 </div>
 
 <div class="panelScrim hide" id="panelScrim"></div>
@@ -1486,19 +1489,40 @@ window.dispatchEvent(new Event('fb-ready'));
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
   var state = null;      // {date, items:[]}
+  var openMenu = null;
   var collapsed = {}; // 시간대별 수동 접기 상태 (미설정이면 자동)
   var touched = {};   // 시간대별 마지막 체크 시각
   var collapseTimers = {};
   var COLLAPSE_DELAY = 5000;
   var query = '';
+  var backgroundRenderPending = false;
+  var deferredState = null;
   // 목록 표시 범위 — 'all'(전체) / 'pending'(대기만: 방문·취소 행 숨김). 우상단 토글로 바꾼다.
   // 저장값이 남아 재실행에도 유지된다 (토글이 늘 보여서 「왜 행이 없지」 헷갈릴 일은 없다).
   var viewMode = 'all';
   try { if (localStorage.getItem('ix-view') === 'pending') viewMode = 'pending'; } catch(e){}
 
-  // 목록 안에서 «펼쳐 두는» 것이 없다 — 수정·동작은 전부 바텀시트라, 서버 상태는 언제든 통째로 그려도 된다.
-  function renderWhenIdle(){ render(); return true; }
-  function stageBackgroundState(next){ state = next; render(); return true; }
+  // 목록 안에서 손대는 중인 것 = 열린 ⋯ 메뉴뿐 (수정은 바텀시트라 목록과 무관 — 그 사이 통째 render 돼도 된다)
+  function interactionActive(){ return !!openMenu; }
+  function renderWhenIdle(){
+    if (interactionActive()){
+      backgroundRenderPending = true;
+      return false;
+    }
+    backgroundRenderPending = false;
+    render();
+    return true;
+  }
+  function stageBackgroundState(next){
+    if (interactionActive()){
+      deferredState = next;   // 서버 최신 전체 상태 → 최신 것으로 덮으면 된다
+      backgroundRenderPending = true;
+      return false;
+    }
+    state = next;
+    renderWhenIdle();
+    return true;
+  }
 
   // 접힘 규칙은 하나뿐이다 — 대기 중인 팀이 있으면 펼침, 없으면 접힘.
   // 시계는 관여하지 않는다. 보고 있는데 시간이 지났다는 이유로 접히면 곤란하니까.
@@ -1517,7 +1541,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var wait = Math.max(0, COLLAPSE_DELAY + 100 - (Date.now() - slotChangedAt(time)));
     collapseTimers[time] = setTimeout(function(){
       delete collapseTimers[time];
-      renderWhenIdle();
+      if (!slotHasWork(time)) renderWhenIdle();
     }, wait);
   }
   function keepSlotOpenForId(id){
@@ -1527,8 +1551,13 @@ window.dispatchEvent(new Event('fb-ready'));
       armSlotCollapse(it.time);
     }
   }
+  function slotHasWork(time){
+    var it = openMenu && find(openMenu);
+    return !!it && it.time === time;
+  }
   function isCollapsed(time, pendCount){
     var done = (pendCount === 0);
+    if (done && slotHasWork(time)) return false;
     var o = collapsed[time];
     if (o){
       if (o.done === done) return o.v;   // 대기 상태가 그대로면 손으로 정한 대로
@@ -2056,15 +2085,7 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<b>' + (t.came + t.off) + '/' + t.total + '</b>';
   }
 
-  // 상단 요약의 인원 구성 칩 — 대기 팀만 센다.
-  function compHtml(items){
-    var byPax = {};
-    items.forEach(function(x){ if (x.status === 'pending') byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
-    return Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
-      .map(function(p){ return '<span class="pc">' + p + '인<b>' + byPax[p] + '</b>팀</span>'; }).join('');
-  }
-
-  // 상단 요약 줄과 진행도만 다시 그린다 (목록은 건드리지 않는다)
+  // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
   function paintHead(){
     paintDate();
     var all = state ? state.items.slice().sort(sortItems) : [];
@@ -2078,22 +2099,29 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     var leadRow = document.querySelector('.lead');
     var st = document.getElementById('slotTime');
+    var lb = document.querySelector('.slotlab');
     var lm = document.getElementById('leadMain');
     var ls = document.getElementById('leadSub');
+
     if (slotPend.length){
       st.textContent = nowTime;
+      lb.textContent = '·';
       lm.className = 'leadmain num';
       lm.textContent = slotPend.length + '팀';
+      var byPax = {};
+      slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
       ls.className = 'leadsub num comp';
-      ls.innerHTML = compHtml(slotPend);
+      ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
+        .map(function(p){ return '<span class="pc">' + p + '인<b>' + byPax[p] + '</b>팀</span>'; })
+        .join('');
     } else {
-      st.textContent = '';
+      st.textContent = ''; lb.textContent = '';
       lm.className = 'leadmain num done';
       lm.textContent = all.length ? '남은 예약 없음' : '';
       ls.className = 'leadsub num tally';
       ls.innerHTML = all.length ? dayTally(all) : '';
     }
-    if (leadRow) leadRow.classList.toggle('hide', !all.length);
+    if (leadRow) leadRow.classList.toggle('hide', !st.textContent && !lm.textContent);
 
     var t = tallyStatus(all), done = t.came + t.off;
     var dp = document.getElementById('dayProg');
@@ -2115,6 +2143,11 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function render(){
     hideSplash();
+    if (!interactionActive() && deferredState){
+      state = deferredState;
+      deferredState = null;
+    }
+    backgroundRenderPending = !!deferredState;
     var list = document.getElementById('list');   // 날짜 라벨은 아래 paintHead() 가 그린다
     var all = state ? state.items.slice().sort(sortItems) : [];
     var q = (query || '').trim().toLowerCase();
@@ -2178,7 +2211,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var shut = q ? false : isCollapsed(g.time, pendN);
       // 완료됐는데 아직 5초 유예 중이면, 유예가 끝나는 시점에 접히도록 타이머를 걸어둔다.
       // (직접 체크한 폰은 keepSlotOpenForId 가 이미 걸었고, 다른 폰·자동취소는 여기서 건다)
-      if (!q && !pendN && !shut && !collapseTimers[g.time]
+      if (!q && !pendN && !shut && !collapseTimers[g.time] && !slotHasWork(g.time)
           && Date.now() - slotChangedAt(g.time) <= COLLAPSE_DELAY){
         armSlotCollapse(g.time);
       }
@@ -2281,6 +2314,42 @@ window.dispatchEvent(new Event('fb-ready'));
     return '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">' + c + '</svg>';
   }
 
+  function tapMore(id){
+    keepSlotOpenForId(id);
+    // 메뉴 토글은 그 행만 손댄다 (통째 render 안 함)
+    if (openMenu && openMenu !== id) keepSlotOpenForId(openMenu);
+    openMenu = (openMenu === id) ? null : id;
+    if (openMenu){
+      openRowMenu(id);
+    } else {
+      closeRowMenu();
+      if (deferredState && !interactionActive()) render();   // 메뉴 닫히면 밀려 있던 서버 상태 반영
+    }
+  }
+
+  function runMenuAction(id, action, status){
+    var it = find(id);
+    if (!it) return;
+    keepSlotOpenForId(id);
+    if (action === 'status'){
+      setStatus(id, status);
+      return;
+    }
+    if (action === 'edit'){
+      openMenu = null; closeRowMenu();
+      pendingReveal = null;   // 이전 수정의 보여주기가 남아 있으면 새 편집을 튀게 한다
+      openEdit(id);
+      return;
+    }
+    if (action === 'delete'){
+      logAdd('삭제', it.time + ' ' + it.name);
+      state.items = state.items.filter(function(x){ return x.id !== id; });
+      openMenu = null; render();
+      delItem(id);
+      toast(it.time + ' ' + it.name + ' 삭제됨');
+    }
+  }
+
   function rowEl(it){
     var row = document.createElement('div');
     row.setAttribute('data-id', it.id);
@@ -2302,10 +2371,8 @@ window.dispatchEvent(new Event('fb-ready'));
     main.setAttribute('aria-label', it.name + ' 방문 체크');
     main.innerHTML = '<span class="check">' + mark + '</span>';
 
-    var info = document.createElement('button');
+    var info = document.createElement('div');
     info.className = 'info';
-    info.type = 'button';
-    info.setAttribute('aria-label', it.name + ' 예약');
     info.innerHTML = '<span class="who"><span class="name"></span>'
       +   (it.memo ? '<span class="memo"></span>' : '') + '</span>'
       + '<span class="pax num">' + it.pax + '명</span>';
@@ -2324,10 +2391,60 @@ window.dispatchEvent(new Event('fb-ready'));
       nameEl.textContent = it.name;
     }
 
-    top.appendChild(main); top.appendChild(info);
+    var more = document.createElement('button');
+    more.className = 'more';
+    more.type = 'button';
+    more.setAttribute('aria-label', it.name + ' 메뉴');
+    more.innerHTML = dots3(false);
+
+    top.appendChild(main); top.appendChild(info); top.appendChild(more);
     body.appendChild(top);
+
+    // 수정은 행 안에 폼을 끼우지 않고 「예약 추가」와 같은 바텀시트를 쓴다 (openEdit)
+    if (openMenu === it.id){
+      body.appendChild(buildMenu(it.id));
+    }
+
     row.appendChild(body);
     return row;
+  }
+
+  // ⋯ 메뉴 (방문·취소·수정·삭제). rowEl 이 통째로 그릴 때도, tapMore 가 그 행에만 붙일 때도 쓴다.
+  function buildMenu(id){
+    var menu = document.createElement('div');
+    menu.className = 'menu';
+    function btn(label, action, status){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.setAttribute('data-list-action', action);
+      if (status) b.setAttribute('data-status', status);
+      if (action === 'delete') b.className = 'del';
+      b.addEventListener('click', function(e){
+        if (takeGhostClick(e)) return;
+        e.stopPropagation();
+        runMenuAction(id, action, status);
+      });
+      return b;
+    }
+    menu.appendChild(btn('방문', 'status', 'arrived'));
+    menu.appendChild(btn('취소', 'status', 'cancelled'));
+    menu.appendChild(btn('수정', 'edit'));
+    menu.appendChild(btn('삭제', 'delete'));
+    return menu;
+  }
+  // 열려 있는 ⋯ 메뉴 DOM 제거 (보통 하나지만 안전하게 전부)
+  function closeRowMenu(){
+    var ms = document.querySelectorAll('#list .menu');
+    for (var i = 0; i < ms.length; i++) if (ms[i].parentNode) ms[i].parentNode.removeChild(ms[i]);
+  }
+  // 그 행에만 메뉴를 붙인다 (통째 render 안 함). 가려졌으면 같은 tick 에 스크롤 → 한 번에 나타남.
+  function openRowMenu(id){
+    closeRowMenu();
+    var row = rowForId(id);
+    if (!row){ render(); return; }   // 그 행이 DOM 에 없으면(접힌 시간대 등) 안전하게 통째로
+    row.querySelector('.rbody').appendChild(buildMenu(id));
+    roomScroll(row, true);
   }
 
   // "1530" "15:30" "15시30분" "15.30" → "15:30"
@@ -2715,7 +2832,9 @@ window.dispatchEvent(new Event('fb-ready'));
       if (row) row.classList.add('leaving');
       leaveTimers[id] = setTimeout(function(){
         delete leaveTimers[id];
-        if (viewMode === 'pending') render();
+        if (viewMode !== 'pending') return;
+        if (interactionActive()) backgroundRenderPending = true;
+        else render();
       }, 230);
     }, LEAVE_MS);
   }
@@ -2738,6 +2857,7 @@ window.dispatchEvent(new Event('fb-ready'));
         chk.classList.add('pop');
       }
     }
+    closeRowMenu();   // 부분 갱신이라 다른 행에 열려 있던 ⋯ 메뉴 DOM 이 남는다 — 지운다
 
     // 시간대 머리글 숫자
     var grp = row.closest('.group');
@@ -2763,6 +2883,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!mine.length) return;
     var grp = slotEl(time);
     var willShut = !(grp && grp.classList.contains('shut'));
+    openMenu = null;      // 열려 있던 ⋯ 메뉴는 닫는다 (어느 시간대든)
     setCollapsed(time, willShut, tallyStatus(mine).pend === 0);
     render();
     if (!willShut) roomScroll(slotEl(time), true);   // 펼친 시간대가 길어 가려지면 부드럽게 맞춰 보여준다
@@ -2796,7 +2917,12 @@ window.dispatchEvent(new Event('fb-ready'));
     it.status = st;
     it.ts = ts;
     keepSlotOpenForId(id);
-    if (!patchStatus(it)) render();
+    openMenu = null;
+    var patched = patchStatus(it);
+    if (!patched){
+      if (interactionActive()) backgroundRenderPending = true;
+      else render();
+    } else if (backgroundRenderPending && !interactionActive()) render();
     writeItem(id, { status: st, ts: ts });
   }
 
@@ -2942,7 +3068,6 @@ window.dispatchEvent(new Event('fb-ready'));
     scrimTapHadKb = document.body.classList.contains('keyboard-open');
   }, { passive: true });
   panelScrim.addEventListener('click', function(){
-    if (!actPanel.classList.contains('hide')){ closeAct(); return; }
     var ap = document.getElementById('addPanel');
     if (ap.classList.contains('hide')) return;
     var hadKb = scrimTapHadKb || document.body.classList.contains('keyboard-open');
@@ -2960,7 +3085,7 @@ window.dispatchEvent(new Event('fb-ready'));
   //   단, 창 안에 진짜로 스크롤돼야 하는 칸이 있으면 그건 살려 둔다.
   document.addEventListener('touchmove', function(e){
     var ap = document.getElementById('addPanel');
-    if ((!ap || ap.classList.contains('hide')) && actPanel.classList.contains('hide')) return;
+    if (!ap || ap.classList.contains('hide')) return;
     for (var n = e.target; n && n !== document.body; n = n.parentElement){
       var oy = getComputedStyle(n).overflowY;
       if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) return;
@@ -3063,56 +3188,6 @@ window.dispatchEvent(new Event('fb-ready'));
     sheetEditId = null;
   }
   function closeAdd(){ hideAdd(); backDone(); }
-
-  /* ---------- 예약 시트 (행을 누르면) ---------- */
-  var actPanel = document.getElementById('actPanel');
-  var actId = null;
-  function openAct(id){
-    var it = find(id);
-    if (!it) return;
-    if (!panel.classList.contains('hide')) closePaste();
-    actId = id;
-    document.getElementById('actName').textContent = it.name;
-    document.getElementById('actSub').innerHTML = '<b>' + esc(it.time) + '</b> · ' + it.pax + '명'
-      + (it.memo ? ' · ' + esc(it.memo) : '');
-    var a = document.getElementById('actA'), b = document.getElementById('actB');
-    if (it.status === 'arrived'){ a.textContent = '체크 해제'; a.dataset.st = 'pending';  b.textContent = '취소'; b.dataset.st = 'cancelled'; }
-    else if (it.status === 'cancelled'){ a.textContent = '방문'; a.dataset.st = 'arrived'; b.textContent = '취소 해제'; b.dataset.st = 'pending'; }
-    else { a.textContent = '방문'; a.dataset.st = 'arrived'; b.textContent = '취소'; b.dataset.st = 'cancelled'; }
-    actPanel.classList.remove('hide');
-    panelScrim.classList.remove('hide');
-    backOpen(hideAct);
-  }
-  function hideAct(){
-    actPanel.classList.add('hide');
-    if (panel.classList.contains('hide') && addPanel.classList.contains('hide')) panelScrim.classList.add('hide');
-    actId = null;
-  }
-  function closeAct(){ hideAct(); backDone(); }
-  function actStatus(el){
-    var id = actId; closeAct();
-    if (id && find(id)) setStatus(id, el.dataset.st);
-  }
-  document.getElementById('actA').addEventListener('click', function(){ actStatus(this); });
-  document.getElementById('actB').addEventListener('click', function(){ actStatus(this); });
-  document.getElementById('actEdit').addEventListener('click', function(){
-    // 예약 시트 → 수정 시트는 «갈아타기»: backDone 으로 기록을 빼지 않는다 (서랍→시트와 같은 길).
-    // 뺐다가 다시 심으면 안드로이드에서 앞선 back() 의 popstate 가 뒤늦게 와서 새 시트를 닫아 버린다.
-    var id = actId; hideAct();
-    pendingReveal = null;   // 이전 수정의 보여주기가 남아 있으면 새 편집을 튀게 한다
-    if (id && find(id)) openEdit(id); else backDone();
-  });
-  document.getElementById('actDel').addEventListener('click', function(){
-    var id = actId; closeAct();
-    var it = id && find(id);
-    if (!it) return;
-    logAdd('삭제', it.time + ' ' + it.name);
-    state.items = state.items.filter(function(x){ return x.id !== id; });
-    render();
-    delItem(id);
-    toast(it.time + ' ' + it.name + ' 삭제됨');
-  });
-  document.getElementById('actClose').addEventListener('click', closeAct);
 
   function addOne(){
     if (sheetEditId){                 // 수정 모드 — 입력이 틀렸으면 창을 그대로 둔다
@@ -3317,6 +3392,8 @@ window.dispatchEvent(new Event('fb-ready'));
     confirmDlg('오늘 명단을 초기화할까요?', function(){
       var n = state.items.length;                 // 비우기 전에 세어 둔다
       logAdd('명단 초기화', n + '건 지움');
+      openMenu = null;
+      deferredState = null; backgroundRenderPending = false;
       state = { date: viewDate, items: [] };
       collapsed = {};
       closeSearch(false);
@@ -3335,7 +3412,25 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('cancelPaste').addEventListener('click', closePaste);
   document.getElementById('addBtn').addEventListener('click', function(){ openAdd(); });   // 하단바 가운데
 
-  // 체크와 행 본문은 손을 뗄 때(pointerup) 직접 처리한다.
+  // ⋯ 메뉴는 바깥을 누르면 닫힌다.
+  // 그 탭은 닫는 데만 쓰고 넘기지 않는다 — 메뉴를 치우려다 옆 사람이 체크되면 안 된다.
+  // click 단계에서 처리해야 스크롤은 막히지 않는다.
+  // 메뉴 바깥을 누르면 닫힌다. 다만 그 터치를 삼키지는 않는다 —
+  // 체크·시간대 접기·하단 버튼은 한 번에 눌려야 한다.
+  document.addEventListener('click', function(e){
+    if (!openMenu) return;
+    var t = e.target;
+    if (t.closest && (t.closest('.menu') || t.closest('.more'))) return;
+    keepSlotOpenForId(openMenu);
+    openMenu = null;
+    // 누른 동작이 먼저 처리된 뒤에 메뉴만 지운다 (통째 render 안 함)
+    setTimeout(function(){
+      closeRowMenu();
+      if (deferredState && !interactionActive()) render();
+    }, 0);
+  }, true);
+
+  // 체크와 ⋯ 는 손을 뗄 때(pointerup) 직접 처리한다.
   // click 에 맡기면 누른 뒤 화면이 다시 그려졌을 때 브라우저가 탭을 없던 일로 만든다.
   // 대신 손가락이 밀렸으면(스크롤) 무시해서 잘못 눌리는 건 오히려 더 엄격하다.
   var SLOP = 12, HOLD = 900;
@@ -3362,7 +3457,7 @@ window.dispatchEvent(new Event('fb-ready'));
   listEl.addEventListener('pointerdown', function(e){
     tapInfo = null;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    var m = e.target.closest && e.target.closest('.main, .info, .ghead');
+    var m = e.target.closest && e.target.closest('.main, .more, .ghead, .menu button');
     if (!m) return;
     if (m.classList.contains('ghead')){
       tapInfo = { slot: m.getAttribute('data-time'), kind: 'slot',
@@ -3371,9 +3466,12 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     var row = m.closest('.row');
     if (!row) return;
+    var action = m.getAttribute('data-list-action');
     tapInfo = {
       id: row.getAttribute('data-id'),
-      kind: m.classList.contains('info') ? 'info' : 'main',
+      kind: action ? 'menu' : (m.classList.contains('more') ? 'more' : 'main'),
+      action: action,
+      status: m.getAttribute('data-status'),
       x: e.clientX, y: e.clientY, at: Date.now(), pid: e.pointerId
     };
   });
@@ -3389,20 +3487,21 @@ window.dispatchEvent(new Event('fb-ready'));
       return;
     }
     if (!find(t.id)) return;
-    if (t.kind === 'info') openAct(t.id);
+    if (t.kind === 'menu') runMenuAction(t.id, t.action, t.status);
+    else if (t.kind === 'more') tapMore(t.id);
     else toggle(t.id);
   });
 
   // 손가락이 아닌 경로(키보드 Enter, 보이스오버 등)는 여전히 click 으로 들어온다.
   // 손가락에서 뒤따르는 중복 click 은 위의 좌표 판정에서 이미 걸러진다.
   listEl.addEventListener('click', function(e){
-    var m = e.target.closest && e.target.closest('.main, .info');
+    var m = e.target.closest && e.target.closest('.main, .more');
     if (!m) return;
     var row = m.closest('.row');
     if (!row) return;
     var id = row.getAttribute('data-id');
     if (!find(id)) return;
-    if (m.classList.contains('info')) openAct(id);
+    if (m.classList.contains('more')) tapMore(id);
     else toggle(id);
   });
 
@@ -3469,35 +3568,36 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 자정 넘어감 뒷정리 ---------- */
   // 날짜가 바뀌면(rolloverIfNeeded) 하루 단위 UI 상태를 싹 비운다.
   function resetDateScopedUi(){
-    collapsed = {}; touched = {};
+    openMenu = null; collapsed = {}; touched = {};
+    deferredState = null; backgroundRenderPending = false;
     backupState = { hour: -1, tries: 0, triesHour: -1 };
     stopWatch();
     rosterLoadEpoch++;
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
     collapseTimers = {};
   }
-  // 헤더 「전체 / 남은 팀」 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다
+  // 전체 / 대기 토글
   var viewAllBtn = document.getElementById('viewAllBtn');
   var viewPendBtn = document.getElementById('viewPendBtn');
-  function syncViewBtn(){
-    var on = viewMode === 'pending';
-    viewAllBtn.classList.toggle('on', !on);  viewAllBtn.setAttribute('aria-pressed', String(!on));
-    viewPendBtn.classList.toggle('on', on);  viewPendBtn.setAttribute('aria-pressed', String(on));
+  function syncViewSeg(){
+    viewAllBtn.setAttribute('aria-pressed', String(viewMode === 'all'));
+    viewPendBtn.setAttribute('aria-pressed', String(viewMode === 'pending'));
   }
   function setViewMode(m){
     if (viewMode === m) return;
     viewMode = m;
     try { localStorage.setItem('ix-view', m); } catch(e){}
-    syncViewBtn();
+    syncViewSeg();
+    openMenu = null;
     cancelAllLeaves();   // 「남은 팀」에서 빠지려던 행이 있으면 그 타이머는 무의미 (통째로 다시 그린다)
     render();
   }
   viewAllBtn.addEventListener('click', function(){ setViewMode('all'); });
   viewPendBtn.addEventListener('click', function(){ setViewMode('pending'); });
-  syncViewBtn();
+  syncViewSeg();
 
-  // 전체 접기 / 펼치기 — 하나라도 펼쳐져 있으면 전부 접고, 다 접혀 있으면 전부 편다
-  document.getElementById('foldBtn').addEventListener('click', function(){
+  var foldBtn = document.getElementById('foldBtn');
+  foldBtn.addEventListener('click', function(){
     if (!state || !state.items.length) return;
     if (!panel.classList.contains('hide')) closePaste();
     var slots = groupByTime(state.items.slice().sort(sortItems)), anyOpen = false;
@@ -3507,6 +3607,7 @@ window.dispatchEvent(new Event('fb-ready'));
       return d;
     });
     slots.forEach(function(g, i){ setCollapsed(g.time, anyOpen, done[i]); });
+    if (anyOpen) openMenu = null;   // 전부 접을 땐 열린 메뉴도 닫는다
     render();
   });
 
@@ -4396,6 +4497,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   var tickSig = '', tickMin = -1;
   setInterval(function(){
+    if (openMenu) return;
     if (rolloverIfNeeded()) return;
     var changed = autoCancel();
     maybeHourlyBackup();   // autoCancel 반영된 상태를 :20 백업이 잡게 — 순서 보장
