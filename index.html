@@ -270,11 +270,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
-  /* 상단 요약 줄 — 「지금 시간대」가 있을 땐 그 시간대 머리글이 요약을 겸하므로(아래 .gnow) 숨긴다.
-     남은 예약이 없을 때만 「남은 예약 없음 · 방문 n · 취소 n」 한 줄. */
-  .lead{display:flex;align-items:center;gap:8px;margin-top:10px;min-height:28px}
+  /* 헤더 둘째 줄 — 왼쪽 오늘 집계(방문 n · 취소 n, 남은 예약이 없으면 그 말도), 오른쪽 전체/남은 팀 토글.
+     「지금 시간대」의 팀 수·인원 구성은 그 시간대 머리글이 맡는다(.gteams/.gcomp). */
+  .lead{display:flex;align-items:center;gap:8px;margin-top:8px;min-height:34px}
   .lead.hide{display:none}
-  .leadmain{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+  .lead .seg{margin-left:auto;flex:0 0 auto}
+  .leadmain{font-size:13px;font-weight:700;color:var(--text)}
+  .leadmain:empty{display:none}
+  .leadmain:not(:empty)::after{content:"·";color:var(--off);margin-left:8px}
   .leadsub{font-size:13px;font-weight:600;color:var(--dim)}
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
@@ -1130,10 +1133,6 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="dayprog num hide" id="dayProg"></span>
         <span class="offtag">연결 안 됨</span>
         <span class="devtag hide" id="devTag">테스트</span>
-        <!-- 남은 팀만 보기 (방문·취소 행 숨김). 켜지면 검색 켜짐과 같은 표시 -->
-        <button type="button" id="viewBtn" aria-pressed="false" aria-label="남은 팀만 보기">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-        </button>
         <button type="button" id="searchBtn" class="off" aria-label="이름 검색">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
             <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/>
@@ -1144,6 +1143,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     <div class="lead hide">
       <span class="leadmain num" id="leadMain"></span>
       <span class="leadsub num" id="leadSub"></span>
+      <!-- 전체 / 남은 팀 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다. 서랍 테마 토글과 같은 부품(.seg) -->
+      <div class="seg" role="group" aria-label="예약 표시">
+        <button type="button" id="viewAllBtn" class="on">전체</button>
+        <button type="button" id="viewPendBtn">남은 팀</button>
+      </div>
     </div>
   </header>
 
@@ -2066,14 +2070,13 @@ window.dispatchEvent(new Event('fb-ready'));
         if (g.time === nowTime) slotPend = g.items.filter(function(x){ return x.status === 'pending'; });
       });
     }
-    // 「지금」 시간대가 있으면 그 머리글이 요약(팀 수·인원 구성)을 겸한다 — 이 줄은 남은 예약이 없을 때만
+    // 「지금」 시간대의 팀 수·인원 구성은 그 머리글이 맡는다 — 이 줄은 오늘 집계 + 보기 토글
     var leadRow = document.querySelector('.lead');
     var lm = document.getElementById('leadMain');
     var ls = document.getElementById('leadSub');
-    var showLead = !slotPend.length && all.length > 0;
-    lm.textContent = showLead ? '남은 예약 없음' : '';
-    ls.innerHTML = showLead ? dayTally(all) : '';
-    if (leadRow) leadRow.classList.toggle('hide', !showLead);
+    lm.textContent = (!slotPend.length && all.length) ? '남은 예약 없음' : '';
+    ls.innerHTML = all.length ? dayTally(all) : '';
+    if (leadRow) leadRow.classList.toggle('hide', !all.length);
 
     var t = tallyStatus(all), done = t.came + t.off;
     var dp = document.getElementById('dayProg');
@@ -2123,7 +2126,6 @@ window.dispatchEvent(new Event('fb-ready'));
     var footEl = document.querySelector('.foot');
     if (footEl) footEl.classList.toggle('hide', !allCount);
     searchBtn.classList.toggle('off', !allCount);
-    viewBtn.classList.toggle('off', !allCount);   // 명단이 없으면 보기 전환도 의미 없다 (검색과 같이 숨김)
     if (!allCount && !searchbar.classList.contains('hide')) closeSearch(false);
 
     // 목록
@@ -3462,13 +3464,13 @@ window.dispatchEvent(new Event('fb-ready'));
     Object.keys(collapseTimers).forEach(function(time){ clearTimeout(collapseTimers[time]); });
     collapseTimers = {};
   }
-  // 하단바 「남은 팀만 / 전체 보기」 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다
-  var viewBtn = document.getElementById('viewBtn');
+  // 헤더 「전체 / 남은 팀」 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다
+  var viewAllBtn = document.getElementById('viewAllBtn');
+  var viewPendBtn = document.getElementById('viewPendBtn');
   function syncViewBtn(){
     var on = viewMode === 'pending';
-    viewBtn.classList.toggle('on', on);
-    viewBtn.setAttribute('aria-pressed', String(on));
-    viewBtn.setAttribute('aria-label', on ? '전체 보기' : '남은 팀만 보기');
+    viewAllBtn.classList.toggle('on', !on);  viewAllBtn.setAttribute('aria-pressed', String(!on));
+    viewPendBtn.classList.toggle('on', on);  viewPendBtn.setAttribute('aria-pressed', String(on));
   }
   function setViewMode(m){
     if (viewMode === m) return;
@@ -3478,7 +3480,8 @@ window.dispatchEvent(new Event('fb-ready'));
     cancelAllLeaves();   // 「남은 팀」에서 빠지려던 행이 있으면 그 타이머는 무의미 (통째로 다시 그린다)
     render();
   }
-  viewBtn.addEventListener('click', function(){ setViewMode(viewMode === 'pending' ? 'all' : 'pending'); });
+  viewAllBtn.addEventListener('click', function(){ setViewMode('all'); });
+  viewPendBtn.addEventListener('click', function(){ setViewMode('pending'); });
   syncViewBtn();
 
   // 전체 접기 / 펼치기 — 하나라도 펼쳐져 있으면 전부 접고, 다 접혀 있으면 전부 편다
