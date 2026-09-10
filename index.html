@@ -122,7 +122,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     --ph:#7b8695;
     /* 보조 버튼 = 테두리 없는 «면». 입력칸(선)과 버튼(면)이 한눈에 갈린다.
        눌림은 면이 한 단 밝아진다(--press 는 이 면과 거의 같아 안 보여서 따로 둔다). */
-    --btn:#252c37;      --btnPress:#323b48;  --btnWarn:#2c2123;
+    --btn:#252c37;      --btnPress:#323b48;  --btnWarn:#2c2123;  --btnWarnPress:#3b2a2d;
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
     --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
@@ -144,7 +144,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
-    --btn:#d8dce2;      --btnPress:#c3c9d1;  --btnWarn:#fbe6e3;
+    --btn:#d8dce2;      --btnPress:#c3c9d1;  --btnWarn:#fbe6e3;  --btnWarnPress:#f5d2cd;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* ★ 라이트의 포인트는 파랑 (2026-09-10 오너 결정). 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 물리적 상한이라
        (노란 계열 한계) 어떻게 해도 «어둡게» 보인다 — 오너가 실기기에서 두 번 같은 판단. 다크는 금 유지.
@@ -282,18 +282,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadmain.done{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
   /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
-  .viewseg{
-    margin-left:auto;flex:0 0 auto;align-self:center;
-    display:inline-flex;gap:2px;padding:2px;
-    background:var(--panel2);border-radius:10px;
-  }
-  .viewseg button{
-    border:0;border-radius:8px;background:transparent;
-    font:inherit;font-size:12px;font-weight:700;color:var(--off);
-    height:28px;padding:0 11px;cursor:pointer;transition:opacity .12s;
-  }
-  .viewseg button[aria-pressed="true"]{background:var(--btnPress);color:var(--text)}
-  .viewseg button:active{opacity:.4;transition:none}
+  .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
   /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
   .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
   .leadsub:empty{display:none}
@@ -355,7 +344,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar input::-webkit-search-cancel-button{display:none}
   .searchbar button{
     position:absolute;right:4px;top:50%;transform:translateY(-50%);
-    width:34px;height:34px;border:0;border-radius:12px;
+    width:36px;height:36px;border:0;border-radius:12px;
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
@@ -518,7 +507,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--text);font-family:inherit;font-size:13px;font-weight:700;
   }
   .menu button:active{background:var(--btnPress)}
-  .menu .del{color:var(--warn)}
+  /* 삭제는 확인 없이 바로 지워진다 — 파괴적인 «실행» 버튼은 앱 어디서나 붉은 면(초기화 확인과 같은 꼴) */
+  .menu .del{background:var(--btnWarn);color:var(--onWarn)}
+  .menu .del:active{background:var(--btnWarnPress)}
 
   /* 바텀시트 (예약 추가) — --kb 만큼 위로 올려 키보드에 안 가리게 한다 */
   .panel.asSheet{
@@ -592,10 +583,10 @@ window.addEventListener('pageshow', remeasureSbcut);
      (.btn · .dbtn button · .sheetClose · .sheetNever · .sheetCopy 가 전부 이 값을 쓴다) */
   .btns{display:flex;gap:8px;margin-top:14px}
   .btn{
-    flex:1;height:48px;padding:0;border-radius:12px;border:1px solid transparent;
+    flex:1;height:48px;padding:0;border-radius:12px;border:0;
     font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
-  .btn.primary{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
+  .btn.primary{background:var(--wait);color:var(--onWait)}
   .btn.ghost{background:var(--btn);color:var(--text)}
   .btn.primary:active{filter:brightness(.92)}
   .btn.ghost:active{background:var(--btnPress)}
@@ -662,7 +653,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 세그먼트 토글 — 테마 다크/라이트, Wi-Fi 본관/별관 공용.
      강조색(--wait)은 두 테마 모두 「켜짐」으로 읽힌다. .wide 는 시트 안에서 꽉 차게. */
   /* 고르기(선택)는 «누르기(동작)»와 달라 보여야 한다 — 금색 채움이면 「저장」 같은 주동작 버튼으로 읽힌다.
-     그래서 상단 「전체 / 남은 팀」(.viewseg)과 같은 트랙 꼴: 오목한 트랙 + 고른 칸만 면·밝은 글자. */
+     상단 「전체 / 남은 팀」·서랍 테마·Wi-Fi 본관/별관이 전부 이 한 부품: 오목한 트랙 + 고른 칸만 면·밝은 글자. */
   .seg{display:inline-flex;gap:2px;padding:2px;background:var(--panel2);border-radius:10px}
   .seg button{
     height:30px;padding:0 13px;border-radius:8px;
@@ -671,7 +662,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     transition:opacity .12s;
   }
   .seg button:active{opacity:.4;transition:none}
-  .seg button.on{background:var(--btnPress);color:var(--text)}
+  .seg button.on, .seg button[aria-pressed="true"]{background:var(--btnPress);color:var(--text)}
   .seg.wide{display:flex;margin:-2px 0 14px}
   .seg.wide button{flex:1;height:40px;font-size:15px}
   .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 16px 2px}
@@ -842,8 +833,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
   .bkvrow.go .nm{color:var(--dim)}
   .bkvrow.off .nm{color:var(--off);text-decoration:line-through;text-decoration-thickness:1px}
-  /* 시트 기본 하단바(닫기) 왼쪽에 그 시트의 주동작 버튼을 하나 더 끼운다
-     (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 주황. */
+  /* 시트 기본 하단바(닫기) 오른쪽에 그 시트의 주동작 버튼을 하나 더 붙인다
+     (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 포인트색. */
   .sheetBtns .sheetCopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
   .sheetBtns .sheetCopy:active{filter:brightness(.92)}
 
@@ -866,7 +857,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .urlcopy{
     flex:0 0 auto;position:relative;
     width:32px;height:32px;padding:0;display:grid;place-items:center;
-    background:var(--btn);border:0;border-radius:10px;
+    background:var(--btn);border:0;border-radius:8px;
     color:var(--waitTx);cursor:pointer;
   }
   .urlcopy svg{display:block}
@@ -1069,7 +1060,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .dbtn #dlgYes.holdmode{ touch-action:none }            /* 길게 누르기 제스처를 스크롤로 뺏기지 않게 */
   .dbtn #dlgYes.holdmode:active{filter:none}             /* 차오르는 면이 눌림을 말한다 — 겹치지 않게 */
-  .dbtn #dlgYes:not(.holdmode):active{filter:brightness(1.12)}   /* 탭 모드는 눌림에 밝아진다 */
+  .dbtn #dlgYes:not(.holdmode):active{background:var(--btnWarnPress)}   /* 탭 모드 눌림 = 붉은 면이 한 단 짙어짐 (행 메뉴 삭제와 같음) */
   /* 누르는 동안 버튼 전체가 왼쪽부터 차오른다. 글자는 --onWarn 이라 채움 위에서도 읽힌다
      (다크 4.68:1 / 라이트 4.62:1) — 글자색을 안 바꾸면 여기서 3.65 / 2.90 으로 묻혔다. */
   .dbtn #dlgYes .hf{
@@ -1109,7 +1100,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltnames::-webkit-scrollbar{display:none}
   .rltnames:empty{display:none}
   .rltchip{
-    padding:7px 12px;border-radius:10px;
+    padding:7px 12px;border-radius:8px;
     background:var(--btn);border:1px solid transparent;
     font-size:14px;font-weight:700;color:var(--text);
     transition:background .03s linear,color .03s linear,border-color .03s linear,transform .26s cubic-bezier(.34,1.56,.64,1);
@@ -1164,7 +1155,7 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="slottime num" id="slotTime"></span>
         <span class="slotlab"></span>
         <span class="leadmain num" id="leadMain"></span>
-        <div class="viewseg" role="group" aria-label="예약 표시">
+        <div class="seg viewseg" role="group" aria-label="예약 표시">
           <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
           <button type="button" id="viewPendBtn" aria-pressed="false">남은 팀</button>
         </div>
@@ -1193,8 +1184,9 @@ window.addEventListener('pageshow', remeasureSbcut);
       <textarea id="ta" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" aria-label="예: 14:00 임동현 2명"></textarea>
     </div>
     <div class="btns">
-      <button class="btn primary" id="loadBtn">명단 등록</button>
+      <!-- 주동작은 오른쪽 (iOS·Android 공통 관습, 오른손 엄지 쪽) — 앱의 모든 버튼 쌍이 [보조][주] 순서 -->
       <button class="btn ghost hide" id="cancelPaste">취소</button>
+      <button class="btn primary" id="loadBtn">명단 등록</button>
     </div>
   </div>
 
@@ -1236,8 +1228,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     </div>
   </div>
   <div class="btns">
-    <button class="btn primary" id="addOk">추가</button>
     <button class="btn ghost" id="addNo">취소</button>
+    <button class="btn primary" id="addOk">추가</button>
   </div>
 </div>
 
@@ -3878,7 +3870,7 @@ window.dispatchEvent(new Event('fb-ready'));
       cp = document.createElement('button');
       cp.type = 'button';
       cp.className = 'sheetClose sheetCopy';
-      sb.insertBefore(cp, sb.firstChild);
+      sb.appendChild(cp);   // 주동작은 오른쪽 — [닫기][명단 복사]
     }
     cp.textContent = label;
     cp.onclick = onClick;
