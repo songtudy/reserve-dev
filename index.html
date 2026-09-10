@@ -626,15 +626,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .frow{display:flex}
   .foot button{
     flex:1;height:52px;border:0;background:transparent;cursor:pointer;
-    color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;
+    color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
     display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
   .foot button svg{display:block}
   /* 항목 사이 세로 구분선은 두지 않는다 — 세 칸 균등 배치만으로 구분되고, 선은 정보 없이 줄만 늘린다
      (iOS 툴바·Material 하단바도 칸막이 없음). 바 위의 가로 경계선 하나만 남긴다. */
-  /* 가운데 「명단 복사」 — 이 바에서 가장 자주 쓰는 것. 밝은 글자 + 포인트색 아이콘(면은 안 씌운다) */
-  .foot #copyBtn svg{color:var(--waitTx)}
-  .foot #copyBtn{color:var(--text)}
+  /* 세 항목은 같은 색(글자색) — 가운데만 밝고 아이콘이 금색이면 «탭 바의 선택된 탭»으로 읽혀
+     「왜 켜져 있나」가 된다(오너 지적, 2026-09-11). 자주 쓰는 「명단 복사」는 엄지 자리(가운데)에 두는 것으로 충분. */
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
