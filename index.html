@@ -608,9 +608,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
   .foot button svg{display:block}
-  .foot button + button::before{
-    content:"";position:absolute;left:0;top:16px;bottom:16px;width:1px;background:var(--line);
-  }
+  /* 항목 사이 세로 구분선은 두지 않는다 — 세 칸 균등 배치만으로 구분되고, 선은 정보 없이 줄만 늘린다
+     (iOS 툴바·Material 하단바도 칸막이 없음). 바 위의 가로 경계선 하나만 남긴다. */
   /* 가운데 「예약 추가」 — 이 바의 주동작. 아이콘만 금색으로 표시(면은 안 씌운다) */
   .foot #addBtn svg{color:var(--waitTx)}
   .foot #addBtn{color:var(--text)}
