@@ -137,12 +137,14 @@ window.addEventListener('pageshow', remeasureSbcut);
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   html[data-theme="light"]{
-    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e9edf3;
-    --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
+    /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
+       전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
+    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e2e6ec;
+    --line:#d5dae2;     --press:#d2d7df;   --keyDn:#b6bec8;
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
-    --btn:#e5e9ef;      --btnPress:#d5dbe4;  --btnWarn:#fbe6e3;
+    --btn:#d8dce2;      --btnPress:#c3c9d1;  --btnWarn:#fbe6e3;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* ★ 라이트의 포인트는 파랑 (2026-09-10 오너 결정). 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 물리적 상한이라
        (노란 계열 한계) 어떻게 해도 «어둡게» 보인다 — 오너가 실기기에서 두 번 같은 판단. 다크는 금 유지.
