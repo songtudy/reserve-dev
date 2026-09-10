@@ -270,20 +270,33 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
-  /* 헤더 둘째 줄 — 왼쪽 오늘 집계(방문 n · 취소 n, 남은 예약이 없으면 그 말도), 오른쪽 전체/남은 팀 토글.
-     「지금 시간대」의 팀 수·인원 구성은 그 시간대 머리글이 맡는다(.gteams/.gcomp). */
-  .lead{display:flex;align-items:center;gap:8px;margin-top:8px;min-height:34px}
+  /* 상단 요약 — 「18:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 오른쪽 전체/남은 팀 토글 + 그 아래 인원 구성 칩.
+     헤더 안이라 목록이 스크롤돼도 고정. 남은 예약이 없으면 「남은 예약 없음 · 방문 n · 취소 n」. */
+  .lead{display:block;margin-top:8px}
   .lead.hide{display:none}
+  .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
   .lead .seg{margin-left:auto;flex:0 0 auto}
-  .leadmain{font-size:13px;font-weight:700;color:var(--text)}
-  .leadmain:empty{display:none}
-  .leadmain:not(:empty)::after{content:"·";color:var(--off);margin-left:8px}
-  .leadsub{font-size:13px;font-weight:600;color:var(--dim)}
+  .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
+  .slottime:empty{display:none}
+  .slottime:not(:empty)::after{content:"·";color:var(--off);margin:0 7px}
+  .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+  /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
+  .leadmain.done{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
+  /* 대기 팀의 「인원 구성」 — 줄글이 아니라 칩. 테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을
+     눈으로 합산하지 않게 앱이 모아 보여준다. 보통 3~4종, 많아야 5종 — 5종까지 375px 한 줄.
+     개수는 색이 아니라 굵기로(포인트는 작은 글자엔 안 씀). */
+  .leadsub.comp{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .leadsub.comp .pc{
+    display:inline-block;background:var(--panel2);border-radius:8px;
+    padding:5px 9px;font-size:13px;font-weight:700;color:var(--dim);
+  }
+  .leadsub.comp .pc b{color:var(--text);font-weight:800;margin-left:4px}
 
   /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 띠 자체가 「업데이트」 버튼이다 (누르면 새로 불러옴).
      하단에 별도 새로고침 버튼은 없앴다. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
@@ -346,7 +359,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    display:flex;align-items:center;gap:8px;
     width:calc(100% + 32px);margin:0 -16px;padding:9px 18px 9px;
     border:0;border-bottom:1px solid var(--line);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
@@ -369,18 +382,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.now .gtime{color:var(--waitBig)}
   .group.done .gtime{color:var(--dim)}
   .group.done .gmeta b{color:var(--goTx)}
-  /* 「지금」 시간대 머리글은 상단 요약을 겸한다 — 「18:00 · 7팀」 + 인원 구성 칩.
-     테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다.
-     보통 3~4종, 많아야 5종 — 5종까지 375px 한 줄. 개수는 색이 아니라 굵기로(포인트는 작은 글자엔 안 씀). */
-  .gteams{font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text);margin-left:-2px}
-  .gteams::before{content:"·";color:var(--off);margin-right:6px}
-  .gcomp{flex-basis:100%;display:flex;flex-wrap:wrap;gap:5px;padding:2px 0 3px 20px}
-  .gcomp .pc{
-    display:inline-block;background:var(--panel2);border-radius:8px;
-    padding:5px 9px;font-size:13px;font-weight:700;color:var(--dim);
-  }
-  .gcomp .pc b{color:var(--text);font-weight:800;margin-left:4px}
-  .group.now.shut .gcomp{display:none}
+
 
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
      (체크 칸 54px 다음부터 그어 이름줄에 맞춘다). 상태는 체크·태그·옅은 배경으로만. */
@@ -1140,14 +1142,18 @@ window.addEventListener('pageshow', remeasureSbcut);
         </button>
       </div>
     </div>
+    <!-- 지금 준비할 시간대 요약 — 헤더에 «고정». 「18:00 · 7팀」 + 인원 구성 칩. 목록이 스크롤돼도 늘 보인다. -->
     <div class="lead hide">
-      <span class="leadmain num" id="leadMain"></span>
-      <span class="leadsub num" id="leadSub"></span>
-      <!-- 전체 / 남은 팀 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다. 서랍 테마 토글과 같은 부품(.seg) -->
-      <div class="seg" role="group" aria-label="예약 표시">
-        <button type="button" id="viewAllBtn" class="on">전체</button>
-        <button type="button" id="viewPendBtn">남은 팀</button>
+      <div class="leadrow">
+        <span class="slottime num" id="slotTime"></span>
+        <span class="leadmain num" id="leadMain"></span>
+        <!-- 전체 / 남은 팀 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다. 서랍 테마 토글과 같은 부품(.seg) -->
+        <div class="seg" role="group" aria-label="예약 표시">
+          <button type="button" id="viewAllBtn" class="on">전체</button>
+          <button type="button" id="viewPendBtn">남은 팀</button>
+        </div>
       </div>
+      <span class="leadsub num" id="leadSub"></span>
     </div>
   </header>
 
@@ -2050,7 +2056,7 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<b>' + (t.came + t.off) + '/' + t.total + '</b>';
   }
 
-  // 「지금」 시간대 머리글의 인원 구성 칩 — 대기 팀만 센다. render 와 patchStatus 가 같이 쓴다.
+  // 상단 요약의 인원 구성 칩 — 대기 팀만 센다.
   function compHtml(items){
     var byPax = {};
     items.forEach(function(x){ if (x.status === 'pending') byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
@@ -2070,12 +2076,23 @@ window.dispatchEvent(new Event('fb-ready'));
         if (g.time === nowTime) slotPend = g.items.filter(function(x){ return x.status === 'pending'; });
       });
     }
-    // 「지금」 시간대의 팀 수·인원 구성은 그 머리글이 맡는다 — 이 줄은 오늘 집계 + 보기 토글
     var leadRow = document.querySelector('.lead');
+    var st = document.getElementById('slotTime');
     var lm = document.getElementById('leadMain');
     var ls = document.getElementById('leadSub');
-    lm.textContent = (!slotPend.length && all.length) ? '남은 예약 없음' : '';
-    ls.innerHTML = all.length ? dayTally(all) : '';
+    if (slotPend.length){
+      st.textContent = nowTime;
+      lm.className = 'leadmain num';
+      lm.textContent = slotPend.length + '팀';
+      ls.className = 'leadsub num comp';
+      ls.innerHTML = compHtml(slotPend);
+    } else {
+      st.textContent = '';
+      lm.className = 'leadmain num done';
+      lm.textContent = all.length ? '남은 예약 없음' : '';
+      ls.className = 'leadsub num tally';
+      ls.innerHTML = all.length ? dayTally(all) : '';
+    }
     if (leadRow) leadRow.classList.toggle('hide', !all.length);
 
     var t = tallyStatus(all), done = t.came + t.off;
@@ -2172,12 +2189,9 @@ window.dispatchEvent(new Event('fb-ready'));
       var head = document.createElement('button');
       head.className = 'ghead';
       head.type = 'button';
-      var isNow = g.time === nowTime && pendN > 0;
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
-        + (isNow ? '<span class="gteams num">' + pendN + '팀</span>' : '')
-        + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>'
-        + (isNow ? '<span class="gcomp num">' + compHtml(g.items) + '</span>' : '');
+        + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(e){
         if (takeGhostClick(e)) return;
@@ -2731,10 +2745,6 @@ window.dispatchEvent(new Event('fb-ready'));
       if (man && man.done !== (tallyStatus(mine).pend === 0)) delete collapsed[it.time];
       var meta = grp.querySelector('.gmeta');
       if (meta) meta.innerHTML = slotMetaHtml(mine);
-      var comp = grp.querySelector('.gcomp');
-      if (comp) comp.innerHTML = compHtml(mine);
-      var teams = grp.querySelector('.gteams');
-      if (teams) teams.textContent = tallyStatus(mine).pend + '팀';
       grp.setAttribute('data-time', it.time);
     }
     repaintNow();
