@@ -395,8 +395,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
   .gbreak{font-size:12px;font-weight:600;color:var(--dim)}
   .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
-  /* 「지금」은 시각 색 하나로만 — 밑줄·점·띠는 전부 촌스럽다는 오너 판단(여러 차례). 상단 요약 시각과 같은 금색이라 짝이 맞는다. */
+  /* 「지금」 = 금색 시각 + 왼쪽 가장자리 3px 막대 (2026-09-11 오너: 「막대 같은 건 괜찮은 것 같다」).
+     밑줄·점·띠·선 색 강조는 전부 반려됐고, 막대만 통과. 막대는 화면 왼쪽 끝(머리글이 -16px 로 전폭)에서
+     위아래 10px 들여 짧게 — 행 높이 44 안에서 24px. 붙어 있을 때도 같이 따라간다. */
   .group.now .gtime{color:var(--waitTx)}
+  .group.now .ghead::before{
+    content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;
+    border-radius:0 2px 2px 0;background:var(--wait);
+  }
   .group.done .gtime{color:var(--dim)}
   .group.done .gmeta b{color:var(--goTx)}
 
