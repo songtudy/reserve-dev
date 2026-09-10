@@ -507,9 +507,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     background-size:5px 5px,5px 5px;background-repeat:no-repeat;
     padding-right:22px;
   }
-  /* ⋯ 행 메뉴 — 앱의 보조 버튼(면만)을 «작게» 넷. 새 부품을 만들지 않는다.
-     이름 열(54px)에서 시작해 목록 격자에 맞춘다. 행 안의 작은 버튼 = 높이 40. */
-  .menu{display:flex;gap:6px;margin:0 0 10px 54px}
+  /* ⋯ 행 메뉴 — 앱의 보조 버튼(면만)을 «작게» 넷. 새 부품을 만들지 않는다. 행 안의 작은 버튼 = 높이 40.
+     목록 폭 그대로(좌우 여백 대칭). 이름 열(54px)에서 시작하면 왼쪽만 비어 오른쪽으로 쏠려 보였다. */
+  .menu{display:flex;gap:6px;margin:0 0 10px}
   .menu button{
     flex:1;height:40px;border:0;border-radius:12px;background:var(--btn);cursor:pointer;
     color:var(--text);font-family:inherit;font-size:13px;font-weight:700;
