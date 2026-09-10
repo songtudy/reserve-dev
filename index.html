@@ -583,8 +583,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .frow{display:flex}
   .foot button{
     flex:1;height:52px;border:0;background:transparent;cursor:pointer;
-    color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;
-    display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
+    color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:0;white-space:nowrap;
+    display:flex;align-items:center;justify-content:center;gap:5px;position:relative;padding:0 2px;
   }
   .foot button svg{display:block}
   .foot button + button::before{
@@ -1189,6 +1189,12 @@ window.addEventListener('pageshow', remeasureSbcut);
         <!-- 남은 팀만 보기 (방문·취소 행 숨김). 켜지면 라벨이 「전체 보기」로 -->
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
         <span class="viewlbl">남은 팀만</span>
+      </button>
+      <button id="foldBtn" type="button">
+        <!-- 접기 = 화살표가 안으로 모임 / 펼치기 = 밖으로 벌어짐. 모양이 위아래 대칭이라 «뒤집기»로는
+             안 바뀐다 — render() 가 경로(d)를 통째로 갈아 끼운다 -->
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path class="foldp" d="M8 4 L12 8 L16 4 M8 20 L12 16 L16 20"/></svg>
+        <span class="foldlbl">전체 접기</span>
       </button>
     </div>
   </div>
@@ -2190,6 +2196,14 @@ window.dispatchEvent(new Event('fb-ready'));
       list.innerHTML = '';
       em.classList.remove('hide');
       em.textContent = '남은 팀이 없습니다\n모두 확인했어요';
+    }
+
+    var foldBtnEl = document.getElementById('foldBtn');
+    if (foldBtnEl){
+      var fl = foldBtnEl.querySelector('.foldlbl'), fp = foldBtnEl.querySelector('.foldp');
+      if (fl) fl.textContent = openCount ? '전체 접기' : '전체 펼치기';
+      if (fp) fp.setAttribute('d', openCount ? 'M8 4 L12 8 L16 4 M8 20 L12 16 L16 20'    // 모임 = 접기
+                                             : 'M8 8 L12 4 L16 8 M8 16 L12 20 L16 16');  // 벌어짐 = 펼치기
     }
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
@@ -3469,6 +3483,20 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   viewBtn.addEventListener('click', function(){ setViewMode(viewMode === 'pending' ? 'all' : 'pending'); });
   syncViewBtn();
+
+  // 전체 접기 / 펼치기 — 하나라도 펼쳐져 있으면 전부 접고, 다 접혀 있으면 전부 편다
+  document.getElementById('foldBtn').addEventListener('click', function(){
+    if (!state || !state.items.length) return;
+    if (!panel.classList.contains('hide')) closePaste();
+    var slots = groupByTime(state.items.slice().sort(sortItems)), anyOpen = false;
+    var done = slots.map(function(g){
+      var d = tallyStatus(g.items).pend === 0;   // 대기가 비어 있는 시간대인지
+      if (!isCollapsed(g.time, d ? 0 : 1)) anyOpen = true;
+      return d;
+    });
+    slots.forEach(function(g, i){ setCollapsed(g.time, anyOpen, done[i]); });
+    render();
+  });
 
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
