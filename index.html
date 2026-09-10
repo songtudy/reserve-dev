@@ -2166,7 +2166,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!panel.classList.contains('hide') && !taEl.value.trim()) closePaste();
 
     var openCount = 0;
-    var shownRows = 0;
+    var pendRows = 0;   // 「남은 팀」 보기에서 보여줄 행 수 — 접혀 있어도 센다 (접힘 ≠ 없음)
     groups.forEach(function(g){
       var pendN = tallyStatus(g.items).pend;
       // 대기 모드 — 방문·취소 행은 숨긴다. 그 시간대가 통째로 처리됐으면 헤더째 건너뛴다.
@@ -2174,6 +2174,7 @@ window.dispatchEvent(new Event('fb-ready'));
         ? g.items.filter(function(it){ return it.status === 'pending'; })
         : g.items;
       if (viewMode === 'pending' && !rows.length) return;
+      pendRows += rows.length;
       var shut = q ? false : isCollapsed(g.time, pendN);
       // 완료됐는데 아직 5초 유예 중이면, 유예가 끝나는 시점에 접히도록 타이머를 걸어둔다.
       // (직접 체크한 폰은 keepSlotOpenForId 가 이미 걸었고, 다른 폰·자동취소는 여기서 건다)
@@ -2199,13 +2200,14 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       sec.appendChild(head);
 
-      if (!shut){ rows.forEach(function(it){ sec.appendChild(rowEl(it)); }); shownRows += rows.length; }
+      if (!shut) rows.forEach(function(it){ sec.appendChild(rowEl(it)); });
       list.appendChild(sec);
       openCount += shut ? 0 : 1;
     });
 
-    // 대기 모드인데 대기 중인 예약이 하나도 없으면 — 다 확인했다는 뜻
-    if (viewMode === 'pending' && !shownRows && !q){
+    // 대기 모드인데 대기 중인 예약이 하나도 없으면 — 다 확인했다는 뜻.
+    // (화면에 «그려진» 행이 아니라 «있는» 행으로 판정 — 전체 접기로 다 접혀 있어도 명단은 있다)
+    if (viewMode === 'pending' && !pendRows && !q){
       list.innerHTML = '';
       em.classList.remove('hide');
       em.textContent = '남은 팀이 없습니다\n모두 확인했어요';
