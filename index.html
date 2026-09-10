@@ -352,53 +352,48 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar button:active{opacity:.4}
   mark{background:var(--mark);color:var(--text);-webkit-text-fill-color:var(--text);border-radius:3px;padding:0 1px}
 
-  /* time group — 가는 선 + 숫자 캡슐 (2026-09-10 오너 확정):
-     「 ⌄ 19:00 ─────────── 방문 2 · 취소 1  [3/3] 」
-     선을 빼 보니 가운데가 비어 허전하다는 오너 판단 → 시각과 집계를 잇는 가는 선을 되살림.
-     박스 머리글도 비교했지만 명단(선만 있는 평평한 목록)보다 튀어서 선으로.
-     숫자 캡슐은 명단의 「2명」 칩과 같은 부품이고, 상태는 캡슐 색으로: 지금=포인트, 끝남=초록. */
-  .group{margin-top:14px}
+  /* time group — 시간대 머리글 + 그 명단 (2026-09-11 오너 확정: 「5시 버전 + 다듬기」).
+     선 규칙: 전폭 선 = 구역 경계(상단바 아래·시간바 아래·하단바 위) / 들여쓴 선 = 행 사이.
+     머리글은 «자기 명단»에 붙는다 — 위는 넓게(앞 명단과 떨어짐), 아래는 선 하나.
+     가운데 관통선·캡슐·박스는 여섯 안을 실제 앱에서 4가지 상태로 비교한 끝에 모두 탈락 —
+     접힌 시간대가 표처럼 촘촘히 쌓이는 이 구조가 «영업 중 가장 오래 보는 화면»에서 제일 정돈됐다. */
+  .group{margin-top:18px}
+  .group:first-child{margin-top:6px}
+  /* 접힌 시간대끼리는 띄우지 않고 선으로만 잇는다 */
+  .group.shut + .group{margin-top:0}
 
   .ghead{
-    position:sticky;top:0;z-index:10;
+    position:relative;position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;align-items:center;gap:7px;
-    width:calc(100% + 32px);margin:0 -16px;padding:10px 18px 9px;   /* 높이 44 = 애플 최소 누름 크기 */
-    border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
+    display:flex;align-items:center;gap:8px;
+    width:calc(100% + 32px);margin:0 -16px;padding:12px 18px 11px;   /* 높이 44 = 애플 최소 누름 크기 */
+    border:0;border-bottom:1px solid var(--line);
+    font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
-  /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다.
-     안 붙어 있을 땐 바탕(ink) 위에 ink→투명이라 보이지 않는다. */
+  /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다. */
   .ghead::after{
     content:"";position:absolute;left:0;right:0;top:100%;height:8px;
     background:linear-gradient(var(--ink),transparent);pointer-events:none;
   }
   .chev{
     color:var(--dim);flex:0 0 auto;
-    display:grid;place-items:center;width:14px;height:14px;line-height:0;
+    display:grid;place-items:center;width:12px;height:12px;line-height:0;
     transform:rotate(90deg);transition:transform .15s;
   }
-  .chev svg{display:block}
+  .chev svg{display:block;width:12px;height:12px}
   .group.shut .chev{transform:rotate(0)}
-  /* 18px — 상단 요약 시각(20px)보다 한 단계 아래라야 「지금」 요약이 위계상 먼저 읽힌다.
-     금색(다크)·파랑(라이트) 모두 바탕 대비 4.5:1 이상이라 큰 글씨 기준 없이도 된다. */
-  .gtime{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
-  .gline{flex:1;height:1px;background:var(--line);margin:0 3px}
-  .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px}
-  /* 명단의 「2명」(.pax) 칩과 똑같은 규격 — 새 부품이 아니라 같은 부품 */
-  .gcnt{
-    height:24px;display:inline-flex;align-items:center;
-    font-size:14px;font-weight:700;color:var(--text);
-    background:var(--panel2);border-radius:8px;padding:0 9px;
-  }
-  .group.now .gtime{color:var(--waitBig)}
-  .group.now .gcnt{background:var(--mark);background:color-mix(in srgb, var(--wait) 18%, transparent);color:var(--waitTx)}
+  /* 밝기 3단계로 「언제」를 말한다 — 지금 = 금색 / 앞으로 = 흰색 / 다 끝남 = 회색.
+     17px 은 «큰 글씨» 대비 기준 밖이라 지금 색은 글자용 금색(--waitTx). */
+  .gtime{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
+  .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+  .gbreak{font-size:12px;font-weight:600;color:var(--dim)}
+  .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
+  .group.now .gtime{color:var(--waitTx)}
+  /* 지금 시간대만 머리글 선이 은은한 포인트색 — 스크롤하다가도 걸린다 */
+  .group.now .ghead{border-bottom-color:color-mix(in srgb, var(--wait) 60%, transparent)}
   .group.done .gtime{color:var(--dim)}
-  .group.done .gcnt{background:color-mix(in srgb, var(--go) 18%, transparent);color:var(--goTx)}
-  /* 라이트는 바탕이 밝아 18% 틴트면 글자 대비가 4.2:1(지금)·4.5:1(끝남)로 기준(4.5) 미달·턱걸이 →
-     10% 로 낮춰 4.7:1 · 4.9:1 확보. 다크는 18% 에서 7.0:1 · 5.4:1 이라 그대로. */
-  html[data-theme="light"] .group.now .gcnt{background:color-mix(in srgb, var(--wait) 10%, transparent)}
-  html[data-theme="light"] .group.done .gcnt{background:color-mix(in srgb, var(--go) 10%, transparent)}
+  .group.done .gmeta b{color:var(--goTx)}
 
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
      (체크 칸 54px 다음부터 그어 이름줄에 맞춘다). 상태는 체크·태그·옅은 배경으로만. */
@@ -2085,8 +2080,9 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시간대 머리글 오른쪽 「처리/전체 방문 n · 취소 n」. render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
-    return '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>'
-      + '<b class="gcnt">' + (t.came + t.off) + '/' + t.total + '</b>';
+    // 아직 아무도 안 온 시간대는 「방문 0」을 쓰지 않는다 — 「0/1」 만으로 충분
+    var br = (t.came || t.off) ? '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>' : '';
+    return br + '<b>' + (t.came + t.off) + '/' + t.total + '</b>';
   }
 
 
@@ -2235,7 +2231,6 @@ window.dispatchEvent(new Event('fb-ready'));
       head.type = 'button';
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
-        + '<span class="gline"></span>'
         + '<span class="gmeta num">' + slotMetaHtml(slotAll) + '</span>';
       head.setAttribute('aria-expanded', String(!shut));
       head.setAttribute('data-time', g.time);
