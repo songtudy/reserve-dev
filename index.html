@@ -372,6 +372,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:0;border-bottom:1px solid var(--line2);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
+  /* 열린 명단 뒤에 오는 머리글은 위에도 선 — 칸이 위아래로 닫힌다 (2026-09-11 오너 위임, 9방향 비교 후).
+     맨 위·접힌 것끼리 붙은 자리엔 위 선을 안 긋는다(앞 머리글 아래 선이 그 몫). 높이는 44 로 같게. */
+  .ghead{border-top:1px solid var(--line2);padding-top:11px}
+  .group:first-child .ghead, .group.shut + .group .ghead{border-top:0;padding-top:12px}
   .ghead:active{background:var(--press)}
   /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다.
      top:100% 는 안쪽 상자 기준이라 선(border) 위에 얹힌다 → 1px 내려 선을 가리지 않게. */
