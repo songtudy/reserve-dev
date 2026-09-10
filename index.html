@@ -396,12 +396,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .gbreak{font-size:12px;font-weight:600;color:var(--dim)}
   .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
   /* 「지금」 = 금색 시각 + 왼쪽 가장자리 3px 막대 (2026-09-11 오너: 「막대 같은 건 괜찮은 것 같다」).
-     밑줄·점·띠·선 색 강조는 전부 반려됐고, 막대만 통과. 막대는 화면 왼쪽 끝(머리글이 -16px 로 전폭)에서
-     위아래 10px 들여 짧게 — 행 높이 44 안에서 24px. 붙어 있을 때도 같이 따라간다. */
+     밑줄·점·띠·선 색 강조는 전부 반려됐고, 막대만 통과. 여섯 꼴(들임·굵기·둥글기·안쪽 배치) 비교 끝에
+     «칸 가장자리» — 머리글 높이 전체(선에서 선까지), 둥글기 없음. 떠 있는 표식이 아니라 행의 한 변이라
+     헤어라인 표 체계와 같은 기하를 쓴다. 붙어 있을 때도 같이 따라간다. */
   .group.now .gtime{color:var(--waitTx)}
   .group.now .ghead::before{
-    content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;
-    border-radius:0 2px 2px 0;background:var(--wait);
+    content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--wait);
   }
   .group.done .gtime{color:var(--dim)}
   .group.done .gmeta b{color:var(--goTx)}
