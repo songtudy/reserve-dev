@@ -367,6 +367,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
+  /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다.
+     안 붙어 있을 땐 바탕(ink) 위에 ink→투명이라 보이지 않는다. */
+  .ghead::after{
+    content:"";position:absolute;left:0;right:0;top:100%;height:8px;
+    background:linear-gradient(var(--ink),transparent);pointer-events:none;
+  }
   .chev{
     color:var(--dim);flex:0 0 auto;
     display:grid;place-items:center;width:14px;height:14px;line-height:0;
@@ -374,13 +380,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
-  /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
-  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+  /* 18px — 상단 요약 시각(20px)보다 한 단계 아래라야 「지금」 요약이 위계상 먼저 읽힌다.
+     금색(다크)·파랑(라이트) 모두 바탕 대비 4.5:1 이상이라 큰 글씨 기준 없이도 된다. */
+  .gtime{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .gline{flex:1;height:1px;background:var(--line);margin:0 3px}
   .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px}
+  /* 명단의 「2명」(.pax) 칩과 똑같은 규격 — 새 부품이 아니라 같은 부품 */
   .gcnt{
-    font-size:13px;font-weight:800;color:var(--text);
-    background:var(--panel2);border-radius:7px;padding:2px 8px;
+    height:24px;display:inline-flex;align-items:center;
+    font-size:14px;font-weight:700;color:var(--text);
+    background:var(--panel2);border-radius:8px;padding:0 9px;
   }
   .group.now .gtime{color:var(--waitBig)}
   .group.now .gcnt{background:var(--mark);background:color-mix(in srgb, var(--wait) 18%, transparent);color:var(--waitTx)}
