@@ -200,7 +200,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:640px;margin:0 auto;
     /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
-    padding:0 16px calc(18px + var(--kb, 0px));
+    padding:0 16px calc(84px + env(safe-area-inset-bottom) + var(--kb, 0px));   /* 떠 있는 하단 바(12+52) 밑으로 끝까지 스크롤되게 */
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
@@ -614,29 +614,33 @@ window.addEventListener('pageshow', remeasureSbcut);
   .btn.ghost:active{background:var(--btnPress)}
   textarea::placeholder{ color:var(--ph) }
 
-  /* footer — 앱 셸의 고정 항목. 스크롤은 위 .wrap 안에서만. 툴바 꼴(아이콘+라벨, 테두리 없음). */
+  /* footer — 떠 있는 유리 알약 바 (2026-09-11 오너: 「리얼 아이폰처럼」). 명단은 바 «아래로» 지나가고(.wrap 아래 여백),
+     바는 반투명 판 + 뒤 흐림이라 지나가는 명단이 비친다. 안은 세 항목 같은 글자색 — 가운데 칠·색 강조는 반려
+     («명단 복사를 추가보다 많이 쓴다»는 강조하라는 뜻이 아니었다). 키보드가 올라오면 통째로 숨는다(위 규칙). */
   .foot.hide{display:none}
   .foot{
-    flex:0 0 auto;z-index:30;
-    background:var(--ink);
-    border-top:1px solid var(--line);
-    padding:0 6px env(safe-area-inset-bottom);
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    padding:0 16px calc(12px + env(safe-area-inset-bottom));
+    pointer-events:none;                        /* 알약 밖 여백은 명단을 그대로 누르게 */
   }
-  .foot .inner{max-width:640px;margin:0 auto}
-  .frow{display:flex;gap:6px;padding:6px 10px}   /* 6+40+6 = 52, 바 높이는 전과 같다 */
+  .foot .inner{
+    pointer-events:auto;max-width:520px;margin:0 auto;
+    border-radius:999px;padding:4px;
+    background:color-mix(in srgb, var(--panel2) 62%, transparent);
+    -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
+    box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 9%, transparent);
+  }
+  html[data-theme="light"] .foot .inner{
+    background:color-mix(in srgb, #ffffff 62%, transparent);
+    box-shadow:0 8px 28px rgba(20,30,50,.16), inset 0 0 0 1px color-mix(in srgb, #ffffff 80%, transparent);
+  }
+  .frow{display:flex;gap:4px}
   .foot button{
-    flex:1;height:40px;border:0;border-radius:12px;background:transparent;cursor:pointer;
+    flex:1;height:44px;border:0;border-radius:999px;background:transparent;cursor:pointer;
     color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
     display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
   .foot button svg{display:block}
-  /* 항목 사이 세로 구분선은 두지 않는다 — 세 칸 균등 배치만으로 구분되고, 선은 정보 없이 줄만 늘린다. */
-  /* 가장 많이 쓰는 「명단 복사」 = 포인트색 «면» 버튼 (시트의 primary 버튼과 같은 규격: 채움·둥글기 12·700).
-     전에 글자만 밝히고 아이콘만 금색으로 했더니 «탭 바의 선택된 탭»으로 읽혀 「왜 켜져 있나」가 됐다(오너 지적).
-     강조는 글자 색이 아니라 면으로 — 면이 있으면 «버튼»으로 읽힌다. 2026-09-11 6안 비교 후 확정. */
-  .foot #copyBtn{background:var(--wait);color:var(--onWait);font-weight:700}
-  .foot #copyBtn svg{color:var(--onWait)}
-  .foot #copyBtn:active{opacity:1;filter:brightness(.92);transition:none}   /* 면 있는 버튼 누름 규칙 */
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
