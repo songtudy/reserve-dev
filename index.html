@@ -114,6 +114,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
     --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
     --ph:#7b8695;
+    /* 보조 버튼 = 테두리 없는 «면». 입력칸(선)과 버튼(면)이 한눈에 갈린다.
+       눌림은 면이 한 단 밝아진다(--press 는 이 면과 거의 같아 안 보여서 따로 둔다). */
+    --btn:#252c37;      --btnPress:#323b48;  --btnWarn:#2c2123;
     --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
     --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
@@ -136,6 +139,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
+    /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
+    --btn:#e5e9ef;      --btnPress:#d5dbe4;  --btnWarn:#fbe6e3;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
     /* 채움 금색은 다크(#e8b757 모래빛)와 같은 결로 — 예전 #f5aa14 는 주황 노랑이라 다른 색처럼 보였다 */
@@ -226,10 +231,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dayprog{
     display:flex;align-items:center;line-height:1;
     font-size:13px;font-weight:800;color:var(--text);
-    background:var(--panel);border:1px solid var(--line);
-    padding:6px 9px;border-radius:8px;
+    background:var(--panel2);
+    padding:7px 10px;border-radius:8px;
   }
-  .dayprog.full{color:var(--goTx);border-color:var(--goTx)}
+  .dayprog.full{color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   .tools button.off{visibility:hidden;pointer-events:none}
   .tools button{
@@ -298,8 +303,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadsub.comp{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
   .leadsub.comp .pc{
     display:inline-block;
-    background:var(--panel2);border:1px solid var(--line);border-radius:8px;
-    padding:4px 8px;font-size:13px;font-weight:700;color:var(--text);
+    background:var(--panel2);border-radius:8px;   /* 칩 = 면만 (인원칸과 같은 꼴) */
+    padding:5px 9px;font-size:13px;font-weight:700;color:var(--text);
   }
   .leadsub.comp .pc b{color:var(--waitTx);font-weight:800;margin-left:4px}
 
@@ -333,7 +338,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:36px;height:36px;display:grid;place-items:center;border-radius:9px;
     background:none;border:0;color:var(--dim);cursor:pointer;
   }
-  #qBack:active{background:var(--press)}   /* 옆의 검색바 버튼(.searchbar button)과 같은 눌림 */
+  #qBack:active{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
   .qcount{
     position:absolute;right:40px;top:50%;transform:translateY(-50%);
     font-size:12px;font-weight:700;color:var(--dim);
@@ -350,7 +355,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .searchbar button svg{display:block}
-  .searchbar button:active{background:var(--press)}
+  .searchbar button:active{opacity:.4}
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
   /* time group — 시간대 머리글 + 그 명단.
@@ -502,20 +507,14 @@ window.addEventListener('pageshow', remeasureSbcut);
     background-size:5px 5px,5px 5px;background-repeat:no-repeat;
     padding-right:22px;
   }
-  /* ⋯ 행 메뉴 — 하단바와 같은 «툴바» 꼴: 한 장의 면 위에 글자 버튼, 사이는 얇은 칸막이.
+  /* ⋯ 행 메뉴 — 앱의 보조 버튼(면만)을 «작게» 넷. 새 부품을 만들지 않는다.
      이름 열(54px)에서 시작해 목록 격자에 맞춘다. 행 안의 작은 버튼 = 높이 40. */
-  .menu{
-    display:flex;margin:0 0 10px 54px;height:40px;
-    background:var(--panel2);border-radius:12px;overflow:hidden;
-  }
+  .menu{display:flex;gap:6px;margin:0 0 10px 54px}
   .menu button{
-    flex:1;position:relative;border:0;background:transparent;cursor:pointer;
+    flex:1;height:40px;border:0;border-radius:12px;background:var(--btn);cursor:pointer;
     color:var(--text);font-family:inherit;font-size:13px;font-weight:700;
   }
-  .menu button + button::before{
-    content:"";position:absolute;left:0;top:11px;bottom:11px;width:1px;background:var(--line);
-  }
-  .menu button:active{background:var(--press)}
+  .menu button:active{background:var(--btnPress)}
   .menu .del{color:var(--warn)}
 
   /* 바텀시트 (예약 추가) — --kb 만큼 위로 올려 키보드에 안 가리게 한다 */
@@ -586,7 +585,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   #pasteHint.bad{ color:var(--errTx);font-weight:700 }
 
   /* ── 큰 버튼 (시트·팝업·폼 공통) — 높이 48 · 15px/700 · 둥글기 12 ──
-     주동작 = 금색 채움 / 보조 = --panel2 면 + 선 / 위험 = 붉은 글자. 이 꼴 하나뿐.
+     주동작 = 금색 채움 / 보조 = --btn 면(테두리 없음) / 위험 = --btnWarn 면 + 붉은 글자. 이 꼴 하나뿐.
      (.btn · .dbtn button · .sheetClose · .sheetNever · .sheetCopy 가 전부 이 값을 쓴다) */
   .btns{display:flex;gap:8px;margin-top:14px}
   .btn{
@@ -594,9 +593,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
   .btn.primary{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
-  .btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+  .btn.ghost{background:var(--btn);color:var(--text)}
   .btn.primary:active{filter:brightness(.92)}
-  .btn.ghost:active{background:var(--press)}
+  .btn.ghost:active{background:var(--btnPress)}
   textarea::placeholder{ color:var(--ph) }
 
   /* footer — 앱 셸의 고정 항목. 스크롤은 위 .wrap 안에서만. 툴바 꼴(아이콘+라벨, 테두리 없음). */
@@ -661,11 +660,11 @@ window.addEventListener('pageshow', remeasureSbcut);
      강조색(--wait)은 두 테마 모두 「켜짐」으로 읽힌다. .wide 는 시트 안에서 꽉 차게. */
   .seg{display:flex;gap:6px}
   .seg button{
-    padding:7px 15px;border-radius:11px;
-    border:1px solid var(--line);background:var(--panel2);
+    padding:7px 15px;border-radius:12px;
+    border:1px solid transparent;background:var(--btn);
     color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
   }
-  .seg button:active{background:var(--press)}
+  .seg button:active{background:var(--btnPress)}
   .seg button.on{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
   .seg.wide{gap:8px;margin:-2px 0 14px}
   .seg.wide button{flex:1;padding:11px 0;font-size:15px}
@@ -711,10 +710,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
     flex:1;height:48px;padding:0;border-radius:12px;
-    border:1px solid var(--line);background:var(--panel2);
+    border:0;background:var(--btn);
     color:var(--dim);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
-  .sheetNever:active{background:var(--press)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
+  .sheetNever:active{background:var(--btnPress)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
   .faq{padding-bottom:8px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
   .qa{border-bottom:1px solid var(--line)}
   .qa:last-child{border-bottom:0}
@@ -875,10 +874,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .sheetClose{
     width:100%;height:48px;padding:0;margin-top:2px;border-radius:12px;
-    border:1px solid var(--line);background:var(--panel2);
+    border:0;background:var(--btn);
     color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
-  .sheetClose:active{background:var(--press)}
+  .sheetClose:active{background:var(--btnPress)}
 
   /* ---------- 잠금 화면 (공유 비밀번호) ----------
      네이티브 키보드를 안 쓴다 — 직접 만든 숫자 키패드. iOS 는 입력칸에 포커스가 가면
@@ -1046,10 +1045,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dbtn{display:flex;gap:8px;margin-top:14px}
   .dbtn button{
     flex:1;height:48px;padding:0;border-radius:12px;
-    border:1px solid var(--line);background:var(--panel2);
+    border:0;background:var(--btn);
     color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
-  .dbtn #dlgNo:active, .dbtn #rltClose:active{background:var(--press)}   /* 취소·닫기 = --press */
+  .dbtn #dlgNo:active, .dbtn #rltClose:active{background:var(--btnPress)}   /* 취소·닫기 = 면이 밝아짐 */
   .dbtn #rltGo:active{filter:brightness(.92)}                           /* 채운 버튼 = 살짝 어둡게 */
   /* 「초기화」는 한 번 눌러서가 아니라 「길게 눌러」 실행된다.
      예전엔 '예' 를 타이핑하게 했는데, 그 키보드가 뜨면 아이폰이 화면(비주얼 뷰포트)을
@@ -1059,7 +1058,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dbtn #dlgYes{
     --holdms:1000ms;                       /* 길게 누르기 시간 — JS 의 HOLD_MS 와 같아야 한다 */
     position:relative;overflow:hidden;
-    background:var(--warnBg);border-color:var(--warnTag);color:var(--onWarn);
+    background:var(--btnWarn);color:var(--onWarn);
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
   .dbtn #dlgYes.holdmode{ touch-action:none }            /* 길게 누르기 제스처를 스크롤로 뺏기지 않게 */
