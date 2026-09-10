@@ -358,7 +358,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      가운데 관통선·캡슐·박스는 여섯 안을 실제 앱에서 4가지 상태로 비교한 끝에 모두 탈락 —
      접힌 시간대가 표처럼 촘촘히 쌓이는 이 구조가 «영업 중 가장 오래 보는 화면»에서 제일 정돈됐다. */
   .group{margin-top:18px}
-  .group:first-child{margin-top:6px}
+  .group:first-child{margin-top:0}   /* 상단 선 바로 아래 — 첫 시간대만 높아 보이지 않게 */
   /* 접힌 시간대끼리는 띄우지 않고 선으로만 잇는다 */
   .group.shut + .group{margin-top:0}
 
@@ -371,9 +371,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
-  /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다. */
+  /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다.
+     top:100% 는 안쪽 상자 기준이라 선(border) 위에 얹힌다 → 1px 내려 선을 가리지 않게. */
   .ghead::after{
-    content:"";position:absolute;left:0;right:0;top:100%;height:8px;
+    content:"";position:absolute;left:0;right:0;top:calc(100% + 1px);height:8px;
     background:linear-gradient(var(--ink),transparent);pointer-events:none;
   }
   .chev{
