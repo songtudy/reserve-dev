@@ -1853,12 +1853,21 @@ window.dispatchEvent(new Event('fb-ready'));
       return { date: date, id: id, op: 'put', item: wqMerge(prev.item, patch), ts: pts };
     return { date: date, id: id, op: 'patch', patch: wqMerge(patch, {}), ts: ts };
   }
+  var wqHolding = 0;
   function wqPush(id, op, payload){
     var date = viewDate, k = wqk(date, id);
     wqMap[k] = wqEntry(wqMap[k] || null, date, id, op, payload);
     wqSave();
     wqIdleFails = 0;   // 새 변경 = 지금은 보낼 수 있다고 보고 재시도를 다시 연다
-    wqFlush();
+    if (!wqHolding) wqFlush();
+  }
+  // 여러 변경을 큐에 «다 올린 뒤» 한 번에 보낸다. 수정으로 id 가 바뀌면 del(옛)+put(새) 인데,
+  // 하나씩 보내면 del 의 로컬 이벤트가 put 이 큐에 오르기 전에 도착해 applyRemoteItems 가 새 행을
+  // 「서버에 없고 큐에도 없음」으로 보고 지운다 → 재전송(3초 백오프)까지 행이 사라졌다 나타났다.
+  function wqBatch(fn){
+    wqHolding++;
+    try { fn(); } finally { wqHolding--; }
+    if (!wqHolding) wqFlush();
   }
   function wqValid(e){
     // 큐는 늘 오늘 것만 만든다. 자정 직전 오프라인 쓰기가 자정 직후 올라오는 경우까지
@@ -2582,7 +2591,7 @@ window.dispatchEvent(new Event('fb-ready'));
       afterEditClose(it.id);                 // 폼 접히며 하단이 바에 가리는 것 보정
     }
     if (it.id === oldId) writeItem(oldId, { memo: it.memo, ts: it.ts });   // 메모만 바뀜 (id 유지)
-    else { delItem(oldId); putItem(it); }                                  // 시각·이름·인원 바뀜 = 다른 노드
+    else wqBatch(function(){ delItem(oldId); putItem(it); });              // 시각·이름·인원 바뀜 = 다른 노드 (둘을 한 번에)
     toast(it.time + ' ' + it.name + ' 수정됨');
     return true;
   }
