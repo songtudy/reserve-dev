@@ -139,11 +139,13 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
     --btn:#e6e6eb;      --btnPress:#d5d5dc;  --btnWarn:#fbe6e3;
     --scrim:rgba(0,0,0,.44); --scrimLite:rgba(0,0,0,.34);
-    /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
-    /* 채움 금색은 다크(#e8b757 모래빛)와 같은 결로 — 예전 #f5aa14 는 주황 노랑이라 다른 색처럼 보였다 */
-    --wait:#e3a43e;     --waitTx:#996100;   --waitBig:#c27400;
-    --onWait:#2a1d02;   --mark:#fdf1d8;
-    --go:#2f9c6e;       --goTx:#1d7a54;     --onGo:#ffffff;
+    /* ★ 라이트의 포인트는 금이 아니라 파랑. 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 한계라(더 밝히면 안 읽힘)
+       갈색으로 내려앉는다 — 노란 계열의 물리적 한계. 파랑 #2a5bd7 은 한 값으로 세 자리를 다 통과한다:
+       바탕 5.4:1 · 칩(--panel2) 위 4.9:1 · 그 위 흰 글자 5.9:1. 방문 초록·취소 빨강과도 가장 멀다.
+       다크는 금 유지(흑 위 10.7:1, 아이콘·스플래시와 한 몸). 테마마다 포인트 색이 다른 건 의도. */
+    --wait:#2a5bd7;     --waitTx:#2a5bd7;   --waitBig:#2a5bd7;
+    --onWait:#ffffff;   --mark:#dde6fb;
+    --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
     --warn:#b43f36;
     --onWarn:#7a2a20;
     --errRow:rgba(192,72,60,.12);   --errTx:#9e4438;
@@ -922,8 +924,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:1.5px solid var(--off);background-color:transparent;
     transition:background-color .12s, border-color .12s;
   }
-  /* 라이트에서 --wait(#f5aa14)는 흰 배경 위 대비가 1.8:1 로 거의 안 보인다.
-     --waitTx 는 그 대비용 토큰(다크에선 --wait 와 같은 값). */
+  /* 글자용 포인트 토큰 — 다크는 --wait 와 같은 값, 라이트는 파랑 */
   .lockdots i.on{background-color:var(--waitTx);border-color:var(--waitTx)}
   .lock.bad .lockdots{animation:lockshake .32s}
   @keyframes lockshake{
