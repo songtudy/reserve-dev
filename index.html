@@ -121,21 +121,17 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
     --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
     --onWait:#241a05;   --mark:#463a13;
-    /* 방문 — 초록 */
+    /* 방문 — 초록 (상태 색은 체크 원 하나에만 쓴다) */
     --go:#5fb08a;       --goTx:var(--go);      --onGo:#08241a;
-    --goBg:#141d19;     --goTag:#1b2f27;
-    --goTagTx:#7fc9a5;  --goName:#94a49c;
     /* 취소·경고 — 붉은색 */
-    --warn:#c9736a;     --warnBg:#1a1618;   --warnTag:#332323;  --warnTagTx:#d2938c;
-    --warnName:#b8938e; --warnPax:#a8837e;  --warnPaxBg:#241c1d;
-    /* 초기화 버튼 글자 — 아래 바탕(--warnBg)에서도, 그 위로 --warn 이 42% 차올라도 읽힌다
-       (9.06:1 / 4.68:1). --warnTagTx 는 채움 위에서 3.65:1 로 묻혔다. --onWait·--onGo 와 같은 작명 */
+    --warn:#c9736a;
+    /* 초기화 버튼 글자 — --btnWarn 면 위에서도, 그 위로 --warn 이 42% 차올라도 읽힌다. --onWait·--onGo 와 같은 작명 */
     --onWarn:#e0aca6;
     /* 붙여넣기 오류 (줄 강조 + 안내문) */
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   html[data-theme="light"]{
-    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#eef1f6;
+    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e9edf3;   /* 인원칸·칩이 연회색 바탕(--ink) 위에서도 보이게 한 단 진하게 */
     --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
@@ -147,11 +143,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     --wait:#e3a43e;     --waitTx:#996100;   --waitBig:#c27400;
     --onWait:#2a1d02;   --mark:#fdf1d8;
     --go:#2f9c6e;       --goTx:#1d7a54;     --onGo:#ffffff;
-    --goBg:#eefaf3;     --goTag:#d9f2e5;
-    --goTagTx:#176b49;  --goName:#4a6a5b;
-    --warn:#b43f36;     --warnBg:#fdf1ef;   --warnTag:#fadedb;  --warnTagTx:#a2463c;
-    --warnName:#855c55; --warnPax:#7a4f48;  --warnPaxBg:#f6e7e5;
-    --onWarn:#7a2a20;   /* 8.72:1 / 4.62:1 — 라이트는 --warnTagTx 가 채움 위에서 2.90:1 이었다 */
+    --warn:#b43f36;
+    --onWarn:#7a2a20;
     --errRow:rgba(192,72,60,.12);   --errTx:#9e4438;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -215,7 +208,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:40px;height:40px;flex:0 0 auto;padding:0;
     display:grid;place-items:center;
     background:none;border:0;color:var(--dim);
-    line-height:0;cursor:pointer;border-radius:9px;
+    line-height:0;cursor:pointer;border-radius:12px;
   }
   .nav button svg{display:block}
   /* ── 누름 규칙 (앱 공통) ──
@@ -240,7 +233,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .tools button{
     width:40px;height:40px;flex:0 0 auto;
     display:grid;place-items:center;
-    background:none;border:0;border-radius:9px;
+    background:none;border:0;border-radius:12px;
     color:var(--dim);cursor:pointer;margin-right:-8px;
   }
   .tools button.on{color:var(--waitTx);background:var(--panel2)}
@@ -252,7 +245,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 실사용이 아닌 곳(테스트·로컬·복사본)에서만 뜨는 빨간 경고 배지.
      실DB 격리는 computeDev 라우팅이 담당 — 이건 "실사용 아님" 을 못 놓치게 하는 표시. */
   .devtag{
-    flex:0 0 auto;padding:5px 11px;border-radius:7px;
+    flex:0 0 auto;padding:6px 11px;border-radius:8px;
     background:#e5484d;color:#fff;
     font-size:13px;font-weight:800;letter-spacing:.01em;line-height:1.2;
   }
@@ -329,13 +322,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar.hide{display:none}
   .searchbar input{
     width:100%;background:var(--panel);color:var(--text);
-    border:1px solid var(--line);border-radius:11px;
+    border:1px solid var(--line);border-radius:12px;
     padding:11px 74px 11px 42px;font-family:inherit;font-size:16px;
     -webkit-appearance:none;appearance:none;
   }
   #qBack{
     position:absolute;left:3px;top:50%;transform:translateY(-50%);
-    width:36px;height:36px;display:grid;place-items:center;border-radius:9px;
+    width:36px;height:36px;display:grid;place-items:center;border-radius:12px;
     background:none;border:0;color:var(--dim);cursor:pointer;
   }
   #qBack:active{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
@@ -350,7 +343,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar input::-webkit-search-cancel-button{display:none}
   .searchbar button{
     position:absolute;right:4px;top:50%;transform:translateY(-50%);
-    width:34px;height:34px;border:0;border-radius:9px;
+    width:34px;height:34px;border:0;border-radius:12px;
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
@@ -452,7 +445,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .row.arrived .memo, .row.cancelled .memo{color:var(--off)}
   .erow.memorow{margin-top:6px}
-  #addPanel .edit{padding:0}
   #addPanel h2{margin-bottom:12px}
   .name{
     display:block;font-size:16px;font-weight:700;letter-spacing:-.01em;
@@ -485,7 +477,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.leaving{opacity:0;transition:opacity .22s ease}
 
 
-  .edit{padding:0 10px 11px}
   .erow{display:flex;gap:6px}
   .erow label{
     display:flex;flex-direction:column;gap:4px;
@@ -550,7 +541,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      같아서 → iOS 의 키보드 포커스 처리(Visual Viewport pan)가 두 경우 동일하게 동작한다. */
   .tawrap{
     position:relative;height:273px;overflow:hidden;
-    border:1px solid var(--line);border-radius:11px;
+    border:1px solid var(--line);border-radius:12px;
     background:var(--ink);
   }
   .tawrap:focus-within{outline:2px solid var(--waitTx);outline-offset:-1px}
@@ -761,7 +752,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .key{
     display:inline-grid;place-items:center;
     width:26px;height:26px;margin:0 1px;
-    border:1px solid var(--line);border-radius:7px;background:var(--ink);
+    border:1px solid var(--line);border-radius:8px;background:var(--ink);
     color:var(--text);line-height:0;vertical-align:middle;
   }
   .key svg{display:block}
@@ -850,7 +841,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
   .qrcard{
-    background:#fff;border-radius:16px;padding:16px;margin:0 auto 16px;
+    background:#fff;border-radius:18px;padding:16px;margin:0 auto 16px;
     width:236px;box-sizing:border-box;
   }
   .qrcard svg{display:block;width:100%;height:auto}
@@ -920,8 +911,8 @@ window.addEventListener('pageshow', remeasureSbcut);
      화면이지만, 잠금은 하루에 여러 번 보는 기능 화면(PIN 패드 헤더)이라 다른 시트 제목들과
      같은 시스템 폰트·굵기를 쓰는 게 실제 UI 와 더 잘 붙는다. 아이콘도 타일(홈 화면 아이콘
      그대로)을 유지 — "이게 내 폰에 있는 그 앱 맞다"를 확인해주는 자리라 실물 아이콘이 낫다. */
-  .lockico{width:56px;height:56px;border-radius:15px;border:1px solid var(--line);background:var(--panel2)}
-  .lockname{margin-top:14px;font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+  .lockico{width:56px;height:56px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+  .lockname{margin-top:14px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
   /* 입력한 자릿수 표시 */
   .lockdots{display:flex;gap:14px;margin-top:26px;height:12px;align-items:center}
@@ -940,7 +931,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 높이를 '고정'한다 — min-height 면 문구가 뜰 때 1px 늘어 점·키패드가 밀린다.
      문구는 한 줄에 들어가는 길이로만 쓴다(320px 기준 14자 이하). */
-  .lockmsg{margin-top:12px;font-size:12.5px;line-height:18px;height:18px;
+  .lockmsg{margin-top:12px;font-size:13px;line-height:18px;height:18px;
            color:var(--warn);text-align:center;white-space:nowrap}
   /* 숫자 키패드 — 원형은 이 앱에서 단계 번호(.step .n)와 같은 결 */
   .lockpad{
@@ -1096,7 +1087,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltsub{margin:0 0 12px;font-size:13px;color:var(--dim)}
   .rlt input{
     width:100%;background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:11px;
+    border:1px solid var(--line);border-radius:12px;
     padding:11px 13px;font-family:inherit;font-size:16px;font-weight:600;
     -webkit-appearance:none;appearance:none;
   }
@@ -1123,8 +1114,8 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   .toast{
     position:fixed;left:50%;bottom:calc(84px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);
-    background:var(--panel2);border:1px solid var(--line);
-    padding:9px 15px;border-radius:99px;font-size:13px;
+    background:var(--btnPress);box-shadow:0 4px 14px rgba(0,0,0,.35);
+    padding:10px 16px;border-radius:99px;font-size:13px;font-weight:600;
     opacity:0;pointer-events:none;transition:.2s;z-index:200;white-space:nowrap;
   }
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1491,7 +1482,6 @@ window.dispatchEvent(new Event('fb-ready'));
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
   var state = null;      // {date, items:[]}
   var openMenu = null;
-  var editing = null;
   var collapsed = {}; // 시간대별 수동 접기 상태 (미설정이면 자동)
   var touched = {};   // 시간대별 마지막 체크 시각
   var collapseTimers = {};
@@ -1504,7 +1494,8 @@ window.dispatchEvent(new Event('fb-ready'));
   var viewMode = 'all';
   try { if (localStorage.getItem('ix-view') === 'pending') viewMode = 'pending'; } catch(e){}
 
-  function interactionActive(){ return !!(editing || openMenu); }
+  // 목록 안에서 손대는 중인 것 = 열린 ⋯ 메뉴뿐 (수정은 바텀시트라 목록과 무관 — 그 사이 통째 render 돼도 된다)
+  function interactionActive(){ return !!openMenu; }
   function renderWhenIdle(){
     if (interactionActive()){
       backgroundRenderPending = true;
@@ -1522,17 +1513,6 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     state = next;
     renderWhenIdle();
-    return true;
-  }
-  function discardEditing(){
-    if (!editing) return false;
-    var id = editing;
-    keepSlotOpenForId(id);
-    var row = rowForId(id);
-    var active = document.activeElement;
-    if (row && active && row.contains(active) && active.blur) active.blur();
-    editing = null;
-    openMenu = null;
     return true;
   }
 
@@ -1564,10 +1544,8 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   function slotHasWork(time){
-    return [editing, openMenu].some(function(id){
-      var it = id && find(id);
-      return !!it && it.time === time;
-    });
+    var it = openMenu && find(openMenu);
+    return !!it && it.time === time;
   }
   function isCollapsed(time, pendCount){
     var done = (pendCount === 0);
@@ -2305,67 +2283,13 @@ window.dispatchEvent(new Event('fb-ready'));
     return null;
   }
 
-  // Android 계열이 사라진 메뉴 버튼의 포커스를 첫 입력칸으로 넘기지 않게 한다.
-  function neutralFocusEdit(id){
-    var active = document.activeElement;
-    if (active && active.blur) active.blur();
-    requestAnimationFrame(function(){
-      var row = rowForId(id);
-      var form = row && row.querySelector('.edit');
-      if (!form) return;
-      form.setAttribute('tabindex', '-1');
-      try { form.focus({ preventScroll: true }); }
-      catch(e){ form.focus(); }
-    });
-  }
-
-  // ⋯·수정을 눌러 가려져 있던 행을 열 때 — 부드럽게 스크롤해 보여준다.
-  function ensureVisible(id){
-    roomScroll(rowForId(id), true);
-  }
-
-  // 수정 폼이 닫힌 뒤 스크롤을 딱 한 번 맞춘다. 호출한 쪽이 이미 알맞은 시점까지 미뤄
-  // 놓으므로(rAF 또는 키보드 완전히 내려간 뒤) 여기선 바로 옮긴다.
-  //  - reveal=true  (시간이 바뀌어 다른 자리로 이동): 무조건 그 행을 화면에 보여준다.
-  //  - reveal=false (제자리 수정): 폼이 접히며 .wrap 이 줄어 그 행(과 아래)이 하단 바에
-  //    가릴 수 있어, 명단 끝 근처면 마지막 행을 바 위로 올리고 아니면 그 행을 맞춘다.
-  var pendingClose = null;
-  function scrollAfterClose(o){
-    if (!wrapEl || !o) return;
-    var el = rowForId(o.id);
-    if (!o.reveal && el){
-      var rows = wrapEl.querySelectorAll('.row');
-      var idx = [].indexOf.call(rows, el);
-      var maxST = wrapEl.scrollHeight - wrapEl.clientHeight;
-      // 폼이 접히며 아래 내용이 하단 바에 가릴 수 있는 건 목록 끝쪽 행을 고쳤을 때뿐이다.
-      // 위·가운데 행이면 그 행만 맞춘다 — 끝 행으로 스크롤하면 첫 행이 시간 머리글 뒤로 숨는다.
-      if (idx >= rows.length - 2 && maxST > 0 && maxST - wrapEl.scrollTop < wrapEl.clientHeight){
-        el = rows[rows.length - 1];
-      }
-    }
-    if (el) roomScroll(el);
-  }
-  // 폼을 닫는 모든 경로에서 호출: 키보드가 올라와 있으면 완전히 내려앉은 뒤로 미룬다
-  // (applyViewport 가 --kb 0 을 보는 시점), 아니면 바로.
-  function afterEditClose(id, reveal){
-    var o = { id: id, reveal: !!reveal };
-    if (!keyboardOpen){ requestAnimationFrame(function(){ scrollAfterClose(o); }); return; }
-    pendingClose = o;
-    // --kb 0 시점을 놓쳤을 때의 백스톱 (그때는 이미 실행돼 pendingClose 가 비어 no-op)
-    setTimeout(function(){ if (pendingClose === o){ pendingClose = null; scrollAfterClose(o); } }, 700);
-  }
-
-  // 수정 폼을 닫으며 다시 그릴 때, 그 행이 화면에서 제자리에 있도록 스크롤을 보정한다.
-  // 폼(높이 큼) → 행(작음)으로 접히면서 아래 내용이 위로 튀는 걸 막는다.
-  function renderAnchored(id){
-    var row = rowForId(id);
-    var before = (row && wrapEl) ? row.getBoundingClientRect().top : null;
-    render();
-    if (before == null || !wrapEl) return;
-    var after = rowForId(id);
-    if (!after) return;
-    var delta = after.getBoundingClientRect().top - before;
-    if (Math.abs(delta) > 1) wrapEl.scrollTop += delta;
+  // 시간을 바꿔 다른 자리로 간 예약 — 시트가 닫히고 키보드가 완전히 내려앉은 뒤(applyViewport 가
+  // --kb 0 을 보는 시점) 그 행을 한 번 보여준다. 키보드가 없었으면 바로.
+  var pendingReveal = null;
+  function revealAfterClose(id){
+    if (!keyboardOpen){ requestAnimationFrame(function(){ roomScroll(rowForId(id), true); }); return; }
+    pendingReveal = id;
+    setTimeout(function(){ if (pendingReveal === id){ pendingReveal = null; roomScroll(rowForId(id), true); } }, 700);   // 백스톱
   }
 
   var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
@@ -2382,19 +2306,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function tapMore(id){
     keepSlotOpenForId(id);
-    if (editing === id){               // 같은 행이면 저장하지 않고 접는다
-      editing = null; openMenu = null; renderAnchored(id); afterEditClose(id);
-      return;
-    }
-    if (editing){                       // 다른 행의 수정 폼 닫기 = 폼 DOM 을 제거해야 하니 통째로 그린다
-      keepSlotOpenForId(editing);
-      editing = null;
-      openMenu = (openMenu === id) ? null : id;
-      render();
-      if (openMenu) ensureVisible(id);
-      return;
-    }
-    // 수정 중이 아니면 메뉴 토글은 그 행만 손댄다 (통째 render 안 함)
+    // 메뉴 토글은 그 행만 손댄다 (통째 render 안 함)
     if (openMenu && openMenu !== id) keepSlotOpenForId(openMenu);
     openMenu = (openMenu === id) ? null : id;
     if (openMenu){
@@ -2415,7 +2327,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     if (action === 'edit'){
       openMenu = null; closeRowMenu();
-      pendingClose = null;   // 이전 닫힘 보정이 남아 새 편집을 튀게 하지 않도록
+      pendingReveal = null;   // 이전 수정의 보여주기가 남아 있으면 새 편집을 튀게 한다
       openEdit(id);
       return;
     }
@@ -2564,10 +2476,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     var memo = String(memoV == null ? (it.memo || '') : memoV).replace(/\s+/g,' ').trim();
 
-    if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
-      keepSlotOpenForId(it.id);
-      editing = null; render(); afterEditClose(it.id); return true;
-    }
+    if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')) return true;   // 바뀐 게 없다
 
     // 시간이 바뀌면 옮겨간 시간대의 맨 뒤로
     var timeMoved = time !== it.time;
@@ -2586,16 +2495,8 @@ window.dispatchEvent(new Event('fb-ready'));
     armSlotCollapse(originalTime);
     if (timeMoved) armSlotCollapse(time);
     state.items.sort(sortItems);
-    var anchor = editing;
-    editing = null;
-    if (timeMoved){
-      render();                              // 자리가 달라지니 그냥 다시 그린다
-      roomScroll(rowForId(it.id));           // 같은 프레임에 바로 그 행으로 (엉뚱한 위치가 안 보이게)
-      if (keyboardOpen) afterEditClose(it.id, true);   // 키보드 내려간 뒤 레이아웃 최종 안정되면 한 번 더
-    } else {
-      renderAnchored(anchor);                // 제자리 수정이면 행이 안 튀게 보정
-      afterEditClose(it.id);                 // 폼 접히며 하단이 바에 가리는 것 보정
-    }
+    render();
+    if (timeMoved) revealAfterClose(it.id);   // 자리가 달라졌으니 시트가 걷힌 뒤 그 행을 보여준다
     if (it.id === oldId) writeItem(oldId, { memo: it.memo, ts: it.ts });   // 메모만 바뀜 (id 유지)
     else wqBatch(function(){ delItem(oldId); putItem(it); });              // 시각·이름·인원 바뀜 = 다른 노드 (둘을 한 번에)
     toast(it.time + ' ' + it.name + ' 수정됨');
@@ -2912,9 +2813,11 @@ window.dispatchEvent(new Event('fb-ready'));
   function cancelLeave(id){
     if (leaveTimers[id]){ clearTimeout(leaveTimers[id]); delete leaveTimers[id]; }
   }
+  function cancelAllLeaves(){ Object.keys(leaveTimers).forEach(cancelLeave); }
   function scheduleLeave(id){
     cancelLeave(id);
     leaveTimers[id] = setTimeout(function(){
+      if (viewMode !== 'pending'){ delete leaveTimers[id]; return; }   // 그새 「전체」로 갔으면 남는다
       var row = rowForId(id);
       if (row) row.classList.add('leaving');
       leaveTimers[id] = setTimeout(function(){
@@ -2961,17 +2864,6 @@ window.dispatchEvent(new Event('fb-ready'));
     return true;
   }
 
-  var EDIT_FIELDS = ['e-hour','e-min','e-name','e-pax','e-memo'];
-  function readEditDraft(row){
-    return row ? EDIT_FIELDS.map(function(id){ var f = row.querySelector('#' + id); return f ? f.value : null; }) : null;
-  }
-  function writeEditDraft(row, draft){
-    if (!row || !draft) return;
-    EDIT_FIELDS.forEach(function(id, i){
-      var f = row.querySelector('#' + id);
-      if (f && draft[i] !== null) f.value = draft[i];
-    });
-  }
   function slotEl(time){ return document.querySelector('.group[data-time="' + time + '"]'); }
 
   // 시간대 접기 / 펼치기
@@ -2979,18 +2871,11 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!state) return;
     var mine = itemsAt(time);
     if (!mine.length) return;
-    var editDraft = editing ? readEditDraft(rowForId(editing)) : null;
     var grp = slotEl(time);
     var willShut = !(grp && grp.classList.contains('shut'));
-    if (willShut){        // 접을 때는 그 시간대에서 열려 있던 수정 폼·메뉴를 닫는다
-      var inHere = function(id){ return mine.some(function(x){ return x.id === id; }); };
-      if (editing && inHere(editing)) editing = null;
-      if (openMenu && inHere(openMenu)) openMenu = null;
-    }
-    openMenu = null;
+    openMenu = null;      // 열려 있던 ⋯ 메뉴는 닫는다 (어느 시간대든)
     setCollapsed(time, willShut, tallyStatus(mine).pend === 0);
     render();
-    if (editing) writeEditDraft(rowForId(editing), editDraft);
     if (!willShut) roomScroll(slotEl(time), true);   // 펼친 시간대가 길어 가려지면 부드럽게 맞춰 보여준다
   }
 
@@ -3199,7 +3084,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }, { passive: false });
   // 명단이 비었을 때의 전체 화면 폼. 한 건 추가는 「예약 추가」 폼이 맡는다.
   function openPaste(silent){
-    if (discardEditing()) render();
     document.getElementById('pasteTitle').textContent = '오늘 예약 명단 붙여넣기';
     // 명단이 아예 없을 땐 돌아갈 화면이 없으므로 취소 버튼을 숨긴다
     var hasItems = !!(state && state.items && state.items.length);
@@ -3255,7 +3139,6 @@ window.dispatchEvent(new Event('fb-ready'));
   function openEdit(id){
     var it = find(id);
     if (!it) return;
-    if (discardEditing()) render();
     if (!panel.classList.contains('hide')) closePaste();
     fillAddOpts();
     var h = it.time.slice(0,2), m = it.time.slice(3,5);
@@ -3272,7 +3155,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   function openAdd(){
-    if (discardEditing()) render();
     if (!panel.classList.contains('hide')) closePaste();
     fillAddOpts();
     sheetEditId = null;
@@ -3346,7 +3228,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   function applyViewport(){
     var h = visibleViewportH();
-    // 키보드가 가리는 원(raw) 높이 — 아래 pendingClose(키보드 다 내려감) 판정에 쓴다
+    // 키보드가 가리는 원(raw) 높이 — 아래 pendingReveal(키보드 다 내려감) 판정에 쓴다
     var kb = Math.max(0, Math.round((window.innerHeight || 0) - h));
 
     // 키보드 열림 = visualViewport 높이가 KB_MIN 이상 줄어든 상태.
@@ -3365,14 +3247,12 @@ window.dispatchEvent(new Event('fb-ready'));
       keyboardOpen = open;
       document.body.classList.toggle('keyboard-open', open);
       if (addPanel) addPanel.classList.toggle('kb', open);
-      // 폼이 아직 열려 있으면 키보드 내려간 직후 한 번 화면에 맞춘다 (즉시 — 키보드 꼬리와 안 겹치게).
-      if (!open && editing) roomScroll(rowForId(editing));
     }
-    // 저장/취소로 폼이 닫혔으면, 키보드가 완전히 내려앉아(--kb 0) 레이아웃이 멈춘 뒤
-    // 딱 한 번 스크롤한다. 전환 시점(KB_MIN)은 아직 키보드가 90px 남아 흔들린다.
-    if (!open && kb === 0 && pendingClose){
-      var pc = pendingClose; pendingClose = null;
-      requestAnimationFrame(function(){ scrollAfterClose(pc); });
+    // 수정으로 자리가 바뀐 예약 — 키보드가 완전히 내려앉아(--kb 0) 레이아웃이 멈춘 뒤 딱 한 번
+    // 보여준다. 전환 시점(KB_MIN)은 아직 키보드가 90px 남아 흔들린다.
+    if (!open && kb === 0 && pendingReveal){
+      var pr = pendingReveal; pendingReveal = null;
+      requestAnimationFrame(function(){ roomScroll(rowForId(pr), true); });
     }
     // 키보드가 없을 때의 안정된 높이를 기준으로 유지 (아이폰이 늦게 늘려줘도 따라감)
     if (!open) kbBaseH = Math.max(kbBaseH, h);
@@ -3502,7 +3382,7 @@ window.dispatchEvent(new Event('fb-ready'));
     confirmDlg('오늘 명단을 초기화할까요?', function(){
       var n = state.items.length;                 // 비우기 전에 세어 둔다
       logAdd('명단 초기화', n + '건 지움');
-      editing = null; openMenu = null;
+      openMenu = null;
       deferredState = null; backgroundRenderPending = false;
       state = { date: viewDate, items: [] };
       collapsed = {};
@@ -3644,7 +3524,6 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   function openSearch(){
-    if (discardEditing()) render();
     scrollBeforeSearch = wrapEl ? wrapEl.scrollTop : 0;
     searchbar.classList.remove('hide');
     searchBtn.classList.add('on');
@@ -3679,7 +3558,7 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 자정 넘어감 뒷정리 ---------- */
   // 날짜가 바뀌면(rolloverIfNeeded) 하루 단위 UI 상태를 싹 비운다.
   function resetDateScopedUi(){
-    editing = null; openMenu = null; collapsed = {}; touched = {};
+    openMenu = null; collapsed = {}; touched = {};
     deferredState = null; backgroundRenderPending = false;
     backupState = { hour: -1, tries: 0, triesHour: -1 };
     stopWatch();
@@ -3699,7 +3578,8 @@ window.dispatchEvent(new Event('fb-ready'));
     viewMode = m;
     try { localStorage.setItem('ix-view', m); } catch(e){}
     syncViewSeg();
-    if (interactionActive()){ editing = null; openMenu = null; }
+    openMenu = null;
+    cancelAllLeaves();   // 「남은 팀」에서 빠지려던 행이 있으면 그 타이머는 무의미 (통째로 다시 그린다)
     render();
   }
   viewAllBtn.addEventListener('click', function(){ setViewMode('all'); });
@@ -3717,7 +3597,7 @@ window.dispatchEvent(new Event('fb-ready'));
       return d;
     });
     slots.forEach(function(g, i){ setCollapsed(g.time, anyOpen, done[i]); });
-    if (anyOpen){ editing = null; openMenu = null; } // 전부 접을 땐 열린 폼도 닫는다
+    if (anyOpen) openMenu = null;   // 전부 접을 땐 열린 메뉴도 닫는다
     render();
   });
 
@@ -4341,7 +4221,6 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!panel.classList.contains('hide') && taEl.value.trim()) return true;
     if (addPanel && !addPanel.classList.contains('hide')
         && (aName.value.trim() || aMemo.value.trim())) return true;
-    if (editing) return true;
     return false;
   }
   function doUpdate(){
@@ -4608,7 +4487,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   var tickSig = '', tickMin = -1;
   setInterval(function(){
-    if (editing || openMenu) return;
+    if (openMenu) return;
     if (rolloverIfNeeded()) return;
     var changed = autoCancel();
     maybeHourlyBackup();   // autoCancel 반영된 상태를 :20 백업이 잡게 — 순서 보장
