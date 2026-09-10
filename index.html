@@ -258,8 +258,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .offtag{
     display:none;align-items:center;flex:0 0 auto;
-    padding:4px 9px;border-radius:8px;
-    background:var(--warnBg);border:1px solid var(--warn);
+    padding:6px 10px;border-radius:8px;   /* 칩 = 면만 */
+    background:var(--btnWarn);
     color:var(--warn);font-size:12px;font-weight:700;white-space:nowrap;line-height:1.2;
   }
   html[data-off] .offtag{display:inline-flex}
@@ -651,7 +651,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dwitem{
     display:flex;align-items:center;gap:8px;
     padding:13px 18px;border:0;background:none;cursor:pointer;
-    color:var(--text);font-family:inherit;font-size:14px;font-weight:600;text-align:left;
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;text-align:left;
   }
   .dwitem:active{background:var(--press)}
   /* 위험한 동작(명단 초기화) — 붉게. 실행 자체는 여전히 「길게 눌러」 확인을 거친다 */
@@ -735,14 +735,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   .qa.open .a{display:block}
   .qa .a em{font-style:normal;color:var(--text);font-weight:600}
   /* 설치 안내 — 기기별 카드 */
+  /* 기기 카드 — 면만. 왼쪽 색 띠는 뺐다(본 명단에서도 없앤 장식). 기기 구분은 제목 색이 한다. */
   .plat{
-    background:var(--panel2);border:1px solid var(--line);
-    border-left:3px solid var(--off);border-radius:12px;
-    padding:12px 14px 11px;margin:0 0 10px;
+    background:var(--panel2);border-radius:12px;
+    padding:13px 14px 11px;margin:0 0 10px;
   }
   .plat:last-child{margin-bottom:0}   /* 마지막 카드 밑 여백 안 쌓임 */
-  .plat.ios{border-left-color:var(--wait)}
-  .plat.and{border-left-color:var(--go)}
   .plat .ph{display:flex;align-items:center;gap:7px;margin-bottom:10px}
   .plat .pn{font-size:14px;font-weight:800;letter-spacing:-.02em}
   .plat.ios .pn{color:var(--waitTx)}
@@ -772,7 +770,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .lgrow:first-child{border-top:0;padding-top:2px}
   .lgt{flex:0 0 42px;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
-  .lgk{flex:0 0 auto;font-weight:700;color:var(--text)}
+  .lgk{flex:0 0 auto;min-width:62px;font-weight:700;color:var(--text)}   /* 폭 고정 — 「자동 취소」가 있어도 내용 열이 한 줄로 선다 */
   .lgk.go{color:var(--goTx)}
   .lgk.off{color:var(--warn)}
   .lgs{flex:1;min-width:0;color:var(--dim);font-size:13px;
@@ -798,8 +796,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   #sheetBody em.off{color:var(--warn)}
   .bksep{color:var(--off);margin:0 5px}
   .bkchev{flex:0 0 auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
-  /* 구역 라벨(오늘/어제) · 상세 시간 헤더 — 완전히 같은 서체·크기 */
-  .bkgroup,.bkvt{
+  /* 구역 라벨(오늘/어제) */
+  .bkgroup{
     font-size:13px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--dim);
   }
   .bkgroup{padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px}
@@ -819,19 +817,29 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 하단 버튼 위 공백은 margin 이 아니라 padding — 스크롤 컨테이너(#sheetBody) 안에서
      마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
   .bkvlist{padding:2px 0 8px}
-  /* 시간대 헤더 — 구분선은 헤더에 붙는다(위 여백 margin-top, 선 아래 살짝) */
-  .bkvt{border-top:1px solid var(--line);margin-top:13px;padding:4px 0 6px}
-  .bkvt:first-child{border-top:0;margin-top:0;padding-top:2px}
-  /* 시간대별 읽기 전용 명단. 상태는 본 화면처럼 이름 색으로 (방문 초록 / 취소 빨강) + 작은 글자.
-     칸(태그) 없이 — 밀도 높은 목록이라 색만으로 충분하고 더 깔끔하다. */
-  .bkvrow{display:flex;align-items:baseline;gap:7px;padding:5px 0;font-size:14px;line-height:1.3}
-  .bkvrow .nm{min-width:0;color:var(--text);font-weight:600;
+  /* 시간대 머리글 — 본 명단 시간바의 축소판: 굵은 시각 + 오른쪽 방문·취소 수 + «아래» 전폭 선.
+     머리글은 자기 명단에 붙는다(위 넓게, 아래 선). */
+  .bkvt{
+    display:flex;align-items:baseline;gap:8px;
+    font-size:15px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--text);
+    padding:16px 0 7px;border-bottom:1px solid var(--line);margin-bottom:3px;
+  }
+  .bkvt:first-child{padding-top:4px}
+  .bkvm{margin-left:auto;font-size:12px;font-weight:600;color:var(--dim)}
+  /* 읽기 전용 행 — 작은 상태 원(본 명단의 체크와 같은 뜻·색) · 이름 · 오른쪽 인원 */
+  .bkvrow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:14px;line-height:1.3}
+  .bkvrow .ck{
+    width:16px;height:16px;flex:0 0 auto;border-radius:50%;
+    border:1.5px solid var(--off);display:grid;place-items:center;line-height:0;color:transparent;
+  }
+  .bkvrow .ck svg{display:block}
+  .bkvrow.go .ck{background:var(--go);border-color:var(--go);color:var(--onGo)}
+  .bkvrow.off .ck{border-color:var(--warn);color:var(--warn)}
+  .bkvrow .nm{flex:1;min-width:0;color:var(--text);font-weight:600;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
-  .bkvrow .st{flex:0 0 auto;font-size:12px;font-weight:700}
-  .bkvrow.go .st{color:var(--goTx)}
-  .bkvrow.off .nm{color:var(--dim)}   /* 취소는 흐리게 — 안 올 손님 */
-  .bkvrow.off .st{color:var(--warn)}
+  .bkvrow .px{flex:0 0 auto;color:var(--dim);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .bkvrow.go .nm{color:var(--dim)}
+  .bkvrow.off .nm{color:var(--off);text-decoration:line-through;text-decoration-thickness:1px}
   /* 시트 기본 하단바(닫기) 왼쪽에 그 시트의 주동작 버튼을 하나 더 끼운다
      (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 주황. */
   .sheetBtns .sheetCopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
@@ -856,13 +864,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .urlcopy{
     flex:0 0 auto;position:relative;
     width:32px;height:32px;padding:0;display:grid;place-items:center;
-    background:var(--line);border:0;border-radius:9px;
+    background:var(--btn);border:0;border-radius:10px;
     color:var(--waitTx);cursor:pointer;
   }
   .urlcopy svg{display:block}
   /* 보이는 건 32px 그대로 — 누르는 영역만 넓힌다 (.bkback 과 같은 방식) */
   .urlcopy::after{content:"";position:absolute;inset:-8px}
-  .urlcopy:active{filter:brightness(1.35)}
+  .urlcopy:active{background:var(--btnPress)}
   .wnet .k{font-size:12px;font-weight:700;color:var(--dim);flex:0 0 52px}
   .wnet .v{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
   .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
@@ -939,11 +947,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .lockkey{
     width:64px;height:64px;border-radius:50%;padding:0;
-    /* 명단 행(.row)과 같은 면 — 앱에서 단독으로 놓인 컨트롤은 전부 배경을 갖는다
-       (행 --panel / 시트 버튼·카드 --panel2 / 링크 복사 칩 --line).
-       투명은 이미 채워진 카드 안쪽(.main·.more)이나 아이콘 버튼에만 쓴다.
-       키패드는 --ink 위에 단독으로 놓이므로 행과 같은 --panel. */
-    border:1px solid var(--line);background:var(--panel);
+    /* 앱의 보조 버튼과 같은 «면만»(--btn, 테두리 없음). 입력칸만 선을 갖는다는 규칙. */
+    border:1px solid transparent;background:var(--btn);
     color:var(--text);font-family:inherit;font-size:25px;font-weight:600;
     font-variant-numeric:tabular-nums;cursor:pointer;
     display:grid;place-items:center;
@@ -1104,7 +1109,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltnames:empty{display:none}
   .rltchip{
     padding:7px 12px;border-radius:10px;
-    background:var(--panel2);border:1px solid var(--line);
+    background:var(--btn);border:1px solid transparent;
     font-size:14px;font-weight:700;color:var(--text);
     transition:background .03s linear,color .03s linear,border-color .03s linear,transform .26s cubic-bezier(.34,1.56,.64,1);
   }
@@ -4201,14 +4206,19 @@ window.dispatchEvent(new Event('fb-ready'));
   function bkRosterHtml(items){
     var list = (items || []).filter(function(it){ return it && it.time; });
     if (!list.length) return '<p class="sheetMsg">명단이 비어 있습니다</p>';
+    // 본 명단의 축소판 — 머리글(시각 + 방문·취소 수, 아래 선) / 행(작은 상태 원 · 이름 · 인원).
+    // 상태 색은 원에만, 글자 태그는 안 붙인다 (본 화면과 같은 규칙).
+    var GO = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
+    var OFF = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><path d="M7 7 L17 17M17 7 L7 17"/></svg>';
     return groupByTime(list.slice().sort(sortItems)).map(function(g){
-      return '<div class="bkvt">' + esc(g.time) + '</div>'
+      var t = tallyStatus(g.items);
+      return '<div class="bkvt"><span>' + esc(g.time) + '</span><span class="bkvm">방문 ' + t.came
+        + (t.off ? ' · 취소 ' + t.off : '') + '</span></div>'
         + g.items.map(function(it){
             var cls = it.status === 'arrived' ? ' go' : it.status === 'cancelled' ? ' off' : '';
-            var st  = it.status === 'arrived' ? '<span class="st">방문</span>'
-                    : it.status === 'cancelled' ? '<span class="st">취소</span>' : '';
-            return '<div class="bkvrow' + cls + '"><span class="nm">' + esc(it.name)
-              + '</span><span class="px">' + esc(String(it.pax)) + '명</span>' + st + '</div>';
+            var mk  = it.status === 'arrived' ? GO : it.status === 'cancelled' ? OFF : '';
+            return '<div class="bkvrow' + cls + '"><span class="ck">' + mk + '</span><span class="nm">' + esc(it.name)
+              + '</span><span class="px">' + esc(String(it.pax)) + '명</span></div>';
           }).join('');
     }).join('');
   }
