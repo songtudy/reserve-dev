@@ -491,7 +491,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
   .row.arrived .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.arrived .pax, .row.cancelled .pax{color:var(--dim);-webkit-text-fill-color:var(--dim)}
-  .row.cancelled .name{color:var(--off);-webkit-text-fill-color:var(--off);font-weight:600;
+  /* 취소 이름은 방문 이름과 같은 회색 — --off 는 16px 에서 3.7:1(라이트 3.3)로 읽기 기준 미달(2026-09-11 점검).
+     «취소»는 취소선 + 빨간 ✕ 가 이미 말한다. 글자까지 더 죽일 필요 없다. */
+  .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600;
     text-decoration:line-through;text-decoration-thickness:1px}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
   /* 「남은 팀」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
