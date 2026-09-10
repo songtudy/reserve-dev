@@ -4,12 +4,12 @@
      여기 적힌 건 스크립트가 돌기 전의 씨앗값(다크 = 대개 맞는 쪽)이고, 바로 아래 head 스크립트의
      setThemeChrome 이 저장된 테마로 곧바로 덮어쓴다 — 고정값으로 두면 이 인라인이
      스타일시트(html,body{background:var(--ink)})를 이겨 라이트에서 루트만 어둡게 남는다. -->
-<html lang="ko" style="background:#0f0d09">
+<html lang="ko" style="background:#0f1319">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow"><!-- 매장 내부용 — 검색 색인 차단 (robots.txt 와 함께) -->
-<meta name="theme-color" content="#0f0d09">
+<meta name="theme-color" content="#0f1319">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -53,7 +53,7 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f6f5f2' : '#0f0d09';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   d.style.background = ink;
@@ -110,19 +110,20 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 둥글기 3단계 — 8(칩) · 12(버튼·입력칸·행 메뉴) · 18(시트·팝업·카드) */
     --radius:18px;
     /* 바탕 */
-    /* ★ 바탕색은 취향이 아니라 규칙으로 정한다 (2026-09-10 확정, 근거: Material 3 색 체계 + WCAG 2.1).
-       M3: 바탕(surface)은 «포인트 색에서 파생한 거의 무채색» — 포인트 색상(hue)을 극소 채도로 남긴다.
-       포인트가 금(OKLCH 색상 82°)이므로 바탕도 같은 색상, 채도 0.008(다크)/0.004(라이트)로 계산해 뽑았다.
-       (옛 청회색 #0f1319 는 채도 0.014 에 색상 258° = 포인트와 무관한 파랑 → 규칙 밖.)
-       면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). 대비 검증표는 메모리 참고. */
-    --ink:#0f0d09;      --panel:#181612;    --panel2:#211f1b;
-    --line:#2a2824;     --press:#2c2a26;   --keyDn:#413f3a;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
-    --text:#f3f2ef;     --dim:#908f8c;      --off:#656462;
-    --ph:#7b7a77;
+    /* ★ 바탕색 확정 (2026-09-10) — 후보 7개(청회색·중립·애플 순검정·금 색조·살짝 냉·M2)를 측정 항목 7개로
+       비교해 «원래 청회색»으로 돌아왔다. 결정적이었던 것: ① 홈 화면 아이콘 PNG 에 이 색(#0f1319)이 구워져
+       있어 잠금 화면 타일과 정확히 일치(다른 후보는 ΔE .026~.042 로 눈에 띄는 차이) ② 몇 달 실사용에서 색
+       불만 없음 ③ WCAG 전 자리 통과·층 간격 고름. 애플식 순검정은 층 간격 불균일(σ .073)과 OLED 잔상·번짐으로
+       탈락, 따뜻한 색조는 라이트가 베이지로 가는 방향이라 탈락. 이 값은 다시 흔들지 않는다.
+       면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
+    --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
+    --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
+    --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
+    --ph:#7b8695;
     /* 보조 버튼 = 테두리 없는 «면». 입력칸(선)과 버튼(면)이 한눈에 갈린다.
        눌림은 면이 한 단 밝아진다(--press 는 이 면과 거의 같아 안 보여서 따로 둔다). */
-    --btn:#292723;      --btnPress:#373531;  --btnWarn:#2b2020;
-    --scrim:rgba(0,0,0,.72);   --scrimLite:rgba(0,0,0,.6);
+    --btn:#252c37;      --btnPress:#323b48;  --btnWarn:#2c2123;
+    --scrim:rgba(6,9,13,.72);   --scrimLite:rgba(6,9,13,.6);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
     --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
     --onWait:#241a05;   --mark:#463a13;
@@ -136,13 +137,13 @@ window.addEventListener('pageshow', remeasureSbcut);
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   html[data-theme="light"]{
-    --ink:#f6f5f2;      --panel:#ffffff;    --panel2:#ebeae7;
-    --line:#dfdedb;     --press:#e7e6e3;   --keyDn:#d3d1cf;
-    --text:#171614;     --dim:#696865;      --off:#8d8c89;
-    --ph:#797875;
+    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e9edf3;
+    --line:#dfe4ec;     --press:#e2e7ef;   --keyDn:#ccd4de;
+    --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
+    --ph:#676f7d;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
-    --btn:#e8e7e4;      --btnPress:#d8d7d4;  --btnWarn:#fbe6e3;
-    --scrim:rgba(0,0,0,.44); --scrimLite:rgba(0,0,0,.34);
+    --btn:#e5e9ef;      --btnPress:#d5dbe4;  --btnWarn:#fbe6e3;
+    --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* ★ 포인트는 두 테마 다 금 — 같은 색상, 톤만 조정 (Apple HIG·M3 공통 원칙: 외관마다 색상을 바꾸지 않는다).
        흰 바탕 위 금색은 3.3:1 이 물리적 한계라 «작은 글자»로는 못 쓴다 → 앱 전체에서 포인트를 작은 글자에
        쓰지 않는 것으로 해결했다(칩 숫자·FAQ 제목 등은 굵기로만 강조). 남은 자리는 전부 WCAG 통과:
@@ -150,7 +151,7 @@ window.addEventListener('pageshow', remeasureSbcut);
          --waitTx  #b96e00 = 아이콘·점·포커스 테두리(비글자 3:1) — 칩 위 3.2 · 버튼 면 위 3.1
          --wait    #e3a43e = 채움(버튼·띠) — 그 위 글자 --onWait 7.6:1 (채움 자체는 글자가 있어 3:1 대상 아님) */
     --wait:#e3a43e;     --waitTx:#b96e00;   --waitBig:#c27400;
-    --onWait:#2a1d02;   --mark:#fbeed2;
+    --onWait:#2a1d02;   --mark:#fdf1d8;
     --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
     --warn:#b43f36;
     --onWarn:#7a2a20;
