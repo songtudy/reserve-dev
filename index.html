@@ -107,7 +107,8 @@ window.addEventListener('pageshow', remeasureSbcut);
 <title>익순이</title>
 <style>
   :root{
-    --radius:14px;
+    /* 둥글기 3단계 — 8(칩) · 12(버튼·입력칸·행 메뉴) · 18(시트·팝업·카드) */
+    --radius:18px;
     /* 바탕 */
     --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
     --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
@@ -137,7 +138,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     --ph:#676f7d;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* 큰 글씨(상단 시간)는 대비 기준이 느슨해 더 밝은 금색을 쓸 수 있다 */
-    --wait:#f5aa14;     --waitTx:#996100;   --waitBig:#c27400;
+    /* 채움 금색은 다크(#e8b757 모래빛)와 같은 결로 — 예전 #f5aa14 는 주황 노랑이라 다른 색처럼 보였다 */
+    --wait:#e3a43e;     --waitTx:#996100;   --waitBig:#c27400;
     --onWait:#2a1d02;   --mark:#fdf1d8;
     --go:#2f9c6e;       --goTx:#1d7a54;     --onGo:#ffffff;
     --goBg:#eefaf3;     --goTag:#d9f2e5;
@@ -211,7 +213,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     line-height:0;cursor:pointer;border-radius:9px;
   }
   .nav button svg{display:block}
-  .nav button:active{background:var(--press)}
+  /* ── 누름 규칙 (앱 공통) ──
+     ① 면 있는 버튼 → 면이 --press (채운 금색은 brightness)   ② 면 없는 글자·아이콘 → 흐려짐
+     ③ 체크 원 → 원이 눌려 들어감.   누르면 즉시, 떼면 .12s 에 돌아온다(:active 에서만 transition 끔). */
+  .nav button, .tools button, .more, .foot button{transition:opacity .12s}
+  .nav button:active, .tools button:active, .more:active, .foot button:active{opacity:.4;transition:none}
   .nav button:disabled{opacity:.22}
   .date{
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -219,9 +225,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .dayprog{
     display:flex;align-items:center;line-height:1;
-    font-size:14px;font-weight:800;color:var(--text);
+    font-size:13px;font-weight:800;color:var(--text);
     background:var(--panel);border:1px solid var(--line);
-    padding:5px 10px;border-radius:8px;
+    padding:6px 9px;border-radius:8px;
   }
   .dayprog.full{color:var(--goTx);border-color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -232,7 +238,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:none;border:0;border-radius:9px;
     color:var(--dim);cursor:pointer;margin-right:-8px;
   }
-  .tools button:active{background:var(--press)}
   .tools button.on{color:var(--waitTx);background:var(--panel2)}
   /* 헤더 아이콘 버튼(메뉴·검색)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
      보이는 크기·눌림 배경은 그대로 두고 «닿는 범위»만 투명하게 2px 씩 넓힌다 — 겉모습 무변화.
@@ -256,32 +261,30 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
-  /* 상단 요약 — 「17:00 예약 5팀」 한 줄 + 그 아래 인원 구성 칩 */
-  .lead{display:block;margin-top:11px}
+  /* 상단 요약 — 「16:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 그 아래 인원 구성 칩 */
+  .lead{display:block;margin-top:10px}
   .lead.hide{display:none}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
-  .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em;margin-right:8px}
-  .slotlab{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--dim);margin-right:8px}
-  .leadmain{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
-  /* 「남은 예약 없음」도 같은 크기·색 — 상태 설명이라 초록 안 씀 */
-  .leadmain.done{font-size:15px;font-weight:700;color:var(--text)}
-  /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
-     iOS 세그먼트 컨트롤 꼴: 어두운 트랙 + 밝게 돋운 선택칸 → 「누를 수 있는 것」으로 읽힌다. */
+  .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
+  .slotlab{font-size:20px;font-weight:800;color:var(--off);margin:0 7px}
+  .slotlab:empty{display:none}
+  .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+  /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
+  .leadmain.done{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+  /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
+     트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
   .viewseg{
     margin-left:auto;flex:0 0 auto;align-self:center;
-    display:inline-flex;gap:3px;padding:3px;
+    display:inline-flex;gap:2px;padding:2px;
     background:var(--panel);border:1px solid var(--line);border-radius:10px;
   }
   .viewseg button{
-    border:0;border-radius:7px;background:transparent;
-    font:inherit;font-size:12px;font-weight:700;color:var(--dim);
-    padding:6px 13px;cursor:pointer;transition:background .12s,color .12s;
+    border:0;border-radius:8px;background:transparent;
+    font:inherit;font-size:12px;font-weight:700;color:var(--off);
+    height:28px;padding:0 11px;cursor:pointer;transition:opacity .12s;
   }
-  .viewseg button[aria-pressed="true"]{
-    background:var(--panel2);color:var(--waitTx);
-    box-shadow:0 1px 2px rgba(0,0,0,.3);
-  }
-  .viewseg button:active{opacity:.6}
+  .viewseg button[aria-pressed="true"]{background:var(--panel2);color:var(--text)}
+  .viewseg button:active{opacity:.4;transition:none}
   /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
   .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
   .leadsub:empty{display:none}
@@ -291,13 +294,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadsub .pcsep{color:var(--off)}
   /* 대기 팀의 「인원 구성」 — 줄글이 아니라 칩. 테이블 미리 빼는 데 쓰는 핵심 정보라
      낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다. 개수만 금색으로 도드라지게. */
-  .leadsub.comp{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  /* 보통 3~4종, 많아야 5종(드물게 6) — 5종까지 375px 폭 한 줄에 들어가게 조였다 */
+  .leadsub.comp{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
   .leadsub.comp .pc{
     display:inline-block;
     background:var(--panel2);border:1px solid var(--line);border-radius:8px;
-    padding:4px 9px;font-size:13px;font-weight:700;color:var(--text);
+    padding:4px 8px;font-size:13px;font-weight:700;color:var(--text);
   }
-  .leadsub.comp .pc b{color:var(--waitTx);font-weight:800;margin:0 1px 0 5px}
+  .leadsub.comp .pc b{color:var(--waitTx);font-weight:800;margin-left:4px}
 
   /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 띠 자체가 「업데이트」 버튼이다 (누르면 새로 불러옴).
      하단에 별도 새로고침 버튼은 없앴다. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
@@ -349,32 +353,39 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar button:active{background:var(--press)}
   mark{background:var(--mark);color:var(--waitTx);-webkit-text-fill-color:var(--waitTx);border-radius:3px;padding:0 1px}
 
-  /* time group — 시간대마다 한 장짜리 슬래브 (카드 더미가 아니라 「명단」) */
-  .group{margin-top:14px}
+  /* time group — 시간대 머리글 + 그 명단.
+     선 규칙: 전폭 선 = 구역 경계(상단바 아래·시간바 아래·하단바 위) / 들여쓴 선 = 행 사이.
+     머리글은 «자기 명단»에 붙는다 — 위는 넓게(앞 명단과 떨어짐), 아래는 선 하나. */
+  .group{margin-top:18px}
+  .group:first-child{margin-top:6px}
+  /* 접힌 시간대끼리는 띄우지 않고 선으로만 잇는다 — 접힌 목록이 표처럼 촘촘히 쌓인다 */
+  .group.shut + .group{margin-top:0}
 
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;align-items:center;gap:7px;
-    width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 8px;
-    border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
+    display:flex;align-items:center;gap:8px;
+    width:calc(100% + 28px);margin:0 -14px;padding:9px 16px 9px;
+    border:0;border-bottom:1px solid var(--line);
+    font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
+  /* 줄 전체가 버튼이라 전폭 띠로 반응 (서랍 항목과 같은 규칙) */
   .ghead:active{background:var(--press)}
   .chev{
     color:var(--dim);flex:0 0 auto;
-    display:grid;place-items:center;width:14px;height:14px;line-height:0;
+    display:grid;place-items:center;width:12px;height:12px;line-height:0;
     transform:rotate(90deg);transition:transform .15s;
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
-  /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
-  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
-  .gline{flex:1;height:1px;background:var(--line)}
-  .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
-  .gmeta b{font-weight:800;color:var(--text)}
-  .gbreak{color:var(--dim);font-size:12px}
-  .group.now .gtime{color:var(--waitBig)}
-  .group.done .gtime{color:var(--off)}
+  /* 밝기 3단계로 「언제」를 말한다 — 지금 = 금색 / 앞으로 = 흰색 / 다 끝남 = 회색.
+     17px 은 «큰 글씨» 대비 기준 밖이라 지금 색은 글자용 금색(--waitTx). */
+  .gtime{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
+  .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+  .gbreak{font-size:12px;font-weight:600;color:var(--dim)}
+  .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
+  .group.now .gtime{color:var(--waitTx)}
+  .group.done .gtime{color:var(--dim)}
   .group.done .gmeta b{color:var(--goTx)}
 
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
@@ -388,14 +399,15 @@ window.addEventListener('pageshow', remeasureSbcut);
     content:"";position:absolute;left:54px;right:0;top:-1px;height:1px;
     background:var(--line);
   }
-  /* 눌리는 곳은 여기뿐. 왼쪽 54칸이라 손가락에 넉넉하다 */
+  /* 눌리는 곳은 여기뿐. 왼쪽 54칸 × 56 이라 손가락에 넉넉하다.
+     누름은 칸(네모)이 아니라 «원»이 받는다 — 면 없는 목록에서 네모가 번쩍이면 유령 박스처럼 보인다. */
   .main{
     width:54px;flex:0 0 auto;display:grid;place-items:center;
-    min-height:54px;cursor:pointer;padding:0;
+    min-height:56px;cursor:pointer;padding:0;
     background:none;border:0;
     color:inherit;font:inherit;
   }
-  .main:active{background:var(--press)}
+  .main:active .check{transform:scale(.84);border-color:var(--dim);transition:none}
   .info{
     flex:1;min-width:0;display:flex;align-items:center;gap:10px;
     padding:13px 12px 13px 4px;
@@ -409,7 +421,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:24px;height:24px;border-radius:50%;flex:0 0 auto;
     border:2px solid var(--off);
     display:grid;place-items:center;line-height:0;color:transparent;
-    transition:.15s;
+    transition:transform .12s,background .15s,border-color .15s;
   }
   .check svg{display:block}
   /* 직접 체크한 순간에만 — 채워지며 탁 튄다 (이 앱의 핵심 동작에 손맛). 로컬 체크만 이 클래스가 붙는다.
@@ -425,7 +437,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
   /* 메모는 이름 아래 보조 정보 — 금색(경보처럼 보임)에서 낮춰 조용하게. 앞에 작은 점. */
   .memo{
-    margin-top:2px;font-size:12px;font-weight:600;line-height:1.3;
+    margin-top:2px;font-size:13px;font-weight:600;line-height:1.3;
     color:var(--dim);text-align:left;
     word-break:break-all;
   }
@@ -442,18 +454,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  /* 태그·인원칸을 체크(24)와 한 줄에 맞춘다 */
-  .tag{
-    height:24px;display:inline-flex;align-items:center;
-    font-size:11px;font-weight:800;letter-spacing:.03em;
-    padding:0 8px;border-radius:7px;flex:0 0 auto;white-space:nowrap;
-  }
-  .tag.arrived{background:var(--goTag);color:var(--goTagTx);-webkit-text-fill-color:var(--goTagTx)}
-  .tag.cancelled{background:var(--warnTag);color:var(--warnTagTx);-webkit-text-fill-color:var(--warnTagTx)}
+  /* 인원칸을 체크(24)와 한 줄에 맞춘다. 칩 둥글기는 앱 공통 8 */
   .pax{
     height:24px;display:inline-flex;align-items:center;
     font-size:14px;font-weight:700;color:var(--text);
-    background:var(--panel2);border-radius:7px;padding:0 9px;flex:0 0 auto;
+    background:var(--panel2);border-radius:8px;padding:0 9px;flex:0 0 auto;
   }
   .more{
     width:42px;flex:0 0 auto;border:0;
@@ -461,22 +466,18 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .more svg{display:block}
-  .more:active{background:var(--press)}
 
-  /* 방문/취소 = 행 전체를 색으로 «칠하지» 않는다 (카드가 없어 색 띠가 줄에 쏟아진 것처럼 어색).
-     상태는 채운 원 체크 + 태그 + 흐린 이름 / (취소)취소선·반높이 로만. */
+  /* 방문/취소 — 상태 색은 «원 하나에만». 행을 칠하지도, 태그를 붙이지도 않는다
+     (원 안의 ✓/✕ 가 이미 같은 말). 처리된 행은 글자가 같이 가라앉을 뿐 크기·높이는 그대로
+     — 이름 열이 들쭉날쭉하지 않게. 줄여서 공간을 아끼는 건 「남은 팀」 보기가 맡는다. */
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
-  .row.arrived .name{color:var(--goName);-webkit-text-fill-color:var(--goName);font-weight:600}
-  .row.arrived .pax{color:var(--goTx);-webkit-text-fill-color:var(--goTx)}
-
-  /* 취소 = 서빙 중엔 죽은 정보. 반높이 한 줄 + 취소선. */
-  .row.cancelled .main{min-height:0}
-  .row.cancelled .info{padding-top:7px;padding-bottom:7px}
-  .row.cancelled .name{color:var(--warnName);-webkit-text-fill-color:var(--warnName);font-weight:600;
-    font-size:13px;text-decoration:line-through;text-decoration-thickness:1px}
-  .row.cancelled .memo{display:none}
-  .row.cancelled .pax{color:var(--warnPax);-webkit-text-fill-color:var(--warnPax);background:var(--warnPaxBg)}
+  .row.arrived .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
+  .row.arrived .pax, .row.cancelled .pax{color:var(--dim);-webkit-text-fill-color:var(--dim)}
+  .row.cancelled .name{color:var(--off);-webkit-text-fill-color:var(--off);font-weight:600;
+    text-decoration:line-through;text-decoration-thickness:1px}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
+  /* 「남은 팀」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
+  .row.leaving{opacity:0;transition:opacity .22s ease}
 
 
   .edit{padding:0 10px 11px}
@@ -488,35 +489,31 @@ window.addEventListener('pageshow', remeasureSbcut);
   .erow label.grow{flex:1;min-width:0}
   .erow input, .erow select{
     background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:11px;
+    border:1px solid var(--line);border-radius:12px;
     padding:10px 9px;font-family:inherit;font-size:16px;font-weight:600;
-    font-variant-numeric:tabular-nums;width:100%;min-width:0;height:44px;
+    font-variant-numeric:tabular-nums;width:100%;min-width:0;height:48px;
     -webkit-appearance:none;appearance:none;
   }
   .erow input:focus, .erow select:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
   .erow select{
     text-align:center;text-align-last:center;
     background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
-    background-position:calc(100% - 14px) 20px, calc(100% - 9px) 20px;
+    background-position:calc(100% - 14px) 22px, calc(100% - 9px) 22px;
     background-size:5px 5px,5px 5px;background-repeat:no-repeat;
     padding-right:22px;
   }
-  .erow #e-hour, .erow #e-min{width:64px}
-  .erow #e-pax{width:80px}
-  .ebtn{display:flex;gap:6px;margin-top:7px}
-  .ebtn button{
-    flex:1;padding:10px 0;border-radius:11px;border:1px solid var(--line);
-    background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  /* ⋯ 행 메뉴 — 하단바와 같은 «툴바» 꼴: 한 장의 면 위에 글자 버튼, 사이는 얇은 칸막이.
+     이름 열(54px)에서 시작해 목록 격자에 맞춘다. 행 안의 작은 버튼 = 높이 40. */
+  .menu{
+    display:flex;margin:0 0 10px 54px;height:40px;
+    background:var(--panel2);border-radius:12px;overflow:hidden;
   }
-  .ebtn #e-ok{background:var(--wait);color:var(--onWait);border-color:var(--wait)}
-  /* 눌림: 채운 버튼(금색)은 살짝 어둡게, 나머지(--panel2)는 --press 배경 — 앱 공통 규칙 */
-  .ebtn #e-ok:active{filter:brightness(.92)}
-  .ebtn #e-no:active{background:var(--press)}
-
-  .menu{display:flex;gap:6px;padding:0 10px 10px}
   .menu button{
-    flex:1;padding:10px 0;border-radius:11px;border:1px solid var(--line);
-    background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    flex:1;position:relative;border:0;background:transparent;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:13px;font-weight:700;
+  }
+  .menu button + button::before{
+    content:"";position:absolute;left:0;top:11px;bottom:11px;width:1px;background:var(--line);
   }
   .menu button:active{background:var(--press)}
   .menu .del{color:var(--warn)}
@@ -539,7 +536,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:14px;margin-top:10px;overflow:hidden;
   }
-  .panel h2{margin:0 0 4px;font-size:16px;font-weight:700}
+  .panel h2{margin:0 0 4px;font-size:17px;font-weight:800;letter-spacing:-.02em}
   .panel p{margin:0 0 10px;font-size:12px;color:var(--dim);line-height:1.5}
 
   /* 명단 붙여넣기 — 명단이 비었을 때의 화면. .panel 카드 모양 그대로, 내용만큼만 크다.
@@ -588,12 +585,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 오류 안내는 위 안내문이 빨갛게 바뀌는 것뿐. 레이아웃은 전혀 안 움직인다 */
   #pasteHint.bad{ color:var(--errTx);font-weight:700 }
 
-  .btns{display:flex;gap:8px;margin-top:12px}
+  /* ── 큰 버튼 (시트·팝업·폼 공통) — 높이 48 · 15px/700 · 둥글기 12 ──
+     주동작 = 금색 채움 / 보조 = --panel2 면 + 선 / 위험 = 붉은 글자. 이 꼴 하나뿐.
+     (.btn · .dbtn button · .sheetClose · .sheetNever · .sheetCopy 가 전부 이 값을 쓴다) */
+  .btns{display:flex;gap:8px;margin-top:14px}
   .btn{
-    flex:1;padding:13px 0;border-radius:11px;border:0;
-    font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;
+    flex:1;height:48px;padding:0;border-radius:12px;border:1px solid transparent;
+    font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
-  .btn.primary{background:var(--wait);color:var(--onWait)}
+  .btn.primary{background:var(--wait);border-color:var(--wait);color:var(--onWait)}
   .btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
   .btn.primary:active{filter:brightness(.92)}
   .btn.ghost:active{background:var(--press)}
@@ -615,12 +615,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
   .foot button svg{display:block}
-  .foot button:active{background:var(--press);color:var(--text)}
   .foot button + button::before{
-    content:"";position:absolute;left:0;top:14px;bottom:14px;width:1px;background:var(--line);
+    content:"";position:absolute;left:0;top:16px;bottom:16px;width:1px;background:var(--line);
   }
-  .foldico{transition:transform .2s ease}
-  .foot button.expanded .foldico{transform:scaleY(-1)}
+  /* 가운데 「예약 추가」 — 이 바의 주동작. 아이콘만 금색으로 표시(면은 안 씌운다) */
+  .foot #addBtn svg{color:var(--waitTx)}
+  .foot #addBtn{color:var(--text)}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
@@ -710,9 +710,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheetBtns{flex:0 0 auto;display:flex;gap:8px;margin:8px 18px 0}  /* 위 8px = 스크롤 목록과 버튼이 안 붙게 */
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
-    flex:1;padding:13px 0;border-radius:11px;
-    border:1px solid var(--line);background:none;
-    color:var(--dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    flex:1;height:48px;padding:0;border-radius:12px;
+    border:1px solid var(--line);background:var(--panel2);
+    color:var(--dim);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
   .sheetNever:active{background:var(--press)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
   .faq{padding-bottom:8px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
@@ -874,9 +874,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-size:12px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
   .sheetClose{
-    width:100%;padding:13px 0;margin-top:2px;border-radius:11px;
+    width:100%;height:48px;padding:0;margin-top:2px;border-radius:12px;
     border:1px solid var(--line);background:var(--panel2);
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
   .sheetClose:active{background:var(--press)}
 
@@ -1035,19 +1035,19 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dialog{
     width:100%;max-width:330px;
     background:var(--panel);border:1px solid var(--line);
-    border-radius:16px;padding:19px 18px 15px;
+    border-radius:18px;padding:19px 18px 16px;
     /* 세로 위치는 .scrim 의 place-items:center 가 잡는다. 입력칸이 없어 키보드가 안 뜨므로
        예전의 --kb 이동은 필요 없다. */
   }
-  .dialog h3{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.45;white-space:pre-line}
+  .dialog h3{margin:0 0 4px;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.45;white-space:pre-line}
   /* 같은 막에 뜨는 형제 창(룰렛)의 .rltsub 와 같은 크기·색. 아래 여백은 안 준다
      — 인접 마진 상쇄로 .dbtn 의 margin-top 에 먹혀 무의미하다. */
   .dialog .dlgnote{margin:0;font-size:12px;line-height:1.5;color:var(--dim)}
-  .dbtn{display:flex;gap:8px;margin-top:11px}
+  .dbtn{display:flex;gap:8px;margin-top:14px}
   .dbtn button{
-    flex:1;padding:12px 0;border-radius:11px;
+    flex:1;height:48px;padding:0;border-radius:12px;
     border:1px solid var(--line);background:var(--panel2);
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
   }
   .dbtn #dlgNo:active, .dbtn #rltClose:active{background:var(--press)}   /* 취소·닫기 = --press */
   .dbtn #rltGo:active{filter:brightness(.92)}                           /* 채운 버튼 = 살짝 어둡게 */
@@ -1081,12 +1081,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   #rltScrim{ z-index:62 }
   .rlt{
     width:100%;max-width:340px;
-    background:var(--panel);border:1px solid var(--line);border-radius:16px;
-    padding:20px 18px 15px;
+    background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    padding:20px 18px 16px;
     transition:transform .2s ease;
     transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px));
   }
-  .rlt h3{margin:0 0 3px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+  .rlt h3{margin:0 0 3px;font-size:17px;font-weight:800;letter-spacing:-.02em}
   .rltsub{margin:0 0 12px;font-size:12px;color:var(--dim)}
   .rlt input{
     width:100%;background:var(--ink);color:var(--text);
@@ -1161,7 +1161,7 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="leadmain num" id="leadMain"></span>
         <div class="viewseg" role="group" aria-label="예약 표시">
           <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
-          <button type="button" id="viewPendBtn" aria-pressed="false">대기</button>
+          <button type="button" id="viewPendBtn" aria-pressed="false">남은 팀</button>
         </div>
       </div>
       <span class="leadsub num" id="leadSub"></span>
@@ -1203,8 +1203,14 @@ window.addEventListener('pageshow', remeasureSbcut);
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         <span>명단 복사</span>
       </button>
+      <button id="addBtn" type="button">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>예약 추가</span>
+      </button>
       <button id="foldBtn" type="button">
-        <svg class="foldico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 L12 9 L16 5"/><path d="M8 19 L12 15 L16 19"/></svg>
+        <!-- 접기 = 화살표가 안으로 모임 / 펼치기 = 밖으로 벌어짐. 모양이 위아래 대칭이라 «뒤집기»로는
+             안 바뀐다 — render() 가 경로(d)를 통째로 갈아 끼운다 -->
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path class="foldp" d="M8 4 L12 8 L16 4 M8 20 L12 16 L16 20"/></svg>
         <span class="foldlbl">전체 접기</span>
       </button>
     </div>
@@ -1212,7 +1218,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 </div>
 
 <div class="panel asSheet hide" id="addPanel">
-  <h2>예약 추가</h2>
+  <h2 id="addTitle">예약 추가</h2>
   <div class="edit">
     <div class="erow">
       <label>시<select id="a-hour"></select></label>
@@ -1238,7 +1244,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     <span class="dwnames"><span class="dwname">익순이</span><span class="dwsubtitle">익선취향 예약 매니저</span></span>
   </div>
   <div class="dwsep"></div>
-  <button type="button" class="dwitem" id="addBtn">예약 추가</button>
   <button type="button" class="dwitem" id="logBtn">최근 변경 내역</button>
   <button type="button" class="dwitem" id="backupBtn">지난 명단</button>
   <div class="dwsep"></div>
@@ -2071,11 +2076,12 @@ window.dispatchEvent(new Event('fb-ready'));
     if (t.off) out.push('<span class="pc tally-off">취소 ' + t.off + '</span>');
     return out.join('<span class="pcsep"> · </span>');
   }
-  // 시간대 머리글의 「n/n · 방문 n · 취소 n」 — render 와 patchStatus 가 같이 쓴다.
+  // 시간대 머리글 오른쪽 「방문 n · 취소 n   처리/전체」 — 진행도 숫자가 맨 끝(행의 ⋯ 열 쪽).
+  // render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
-    return '<b>' + (t.came + t.off) + '/' + t.total + '</b>'
-      + '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>';
+    return '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>'
+      + '<b>' + (t.came + t.off) + '/' + t.total + '</b>';
   }
 
   // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
@@ -2098,14 +2104,14 @@ window.dispatchEvent(new Event('fb-ready'));
 
     if (slotPend.length){
       st.textContent = nowTime;
-      lb.textContent = '예약';
+      lb.textContent = '·';
       lm.className = 'leadmain num';
       lm.textContent = slotPend.length + '팀';
       var byPax = {};
       slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
       ls.className = 'leadsub num comp';
       ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
-        .map(function(p){ return '<span class="pc">' + p + '인 <b>' + byPax[p] + '</b>팀</span>'; })
+        .map(function(p){ return '<span class="pc">' + p + '인<b>' + byPax[p] + '</b>팀</span>'; })
         .join('');
     } else {
       st.textContent = ''; lb.textContent = '';
@@ -2215,9 +2221,8 @@ window.dispatchEvent(new Event('fb-ready'));
       var head = document.createElement('button');
       head.className = 'ghead';
       head.type = 'button';
-      head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
+      head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
-        + '<span class="gline"></span>'
         + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(e){
@@ -2235,14 +2240,15 @@ window.dispatchEvent(new Event('fb-ready'));
     if (viewMode === 'pending' && !shownRows && !q){
       list.innerHTML = '';
       em.classList.remove('hide');
-      em.textContent = '대기 중인 예약이 없습니다\n모두 확인했어요';
+      em.textContent = '남은 팀이 없습니다\n모두 확인했어요';
     }
 
     var foldBtnEl = document.getElementById('foldBtn');
     if (foldBtnEl){
-      foldBtnEl.classList.toggle('expanded', !openCount);   // 펼치기 상태면 아이콘 뒤집기
-      var fl = foldBtnEl.querySelector('.foldlbl');
+      var fl = foldBtnEl.querySelector('.foldlbl'), fp = foldBtnEl.querySelector('.foldp');
       if (fl) fl.textContent = openCount ? '전체 접기' : '전체 펼치기';
+      if (fp) fp.setAttribute('d', openCount ? 'M8 4 L12 8 L16 4 M8 20 L12 16 L16 20'    // 모임 = 접기
+                                             : 'M8 8 L12 4 L16 8 M8 16 L12 20 L16 16');  // 벌어짐 = 펼치기
     }
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
@@ -2358,10 +2364,6 @@ window.dispatchEvent(new Event('fb-ready'));
       : '<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>';
     return '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">' + c + '</svg>';
   }
-  function statusTag(st){
-    return st === 'arrived' ? '<span class="tag arrived">방문</span>'
-         : st === 'cancelled' ? '<span class="tag cancelled">취소</span>' : '';
-  }
 
   function tapMore(id){
     keepSlotOpenForId(id);
@@ -2397,13 +2399,9 @@ window.dispatchEvent(new Event('fb-ready'));
       return;
     }
     if (action === 'edit'){
-      if (typeof searchbar !== 'undefined' && !searchbar.classList.contains('hide')){
-        closeSearch(false);   // 뒤로가기 기록 해제는 closeSearch 안에서 같이 한다
-      }
-      pendingClose = null;   // 이전 폼 닫힘 보정이 남아 새 편집을 튀게 하지 않도록
-      editing = id; openMenu = null; render();
-      neutralFocusEdit(id);
-      ensureVisible(id);
+      openMenu = null; closeRowMenu();
+      pendingClose = null;   // 이전 닫힘 보정이 남아 새 편집을 튀게 하지 않도록
+      openEdit(id);
       return;
     }
     if (action === 'delete'){
@@ -2430,7 +2428,6 @@ window.dispatchEvent(new Event('fb-ready'));
     // 행 전체가 버튼이면 목록을 훑다가 잘못 눌리는 일이 생긴다.
     var mark = it.status === 'arrived' ? ICON_GO
              : it.status === 'cancelled' ? ICON_OFF : '';
-    var tag = statusTag(it.status);
     var main = document.createElement('button');
     main.className = 'main';
     main.type = 'button';
@@ -2441,7 +2438,6 @@ window.dispatchEvent(new Event('fb-ready'));
     info.className = 'info';
     info.innerHTML = '<span class="who"><span class="name"></span>'
       +   (it.memo ? '<span class="memo"></span>' : '') + '</span>'
-      + tag
       + '<span class="pax num">' + it.pax + '명</span>';
     var memoEl = info.querySelector('.memo');
     if (memoEl) memoEl.textContent = it.memo;
@@ -2467,67 +2463,8 @@ window.dispatchEvent(new Event('fb-ready'));
     top.appendChild(main); top.appendChild(info); top.appendChild(more);
     body.appendChild(top);
 
-    if (editing === it.id){
-      var form = document.createElement('div');
-      form.className = 'edit';
-      form.setAttribute('tabindex', '-1');
-      var paxOpts = '';
-      for (var pn = 1; pn <= 12; pn++) paxOpts += '<option value="' + pn + '">' + pn + '명</option>';
-      var hOpts = hourOptions();
-      var mOpts = '';
-      for (var mm = 0; mm < 60; mm += 5) mOpts += '<option value="' + pad(mm) + '">' + pad(mm) + '</option>';
-      form.innerHTML = '<div class="erow">'
-        + '<label>시<select id="e-hour">' + hOpts + '</select></label>'
-        + '<label>분<select id="e-min">' + mOpts + '</select></label>'
-        + '<label class="grow">이름<input type="text" id="e-name"></label>'
-        + '<label>인원<select id="e-pax">' + paxOpts + '</select></label>'
-        + '</div>'
-        + '<div class="erow memorow">'
-        + '<label class="grow">메모<input type="text" id="e-memo" autocomplete="off" placeholder="창가석 요청, 인플루언서 …"></label>'
-        + '</div>'
-        + '<div class="ebtn"><button type="button" id="e-ok">저장</button>'
-        + '<button type="button" id="e-no">취소</button></div>';
-      body.appendChild(form);
-      // 영업시간 밖이거나 5분 단위가 아닌 예약이면 그 값도 목록에 넣어준다
-      var curH = it.time.slice(0,2), curM = it.time.slice(3,5);
-      var hSel = form.querySelector('#e-hour'), mSel = form.querySelector('#e-min');
-      function ensureOpt(sel, v){
-        if ([].some.call(sel.options, function(o){ return o.value === v; })) return;
-        var o = document.createElement('option');
-        o.value = v; o.textContent = v;
-        sel.insertBefore(o, sel.firstChild);
-      }
-      ensureOpt(hSel, curH); ensureOpt(mSel, curM);
-      hSel.value = curH; mSel.value = curM;
-      form.querySelector('#e-name').value = it.name;
-      form.querySelector('#e-memo').value = it.memo || '';
-      var paxSel = form.querySelector('#e-pax');
-      if (it.pax > 12){
-        var extra = document.createElement('option');
-        extra.value = it.pax; extra.textContent = it.pax + '명';
-        paxSel.appendChild(extra);
-      }
-      paxSel.value = it.pax;
-      form.addEventListener('click', function(e){ e.stopPropagation(); });
-      form.querySelector('#e-no').addEventListener('click', function(){
-        keepSlotOpenForId(it.id);
-        var anchor = editing;
-        editing = null; renderAnchored(anchor); afterEditClose(anchor);
-      });
-      form.querySelector('#e-ok').addEventListener('click', function(){
-        applyEdit(it.id,
-          form.querySelector('#e-hour').value + ':' + form.querySelector('#e-min').value,
-          form.querySelector('#e-name').value,
-          form.querySelector('#e-pax').value,
-          form.querySelector('#e-memo').value);
-      });
-      form.querySelector('#e-name').addEventListener('keydown', function(e){
-        if (e.key === 'Enter') form.querySelector('#e-ok').click();
-      });
-      form.querySelector('#e-memo').addEventListener('keydown', function(e){
-        if (e.key === 'Enter') form.querySelector('#e-ok').click();
-      });
-    } else if (openMenu === it.id){
+    // 수정은 행 안에 폼을 끼우지 않고 「예약 추가」와 같은 바텀시트를 쓴다 (openEdit)
+    if (openMenu === it.id){
       body.appendChild(buildMenu(it.id));
     }
 
@@ -2598,22 +2535,23 @@ window.dispatchEvent(new Event('fb-ready'));
     return m + 1;
   }
 
+  // 돌려주는 값: 창을 닫아도 되면 true (저장·변경 없음·이미 사라진 예약), 입력을 고쳐야 하면 false
   function applyEdit(id, timeV, nameV, paxV, memoV){
     var it = find(id);
-    if (!it) return;
+    if (!it){ toast('이미 삭제된 예약입니다'); return true; }
     var originalTime = it.time;
     var time = normTime(timeV);
     var name = String(nameV).replace(/\s+/g,' ').trim();
     var pax = parseInt(paxV, 10);
-    if (!time){ toast('시간을 확인해 주세요'); return; }
-    if (!name){ toast('이름을 입력해 주세요'); return; }
-    if (!(pax > 0)){ toast('인원을 확인해 주세요'); return; }
+    if (!time){ toast('시간을 확인해 주세요'); return false; }
+    if (!name){ toast('이름을 입력해 주세요'); return false; }
+    if (!(pax > 0)){ toast('인원을 확인해 주세요'); return false; }
 
     var memo = String(memoV == null ? (it.memo || '') : memoV).replace(/\s+/g,' ').trim();
 
     if (time === it.time && name === it.name && pax === it.pax && memo === (it.memo || '')){
       keepSlotOpenForId(it.id);
-      editing = null; render(); afterEditClose(it.id); return;
+      editing = null; render(); afterEditClose(it.id); return true;
     }
 
     // 시간이 바뀌면 옮겨간 시간대의 맨 뒤로
@@ -2646,6 +2584,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (it.id === oldId) writeItem(oldId, { memo: it.memo, ts: it.ts });   // 메모만 바뀜 (id 유지)
     else { delItem(oldId); putItem(it); }                                  // 시각·이름·인원 바뀜 = 다른 노드
     toast(it.time + ' ' + it.name + ' 수정됨');
+    return true;
   }
 
   function find(id){
@@ -2952,13 +2891,33 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 바뀐 행과 그 시간대 머리글만 손본다. 요소를 새로 만들지 않고 내용만 고친다.
   // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
+  // 「남은 팀」 보기에서 방금 처리한 행 — 바로 지우면 「내가 뭘 눌렀지」가 된다.
+  // 채워진 원을 LEAVE_MS 동안 보여준 뒤 흐려지며 빠진다. 그 사이 다시 누르면(체크 해제) 그대로 남는다.
+  var LEAVE_MS = 900, leaveTimers = {};
+  function cancelLeave(id){
+    if (leaveTimers[id]){ clearTimeout(leaveTimers[id]); delete leaveTimers[id]; }
+  }
+  function scheduleLeave(id){
+    cancelLeave(id);
+    leaveTimers[id] = setTimeout(function(){
+      var row = rowForId(id);
+      if (row) row.classList.add('leaving');
+      leaveTimers[id] = setTimeout(function(){
+        delete leaveTimers[id];
+        if (viewMode !== 'pending') return;
+        if (interactionActive()) backgroundRenderPending = true;
+        else render();
+      }, 230);
+    }, LEAVE_MS);
+  }
+
   function patchStatus(it){
-    // 대기 모드에서는 방금 처리한 행이 목록에서 빠져야 하므로 부분 갱신을 포기하고 통째로 다시 그린다.
-    if (viewMode === 'pending') return false;
     var row = rowForId(it.id);
     if (!row) return false;
 
+    cancelLeave(it.id);
     row.className = 'row ' + it.status;
+    if (viewMode === 'pending' && it.status !== 'pending') scheduleLeave(it.id);
     var chk = row.querySelector('.check');
     if (chk){
       chk.innerHTML = it.status === 'arrived' ? ICON_GO
@@ -2971,15 +2930,6 @@ window.dispatchEvent(new Event('fb-ready'));
       }
     }
     closeRowMenu();   // 부분 갱신이라 다른 행에 열려 있던 ⋯ 메뉴 DOM 이 남는다 — 지운다
-    var info = row.querySelector('.info');
-    var old = info.querySelector('.tag');
-    if (old) old.parentNode.removeChild(old);
-    var html = statusTag(it.status);
-    if (html){
-      var box = document.createElement('div');
-      box.innerHTML = html;
-      info.insertBefore(box.firstChild, info.querySelector('.pax'));
-    }
 
     // 시간대 머리글 숫자
     var grp = row.closest('.group');
@@ -3264,7 +3214,13 @@ window.dispatchEvent(new Event('fb-ready'));
   var aPax  = document.getElementById('a-pax');
   var aMemo = document.getElementById('a-memo');
 
-  (function fillAddOpts(){
+  var addTitle = document.getElementById('addTitle');
+  var addOkBtn = document.getElementById('addOk');
+  // 같은 시트를 「예약 추가」와 「예약 수정」이 같이 쓴다. 수정 중이면 그 예약 id.
+  var sheetEditId = null;
+  // 선택지는 열 때마다 새로 채운다 — 수정에서 끼워 넣은 비표준 값(영업시간 밖·5분 단위 아님·13명+)이
+  // 다음 「추가」에 남지 않게.
+  function fillAddOpts(){
     aHour.innerHTML = hourOptions();
     var m = '';
     for (var j = 0; j < 60; j += 5) m += '<option value="' + pad(j) + '">' + pad(j) + '</option>';
@@ -3272,11 +3228,41 @@ window.dispatchEvent(new Event('fb-ready'));
     var pp = '';
     for (var k = 1; k <= 12; k++) pp += '<option value="' + k + '">' + k + '명</option>';
     aPax.innerHTML = pp;
-  })();
+  }
+  fillAddOpts();
+  function ensureOpt(sel, v, label, atEnd){
+    if ([].some.call(sel.options, function(o){ return o.value === String(v); })) return;
+    var o = document.createElement('option');
+    o.value = v; o.textContent = label || v;
+    if (atEnd) sel.appendChild(o); else sel.insertBefore(o, sel.firstChild);
+  }
+
+  function openEdit(id){
+    var it = find(id);
+    if (!it) return;
+    if (discardEditing()) render();
+    if (!panel.classList.contains('hide')) closePaste();
+    fillAddOpts();
+    var h = it.time.slice(0,2), m = it.time.slice(3,5);
+    ensureOpt(aHour, h); ensureOpt(aMin, m);
+    if (it.pax > 12) ensureOpt(aPax, it.pax, it.pax + '명', true);
+    aHour.value = h; aMin.value = m; aPax.value = String(it.pax);
+    aName.value = it.name; aMemo.value = it.memo || '';
+    sheetEditId = id;
+    addTitle.textContent = '예약 수정';
+    addOkBtn.textContent = '저장';
+    addPanel.classList.remove('hide');
+    panelScrim.classList.remove('hide');
+    backOpen(hideAdd);
+  }
 
   function openAdd(){
     if (discardEditing()) render();
     if (!panel.classList.contains('hide')) closePaste();
+    fillAddOpts();
+    sheetEditId = null;
+    addTitle.textContent = '예약 추가';
+    addOkBtn.textContent = '추가';
     // 기본값 — 정각 기준. 상단 시간이 넘어가는 규칙(정각 11분)과 같이 움직인다. (KST · 서버 시계)
     var p = nowParts(), hh = p.h;
     if (p.min >= GRACE_ON_HOUR) hh += 1;
@@ -3292,10 +3278,16 @@ window.dispatchEvent(new Event('fb-ready'));
   function hideAdd(){
     addPanel.classList.add('hide');
     if (panel.classList.contains('hide')) panelScrim.classList.add('hide');
+    sheetEditId = null;
   }
   function closeAdd(){ hideAdd(); backDone(); }
 
   function addOne(){
+    if (sheetEditId){                 // 수정 모드 — 입력이 틀렸으면 창을 그대로 둔다
+      var eid = sheetEditId;
+      if (applyEdit(eid, aHour.value + ':' + aMin.value, aName.value, aPax.value, aMemo.value)) closeAdd();
+      return;
+    }
     var name = aName.value.replace(/\s+/g,' ').trim();
     if (!name){ toast('이름을 입력해 주세요'); aName.focus(); return; }
     var time = aHour.value + ':' + aMin.value;
@@ -3513,7 +3505,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (applyPaste(taEl.value)) closePaste();
   });
   document.getElementById('cancelPaste').addEventListener('click', closePaste);
-  document.getElementById('addBtn').addEventListener('click', function(){ hideDrawer(); openAdd(); });
+  document.getElementById('addBtn').addEventListener('click', function(){ openAdd(); });   // 하단바 가운데
 
   // ⋯ 메뉴는 바깥을 누르면 닫힌다.
   // 그 탭은 닫는 데만 쓰고 넘기지 않는다 — 메뉴를 치우려다 옆 사람이 체크되면 안 된다.
