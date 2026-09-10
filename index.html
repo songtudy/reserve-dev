@@ -352,10 +352,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar button:active{opacity:.4}
   mark{background:var(--mark);color:var(--text);-webkit-text-fill-color:var(--text);border-radius:3px;padding:0 1px}
 
-  /* time group — 선 없음 + 숫자 캡슐 (2026-09-10 오너가 「유지 / 박스 / 선 없이」 중 검증 후 확정):
-     「 ⌄ 19:00               방문 2 · 취소 1  [3/3] 」
-     화살표·시각은 왼쪽 끝에 붙인다 — 체크 원 칸 가운데로 옮겨 봤더니 왼쪽이 허전하다는 오너 판단.
-     가로선은 명단 구분선만 — 머리글까지 선을 그으면 선이 겹쳐 지저분했다(관통선 폐기).
+  /* time group — 가는 선 + 숫자 캡슐 (2026-09-10 오너 확정):
+     「 ⌄ 19:00 ─────────── 방문 2 · 취소 1  [3/3] 」
+     선을 빼 보니 가운데가 비어 허전하다는 오너 판단 → 시각과 집계를 잇는 가는 선을 되살림.
+     박스 머리글도 비교했지만 명단(선만 있는 평평한 목록)보다 튀어서 선으로.
      숫자 캡슐은 명단의 「2명」 칩과 같은 부품이고, 상태는 캡슐 색으로: 지금=포인트, 끝남=초록. */
   .group{margin-top:14px}
 
@@ -376,7 +376,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.shut .chev{transform:rotate(0)}
   /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
   .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
-  .gsp{flex:1}
+  .gline{flex:1;height:1px;background:var(--line);margin:0 3px}
   .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px}
   .gcnt{
     font-size:13px;font-weight:800;color:var(--text);
@@ -2217,7 +2217,7 @@ window.dispatchEvent(new Event('fb-ready'));
       head.type = 'button';
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
-        + '<span class="gsp"></span>'
+        + '<span class="gline"></span>'
         + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
       head.setAttribute('aria-expanded', String(!shut));
       head.setAttribute('data-time', g.time);
