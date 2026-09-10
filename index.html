@@ -232,11 +232,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     font-size:15px;color:var(--text);font-weight:600;letter-spacing:.01em;
   }
+  .date .wday{color:var(--dim)}
   .dayprog{
     display:flex;align-items:center;line-height:1;
     font-size:13px;font-weight:800;color:var(--text);
-    background:var(--panel2);
-    padding:7px 10px;border-radius:8px;
+    padding:0 4px;   /* 칩 면 없음 — 시간바의 「2/9」와 같은 꼴. 면 있는 칩은 인원 구성 전용 */
   }
   .dayprog.full{color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -356,7 +356,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      선 규칙: 전폭 선 = 구역 경계(상단바 아래·시간바 아래·하단바 위) / 들여쓴 선 = 행 사이.
      머리글은 «자기 명단»에 붙는다 — 위는 넓게(앞 명단과 떨어짐), 아래는 선 하나. */
   .group{margin-top:18px}
-  .group:first-child{margin-top:6px}
+  .group:first-child{margin-top:0}   /* 헤더 선이 첫 시간바의 윗선 — 여백을 두면 첫 띠만 48px 로 커 보인다(나머지 42) */
   /* 접힌 시간대끼리는 띄우지 않고 선으로만 잇는다 — 접힌 목록이 표처럼 촘촘히 쌓인다 */
   .group.shut + .group{margin-top:0}
 
@@ -385,12 +385,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .gbreak{font-size:12px;font-weight:600;color:var(--dim)}
   .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
   .group.now .gtime{color:var(--waitBig)}
-  /* 지금 시간대 — 시각 왼쪽 여백에 포인트색 점 하나. 여백에 걸어 두어 시각 글자 위치는 안 움직이고
-     (모든 시각이 같은 세로선), 머리글 높이도 다른 시간대와 똑같다(42px). */
-  .group.now .ghead::before{
-    content:"";position:absolute;left:5px;top:50%;
-    width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:var(--waitBig);
-  }
+  /* 지금 시간대는 «시각 글자색»만으로 — 상단 요약의 시각과 같은 포인트색이라 둘이 한 쌍으로 읽힌다.
+     (애플 캘린더 목록 보기의 「오늘」 표시와 같은 방식. 밑줄·점·띠는 시도 후 반려) */
   .group.done .gtime{color:var(--dim)}
   .group.done .gmeta b{color:var(--goTx)}
 
@@ -1613,13 +1609,11 @@ window.dispatchEvent(new Event('fb-ready'));
   var viewDate = bizDate();
 
   // '9월 3일 (수)' 한 조각. 오늘밖에 없으니 '· 오늘' 같은 꼬리표는 안 붙인다.
-  function prettyDate(ds){
-    var p = (ds || viewDate).split('-');
-    var w = WEEKDAYS[parseYmd(ds || viewDate).getDay()];
-    return (+p[1]) + '월 ' + (+p[2]) + '일 (' + w + ')';
-  }
+  // 「9월 10일 목요일」 — 괄호 없이, 요일은 한 단계 흐리게(날짜가 주, 요일은 보조)
   function paintDate(){
-    document.getElementById('dateLabel').textContent = prettyDate();
+    var p = viewDate.split('-');
+    var w = WEEKDAYS[parseYmd(viewDate).getDay()];
+    document.getElementById('dateLabel').innerHTML = (+p[1]) + '월 ' + (+p[2]) + '일 <span class="wday">' + w + '요일</span>';
   }
 
   // 순수: 날짜 키 목록에서 '지워도 되는' 것만 고른다.
