@@ -352,34 +352,33 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar button:active{opacity:.4}
   mark{background:var(--mark);color:var(--text);-webkit-text-fill-color:var(--text);border-radius:3px;padding:0 1px}
 
-  /* time group — 원래 틀(⌄ 시각 ━━━ 집계, 눌러서 접기) 그대로, 모양만 다듬음 (2026-09-10 오너 위임):
-     「⌄ 20:00 ━━━━━━━━ 2/8」. 굵고 큰 «회색» 숫자가 촌스러움의 원인이라 본문색 17px 로 선명하게,
-     화살표·선은 가볍게. 집계는 「처리/전체」 하나만 — 방문·취소 내역은 펼치면 명단의 체크 원이,
-     접히면 초록 숫자(다 끝남)가 이미 말하므로 중복(오너 제안). 내역은 화면낭독기용 aria-label 에만. */
-  .group{margin-top:16px}
-  .group.shut + .group.shut{margin-top:2px}   /* 접힌 시간대끼리는 촘촘히 */
+  /* time group — 원래 꼴(오너가 여러 시안 비교 후 이게 낫다고 확정, 2026-09-10):
+     「⌄ 19:00 ━━━━━ 3/3 방문 2 · 취소 1」 — 시각과 집계 사이를 가는 선이 가로로 잇는다. 아래 선·띠 없음. */
+  .group{margin-top:14px}
 
   .ghead{
     position:sticky;top:0;z-index:10;
     background:var(--ink);
-    display:flex;align-items:center;gap:8px;
-    width:calc(100% + 32px);margin:0 -16px;padding:10px 16px 8px;
+    display:flex;align-items:center;gap:7px;
+    width:calc(100% + 32px);margin:0 -16px;padding:9px 18px 8px;
     border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
   .chev{
-    color:var(--off);flex:0 0 auto;
-    display:grid;place-items:center;width:12px;height:12px;line-height:0;
+    color:var(--dim);flex:0 0 auto;
+    display:grid;place-items:center;width:14px;height:14px;line-height:0;
     transform:rotate(90deg);transition:transform .15s;
   }
   .chev svg{display:block}
   .group.shut .chev{transform:rotate(0)}
-  .gtime{font-size:17px;font-weight:800;letter-spacing:-.01em;line-height:1.2;color:var(--text)}
-  .gline{flex:1;height:1px;background:var(--line);margin:0 4px}
-  .gmeta{display:flex;align-items:center;white-space:nowrap}
-  .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
+  /* 19px 굵게 = 큰 글씨 기준이 적용돼 밝은 금색을 쓸 수 있다 */
+  .gtime{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--dim)}
+  .gline{flex:1;height:1px;background:var(--line)}
+  .gmeta{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
+  .gmeta b{font-weight:800;color:var(--text)}
+  .gbreak{color:var(--dim);font-size:12px}
   .group.now .gtime{color:var(--waitBig)}
-  .group.done .gtime{color:var(--dim)}
+  .group.done .gtime{color:var(--off)}
   .group.done .gmeta b{color:var(--goTx)}
 
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
@@ -2064,12 +2063,11 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 시간대 머리글 오른쪽 「방문 n · 취소 n   처리/전체」 — 진행도 숫자가 맨 끝(행의 ⋯ 열 쪽).
   // render 와 patchStatus 가 같이 쓴다.
-  // 시간대 머리글 오른쪽 「처리/전체」 하나만. 방문·취소 내역은 화면낭독기용 aria-label 에.
-  // render 와 patchStatus 가 같이 쓴다.
+  // 시간대 머리글 오른쪽 「처리/전체 방문 n · 취소 n」. render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
-    return '<b aria-label="' + t.total + '팀 중 ' + (t.came + t.off) + '팀 처리 · 방문 ' + t.came + ' · 취소 ' + t.off + '">'
-      + (t.came + t.off) + '/' + t.total + '</b>';
+    return '<b>' + (t.came + t.off) + '/' + t.total + '</b>'
+      + '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>';
   }
 
 
@@ -2211,7 +2209,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var head = document.createElement('button');
       head.className = 'ghead';
       head.type = 'button';
-      head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
+      head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
         + '<span class="gline"></span>'
         + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
