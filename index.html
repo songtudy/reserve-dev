@@ -583,8 +583,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .frow{display:flex}
   .foot button{
     flex:1;height:52px;border:0;background:transparent;cursor:pointer;
-    color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:0;white-space:nowrap;
-    display:flex;align-items:center;justify-content:center;gap:5px;position:relative;padding:0 2px;
+    color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.02em;white-space:nowrap;
+    display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
   }
   .foot button svg{display:block}
   .foot button + button::before{
@@ -593,9 +593,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 가운데 「예약 추가」 — 이 바의 주동작. 아이콘만 포인트색(면은 안 씌운다) */
   .foot #addBtn svg{color:var(--waitTx)}
   .foot #addBtn{color:var(--text)}
-  /* 오른쪽 「남은 팀만」 — 켜져 있으면(처리된 행 숨김) 같은 방식으로 표시 */
-  .foot #viewBtn.on{color:var(--text)}
-  .foot #viewBtn.on svg{color:var(--waitTx)}
 
   /* 예약 시트 — 행을 누르면. 제목 = 이름, 그 아래 시각·인원·메모, 동작 2×2 + 닫기 */
   .actsub{margin:0 0 14px;font-size:13px;color:var(--dim);line-height:1.5}
@@ -1133,6 +1130,10 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="dayprog num hide" id="dayProg"></span>
         <span class="offtag">연결 안 됨</span>
         <span class="devtag hide" id="devTag">테스트</span>
+        <!-- 남은 팀만 보기 (방문·취소 행 숨김). 켜지면 검색 켜짐과 같은 표시 -->
+        <button type="button" id="viewBtn" aria-pressed="false" aria-label="남은 팀만 보기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        </button>
         <button type="button" id="searchBtn" class="off" aria-label="이름 검색">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
             <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/>
@@ -1184,11 +1185,6 @@ window.addEventListener('pageshow', remeasureSbcut);
       <button id="addBtn" type="button">
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span>예약 추가</span>
-      </button>
-      <button id="viewBtn" type="button" aria-pressed="false">
-        <!-- 남은 팀만 보기 (방문·취소 행 숨김). 켜지면 라벨이 「전체 보기」로 -->
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-        <span class="viewlbl">남은 팀만</span>
       </button>
       <button id="foldBtn" type="button">
         <!-- 접기 = 화살표가 안으로 모임 / 펼치기 = 밖으로 벌어짐. 모양이 위아래 대칭이라 «뒤집기»로는
@@ -2127,6 +2123,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var footEl = document.querySelector('.foot');
     if (footEl) footEl.classList.toggle('hide', !allCount);
     searchBtn.classList.toggle('off', !allCount);
+    viewBtn.classList.toggle('off', !allCount);   // 명단이 없으면 보기 전환도 의미 없다 (검색과 같이 숨김)
     if (!allCount && !searchbar.classList.contains('hide')) closeSearch(false);
 
     // 목록
@@ -3471,7 +3468,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var on = viewMode === 'pending';
     viewBtn.classList.toggle('on', on);
     viewBtn.setAttribute('aria-pressed', String(on));
-    viewBtn.querySelector('.viewlbl').textContent = on ? '전체 보기' : '남은 팀만';
+    viewBtn.setAttribute('aria-label', on ? '전체 보기' : '남은 팀만 보기');
   }
   function setViewMode(m){
     if (viewMode === m) return;
