@@ -363,7 +363,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:sticky;top:0;z-index:10;
     background:var(--ink);
     display:flex;align-items:center;gap:7px;
-    width:calc(100% + 32px);margin:0 -16px;padding:9px 18px 8px;
+    width:calc(100% + 32px);margin:0 -16px;padding:10px 18px 9px;   /* 높이 44 = 애플 최소 누름 크기 */
     border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
   .ghead:active{background:var(--press)}
@@ -395,6 +395,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.now .gcnt{background:var(--mark);background:color-mix(in srgb, var(--wait) 18%, transparent);color:var(--waitTx)}
   .group.done .gtime{color:var(--dim)}
   .group.done .gcnt{background:color-mix(in srgb, var(--go) 18%, transparent);color:var(--goTx)}
+  /* 라이트는 바탕이 밝아 18% 틴트면 글자 대비가 4.2:1(지금)·4.5:1(끝남)로 기준(4.5) 미달·턱걸이 →
+     10% 로 낮춰 4.7:1 · 4.9:1 확보. 다크는 18% 에서 7.0:1 · 5.4:1 이라 그대로. */
+  html[data-theme="light"] .group.now .gcnt{background:color-mix(in srgb, var(--wait) 10%, transparent)}
+  html[data-theme="light"] .group.done .gcnt{background:color-mix(in srgb, var(--go) 10%, transparent)}
 
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
      (체크 칸 54px 다음부터 그어 이름줄에 맞춘다). 상태는 체크·태그·옅은 배경으로만. */
@@ -2201,8 +2205,13 @@ window.dispatchEvent(new Event('fb-ready'));
 
     var openCount = 0;
     var pendRows = 0;   // 「남은 팀」 보기에서 보여줄 행 수 — 접혀 있어도 센다 (접힘 ≠ 없음)
+    // 검색 중엔 groups 가 «걸린 사람만»이다. 머리글 숫자·끝남 판정은 시간대 «전체» 기준이어야
+    // 체크 직후 부분 갱신(patchStatus — 전체 기준)과 숫자가 어긋나지 않는다 (0/1 → 3/9 로 튀던 것).
+    var fullAt = {};
+    allGroups.forEach(function(ag){ fullAt[ag.time] = ag.items; });
     groups.forEach(function(g){
-      var pendN = tallyStatus(g.items).pend;
+      var slotAll = fullAt[g.time] || g.items;
+      var pendN = tallyStatus(slotAll).pend;
       // 대기 모드 — 방문·취소 행은 숨긴다. 그 시간대가 통째로 처리됐으면 헤더째 건너뛴다.
       var rows = (viewMode === 'pending')
         ? g.items.filter(function(it){ return it.status === 'pending'; })
@@ -2227,7 +2236,7 @@ window.dispatchEvent(new Event('fb-ready'));
       head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
         + '<span class="gtime num">' + g.time + '</span>'
         + '<span class="gline"></span>'
-        + '<span class="gmeta num">' + slotMetaHtml(g.items) + '</span>';
+        + '<span class="gmeta num">' + slotMetaHtml(slotAll) + '</span>';
       head.setAttribute('aria-expanded', String(!shut));
       head.setAttribute('data-time', g.time);
       head.addEventListener('click', function(e){
