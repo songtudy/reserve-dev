@@ -249,7 +249,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      ① 면 있는 버튼 → 면이 --press (채운 금색은 brightness)   ② 면 없는 글자·아이콘 → 흐려짐
      ③ 체크 원 → 원이 눌려 들어감.   누르면 즉시, 떼면 .12s 에 돌아온다(:active 에서만 transition 끔). */
   .nav button, .more, .foot button{transition:opacity .12s}
-  .nav button:active, .more:active, .foot button:active{opacity:.4;transition:none}
+  .nav button:active, .more:active, .foot button:active, .nav button.dn, .more.dn, .foot button.dn{opacity:.4;transition:none}
   .nav button:disabled{opacity:.22}
   .date{
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -331,7 +331,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-family:inherit;font-size:13px;font-weight:700;letter-spacing:.01em;cursor:pointer;
     -webkit-appearance:none;appearance:none;
   }
-  .updbar:active{filter:brightness(.92)}
+  .updbar:active, .updbar.dn{filter:brightness(.92)}
 
   /* search */
   .searchbar{
@@ -350,7 +350,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:36px;height:36px;display:grid;place-items:center;border-radius:12px;
     background:none;border:0;color:var(--dim);cursor:pointer;
   }
-  #qBack:active{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
+  #qBack:active, #qBack.dn{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
   .qcount{
     position:absolute;right:40px;top:50%;transform:translateY(-50%);
     font-size:12px;font-weight:700;color:var(--dim);
@@ -367,7 +367,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .searchbar button svg{display:block}
-  .searchbar button:active{opacity:.4}
+  .searchbar button:active, .searchbar button.dn{opacity:.4}
   mark{background:var(--mark);color:var(--text);-webkit-text-fill-color:var(--text);border-radius:3px;padding:0 1px}
 
   /* time group — 시간대 머리글 + 그 명단 (2026-09-11 오너 확정: 「5시 버전 + 다듬기」).
@@ -394,7 +394,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 위 선은 긋지 않는다 — 붙은 머리글 아래로 다음 머리글이 올라올 때 두 선 사이에 빈 틈이 생겨 어색(오너 지적, 2026-09-11).
      선 색은 행 사이·상단 경계와 같은 --line — 머리글만 진하면 위쪽 경계가 흐려 첫 시간대가 더 높아 보인다. */
-  .ghead:active{background:var(--press)}
+  .ghead:active, .ghead.dn{background:var(--press)}
   /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다.
      top:100% 는 안쪽 상자 기준이라 선(border) 위에 얹힌다 → 1px 내려 선을 가리지 않게. */
   .ghead::after{
@@ -451,7 +451,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:none;border:0;
     color:inherit;font:inherit;
   }
-  .main:active .check{transform:scale(.84);border-color:var(--dim);transition:none}
+  .main:active .check, .main.dn .check{transform:scale(.84);border-color:var(--dim);transition:none}
   .info{
     flex:1;min-width:0;display:flex;align-items:center;gap:10px;
     padding:13px 12px 13px 4px;
@@ -470,8 +470,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .check svg{display:block}
   /* 직접 체크한 순간에만 — 채워지며 탁 튄다 (이 앱의 핵심 동작에 손맛). 로컬 체크만 이 클래스가 붙는다.
      다른 폰 변경·최초 로딩은 통째 render 라 여기 안 옴. reduced-motion 에선 아래 블록이 죽인다. */
-  @keyframes checkpop{ 0%{transform:scale(.55)} 55%{transform:scale(1.16)} 100%{transform:scale(1)} }
-  .check.pop{animation:checkpop .26s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes checkpop{ 0%{transform:scale(.8)} 60%{transform:scale(1.08)} 100%{transform:scale(1)} }
+  .check.pop{animation:checkpop .2s cubic-bezier(.2,.8,.2,1)}   /* 0.55→1.16 은 «요동»으로 느껴졌다(오너) → 살짝만 튄다 */
   /* 누르는 요소에는 직접 지정한다. body 에만 걸면 아이폰에서 두 번 탭 판정이 남는다 */
   .main, .more, .ghead, .foot button, .menu button, .nav button{
     touch-action:manipulation;
@@ -552,10 +552,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     flex:1;height:40px;border:0;border-radius:999px;background:var(--btn);cursor:pointer;
     color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
   }
-  .menu button:active{background:var(--btnPress)}
+  .menu button:active, .menu button.dn{background:var(--btnPress)}
   /* 삭제는 확인 없이 바로 지워진다 — 파괴적인 «실행» 버튼은 앱 어디서나 붉은 면(초기화 확인과 같은 꼴) */
   .menu .del{background:var(--btnWarn);color:var(--onWarn)}
-  .menu .del:active{background:var(--btnWarnPress)}
+  .menu .del:active, .menu .del.dn{background:var(--btnWarnPress)}
 
   /* 바텀시트 (예약 추가) — --kb 만큼 위로 올려 키보드에 안 가리게 한다 */
   .panel.asSheet{
@@ -636,8 +636,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .btn.primary{background:var(--wait);color:var(--onWait)}
   .btn.ghost{background:var(--btn);color:var(--text)}
-  .btn.primary:active{filter:brightness(.92)}
-  .btn.ghost:active{background:var(--btnPress)}
+  .btn.primary:active, .btn.primary.dn{filter:brightness(.92)}
+  .btn.ghost:active, .btn.ghost.dn{background:var(--btnPress)}
   textarea::placeholder{ color:var(--ph) }
 
   /* footer — 떠 있는 유리 알약 바 (2026-09-11 오너: 「리얼 아이폰처럼」). 명단은 바 «아래로» 지나가고(.wrap 아래 여백),
@@ -671,7 +671,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .foot button svg{width:16px;height:16px}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
   /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
-  .foot button:active{background:var(--btnPress);opacity:1;transition:none}
+  .foot button:active, .foot button.dn{background:var(--btnPress);opacity:1;transition:none}
   .foot button:disabled{opacity:.35;pointer-events:none}   /* 접을 시간대가 없을 때(대기 모드·전부 처리) — 자리는 지키고 꺼 둔다 */
   .foot button svg{display:block}
 
@@ -707,7 +707,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding:13px 16px;border:0;background:none;cursor:pointer;
     color:var(--text);font-family:inherit;font-size:15px;font-weight:600;text-align:left;
   }
-  .dwitem:active{background:var(--press)}
+  .dwitem:active, .dwitem.dn{background:var(--press)}
   /* 위험한 동작(명단 초기화) — 붉게. 실행 자체는 여전히 「길게 눌러」 확인을 거친다 */
   .dwitem.danger{color:var(--warn)}
   /* 세그먼트 토글 — 테마 다크/라이트, Wi-Fi 본관/별관 공용.
@@ -737,7 +737,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
     transition:color .15s, opacity .12s;
   }
-  .seg button:active{opacity:.4;transition:none}
+  .seg button:active, .seg button.dn{opacity:.4;transition:none}
   .seg button.on, .seg button[aria-pressed="true"]{color:var(--text)}
   .seg.wide{display:grid;margin:-2px 0 14px}
   .seg.wide button{height:40px;font-size:15px}
@@ -785,7 +785,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:0;background:var(--btn);
     color:var(--dim);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
-  .sheetNever:active{background:var(--btnPress)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
+  .sheetNever:active, .sheetNever.dn{background:var(--btnPress)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
   .faq{padding-bottom:8px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
   .qa{border-bottom:1px solid var(--line)}
   .qa:last-child{border-bottom:0}
@@ -796,7 +796,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     text-align:left;letter-spacing:-.02em;line-height:1.35;
   }
   .qa:first-child .q{padding-top:6px}   /* 첫 질문은 제목에 붙인다 (다른 시트 제목↔내용 간격에 맞춤) */
-  .qa .q:active{background:var(--press)}   /* 시간대 헤더(.ghead)와 같은 접기 토글 눌림 */
+  .qa .q:active, .qa .q.dn{background:var(--press)}   /* 시간대 헤더(.ghead)와 같은 접기 토글 눌림 */
   .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .15s}
   .qa.open .qchev{transform:rotate(90deg);color:var(--waitTx)}
   .qa .a{
@@ -854,7 +854,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
   }
   .bkrow:first-child{border-top:0}
-  .bkrow:active{background:var(--press)}
+  .bkrow:active, .bkrow.dn{background:var(--press)}
   .bkt{flex:0 0 46px;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .bksum{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -882,7 +882,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 보이는 건 화살표 그대로 — 누르는 영역만 넓힌다 (레이아웃·헤더 높이 영향 없음).
      엄지가 왼쪽·위로 빗나가기 쉬워 그쪽을 더 준다. 오른쪽은 제목 글자 안 먹게 조금만. */
   .bkback::after{content:"";position:absolute;inset:-11px -4px -8px -11px}
-  .bkback:active{opacity:.4}
+  .bkback:active, .bkback.dn{opacity:.4}
   /* 하단 버튼 위 공백은 margin 이 아니라 padding — 스크롤 컨테이너(#sheetBody) 안에서
      마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
   .bkvlist{padding:2px 0 8px}
@@ -911,7 +911,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 시트 기본 하단바(닫기) 오른쪽에 그 시트의 주동작 버튼을 하나 더 붙인다
      (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 포인트색. */
   .sheetBtns .sheetCopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
-  .sheetBtns .sheetCopy:active{filter:brightness(.92)}
+  .sheetBtns .sheetCopy:active, .sheetBtns .sheetCopy.dn{filter:brightness(.92)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
@@ -938,7 +938,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .urlcopy svg{display:block}
   /* 보이는 건 32px 그대로 — 누르는 영역만 넓힌다 (.bkback 과 같은 방식) */
   .urlcopy::after{content:"";position:absolute;inset:-8px}
-  .urlcopy:active{background:var(--btnPress)}
+  .urlcopy:active, .urlcopy.dn{background:var(--btnPress)}
   .wnet .k{font-size:12px;font-weight:700;color:var(--dim);flex:0 0 52px}
   .wnet .v{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
   .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
@@ -953,7 +953,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:0;background:var(--btn);
     color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
-  .sheetClose:active{background:var(--btnPress)}
+  .sheetClose:active, .sheetClose.dn{background:var(--btnPress)}
 
   /* ---------- 잠금 화면 (공유 비밀번호) ----------
      네이티브 키보드를 안 쓴다 — 직접 만든 숫자 키패드. iOS 는 입력칸에 포커스가 가면
@@ -1121,8 +1121,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:0;background:var(--btn);
     color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
-  .dbtn #dlgNo:active, .dbtn #rltClose:active{background:var(--btnPress)}   /* 취소·닫기 = 면이 밝아짐 */
-  .dbtn #rltGo:active{filter:brightness(.92)}                           /* 채운 버튼 = 살짝 어둡게 */
+  .dbtn #dlgNo:active, .dbtn #rltClose:active, .dbtn #dlgNo.dn, .dbtn #rltClose.dn{background:var(--btnPress)}   /* 취소·닫기 = 면이 밝아짐 */
+  .dbtn #rltGo:active, .dbtn #rltGo.dn{filter:brightness(.92)}                           /* 채운 버튼 = 살짝 어둡게 */
   /* 「초기화」는 한 번 눌러서가 아니라 「길게 눌러」 실행된다.
      예전엔 '예' 를 타이핑하게 했는데, 그 키보드가 뜨면 아이폰이 화면(비주얼 뷰포트)을
      밀어 올려 팝업이 위로 잘려 나갔다. 키보드를 아예 없애되 8/31 실수 방지 장치는
@@ -1135,8 +1135,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
   .dbtn #dlgYes.holdmode{ touch-action:none }            /* 길게 누르기 제스처를 스크롤로 뺏기지 않게 */
-  .dbtn #dlgYes.holdmode:active{filter:none}             /* 차오르는 면이 눌림을 말한다 — 겹치지 않게 */
-  .dbtn #dlgYes:not(.holdmode):active{background:var(--btnWarnPress)}   /* 탭 모드 눌림 = 붉은 면이 한 단 짙어짐 (행 메뉴 삭제와 같음) */
+  .dbtn #dlgYes.holdmode:active, .dbtn #dlgYes.holdmode.dn{filter:none}             /* 차오르는 면이 눌림을 말한다 — 겹치지 않게 */
+  .dbtn #dlgYes:not(.holdmode):active, .dbtn #dlgYes:not(.holdmode).dn{background:var(--btnWarnPress)}   /* 탭 모드 눌림 = 붉은 면이 한 단 짙어짐 (행 메뉴 삭제와 같음) */
   /* 누르는 동안 버튼 전체가 왼쪽부터 차오른다. 글자는 --onWarn 이라 채움 위에서도 읽힌다
      (다크 4.68:1 / 라이트 4.62:1) — 글자색을 안 바꾸면 여기서 3.65 / 2.90 으로 묻혔다. */
   .dbtn #dlgYes .hf{
@@ -1195,6 +1195,18 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
   .hide{display:none !important}
+  /* 등장 — display:none 에서 나타날 때 한 번 재생되는 애니메이션(전역 .hide 토글과 그대로 맞물린다).
+     곡선은 토글 썸과 같은 cubic-bezier(.2,.8,.2,1) 하나. 시트 = 아래서 슬라이드, 대화상자 = 살짝 커지며, 막 = 페이드, 행 메뉴 = 짧은 페이드.
+     사라질 땐 즉시(iOS 도 닫힘은 빠르다). reduced-motion 이면 아래 블록이 전부 끈다. */
+  @keyframes fadeIn{from{opacity:0}}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(24px)}}
+  @keyframes sheetInX{from{opacity:0;transform:translateX(-50%) translateY(24px)}}
+  @keyframes popIn{from{opacity:0;transform:scale(.96)}}
+  .scrim, .sheetScrim, .panelScrim{animation:fadeIn .2s cubic-bezier(.2,.8,.2,1)}
+  .sheet{animation:sheetIn .22s cubic-bezier(.2,.8,.2,1)}
+  .panel.asSheet{animation:sheetInX .22s cubic-bezier(.2,.8,.2,1)}
+  .dialog, .rlt{animation:popIn .18s cubic-bezier(.2,.8,.2,1)}
+  .menu{animation:fadeIn .15s cubic-bezier(.2,.8,.2,1)}
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important;transition:none !important}
     /* 단 하나의 예외 — 「길게 눌러 초기화」의 차오르는 면.
@@ -4694,6 +4706,30 @@ window.dispatchEvent(new Event('fb-ready'));
     pin = pin.slice(0, -1);
     paintPin();
   }
+
+  // 눌림 보정(앱 전체) — 실기기 탭은 100ms 안팎이라 :active 만으론 눌린 표시가 거의 안 보인다.
+  // pointerdown 에 .dn 을 붙이고, 손을 떼도 최소 130ms 는 유지한다. CSS 의 모든 :active 규칙엔 .dn 짝이 있다.
+  // (키패드는 아래 자기 보정을 쓴다 — 여기서 제외)
+  (function(){
+    var SEL = 'button:not(.lockkey), .main, .ghead, .dwitem, .bkrow, .qa .q, .updbar';
+    var cur = null, since = 0, timer = null;
+    function release(){
+      if (!cur) return;
+      var left = 130 - (Date.now() - since);
+      var el = cur; cur = null;
+      if (left > 0) timer = setTimeout(function(){ el.classList.remove('dn'); }, left);
+      else el.classList.remove('dn');
+    }
+    document.addEventListener('pointerdown', function(e){
+      var el = e.target.closest && e.target.closest(SEL);
+      if (!el || el.disabled) return;
+      if (timer){ clearTimeout(timer); timer = null; }
+      if (cur) cur.classList.remove('dn');
+      cur = el; since = Date.now(); el.classList.add('dn');
+    }, true);
+    ['pointerup','pointercancel'].forEach(function(ev){ document.addEventListener(ev, release, true); });
+    document.addEventListener('pointerleave', release, true);
+  })();
 
   // 눌린 표시를 최소 130ms 유지한다 — 손가락이 스치듯 닿으면 :active 가 너무 짧아 안 보인다
   (function(){
