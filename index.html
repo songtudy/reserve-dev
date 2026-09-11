@@ -319,7 +319,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadmain.done{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
   /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
-  .viewseg{margin-left:auto;flex:0 0 auto;align-self:center;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}   /* 두 칸 같은 너비 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
+  .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 두 칸 같은 너비·썸은 공용 .seg 규칙 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
   /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
   .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:8px}
   .leadsub:empty{display:none}
@@ -721,18 +721,31 @@ window.addEventListener('pageshow', remeasureSbcut);
      강조색(--wait)은 두 테마 모두 「켜짐」으로 읽힌다. .wide 는 시트 안에서 꽉 차게. */
   /* 고르기(선택)는 «누르기(동작)»와 달라 보여야 한다 — 금색 채움이면 「저장」 같은 주동작 버튼으로 읽힌다.
      상단 「전체 / 남은 팀」·서랍 테마·Wi-Fi 본관/별관이 전부 이 한 부품: 오목한 트랙 + 고른 칸만 면·밝은 글자. */
-  .seg{display:inline-flex;gap:2px;padding:2px;background:var(--panel2);border-radius:10px}
+  /* iOS 세그먼트 꼴(2026-09-11 오너 채택): 트랙은 바탕색으로 «파이고», 선택 칸은 밝은 썸 + 그림자.
+     썸은 ::before 하나 — 누르면 선택 칸 자리로 «미끄러진다»(오너 요청 애니메이션). 두 칸이 같은 너비(grid 1fr)라야 썸 폭 계산이 맞는다.
+     썸 폭 = 50% − 3px (패딩 2·틈 2 보정), 2번째 칸으로는 썸 폭 + 틈 2 만큼 이동. reduced-motion 은 전역 규칙이 트랜지션을 끈다. */
+  .seg{
+    display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;position:relative;
+    gap:2px;padding:2px;background:var(--ink);border-radius:10px;
+  }
+  .seg::before{
+    content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 3px);
+    border-radius:8px;background:var(--btnPress);box-shadow:0 1px 3px rgba(0,0,0,.35);
+    transition:transform .22s cubic-bezier(.2,.8,.2,1);
+  }
+  .seg.alt::before{transform:translateX(calc(100% + 2px))}   /* .alt = 2번째 칸 선택 — 아래 세그먼트 감시 스크립트가 붙인다(:has 는 가상 요소에 불안정) */
   .seg button{
+    position:relative;                /* 썸(::before) 위에 글자가 오게 */
     height:30px;padding:0 13px;border-radius:8px;
     border:0;background:transparent;
-    /* 미선택 글자는 --dim — --off 는 트랙(panel2) 위 3.2:1(라이트 2.9)로 기준 미달이었다(2026-09-11). 선택 칸은 면+밝은 글자라 구분 유지 */
+    /* 미선택 글자는 --dim — --off 는 트랙 위 대비 미달(2026-09-11). 선택 칸은 썸+밝은 글자라 구분 유지 */
     color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
-    transition:opacity .12s;
+    transition:color .15s, opacity .12s;
   }
   .seg button:active{opacity:.4;transition:none}
-  .seg button.on, .seg button[aria-pressed="true"]{background:var(--btnPress);color:var(--text)}
-  .seg.wide{display:flex;margin:-2px 0 14px}
-  .seg.wide button{flex:1;height:40px;font-size:15px}
+  .seg button.on, .seg button[aria-pressed="true"]{color:var(--text)}
+  .seg.wide{display:grid;margin:-2px 0 14px}
+  .seg.wide button{height:40px;font-size:15px}
   .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 16px 2px}
   .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
   .dwtheme .seg{margin-left:auto}
@@ -4784,6 +4797,17 @@ window.dispatchEvent(new Event('fb-ready'));
   // 칩이 나중에 그려지거나 검색창·업데이트 띠가 켜지는 건 DOM 변화 — 크기 관찰이 늦는 환경을 대비해 이것도 본다
   if (window.MutationObserver) new MutationObserver(set).observe(sh, { childList:true, subtree:true, attributes:true, characterData:true });
   window.addEventListener('resize', set);
+})();
+</script>
+<script>
+// 세그먼트 썸: 2번째 칸이 선택(.on 또는 aria-pressed=true)이면 .seg 에 .alt — 썸이 그 칸으로 미끄러진다. 모든 .seg 공용.
+(function(){
+  function sync(seg){ var b = seg.querySelectorAll('button'); if (b.length < 2) return;
+    var on = b[1].classList.contains('on') || b[1].getAttribute('aria-pressed') === 'true';
+    seg.classList.toggle('alt', on); }
+  function all(){ document.querySelectorAll('.seg').forEach(sync); }
+  if (window.MutationObserver) new MutationObserver(all).observe(document.body, { subtree:true, childList:true, attributes:true, attributeFilter:['class','aria-pressed'] });
+  all();
 })();
 </script>
 </body>
