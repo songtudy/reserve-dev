@@ -658,6 +658,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding:0 28px max(10px, calc(env(safe-area-inset-bottom) - 6px));
     pointer-events:none;                        /* 알약 밖 여백은 명단을 그대로 누르게 */
   }
+  .foot.empty .inner{display:none}   /* 명단 없는 날 — 바만 숨고 업데이트 알림은 남는다 */
   .foot .inner{
     pointer-events:auto;max-width:520px;margin:0 auto;
     border-radius:999px;padding:4px;   /* 4 + 40 + 4 = 48 */
@@ -1284,7 +1285,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <div class="empty hide" id="emptyMsg"></div>
 </div>
 
-<div class="foot hide">
+<div class="foot empty">
   <button type="button" class="updbar hide" id="updBar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>새 버전이 있어요 · 업데이트</button>
   <div class="inner">
     <div class="frow">
@@ -2264,7 +2265,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 명단이 없으면 하단 메뉴와 검색은 할 일이 없다
     var allCount = all.length;
     var footEl = document.querySelector('.foot');
-    if (footEl) footEl.classList.toggle('hide', !allCount);
+    if (footEl) footEl.classList.toggle('empty', !allCount);   // 명단이 없으면 바(.inner)만 숨긴다 — 업데이트 알림 알약은 그대로 떠 있어야 한다
     listEmpty = !allCount;   // 서랍 「이름 검색」이 읽는다 — 명단이 없으면 검색할 게 없다
     if (!allCount && !searchbar.classList.contains('hide')) closeSearch(false);
 
@@ -2382,7 +2383,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var shell = document.getElementById('topShell');
     var shellB = shell ? shell.getBoundingClientRect().bottom : wr.top;
     var footEl = document.querySelector('.foot'), footIn = footEl && footEl.querySelector('.inner');
-    var footTop = footEl && !footEl.classList.contains('hide') ? (footEl.querySelector('.updbar:not(.hide)') || footIn) : null;   // 업데이트 알약이 떠 있으면 그 윗면
+    var footTop = footEl ? (footEl.querySelector('.updbar:not(.hide)') || (!footEl.classList.contains('empty') ? footIn : null)) : null;   // 업데이트 알약이 떠 있으면 그 윗면
     var footT = footTop ? footTop.getBoundingClientRect().top : wr.bottom;
     // 행: 도킹된 시간바(pad) «바로 밑» — 8 을 더하면 시간바가 도킹에서 8 밀려 내려와 앞 시간대 밑선이 비쳤다(오너 스크린샷 2026-09-11).
     // 시간대(펼침): 카드 밑 8 = 쉴 때와 같은 자리.
