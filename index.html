@@ -215,9 +215,15 @@ window.addEventListener('pageshow', remeasureSbcut);
      (칩 줄 수·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
-    background:color-mix(in srgb, var(--ink) 72%, transparent);
+    /* 하단바와 같은 재질(칩색 62% + 흐림) — 상단·하단 셸이 한 재질이고, 명단(바탕색)보다 한 단계 밝은 판으로 구분된다 */
+    background:color-mix(in srgb, var(--panel2) 62%, transparent);
     -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
   }
+  html[data-theme="light"] .shell{background:color-mix(in srgb, #ffffff 62%, transparent)}
+  /* 셸 위의 구성 칩은 면을 한 단계 올린다(밝기 사다리 ink<panel<panel2<btn — 판이 panel2 계열이라 panel2 칩은 묻힌다).
+     올린 면 위에선 회색 글자가 4.45:1 로 기준 미달 → 글자색 600, 개수는 800 으로 굵기로만 위계.
+     토글 트랙은 그대로(panel2) — 올리면 선택 안 된 글자가 2.8:1 로 떨어진다. 선택 칸(btnPress)이 밝아 트랙이 옅어도 읽힌다. */
+  .shell .leadsub.comp .pc{background:var(--btn);color:var(--text);font-weight:600}
   header{
     background:transparent;
     border-bottom:1px solid var(--line);
