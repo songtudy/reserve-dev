@@ -210,13 +210,15 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:640px;margin:0 auto;
     /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
-    padding:0 16px calc(88px + env(safe-area-inset-bottom) + var(--kb, 0px));   /* 아래: 떠 있는 하단 바(16+52) 밑으로 끝까지. 위 여백은 ::before 스페이서 */
+    /* 아래: 끝까지 내리면 마지막 명단이 알약 바 위 24 에 선다 — 알약 밑면 max(10, safe−10) + 알약 52 + 24.
+       24 = 알약 바가 홈 바에서 뜬 높이와 같은 리듬(애플 뮤직 비교 후, 2026-09-11). 노치 유무와 무관. */
+    padding:0 16px calc(max(10px, env(safe-area-inset-bottom) - 10px) + 76px + var(--kb, 0px));
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
   /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
      크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
-  .wrap::before{content:"";display:block;height:calc(var(--topH, 140px) + 10px)}   /* 쉴 때 카드 아래 숨 10 — 스크롤하면 첫 시간바가 판에 붙는다 */
+  .wrap::before{content:"";display:block;height:calc(var(--topH, 140px) + 10px)}   /* 쉴 때 카드 밑→첫 시간바 = 8+10 = 18 (시간대 사이 여백과 같은 리듬, 12×1.618≈19) */
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -232,7 +234,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--ink);   /* 날짜 줄(+상태 표시줄 밑) — 바탕색, 불투명 */
     /* 아래 10 = 카드 밑 «판의 일부»(불투명). 붙는 시간바는 이 밑면(--topH)에 도킹하고, 밀려 나가는 시간바는 판 뒤로 사라진다.
        이 10 을 명단 쪽 여백으로 두면 밀려 나가는 시간바 조각(금색 막대·선)이 카드 밑 틈에 보였다(오너 스크린샷, 2026-09-11). */
-    padding:calc(env(safe-area-inset-top) + 12px) 16px 6px;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 8px;   /* 카드 밑 8 = 도킹했을 때 카드와 시간바 사이 */
     /* 선·띠 없음 — 시간바가 판에 딱 붙어 도킹하므로 밀려 나갈 땐 다음 시간바가 자리를 이어받는다(선/그림자/흐림 비교 후, 2026-09-11). */
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
@@ -401,6 +403,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group{margin-top:0}
   .group::after{content:"";display:block;height:18px}
   .group.shut::after{height:0}
+  .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 12 에 선다 */
 
   .ghead{
     position:relative;position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
