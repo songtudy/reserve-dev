@@ -233,7 +233,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--ink);   /* 날짜 줄(+상태 표시줄 밑) — 바탕색, 불투명 */
     /* 아래 10 = 카드 밑 «판의 일부»(불투명). 붙는 시간바는 이 밑면(--topH)에 도킹하고, 밀려 나가는 시간바는 판 뒤로 사라진다.
        이 10 을 명단 쪽 여백으로 두면 밀려 나가는 시간바 조각(금색 막대·선)이 카드 밑 틈에 보였다(오너 스크린샷, 2026-09-11). */
-    padding:calc(env(safe-area-inset-top) + 12px) 16px 8px;   /* 카드 밑 8 = 도킹했을 때 카드와 시간바 사이 */
+    padding:calc(env(safe-area-inset-top) + 4px) 16px 8px;   /* 위 4: 날짜 줄(40) 중심이 안전영역 밑 24 — iOS 내비 바(44, 중심 22)와 같은 자리. 12 는 줄이 14 아래로 처져 있었다(2026-09-11). 카드 밑 8 = 도킹했을 때 카드와 시간바 사이 */
     /* 선·띠 없음 — 시간바가 판에 딱 붙어 도킹하므로 밀려 나갈 땐 다음 시간바가 자리를 이어받는다(선/그림자/흐림 비교 후, 2026-09-11). */
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
@@ -428,7 +428,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      17px 은 «큰 글씨» 대비 기준 밖이라 지금 색은 글자용 금색(--waitTx). */
   .gtime{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
   .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
-  .gbreak{font-size:12px;font-weight:600;color:var(--dim)}
+  .gbreak{font-size:13px;font-weight:600;color:var(--dim)}   /* 옆 「n/n」과 같은 단계(13) — 활자 사다리 20/17/16/15/14/13 에서 12 를 없앴다 */
   .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
   /* 「지금」 = 금색 시각 + 왼쪽 가장자리 3px 막대 (2026-09-11 오너: 「막대 같은 건 괜찮은 것 같다」).
      밑줄·점·띠·선 색 강조는 전부 반려됐고, 막대만 통과. 여섯 꼴(들임·굵기·둥글기·안쪽 배치) 비교 끝에
