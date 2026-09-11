@@ -226,25 +226,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
   }
-  /* 판 바로 아래 12px 그라데이션 — 밀려 나가는 시간바가 판에 닿기 전에 흐려지며 사라진다(잘리는 게 아니라 «들어간다»).
-     붙는 시간바는 판에 «딱 붙어» 도킹(--topH)한다 — 띠 아래로 띄우면 그 틈으로 앞 시간대 사람 줄 조각이 비친다(오너 스크린샷).
-     12px 은 시간바의 위 여백(12)과 같아 도킹된 시간바의 글자는 건드리지 않고, 지나가는 줄은 시간바 뒤로 숨는다. */
-  .shell::after{
-    content:"";position:absolute;left:0;right:0;top:100%;height:12px;
-    background:linear-gradient(var(--ink), transparent);pointer-events:none;
-    /* 상단은 «불투명» — 상태 표시줄과 만나는 경계에서 흐린 내용이 비치면 이질적(오너, 2026-09-11). 유리는 하단 알약 바만.
-       날짜 줄 = 바탕색(조용한 내비게이션), 메인 시각 박스 = 한 단계 밝은 둥근 카드. 명단은 셸 밑으로 들어가되 보이지 않는다. */
-  }
-  /* 셸 위의 구성 칩은 면을 한 단계 올린다(밝기 사다리 ink<panel<panel2<btn — 판이 panel2 계열이라 panel2 칩은 묻힌다).
-     올린 면 위에선 회색 글자가 4.45:1 로 기준 미달 → 글자색 600, 개수는 800 으로 굵기로만 위계.
-     토글 트랙은 그대로(panel2) — 올리면 선택 안 된 글자가 2.8:1 로 떨어진다. 선택 칸(btnPress)이 밝아 트랙이 옅어도 읽힌다. */
-  .shell .leadsub.comp .pc{background:var(--btn);color:var(--text);font-weight:600}
+  /* 판 아래 «녹는 띠»는 두지 않는다 — 도킹된 시간바 위에 겹쳐 왼쪽 금색 막대 윗부분을 흐리게 만들었다(오너, 2026-09-11).
+     시간바는 판에 딱 붙어 도킹하고, 밀려 나갈 땐 다음 시간바가 그 자리를 바로 이어받아 띠 없이도 자연스럽다. */
   header{
     background:var(--ink);   /* 날짜 줄(+상태 표시줄 밑) — 바탕색, 불투명 */
     /* 아래 10 = 카드 밑 «판의 일부»(불투명). 붙는 시간바는 이 밑면(--topH)에 도킹하고, 밀려 나가는 시간바는 판 뒤로 사라진다.
        이 10 을 명단 쪽 여백으로 두면 밀려 나가는 시간바 조각(금색 막대·선)이 카드 밑 틈에 보였다(오너 스크린샷, 2026-09-11). */
     padding:calc(env(safe-area-inset-top) + 12px) 16px 6px;
-    /* 선 없음 — 시간바가 판 밑으로 들어갈 때 «녹아 사라지는» 띠(.shell::after)가 경계 역할을 한다(선/그림자/흐림 비교 후, 2026-09-11). */
+    /* 선·띠 없음 — 시간바가 판에 딱 붙어 도킹하므로 밀려 나갈 땐 다음 시간바가 자리를 이어받는다(선/그림자/흐림 비교 후, 2026-09-11). */
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
   /* 날짜는 줄의 «제목» — 화면 가운데(iOS 내비게이션 바 문법). 왼쪽 메뉴 아이콘·오른쪽 진행도 하나씩이라 균형이 맞는다.
