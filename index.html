@@ -539,7 +539,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-variant-numeric:tabular-nums;width:100%;min-width:0;height:48px;
     -webkit-appearance:none;appearance:none;
   }
-  .erow input:focus, .erow select:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
+  /* 입력칸 포커스 = 테두리만 살짝 밝게(검색창과 같은 규칙, 금색 링 없음) */
+  .erow input:focus, .erow select:focus{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}
   .erow select{
     text-align:center;text-align-last:center;
     background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
@@ -595,7 +596,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:1px solid var(--line);border-radius:12px;
     background:var(--ink);
   }
-  .tawrap:focus-within{outline:2px solid var(--waitTx);outline-offset:-1px}
+  .tawrap:focus-within{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}
   .tawrap textarea, .hl{
     font-family:inherit;font-size:16px;line-height:1.65;
     font-variant-numeric:tabular-nums;
@@ -1169,7 +1170,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     -webkit-appearance:none;appearance:none;
   }
   .rlt input::placeholder{color:var(--ph);font-weight:400}
-  .rlt input:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
+  .rlt input:focus{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}
   .rltnames{
     display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 2px;
     max-height:132px;overflow-y:auto;
