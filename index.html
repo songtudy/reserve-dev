@@ -2372,13 +2372,19 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!el || !wrapEl) return;
     var er = el.getBoundingClientRect();
     var wr = wrapEl.getBoundingClientRect();
-    // .ghead 는 sticky(top:0)라 스크롤러 위쪽 한 줄을 늘 덮는다. 그만큼 여유를 둔다
+    // 보이는 영역 = 스크롤러에서 «떠 있는 것»을 뺀 부분 — 위엔 상단 셸(날짜 줄+카드)이, 아래엔 알약 바가 명단 위에 떠 있다.
+    // 리뉴얼 전엔 둘 다 스크롤러 밖의 고정 띠라 wr.top/bottom 이 곧 경계였는데, 지금은 그 안에 떠 있어 따로 뺀다(2026-09-11).
+    // .ghead 는 sticky 라 셸 밑 한 줄을 늘 덮는다. 그만큼 여유를 둔다
     var group = el.closest && el.closest('.group');
     var gh = group && group.querySelector('.ghead');
     var isGroup = el.classList && el.classList.contains('group');
     var pad = (gh && !isGroup ? gh.offsetHeight : 0);
-    var topEdge = wr.top + pad + 8;
-    var bottomEdge = wr.bottom - 10;
+    var shell = document.getElementById('topShell');
+    var shellB = shell ? shell.getBoundingClientRect().bottom : wr.top;
+    var footEl = document.querySelector('.foot'), footIn = footEl && footEl.querySelector('.inner');
+    var footT = (footIn && !footEl.classList.contains('hide')) ? footIn.getBoundingClientRect().top : wr.bottom;
+    var topEdge = Math.max(wr.top, shellB) + pad + 8;
+    var bottomEdge = Math.min(wr.bottom, footT) - 10;
     var move = 0;
     if (er.height > bottomEdge - topEdge || er.top < topEdge) move = er.top - topEdge;
     else if (er.bottom > bottomEdge) move = er.bottom - bottomEdge;
