@@ -2367,10 +2367,10 @@ window.dispatchEvent(new Event('fb-ready'));
   // 아주 짧은 이동(SMOOTH_MIN 미만)만 즉시. 예전엔 44 였는데 시간바에 반쯤 가린 행(20~40px)이 전부 «점프»가 돼
   // 「부드럽게 됐다 안 됐다」로 보였다(오너 2026-09-11). ⋯ 메뉴는 통째 render 없이 붙이므로 짧아도 부드럽게 굴려도 된다.
   var SMOOTH_MIN = 6;
-  function roomScroll(el, smooth, bottomEl){
+  function roomScroll(el, smooth){
     if (!el || !wrapEl) return;
     var er = el.getBoundingClientRect();
-    var erBottom = bottomEl ? bottomEl.getBoundingClientRect().bottom : er.bottom;   // ⋯ 메뉴처럼 「이것까지 보이면 됨」 을 따로 줄 때
+    var erBottom = er.bottom + 1;   // 상자 밑의 구분선(다음 행 top:-1px)까지 — 「딱 맞게」는 선까지 보이는 것(오너 2026-09-11)
     var wr = wrapEl.getBoundingClientRect();
     // 보이는 영역 = 스크롤러에서 «떠 있는 것»을 뺀 부분 — 위엔 상단 셸(날짜 줄+카드)이, 아래엔 알약 바가 명단 위에 떠 있다.
     // 리뉴얼 전엔 둘 다 스크롤러 밖의 고정 띠라 wr.top/bottom 이 곧 경계였는데, 지금은 그 안에 떠 있어 따로 뺀다(2026-09-11).
@@ -2386,7 +2386,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 행: 도킹된 시간바(pad) «바로 밑» — 8 을 더하면 시간바가 도킹에서 8 밀려 내려와 앞 시간대 밑선이 비쳤다(오너 스크린샷 2026-09-11).
     // 시간대(펼침): 카드 밑 8 = 쉴 때와 같은 자리.
     var topEdge = Math.max(wr.top, shellB) + (isGroup ? 8 : pad);
-    var bottomEdge = Math.min(wr.bottom, footT) - 8;
+    var bottomEdge = Math.min(wr.bottom, footT) - 4;   /* 알약 위 4 — 림·그림자에 선이 묻히지 않는 최소 */
     // 「딱 맞게」 — 가려진 만큼만 움직인다(여백 위·아래 8, 오너 2026-09-11). 아래가 가려졌을 땐 필요한 만큼만 올리되
     // 위(시간바)가 경계를 넘어가는 지점에서 멈춘다 — 화면보다 긴 시간대를 펼치면 결과적으로 시간바가 맨 위에 서고, 그게 가장 많이 보여주는 자리다.
     var move = 0;
@@ -2555,9 +2555,8 @@ window.dispatchEvent(new Event('fb-ready'));
     closeRowMenu();
     var row = rowForId(id);
     if (!row){ render(); return; }   // 그 행이 DOM 에 없으면(접힌 시간대 등) 안전하게 통째로
-    var menu = buildMenu(id);
-    row.querySelector('.rbody').appendChild(menu);
-    roomScroll(row, true, menu);   // 메뉴 밑변 기준 — 행 상자엔 메뉴 밑 여백(10)이 들어가 8+10 만큼 더 올라갔다
+    row.querySelector('.rbody').appendChild(buildMenu(id));
+    roomScroll(row, true);   // 행 상자(메뉴·밑 여백·구분선까지)가 다 보이는 만큼만
   }
 
   // "1530" "15:30" "15시30분" "15.30" → "15:30"
