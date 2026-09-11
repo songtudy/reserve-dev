@@ -341,7 +341,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .searchbar input{
     width:100%;background:var(--panel);color:var(--text);
-    border:1px solid var(--line);border-radius:12px;
+    border:1px solid var(--line);border-radius:999px;
     padding:11px 74px 11px 42px;font-family:inherit;font-size:16px;
     -webkit-appearance:none;appearance:none;
   }
@@ -532,8 +532,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .erow label.grow{flex:1;min-width:0}
   .erow input, .erow select{
     background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:12px;
-    padding:10px 9px;font-family:inherit;font-size:16px;font-weight:600;
+    border:1px solid var(--line);border-radius:999px;
+    padding:10px 14px;font-family:inherit;font-size:16px;font-weight:600;
     font-variant-numeric:tabular-nums;width:100%;min-width:0;height:48px;
     -webkit-appearance:none;appearance:none;
   }
@@ -541,16 +541,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   .erow select{
     text-align:center;text-align-last:center;
     background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
-    background-position:calc(100% - 14px) 22px, calc(100% - 9px) 22px;
+    background-position:calc(100% - 18px) 22px, calc(100% - 13px) 22px;
     background-size:5px 5px,5px 5px;background-repeat:no-repeat;
-    padding-right:22px;
+    padding-right:28px;
   }
   /* ⋯ 행 메뉴 — 앱의 보조 버튼(면만)을 «작게» 넷. 새 부품을 만들지 않는다. 행 안의 작은 버튼 = 높이 40.
      목록 폭 그대로(좌우 여백 대칭). 이름 열(54px)에서 시작하면 왼쪽만 비어 오른쪽으로 쏠려 보였다. */
   .menu{display:flex;gap:6px;margin:0 0 10px}
   .menu button{
-    flex:1;height:40px;border:0;border-radius:12px;background:var(--btn);cursor:pointer;
-    color:var(--text);font-family:inherit;font-size:13px;font-weight:700;
+    flex:1;height:40px;border:0;border-radius:999px;background:var(--btn);cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
   }
   .menu button:active{background:var(--btnPress)}
   /* 삭제는 확인 없이 바로 지워진다 — 파괴적인 «실행» 버튼은 앱 어디서나 붉은 면(초기화 확인과 같은 꼴) */
@@ -628,9 +628,11 @@ window.addEventListener('pageshow', remeasureSbcut);
      주동작 = 금색 채움 / 보조 = --btn 면(테두리 없음) / 위험 = --btnWarn 면 + 붉은 글자. 이 꼴 하나뿐.
      (.btn · .dbtn button · .sheetClose · .sheetNever · .sheetCopy 가 전부 이 값을 쓴다) */
   .btns{display:flex;gap:8px;margin-top:14px}
+  /* 버튼 = 알약(999). 메인의 알약 바·토글과 같은 꼴 — 앱의 모든 «누르는 면»은 알약, «입력하는 칸»도 알약(검색창과 같은 꼴), 카드·시트만 18 (2026-09-11).
+     48 높이 버튼 글자 17/600(iOS 시트·알림 버튼), 40 높이 버튼 글자 13/600(알약 바와 같은 단계) */
   .btn{
-    flex:1;height:48px;padding:0;border-radius:12px;border:0;
-    font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    flex:1;height:48px;padding:0;border-radius:999px;border:0;
+    font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
   .btn.primary{background:var(--wait);color:var(--onWait)}
   .btn.ghost{background:var(--btn);color:var(--text)}
@@ -779,9 +781,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheetBtns{flex:0 0 auto;display:flex;gap:8px;margin:8px 16px 0}  /* 위 8px = 스크롤 목록과 버튼이 안 붙게 */
   .sheetBtns .sheetClose{flex:1}
   .sheetNever{
-    flex:1;height:48px;padding:0;border-radius:12px;
+    flex:1;height:48px;padding:0;border-radius:999px;
     border:0;background:var(--btn);
-    color:var(--dim);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    color:var(--dim);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
   .sheetNever:active{background:var(--btnPress)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
   .faq{padding-bottom:8px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
@@ -930,7 +932,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .urlcopy{
     flex:0 0 auto;position:relative;
     width:32px;height:32px;padding:0;display:grid;place-items:center;
-    background:var(--btn);border:0;border-radius:8px;
+    background:var(--btn);border:0;border-radius:999px;
     color:var(--waitTx);cursor:pointer;
   }
   .urlcopy svg{display:block}
@@ -947,9 +949,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-size:12px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
   .sheetClose{
-    width:100%;height:48px;padding:0;margin-top:2px;border-radius:12px;
+    width:100%;height:48px;padding:0;margin-top:2px;border-radius:999px;
     border:0;background:var(--btn);
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
   .sheetClose:active{background:var(--btnPress)}
 
@@ -1115,9 +1117,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dialog .dlgnote{margin:0;font-size:13px;line-height:1.5;color:var(--dim)}   /* 보조 설명 = 13 (시트 안내문과 같은 크기) */
   .dbtn{display:flex;gap:8px;margin-top:14px}
   .dbtn button{
-    flex:1;height:48px;padding:0;border-radius:12px;
+    flex:1;height:48px;padding:0;border-radius:999px;
     border:0;background:var(--btn);
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
   .dbtn #dlgNo:active, .dbtn #rltClose:active{background:var(--btnPress)}   /* 취소·닫기 = 면이 밝아짐 */
   .dbtn #rltGo:active{filter:brightness(.92)}                           /* 채운 버튼 = 살짝 어둡게 */
@@ -1160,8 +1162,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltsub{margin:0 0 12px;font-size:13px;color:var(--dim)}
   .rlt input{
     width:100%;background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:12px;
-    padding:11px 13px;font-family:inherit;font-size:16px;font-weight:600;
+    border:1px solid var(--line);border-radius:999px;
+    padding:11px 16px;font-family:inherit;font-size:16px;font-weight:600;
     -webkit-appearance:none;appearance:none;
   }
   .rlt input::placeholder{color:var(--ph);font-weight:400}
