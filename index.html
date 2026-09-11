@@ -4869,10 +4869,12 @@ window.dispatchEvent(new Event('fb-ready'));
 (function(){
   function sync(seg){ var b = seg.querySelectorAll('button'); if (b.length < 2) return;
     function isOn(x){ return x.classList.contains('on') || x.getAttribute('aria-pressed') === 'true'; }
-    seg.classList.toggle('n3', b.length === 3);
-    seg.classList.toggle('alt', b.length === 2 && isOn(b[1]));
-    seg.classList.toggle('alt2', b.length === 3 && isOn(b[2]));
-    if (b.length === 3) seg.classList.toggle('alt', isOn(b[1])); }
+    // 원하는 상태를 먼저 계산해 한 번씩만 toggle — 같은 클래스를 지웠다 붙이면 DOM 변화가 생겨 이 감시자가 다시 돌고,
+    // 그게 무한 루프가 되어 페이지가 얼었다(2026-09-12, 「검정」 선택 상태에서 앱이 안 켜짐). force 값이 현재와 같으면 변화 없음.
+    var n3 = b.length === 3, alt = isOn(b[1]), alt2 = n3 && isOn(b[2]);
+    if (seg.classList.contains('n3') !== n3) seg.classList.toggle('n3', n3);
+    if (seg.classList.contains('alt') !== alt) seg.classList.toggle('alt', alt);
+    if (seg.classList.contains('alt2') !== alt2) seg.classList.toggle('alt2', alt2); }
   function all(){ document.querySelectorAll('.seg').forEach(sync); }
   if (window.MutationObserver) new MutationObserver(all).observe(document.body, { subtree:true, childList:true, attributes:true, attributeFilter:['class','aria-pressed'] });
   all();
