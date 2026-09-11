@@ -9,7 +9,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow"><!-- 매장 내부용 — 검색 색인 차단 (robots.txt 와 함께) -->
-<meta name="theme-color" content="#0f1319">
+<meta name="theme-color" content="#171c24"><!-- 상단 유리 셸 합성색(다크). setThemeChrome 이 테마에 맞게 갱신 -->
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -54,11 +54,14 @@
 window.setThemeChrome = function(t){
   var d = document.documentElement;
   var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
+  // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
+  var bar = (t === 'light') ? '#fbfcfd' : '#171c24';
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   d.style.background = ink;
   var themeMeta = document.querySelector('meta[name="theme-color"]');
-  if (themeMeta) themeMeta.content = ink;
+  if (themeMeta) themeMeta.content = bar;
   var barMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
   if (barMeta) barMeta.content = (t === 'light') ? 'default' : 'black';
 };
@@ -637,7 +640,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .foot.hide{display:none}
   .foot{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
-    padding:0 16px calc(16px + env(safe-area-inset-bottom));   /* 홈 바에서 16 띄움 — 아이폰 뮤직 알약 바와 같은 높이감 */
+    /* 홈 바 위 높이 = 아이폰 뮤직 알약 바와 같게: 안전 영역(34) − 10 → 바닥에서 24. 노치 없는 폰은 바닥에서 10 */
+    padding:0 16px max(10px, calc(env(safe-area-inset-bottom) - 10px));
     pointer-events:none;                        /* 알약 밖 여백은 명단을 그대로 누르게 */
   }
   .foot .inner{
