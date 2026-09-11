@@ -2382,10 +2382,12 @@ window.dispatchEvent(new Event('fb-ready'));
     var footEl = document.querySelector('.foot'), footIn = footEl && footEl.querySelector('.inner');
     var footT = (footIn && !footEl.classList.contains('hide')) ? footIn.getBoundingClientRect().top : wr.bottom;
     var topEdge = Math.max(wr.top, shellB) + pad + 8;
-    var bottomEdge = Math.min(wr.bottom, footT) - 10;
+    var bottomEdge = Math.min(wr.bottom, footT) - 8;
+    // 「딱 맞게」 — 가려진 만큼만 움직인다(여백 위·아래 8, 오너 2026-09-11). 아래가 가려졌을 땐 필요한 만큼만 올리되
+    // 위(시간바)가 경계를 넘어가는 지점에서 멈춘다 — 화면보다 긴 시간대를 펼치면 결과적으로 시간바가 맨 위에 서고, 그게 가장 많이 보여주는 자리다.
     var move = 0;
-    if (er.height > bottomEdge - topEdge || er.top < topEdge) move = er.top - topEdge;
-    else if (er.bottom > bottomEdge) move = er.bottom - bottomEdge;
+    if (er.top < topEdge) move = er.top - topEdge;
+    else if (er.bottom > bottomEdge) move = Math.min(er.bottom - bottomEdge, er.top - topEdge);
     if (Math.abs(move) <= 1) return;
     if (smooth && Math.abs(move) >= SMOOTH_MIN && wrapEl.scrollTo) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
     else wrapEl.scrollTop += move;
