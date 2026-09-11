@@ -200,7 +200,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:640px;margin:0 auto;
     /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
-    padding:0 16px calc(84px + env(safe-area-inset-bottom) + var(--kb, 0px));   /* 아래: 떠 있는 하단 바(12+52) 밑으로 끝까지. 위 여백은 ::before 스페이서 */
+    padding:0 16px calc(88px + env(safe-area-inset-bottom) + var(--kb, 0px));   /* 아래: 떠 있는 하단 바(16+52) 밑으로 끝까지. 위 여백은 ::before 스페이서 */
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
@@ -637,7 +637,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .foot.hide{display:none}
   .foot{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
-    padding:0 16px calc(12px + env(safe-area-inset-bottom));
+    padding:0 16px calc(16px + env(safe-area-inset-bottom));   /* 홈 바에서 16 띄움 — 아이폰 뮤직 알약 바와 같은 높이감 */
     pointer-events:none;                        /* 알약 밖 여백은 명단을 그대로 누르게 */
   }
   .foot .inner{
@@ -645,11 +645,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     border-radius:999px;padding:4px;
     background:color-mix(in srgb, var(--panel2) 62%, transparent);
     -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
-    box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 9%, transparent);
+    /* 림 1px(14%) + 위쪽 하이라이트 1px — 유리 가장자리가 잡힌다(뮤직 알약 바 비교 후 9%→14%) */
+    box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 14%, transparent), inset 0 1px 0 color-mix(in srgb, var(--text) 10%, transparent);
   }
   html[data-theme="light"] .foot .inner{
     background:color-mix(in srgb, #ffffff 62%, transparent);
-    box-shadow:0 8px 28px rgba(20,30,50,.16), inset 0 0 0 1px color-mix(in srgb, #ffffff 80%, transparent);
+    box-shadow:0 8px 28px rgba(20,30,50,.16), inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), inset 0 1px 0 #ffffff;
   }
   .frow{display:flex;gap:4px}
   .foot button{
