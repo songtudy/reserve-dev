@@ -217,7 +217,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
      크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
-  .wrap::before{content:"";display:block;height:calc(var(--topH, 140px) + 10px)}   /* 쉴 때 카드 밑→첫 시간바 = 8+10 = 18 (시간대 사이 여백과 같은 리듬, 12×1.618≈19) */
+  .wrap::before{content:"";display:block;height:var(--topH, 140px)}   /* 쉴 때 카드 밑→첫 시간바 = 8 = 도킹(sticky top) 때와 같은 값. 18 이었을 땐 여백+헤더가 62px 짜리 「높은 칸」으로 보였다(오너 2026-09-11) */
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
