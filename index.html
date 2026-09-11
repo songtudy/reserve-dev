@@ -233,7 +233,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--ink);   /* 날짜 줄(+상태 표시줄 밑) — 바탕색, 불투명 */
     /* 아래 10 = 카드 밑 «판의 일부»(불투명). 붙는 시간바는 이 밑면(--topH)에 도킹하고, 밀려 나가는 시간바는 판 뒤로 사라진다.
        이 10 을 명단 쪽 여백으로 두면 밀려 나가는 시간바 조각(금색 막대·선)이 카드 밑 틈에 보였다(오너 스크린샷, 2026-09-11). */
-    padding:calc(env(safe-area-inset-top) + 4px) 16px 8px;   /* 위 4: 날짜 줄(40) 중심이 안전영역 밑 24 — iOS 내비 바(44, 중심 22)와 같은 자리. 12 는 줄이 14 아래로 처져 있었다(2026-09-11). 카드 밑 8 = 도킹했을 때 카드와 시간바 사이 */
+    padding:calc(env(safe-area-inset-top) + 8px) 16px 8px;   /* 위 8 · 줄 40 · 8 · 카드 · 8 · 시간바 — 간격 토큰 8 로 한 리듬. 4 는 날짜 17 과 함께 답답했고 12 는 처졌다(2026-09-11). 카드 밑 8 = 도킹했을 때 카드와 시간바 사이 */
     /* 선·띠 없음 — 시간바가 판에 딱 붙어 도킹하므로 밀려 나갈 땐 다음 시간바가 자리를 이어받는다(선/그림자/흐림 비교 후, 2026-09-11). */
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
@@ -304,7 +304,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lead{
     /* 아래 여백 0 — 셸 높이(--topH)가 카드 밑면과 같아져 붙는 시간바가 카드에 딱 붙는다.
        여백을 두면 그 띠로 지나가는 시간대 글자가 비쳐 보였다(오너 영상, 2026-09-11). 쉴 때 간격은 .wrap::before 가 준다. */
-    display:block;margin:6px 0 0;padding:12px 12px;border-radius:18px;   /* 테두리 16 = 메뉴·진행도 열, 안 글자 28 = 알약 좌우·⋯ 아이콘 열 (2026-09-11 일관성 점검) */
+    display:block;margin:8px 0 0;padding:12px 12px;border-radius:18px;   /* 테두리 16 = 메뉴·진행도 열, 안 글자 28 = 알약 좌우·⋯ 아이콘 열 (2026-09-11 일관성 점검) */
     background:var(--panel2);   /* 불투명 카드 — 상단 전체가 안 비친다 */
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
