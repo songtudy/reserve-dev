@@ -304,7 +304,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lead{
     /* 아래 여백 0 — 셸 높이(--topH)가 카드 밑면과 같아져 붙는 시간바가 카드에 딱 붙는다.
        여백을 두면 그 띠로 지나가는 시간대 글자가 비쳐 보였다(오너 영상, 2026-09-11). 쉴 때 간격은 .wrap::before 가 준다. */
-    display:block;margin:6px -4px 0;padding:12px 14px;border-radius:18px;
+    display:block;margin:6px 0 0;padding:12px 12px;border-radius:18px;   /* 테두리 16 = 메뉴·진행도 열, 안 글자 28 = 알약 좌우·⋯ 아이콘 열 (2026-09-11 일관성 점검) */
     background:var(--panel2);   /* 불투명 카드 — 상단 전체가 안 비친다 */
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
@@ -404,7 +404,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:relative;position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
-    width:calc(100% + 32px);margin:0 -16px;padding:12px 18px 11px;   /* 높이 44 = 애플 최소 누름 크기 */
+    width:calc(100% + 32px);margin:0 -16px;padding:12px 16px 11px;   /* 높이 44 = 애플 최소 누름 크기. 좌우 16 = 메뉴·진행도와 같은 열 */
     border:0;border-bottom:1px solid var(--line);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
@@ -514,17 +514,17 @@ window.addEventListener('pageshow', remeasureSbcut);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   /* 인원칸을 체크(24)와 한 줄에 맞춘다. 칩 둥글기는 앱 공통 8 */
+  /* 인원 — 맨 글자. «정보는 글자, 조작만 알약»(카드 구성 줄과 같은 원칙, 2026-09-11). 알약으로 그리면 옆 ⋯ 보다 더 눌리는 것처럼 보였다 */
   .pax{
     height:24px;display:inline-flex;align-items:center;
-    font-size:14px;font-weight:700;color:var(--text);
-    background:var(--panel2);border-radius:999px;padding:0 10px;flex:0 0 auto;   /* 알약 언어 */
+    font-size:14px;font-weight:700;color:var(--text);flex:0 0 auto;
   }
   .more{
     width:42px;flex:0 0 auto;border:0;
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
-  .more svg{display:block}
+  .more svg{display:block;width:16px;height:16px}   /* 알약 바 아이콘과 같은 단계(16) */
 
   /* 방문/취소 — 상태 색은 «원 하나에만». 행을 칠하지도, 태그를 붙이지도 않는다
      (원 안의 ✓/✕ 가 이미 같은 말). 처리된 행은 글자가 같이 가라앉을 뿐 크기·높이는 그대로
@@ -748,7 +748,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     height:30px;padding:0 14px;border-radius:999px;
     border:0;background:transparent;
     /* 미선택 글자는 --dim — --off 는 트랙 위 대비 미달(2026-09-11). 선택 칸은 썸+밝은 글자라 구분 유지 */
-    color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+    color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
     transition:color .15s, opacity .12s;
   }
   .seg button:active{opacity:.4;transition:none}
@@ -1207,7 +1207,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .toast{
     position:fixed;left:50%;bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);   /* 알약 바(48) 위 12 */
     background:var(--btnPress);box-shadow:0 4px 14px rgba(0,0,0,.35);
-    padding:10px 16px;border-radius:99px;font-size:13px;font-weight:600;
+    padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;
     opacity:0;pointer-events:none;transition:.2s;z-index:200;white-space:nowrap;
   }
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
