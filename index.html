@@ -382,9 +382,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group{margin-top:0}
   /* 접기/펼치기 — 그 시간대만 높이를 접는다(grid 1fr→0fr, .22s, 토글 썸과 같은 곡선). transform/opacity 가 아닌 유일한 움직임이지만
      한 시간대 분량이라 가볍다. .closing 은 접힐 때 JS 가 붙이고 220ms 뒤 render, .opening 은 펼친 직후 한 프레임만 붙였다 뗀다. */
-  .rows{display:grid;grid-template-rows:1fr;transition:grid-template-rows .22s cubic-bezier(.2,.8,.2,1), opacity .18s}
-  .rowsIn{min-height:0;overflow:hidden}
-  .rows.closing, .rows.opening{grid-template-rows:0fr;opacity:0}
+  .rows{overflow:hidden;margin:0 -16px;padding:0 16px;transition:height .22s cubic-bezier(.2,.8,.2,1)}   /* 높이는 JS 가 px 로 잰다(grid 0fr 트릭은 사파리에서 순서가 어긋났다). 좌우로 넓혀 끝선이 전폭 */
+  .rows.closing{height:0 !important}
+  .group::after{transition:height .22s cubic-bezier(.2,.8,.2,1)}
   /* 전체/대기 전환 — 목록을 짧게 크로스페이드(내용이 통째로 바뀌는 순간을 부드럽게) */
   #list{transition:opacity .12s}
   #list.swap{opacity:0}
@@ -449,7 +449,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      (애플 뮤직 목록과 같은 규칙, 오너 2026-09-11). 열린·접힌 시간대 모두 «전폭 선 하나»로 끝난다. */
   .rows{position:relative}
   .rows::after{
-    content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:1px;
+    content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
     background:var(--line);pointer-events:none;   /* 행 묶음(.rows)에 그린다 — 행에 그리면 .rowsIn 의 overflow:hidden 에 잘린다 */
   }
   /* 눌리는 곳은 여기뿐. 왼쪽 54칸 × 56 이라 손가락에 넉넉하다.
@@ -2985,19 +2985,27 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시간대 접기 / 펼치기
   function reducedMotion(){ try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; } }
   var FOLD_MS = 220;   // CSS .rows 전환 시간과 같아야 한다
-  // 접힐 시간대들의 .rows 에 .closing 을 붙인다 → 접히는 모습이 끝난 뒤 render 하도록 지연 시간을 돌려준다
+  // 접힐 시간대들 — 행 묶음 높이를 지금 값(px)으로 고정한 뒤 0 으로 전환. 행은 안 흐려지고 시간바 밑으로 미끄러져 들어간다.
+  // 화살표·뒤 여백은 누르는 순간 .shut 으로 먼저 돌려 둔다(render 는 전환이 끝난 뒤). 지연 시간을 돌려준다.
   function foldOut(groups){
     if (reducedMotion()) return 0;
     var any = false;
-    groups.forEach(function(g){ var rw = g && g.querySelector('.rows'); if (rw){ rw.classList.add('closing'); any = true; } });
+    groups.forEach(function(g){
+      var rw = g && g.querySelector('.rows'); if (!rw) return;
+      rw.style.height = rw.offsetHeight + 'px'; void rw.offsetHeight;
+      g.classList.add('shut'); rw.classList.add('closing'); any = true;
+    });
     return any ? FOLD_MS : 0;
   }
-  // 방금 render 로 펼쳐진 시간대들 — 0fr 에서 시작해 1fr 로 자라게 한다
+  // 방금 render 로 펼쳐진 시간대들 — 0 에서 시작해 제 높이로 자란 뒤 인라인 값을 지운다
   function foldIn(groups){
     if (reducedMotion()) return;
     groups.forEach(function(g){
       var rw = g && g.querySelector('.rows'); if (!rw) return;
-      rw.classList.add('opening'); void rw.offsetHeight; rw.classList.remove('opening');
+      var h = rw.offsetHeight;
+      rw.style.transition = 'none'; rw.style.height = '0px'; void rw.offsetHeight;
+      rw.style.transition = ''; rw.style.height = h + 'px';
+      setTimeout(function(){ rw.style.height = ''; }, FOLD_MS);
     });
   }
   function toggleSlot(time){
