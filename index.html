@@ -50,10 +50,10 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
   // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
-  var bar = (t === 'light') ? '#f4f6f9' : '#0f1319';   // = --bar   // = --bar
+  var bar = (t === 'light') ? '#f4f6f9' : '#0f1319';   // = --bar
   d.setAttribute('data-theme', t);
   d.style.colorScheme = (t === 'light') ? 'light' : 'dark';
   // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
