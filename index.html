@@ -216,7 +216,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
      크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
-  .wrap::before{content:"";display:block;height:calc(var(--topH, 140px) + 18px)}   /* 셸 높이 + 녹는 띠 18 — 첫 시간바는 띠 아래에서 시작 */
+  .wrap::before{content:"";display:block;height:calc(var(--topH, 140px) + 10px)}   /* 쉴 때 카드 아래 숨 10 — 스크롤하면 첫 시간바가 판에 붙는다 */
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -226,10 +226,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
   }
-  /* 판 바로 아래 18px 그라데이션 — 시간바·명단이 판에 닿기 전에 흐려지며 사라진다(잘리는 게 아니라 «들어간다»).
-     붙는 시간바는 이 띠 아래(--topH + 18)에 도킹하므로 띠가 도킹된 시간바를 어둡게 하지 않는다. */
+  /* 판 바로 아래 12px 그라데이션 — 밀려 나가는 시간바가 판에 닿기 전에 흐려지며 사라진다(잘리는 게 아니라 «들어간다»).
+     붙는 시간바는 판에 «딱 붙어» 도킹(--topH)한다 — 띠 아래로 띄우면 그 틈으로 앞 시간대 사람 줄 조각이 비친다(오너 스크린샷).
+     12px 은 시간바의 위 여백(12)과 같아 도킹된 시간바의 글자는 건드리지 않고, 지나가는 줄은 시간바 뒤로 숨는다. */
   .shell::after{
-    content:"";position:absolute;left:0;right:0;top:100%;height:18px;
+    content:"";position:absolute;left:0;right:0;top:100%;height:12px;
     background:linear-gradient(var(--ink), transparent);pointer-events:none;
     /* 상단은 «불투명» — 상태 표시줄과 만나는 경계에서 흐린 내용이 비치면 이질적(오너, 2026-09-11). 유리는 하단 알약 바만.
        날짜 줄 = 바탕색(조용한 내비게이션), 메인 시각 박스 = 한 단계 밝은 둥근 카드. 명단은 셸 밑으로 들어가되 보이지 않는다. */
@@ -413,7 +414,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.shut::after{height:0}
 
   .ghead{
-    position:relative;position:sticky;top:calc(var(--topH, 140px) + 18px);z-index:10;   /* 상단 셸 + 녹는 띠(18) 아래에 도킹 */
+    position:relative;position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
     width:calc(100% + 32px);margin:0 -16px;padding:12px 18px 11px;   /* 높이 44 = 애플 최소 누름 크기 */
