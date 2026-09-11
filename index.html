@@ -239,7 +239,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     border-bottom:1px solid var(--line);
     padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;   /* 아래 10: 칩 밑→선 간격을 시각→칩 간격과 같게 */
   }
-  .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
+  .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
+  /* 날짜는 줄의 «제목» — 화면 가운데(iOS 내비게이션 바 문법). 왼쪽 메뉴 아이콘·오른쪽 진행도 하나씩이라 균형이 맞는다.
+     2026-09-11 오너 결정: 검색을 빼고 진행도를 남김(검색은 안 쓰고, 진행도는 곁눈으로 보는 숫자). */
+  .toprow .date{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:60%}
   .nav{display:flex;align-items:center;gap:0;margin-left:-10px;min-width:0}
   .nav button{
     width:40px;height:40px;flex:0 0 auto;padding:0;
@@ -262,7 +265,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dayprog{
     display:flex;align-items:center;line-height:1;
     font-size:13px;font-weight:800;color:var(--text);
-    padding:0 4px;   /* 칩 면 없음 — 시간바의 「2/9」와 같은 꼴. 면 있는 칩은 인원 구성 전용 */
+    padding:0;   /* 칩 면 없음 — 시간바의 「2/9」와 같은 꼴. 오른쪽 끝이 본문 끝(토글·칩과 같은 선)에 맞는다 */
   }
   .dayprog.full{color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -274,6 +277,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--dim);cursor:pointer;margin-right:-10px;   /* 40 버튼 안 20 아이콘 → 아이콘 오른쪽 끝 = 본문 오른쪽 끝(왼쪽 메뉴 아이콘과 대칭) */
   }
   .tools button.on{color:var(--waitTx);background:var(--panel2)}
+  /* 검색 버튼은 상단에서 뺀다(오너: 한 번도 안 씀) — 서랍의 「이름 검색」이 대신. 요소는 JS 가 참조하므로 숨기기만. */
+  .tools #searchBtn{display:none}
   /* 헤더 아이콘 버튼(메뉴·검색)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
      보이는 크기·눌림 배경은 그대로 두고 «닿는 범위»만 투명하게 2px 씩 넓힌다 — 겉모습 무변화.
      (.off 일 때는 pointer-events:none 이라 이 영역도 같이 죽는다 = 꺼진 버튼은 안 눌린다.) */
@@ -1304,6 +1309,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     <span class="dwnames"><span class="dwname">익순이</span><span class="dwsubtitle">익선취향 예약 매니저</span></span>
   </div>
   <div class="dwsep"></div>
+  <button type="button" class="dwitem" id="searchItem">이름 검색</button>
   <button type="button" class="dwitem" id="logBtn">최근 변경 내역</button>
   <button type="button" class="dwitem" id="backupBtn">지난 명단</button>
   <div class="dwsep"></div>
@@ -4096,6 +4102,11 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<div class="wnet"><span class="k">네트워크</span><span class="v">' + n.ssid + '</span></div>'
       + '<div class="wnet"><span class="k">비밀번호</span><span class="v">' + n.pw + '</span></div>';
   }
+  document.getElementById('searchItem').addEventListener('click', function(){
+    if (searchBtn.classList.contains('off')){ closeDrawer(); toast('검색할 명단이 없습니다'); return; }
+    hideDrawer();
+    if (searchbar.classList.contains('hide')) openSearch();
+  });
   document.getElementById('logBtn').addEventListener('click', function(){
     hideDrawer();
     var mine = logRows(null);
