@@ -50,19 +50,19 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f4f6f9' : '#1c1c1e';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#171a1f' : '#1c1c1e';   // 비교 빌드: 슬롯2 = 찬 기운 C6   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
   // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
-  var bar = (t === 'light') ? '#f4f6f9' : '#1c1c1e';   // = --bar
+  var bar = (t === 'light') ? '#171a1f' : '#1c1c1e';   // = --bar
   d.setAttribute('data-theme', t);
-  d.style.colorScheme = (t === 'light') ? 'light' : 'dark';
+  d.style.colorScheme = 'dark';
   // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
   // body 가 화면 전체를 ink 로 덮으니 html 배경은 띠와 오버스크롤에만 보인다 → 셸 색으로. (콜드 런치 흰 화면 방지 역할은 그대로)
   d.style.background = bar;
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   if (themeMeta) themeMeta.content = bar;
   var barMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-  if (barMeta) barMeta.content = (t === 'light') ? 'default' : 'black';
+  if (barMeta) barMeta.content = 'black';
 };
 // 화면이 그려지기 전에 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
 (function(){
@@ -150,25 +150,25 @@ window.addEventListener('pageshow', remeasureSbcut);
   html[data-theme="light"]{
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
-    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e2e6ec;
-    --bar:#f4f6f9;
-    --line:#d5dae2;     --press:#d2d7df;   --keyDn:#b6bec8;
-    --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
-    --ph:#676f7d;
+    --ink:#171a1f;      --panel:#1e2126;    --panel2:#25282d;
+    --bar:#171a1f;
+    --line:#2d3035;     --press:#212429;   --keyDn:#44474c;
+    --text:#f0f3f6;     --dim:#969ca6;      --off:#6e747e;
+    --ph:#7d838d;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
-    --btn:#d8dce2;      --btnPress:#c3c9d1;  --btnWarn:#fbe6e3;  --btnWarnPress:#f5d2cd;
-    --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
+    --btn:#2b2e33;      --btnPress:#373a3f;  --btnWarn:#3a2a2c;  --btnWarnPress:#4a3336;
+    --scrim:rgba(0,0,0,.62); --scrimLite:rgba(0,0,0,.5);
     /* ★ 라이트의 포인트는 파랑 (2026-09-10 오너 결정). 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 물리적 상한이라
        (노란 계열 한계) 어떻게 해도 «어둡게» 보인다 — 오너가 실기기에서 두 번 같은 판단. 다크는 금 유지.
        #2a5bd7 = 4.5 를 모든 자리에서 넘기는 가장 밝은 파랑: 바탕 5.4 · 칩(--panel2) 위 5.0 · 버튼 면 위 4.8 ·
        그 위 흰 글자 5.9. 아이폰 기본 파랑 #007aff 는 글자로 3.7 이라 탈락. 초록·빨강·회색과 전 유형 색약에서 뚜렷.
        한 값으로 채움·큰 숫자·아이콘을 다 쓴다. (작은 글자엔 포인트를 안 쓰는 규칙은 다크와 맞추려 유지) */
     /* 2026-09-11: 진한 금색(#8a5a00/#c9962a)으로 통일하려다 위 오너 결정을 확인하고 되돌림 — 라이트 강조색 변경은 오너 실기기 판단 없이는 손대지 말 것 */
-    --wait:#2a5bd7;     --waitTx:#2a5bd7;   --waitBig:#2a5bd7;
-    --onWait:#ffffff;   --waitHover:#4a74dd;   --field:#ffffff;    /* 클로드 fill-brand-hover · fill-field(light) */   --mark:#dde6fb;
-    --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
-    --warn:#b43f36;
-    --onWarn:#7a2a20;
+    --wait:#e8b757;     --waitTx:#e8b757;   --waitBig:#e8b757;
+    --onWait:#241a05;   --waitHover:#f0c46e;   --field:#1b1e23;    /* 클로드 fill-brand-hover · fill-field(light) */   --mark:#463a13;
+    --go:#5fb08a;       --goTx:#5fb08a;     --onGo:#08241a;   /* 칩(--panel2) 위 4.9:1 */
+    --warn:#c9736a;
+    --onWarn:#e0aca6;
     --errRow:rgba(192,72,60,.12);   --errTx:#9e4438;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -304,7 +304,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--panel2);   /* 불투명 카드 — 상단 전체가 안 비친다 */
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
-  html[data-theme="light"] .lead{background:var(--panel);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(20,30,50,.08)}
+  html[data-theme="light-off"] .lead{background:var(--panel);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(20,30,50,.08)}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
   .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
@@ -342,7 +342,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     -webkit-appearance:none;appearance:none;
     animation:sheetIn .22s cubic-bezier(.2,.8,.2,1);
   }
-  html[data-theme="light"] .foot .updbar{box-shadow:0 8px 28px rgba(20,30,50,.16)}
+  html[data-theme="light-off"] .foot .updbar{box-shadow:0 8px 28px rgba(20,30,50,.16)}
   .updbar svg{width:16px;height:16px;display:block}
   body.upd-on .wrap{padding-bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 78px + 48px + var(--kb, 0px))}
   body.upd-on .toast{bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + 48px + var(--kb, 0px))}
@@ -676,7 +676,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 림 1px 8% 한 겹 — 위 메인 카드(.lead)와 같은 가장자리 처리. 윗줄 하이라이트는 뺐다(빛나는 느낌 = 오너 반려) */
     box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
-  html[data-theme="light"] .foot .inner{
+  html[data-theme="light-off"] .foot .inner{
     background:color-mix(in srgb, #ffffff 62%, transparent);
     box-shadow:0 8px 28px rgba(20,30,50,.16), inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent);
   }
@@ -740,7 +740,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     gap:2px;padding:2px;background:var(--ink);border-radius:999px;   /* 알약 언어(2026-09-11) */
   }
   /* 라이트: 트랙 --ink(#f4f6f9)가 흰 카드와 1.05:1 이라 트랙이 사라지고 썸만 떠 보였다(시뮬레이터, 2026-09-11) → 한 단계 어두운 면 */
-  html[data-theme="light"] .seg{background:var(--panel2)}
+  html[data-theme="light-off"] .seg{background:var(--panel2)}
   .seg::before{
     content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 3px);
     border-radius:999px;background:var(--btnPress);box-shadow:0 1px 3px rgba(0,0,0,.35);
@@ -1359,8 +1359,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   <div class="dwtheme">
     <span class="dwthlab">테마</span>
     <div class="seg">
-      <button type="button" data-theme-set="dark">다크</button>
-      <button type="button" data-theme-set="light">라이트</button>
+      <button type="button" data-theme-set="dark">중성</button>
+      <button type="button" data-theme-set="light">찬기운</button>
     </div>
   </div>
   <div class="dwfoot" id="dwConn"></div>
