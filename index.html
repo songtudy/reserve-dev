@@ -124,22 +124,22 @@ window.addEventListener('pageshow', remeasureSbcut);
        #000 으로 다시 굽는다(tools/make-icons.py BG). 면은 여전히 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
     --ink:#151515;      --panel:#1a1a19;    --panel2:#20201f;
     --bar:#151515;      /* 상태 표시줄 띠 색. 잠금·스플래시·body 가 이 색 */
-    --line:#2a2a29;     --press:#1e1e1d;   --keyDn:#3a3a39;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
+    --line:rgba(255,255,255,.10);     --press:rgba(255,255,255,.075);   --keyDn:rgba(255,255,255,.20);   /* 키패드 눌림 — --press 보다 확실히 밝게 */
     --text:#f0efec;     --dim:#898781;      --off:#5f5e59;
     --ph:#6f6e68;
     /* 보조 버튼 = 테두리 없는 «면». 입력칸(선)과 버튼(면)이 한눈에 갈린다.
        눌림은 면이 한 단 밝아진다(--press 는 이 면과 거의 같아 안 보여서 따로 둔다). */
-    --btn:#2c2c2b;      --btnPress:#3a3a39;  --btnWarn:#3c0e0e;  --btnWarnPress:#4d1414;
+    --btn:rgba(255,255,255,.10);      --btnPress:rgba(255,255,255,.14);  --btnWarn:#d03b3b;  --btnWarnPress:#e34948;
     --scrim:rgba(0,0,0,.72);   --scrimLite:rgba(0,0,0,.6);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
-    --wait:#d97757;     --waitTx:#d97757;  --waitBig:#d97757;
-    --onWait:#ffffff;   --mark:#4a3128;
+    --wait:#c6613f;     --waitTx:#d97757;  --waitBig:#d97757;
+    --onWait:#ffffff;   --waitHover:#d97757;   --field:rgba(255,255,255,.05);   /* 클로드 fill-brand-hover · fill-field */   --mark:#4a3128;
     /* 방문 — 초록 (상태 색은 체크 원 하나에만 쓴다) */
     --go:#0ca30c;       --goTx:#0ca30c;      --onGo:#ffffff;
     /* 취소·경고 — 붉은색 */
     --warn:#ec7e7e;
     /* 초기화 버튼 글자 — --btnWarn 면 위에서도, 그 위로 --warn 이 42% 차올라도 읽힌다. --onWait·--onGo 와 같은 작명 */
-    --onWarn:#ec7e7e;
+    --onWarn:#ffffff;
     /* 붙여넣기 오류 (줄 강조 + 안내문) */
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
@@ -148,11 +148,11 @@ window.addEventListener('pageshow', remeasureSbcut);
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
     --ink:#fcfcfb;      --panel:#ffffff;    --panel2:#f9f9f7;
     --bar:#fcfcfb;
-    --line:#e5e5e4;     --press:#f0f0ef;   --keyDn:#d9d9d8;
+    --line:rgba(11,11,11,.10);     --press:rgba(11,11,11,.05);   --keyDn:rgba(11,11,11,.20);
     --text:#0b0b0b;     --dim:#898781;      --off:#b0afa9;
     --ph:#a3a29b;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
-    --btn:#f0f0ef;      --btnPress:#e3e3e2;  --btnWarn:#fad6d6;  --btnWarnPress:#f5c2c2;
+    --btn:rgba(11,11,11,.10);      --btnPress:rgba(11,11,11,.20);  --btnWarn:#d03b3b;  --btnWarnPress:#e34948;
     --scrim:rgba(11,11,11,.44); --scrimLite:rgba(11,11,11,.34);
     /* ★ 라이트의 포인트는 파랑 (2026-09-10 오너 결정). 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 물리적 상한이라
        (노란 계열 한계) 어떻게 해도 «어둡게» 보인다 — 오너가 실기기에서 두 번 같은 판단. 다크는 금 유지.
@@ -160,11 +160,11 @@ window.addEventListener('pageshow', remeasureSbcut);
        그 위 흰 글자 5.9. 아이폰 기본 파랑 #007aff 는 글자로 3.7 이라 탈락. 초록·빨강·회색과 전 유형 색약에서 뚜렷.
        한 값으로 채움·큰 숫자·아이콘을 다 쓴다. (작은 글자엔 포인트를 안 쓰는 규칙은 다크와 맞추려 유지) */
     /* 2026-09-11: 진한 금색(#8a5a00/#c9962a)으로 통일하려다 위 오너 결정을 확인하고 되돌림 — 라이트 강조색 변경은 오너 실기기 판단 없이는 손대지 말 것 */
-    --wait:#d97757;     --waitTx:#d97757;   --waitBig:#d97757;
-    --onWait:#ffffff;   --mark:#f7e4dd;
+    --wait:#c6613f;     --waitTx:#c6613f;   --waitBig:#c6613f;
+    --onWait:#ffffff;   --waitHover:#d97757;   --field:rgba(255,255,255,.5);    /* 클로드 fill-brand-hover · fill-field(light) */   --mark:#f7e4dd;
     --go:#006300;       --goTx:#006300;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
     --warn:#8e2626;
-    --onWarn:#8e2626;
+    --onWarn:#ffffff;
     --errRow:rgba(192,72,60,.12);   --errTx:#9e4438;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -342,7 +342,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .updbar svg{width:16px;height:16px;display:block}
   body.upd-on .wrap{padding-bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 78px + 48px + var(--kb, 0px))}
   body.upd-on .toast{bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + 48px + var(--kb, 0px))}
-  .updbar:active, .updbar.dn{filter:brightness(.92)}
+  .updbar:active, .updbar.dn{background:var(--waitHover)}
 
   /* search */
   /* 검색 띠 — 셸의 일부라 불투명(--ink). 투명이면 카드와 도킹된 시간바 사이 띠로 명단이 비쳐 지나갔다(오너 스크린샷 2026-09-11).
@@ -543,7 +543,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .erow label.grow{flex:1;min-width:0}
   .erow input, .erow select{
-    background:var(--ink);color:var(--text);
+    background:var(--field);color:var(--text);   /* 클로드 fill-field + ring(--line) */
     border:1px solid var(--line);border-radius:999px;
     padding:10px 14px;font-family:inherit;font-size:16px;font-weight:600;
     font-variant-numeric:tabular-nums;width:100%;min-width:0;height:48px;
@@ -649,7 +649,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .btn.primary{background:var(--wait);color:var(--onWait)}
   .btn.ghost{background:var(--btn);color:var(--text)}
-  .btn.primary:active, .btn.primary.dn{filter:brightness(.92)}
+  .btn.primary:active, .btn.primary.dn{background:var(--waitHover)}   /* 클로드 fill-brand → fill-brand-hover */
   .btn.ghost:active, .btn.ghost.dn{background:var(--btnPress)}
   textarea::placeholder{ color:var(--ph) }
 
@@ -686,7 +686,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .foot button svg{width:16px;height:16px}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
   /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
   .foot button:active, .foot button.dn{background:var(--btnPress);opacity:1;transition:none}
-  .foot button:disabled{opacity:.35;pointer-events:none}   /* 접을 시간대가 없을 때(대기 모드·전부 처리) — 자리는 지키고 꺼 둔다 */
+  .foot button:disabled{opacity:.4;pointer-events:none}   /* 클로드 opacity-disabled .4 */   /* 접을 시간대가 없을 때(대기 모드·전부 처리) — 자리는 지키고 꺼 둔다 */
   .foot button svg{display:block}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
@@ -925,7 +925,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 시트 기본 하단바(닫기) 오른쪽에 그 시트의 주동작 버튼을 하나 더 붙인다
      (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 포인트색. */
   .sheetBtns .sheetCopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
-  .sheetBtns .sheetCopy:active, .sheetBtns .sheetCopy.dn{filter:brightness(.92)}
+  .sheetBtns .sheetCopy:active, .sheetBtns .sheetCopy.dn{background:var(--waitHover)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
@@ -1136,7 +1136,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
   .dbtn #dlgNo:active, .dbtn #rltClose:active, .dbtn #dlgNo.dn, .dbtn #rltClose.dn{background:var(--btnPress)}   /* 취소·닫기 = 면이 밝아짐 */
-  .dbtn #rltGo:active, .dbtn #rltGo.dn{filter:brightness(.92)}                           /* 채운 버튼 = 살짝 어둡게 */
+  .dbtn #rltGo:active, .dbtn #rltGo.dn{background:var(--waitHover)}                           /* 채운 버튼 = 살짝 어둡게 */
   /* 「초기화」는 한 번 눌러서가 아니라 「길게 눌러」 실행된다.
      예전엔 '예' 를 타이핑하게 했는데, 그 키보드가 뜨면 아이폰이 화면(비주얼 뷰포트)을
      밀어 올려 팝업이 위로 잘려 나갔다. 키보드를 아예 없애되 8/31 실수 방지 장치는
@@ -1175,7 +1175,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rlt h3{margin:0 0 3px;font-size:17px;font-weight:800;letter-spacing:-.02em}
   .rltsub{margin:0 0 12px;font-size:13px;color:var(--dim)}
   .rlt input{
-    width:100%;background:var(--ink);color:var(--text);
+    width:100%;background:var(--field);color:var(--text);
     border:1px solid var(--line);border-radius:999px;
     padding:11px 16px;font-family:inherit;font-size:16px;font-weight:600;
     -webkit-appearance:none;appearance:none;
