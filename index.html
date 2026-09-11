@@ -286,6 +286,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .nav button::after, .tools button::after{content:"";position:absolute;inset:-2px}
   /* 실사용이 아닌 곳(테스트·로컬·복사본)에서만 뜨는 빨간 경고 배지.
      실DB 격리는 computeDev 라우팅이 담당 — 이건 "실사용 아님" 을 못 놓치게 하는 표시. */
+  .nav .devtag{margin-left:2px}
   .devtag{
     flex:0 0 auto;padding:6px 11px;border-radius:8px;
     background:#e5484d;color:#fff;
@@ -1203,12 +1204,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     <div class="toprow">
       <div class="nav">
         <button type="button" id="menuBtn" aria-label="메뉴"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <span class="devtag hide" id="devTag">테스트</span><!-- 테스트 사이트 표시 — 왼쪽(메뉴 옆)에 두어 오른쪽 진행도가 본문 끝에 붙게 (2026-09-11) -->
         <span class="date num" id="dateLabel"></span>
       </div>
       <div class="tools">
         <span class="dayprog num hide" id="dayProg"></span>
         <span class="offtag">연결 안 됨</span>
-        <span class="devtag hide" id="devTag">테스트</span>
         <button type="button" id="searchBtn" class="off" aria-label="이름 검색">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
             <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/>
