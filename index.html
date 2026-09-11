@@ -261,7 +261,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     font-size:15px;color:var(--text);font-weight:600;letter-spacing:.01em;
   }
-  .date .wday{color:var(--dim)}
+  .date .wday{color:inherit}   /* 「(금)」 — 괄호가 이미 보조라는 뜻이라 색까지 옅게 하면 이중 표시. 가운데 제목은 한 색으로(2026-09-11) */
   .dayprog{
     display:flex;align-items:center;line-height:1;
     font-size:13px;font-weight:800;color:var(--text);
