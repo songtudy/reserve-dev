@@ -323,7 +323,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadsub.comp .pc b{font-weight:700;margin-left:3px}
 
   /* 새 버전 알림 — 하단 알약 바 «위에 떠 있는» 금색 알약(같은 폭·같은 높이 48·8 위). 명단 칸을 잡아먹지 않는다(오너 2026-09-11 — 카드 밑 인라인은 명단을 밀었다).
-     금색 채움 = 주동작 버튼 언어(추가·저장). 문구는 버튼 규칙대로 명사구 「새 버전 · 업데이트」(상태 · 동작 — 시간바 「방문 n · 취소 n」과 같은 문법). 누르면 새로 불러온다. 보이는 동안 body.upd-on 으로 명단 아래 여백·토스트를 56 올린다. */
+     금색 채움 = 주동작 버튼 언어(추가·저장). 문구 「새 버전으로 업데이트」 — 버튼은 한 행위(예약 추가·명단 복사와 같은 명사구). 「·」은 정보 나열 기호라 버튼엔 안 쓴다. 누르면 새로 불러온다. 보이는 동안 body.upd-on 으로 명단 아래 여백·토스트를 56 올린다. */
   .foot .updbar{
     pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:7px;
     width:max-content;max-width:520px;margin:0 auto 8px;height:40px;padding:0 18px;border-radius:999px;   /* 알림이지 툴바가 아니다 — 토스트처럼 내용 폭·40 */
@@ -1286,7 +1286,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 </div>
 
 <div class="foot empty">
-  <button type="button" class="updbar hide" id="updBar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>새 버전 · 업데이트</button>
+  <button type="button" class="updbar hide" id="updBar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>새 버전으로 업데이트</button>
   <div class="inner">
     <div class="frow">
       <!-- 가운데 = 가장 자주 쓰는 「명단 복사」. 아이콘 16px·획 2 로 통일(크기는 CSS .foot button svg) -->
