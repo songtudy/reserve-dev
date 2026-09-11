@@ -1675,11 +1675,11 @@ window.dispatchEvent(new Event('fb-ready'));
   var viewDate = bizDate();
 
   // '9월 3일 (수)' 한 조각. 오늘밖에 없으니 '· 오늘' 같은 꼬리표는 안 붙인다.
-  // 「9월 10일 목요일」 — 괄호 없이, 요일은 한 단계 흐리게(날짜가 주, 요일은 보조)
+  // 「9월 11일 (금)」 — 가운데 제목이 되면서 짧게(2026-09-11 오너 선택). 요일은 회색 괄호로 보조.
   function paintDate(){
     var p = viewDate.split('-');
     var w = WEEKDAYS[parseYmd(viewDate).getDay()];
-    document.getElementById('dateLabel').innerHTML = (+p[1]) + '월 ' + (+p[2]) + '일 <span class="wday">' + w + '요일</span>';
+    document.getElementById('dateLabel').innerHTML = (+p[1]) + '월 ' + (+p[2]) + '일 <span class="wday">(' + w + ')</span>';
   }
 
   // 순수: 날짜 키 목록에서 '지워도 되는' 것만 고른다.
