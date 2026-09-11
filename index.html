@@ -670,6 +670,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .foot button svg{width:16px;height:16px}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
   /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
   .foot button:active{background:var(--btnPress);opacity:1;transition:none}
+  .foot button:disabled{opacity:.35;pointer-events:none}   /* 접을 시간대가 없을 때(대기 모드·전부 처리) — 자리는 지키고 꺼 둔다 */
   .foot button svg{display:block}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
@@ -2313,15 +2314,20 @@ window.dispatchEvent(new Event('fb-ready'));
     if (viewMode === 'pending' && !pendRows && !q){
       list.innerHTML = '';
       em.classList.remove('hide');
-      em.textContent = '대기 중인 팀이 없습니다\n모두 확인했어요';
+      em.textContent = '대기 중인 팀이 없습니다';
     }
 
     var foldBtnEl = document.getElementById('foldBtn');
     if (foldBtnEl){
+      // 시간대가 하나도 안 그려졌으면(대기 모드에서 다 처리됨) 접을 것도 펼칠 것도 없다 — 기본 라벨로 두고 꺼 둔다.
+      // 숨기면 알약이 2칸이 되어 모양이 바뀌므로 자리는 지킨다(iOS 툴바의 비활성 항목과 같은 처리).
+      var noGroups = !list.querySelector('.group');
+      var showFold = noGroups || openCount;
       var fl = foldBtnEl.querySelector('.foldlbl'), fp = foldBtnEl.querySelector('.foldp');
-      if (fl) fl.textContent = openCount ? '전체 접기' : '전체 펼치기';
-      if (fp) fp.setAttribute('d', openCount ? 'M6 10l6-6 6 6M6 20l6-6 6 6'    // 겹화살 위 = 접기 (시간바 .chev 와 같은 어휘)
-                                             : 'M6 4l6 6 6-6M6 14l6 6 6-6');   // 겹화살 아래 = 펼치기
+      if (fl) fl.textContent = showFold ? '전체 접기' : '전체 펼치기';
+      if (fp) fp.setAttribute('d', showFold ? 'M6 10l6-6 6 6M6 20l6-6 6 6'    // 겹화살 위 = 접기 (시간바 .chev 와 같은 어휘)
+                                            : 'M6 4l6 6 6-6M6 14l6 6 6-6');   // 겹화살 아래 = 펼치기
+      foldBtnEl.disabled = noGroups;
     }
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
