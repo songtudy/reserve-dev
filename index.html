@@ -4,7 +4,7 @@
      여기 적힌 건 스크립트가 돌기 전의 씨앗값(다크 = 대개 맞는 쪽)이고, 바로 아래 head 스크립트의
      setThemeChrome 이 저장된 테마로 곧바로 덮어쓴다 — 고정값으로 두면 이 인라인이
      스타일시트(html,body{background:var(--ink)})를 이겨 라이트에서 루트만 어둡게 남는다. -->
-<html lang="ko" style="background:#0f1319">
+<html lang="ko" style="background:#171c24">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -59,7 +59,9 @@ window.setThemeChrome = function(t){
   var bar = (t === 'light') ? '#fbfcfd' : '#171c24';
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
-  d.style.background = ink;
+  // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
+  // body 가 화면 전체를 ink 로 덮으니 html 배경은 띠와 오버스크롤에만 보인다 → 셸 색으로. (콜드 런치 흰 화면 방지 역할은 그대로)
+  d.style.background = bar;
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   if (themeMeta) themeMeta.content = bar;
   var barMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
@@ -120,6 +122,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        탈락, 따뜻한 색조는 라이트가 베이지로 가는 방향이라 탈락. 이 값은 다시 흔들지 않는다.
        면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
     --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
+    --bar:#171c24;      /* 상단 유리 셸 합성색(panel2 62% over ink) = 상태 표시줄 띠 색. 셸 재질이 바뀌면 같이 */
     --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
     --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
     --ph:#7b8695;
@@ -143,6 +146,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
     --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e2e6ec;
+    --bar:#fbfcfd;
     --line:#d5dae2;     --press:#d2d7df;   --keyDn:#b6bec8;
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
@@ -163,6 +167,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--ink)}
+  /* 설치된 앱의 상태 표시줄 띠는 body 배경으로 칠해진다(시뮬레이터 확인: html 배경·theme-color 로는 안 바뀜).
+     body 는 --bar(셸 색), 명단 영역(.wrap)이 --ink 를 따로 깐다 → 띠와 상단 셸이 한 장으로 이어진다. */
+  .wrap{background:var(--ink)}
   /* 앱 셸 구조 — body 는 화면 전체를 덮는 고정 틀. 절대 크기가 안 변한다.
      키보드는 그 위에 얹혀 올라오고(일반 앱처럼 뒤가 비침), 스크롤은 .wrap 안에서만.
      하단 바가 position:fixed 가 아니라 flex 항목이라 옛날처럼 뜨지 않는다. */
@@ -170,7 +177,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   body{
     position:fixed;inset:0;
     overscroll-behavior:none;
-    background:var(--ink);
+    background:var(--bar);   /* 상태 표시줄 띠 색 — 위 주석 참고. 화면 본문은 .wrap 이 --ink */
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR",system-ui,sans-serif;
     font-size:16px;
