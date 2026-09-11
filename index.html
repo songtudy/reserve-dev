@@ -27,9 +27,6 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js">
 
 <script>
-// 테마에 딸린 것(속성·색)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때(applyTheme)
-// 둘 다 이 함수를 써서 상태가 갈라지지 않게 한다.
-//
 // 테마에 딸린 것(속성·색·메타)을 한 번에 바꾼다. 페인트 전 1회 + 서랍에서 바꿀 때 둘 다 이 함수를
 // 써서 상태가 갈라지지 않게 한다.
 //
@@ -223,7 +220,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* header */
   /* 상단 셸 — 떠 있는 유리 판(하단바와 같은 재질). 명단은 그 밑으로 지나가고(.wrap padding-top),
      붙는 시간대 머리글은 셸 바로 아래에 붙는다(.ghead top). 높이는 JS 가 재서 --topH 로 넣는다
-     (칩 줄 수·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
+     (카드 내용·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
   }
@@ -251,8 +248,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* ── 누름 규칙 (앱 공통) ──
      ① 면 있는 버튼 → 면이 --press (채운 금색은 brightness)   ② 면 없는 글자·아이콘 → 흐려짐
      ③ 체크 원 → 원이 눌려 들어감.   누르면 즉시, 떼면 .12s 에 돌아온다(:active 에서만 transition 끔). */
-  .nav button, .tools button, .more, .foot button{transition:opacity .12s}
-  .nav button:active, .tools button:active, .more:active, .foot button:active{opacity:.4;transition:none}
+  .nav button, .more, .foot button{transition:opacity .12s}
+  .nav button:active, .more:active, .foot button:active{opacity:.4;transition:none}
   .nav button:disabled{opacity:.22}
   .date{
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -266,21 +263,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .dayprog.full{color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-  .tools button.off{visibility:hidden;pointer-events:none}
-  .tools button{
-    width:40px;height:40px;flex:0 0 auto;
-    display:grid;place-items:center;
-    background:none;border:0;border-radius:12px;
-    color:var(--dim);cursor:pointer;margin-right:-10px;   /* 40 버튼 안 20 아이콘 → 아이콘 오른쪽 끝 = 본문 오른쪽 끝(왼쪽 메뉴 아이콘과 대칭) */
-  }
-  .tools button.on{color:var(--waitTx);background:var(--panel2)}
-  /* 검색 버튼은 상단에서 뺀다(오너: 한 번도 안 씀) — 서랍의 「이름 검색」이 대신. 요소는 JS 가 참조하므로 숨기기만. */
-  .tools #searchBtn{display:none}
-  /* 헤더 아이콘 버튼(메뉴·검색)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
-     보이는 크기·눌림 배경은 그대로 두고 «닿는 범위»만 투명하게 2px 씩 넓힌다 — 겉모습 무변화.
-     (.off 일 때는 pointer-events:none 이라 이 영역도 같이 죽는다 = 꺼진 버튼은 안 눌린다.) */
-  .nav button, .tools button{position:relative}
-  .nav button::after, .tools button::after{content:"";position:absolute;inset:-2px}
+  /* 검색 버튼은 상단에 없다(오너: 한 번도 안 씀) — 서랍의 「이름 검색」이 대신. */
+  /* 헤더 아이콘 버튼(메뉴)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
+     보이는 크기·눌림 배경은 그대로 두고 «닿는 범위»만 투명하게 2px 씩 넓힌다 — 겉모습 무변화. */
+  .nav button{position:relative}
+  .nav button::after{content:"";position:absolute;inset:-2px}
   /* 실사용이 아닌 곳(테스트·로컬·복사본)에서만 뜨는 빨간 경고 배지.
      실DB 격리는 computeDev 라우팅이 담당 — 이건 "실사용 아님" 을 못 놓치게 하는 표시. */
   .nav .devtag{margin-left:2px}
@@ -299,8 +286,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
-  /* 상단 요약 — 「16:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 그 아래 인원 구성 칩 */
-  /* 메인 박스 = 떠 있는 둥근 카드 — 하단 알약 바와 같은 재질(칩색 62% + 셸의 흐림)·같은 링. 위아래가 같은 «물건»이 된다. */
+  /* 상단 요약 — 「16:00  7팀」 한 줄(같은 크기 두 덩어리, 금/흰 색으로 구분) + 그 아래 인원 구성(맨 글자) */
+  /* 메인 박스 = 불투명 둥근 카드(--panel2) + 림 8% — 하단 알약 바와 같은 림 처리. 위아래가 같은 «물건»이 된다. */
   .lead{
     /* 아래 여백 0 — 셸 높이(--topH)가 카드 밑면과 같아져 붙는 시간바가 카드에 딱 붙는다.
        여백을 두면 그 띠로 지나가는 시간대 글자가 비쳐 보였다(오너 영상, 2026-09-11). 쉴 때 간격은 .wrap::before 가 준다. */
@@ -309,11 +296,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
   html[data-theme="light"] .lead{background:var(--panel);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(20,30,50,.08)}
-  .lead.hide{display:none}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
   .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
-  .slotlab{font-size:20px;font-weight:800;color:var(--off);margin:0 7px}
-  .slotlab:empty{display:none}
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
   /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
@@ -321,7 +305,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
   .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 두 칸 같은 너비·썸은 공용 .seg 규칙 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
-  /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
+  /* 인원 요약(구성 글자 or 「방문 n·취소 n」)은 요약 줄 아래 */
   .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:8px}
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
@@ -355,7 +339,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding:10px 16px;background:transparent;
     border-bottom:1px solid var(--line);
   }
-  .searchbar.hide{display:none}
   .searchbar input{
     width:100%;background:var(--panel);color:var(--text);
     border:1px solid var(--line);border-radius:12px;
@@ -392,8 +375,8 @@ window.addEventListener('pageshow', remeasureSbcut);
      머리글은 «자기 명단»에 붙는다 — 위는 넓게(앞 명단과 떨어짐), 아래는 선 하나.
      가운데 관통선·캡슐·박스는 여섯 안을 실제 앱에서 4가지 상태로 비교한 끝에 모두 탈락 —
      접힌 시간대가 표처럼 촘촘히 쌓이는 이 구조가 «영업 중 가장 오래 보는 화면»에서 제일 정돈됐다. */
-  /* 시간대 사이 여백(18px)은 «앞 시간대 안쪽»의 빈 요소로 둔다 — margin 으로 두면 붙은 머리글이 다음 머리글이
-     닿기 18px 전에 먼저 밀려나 두 머리글 사이에 빈 틈이 생긴다(오너 지적, 2026-09-11). 안쪽 내용이면 붙는
+  /* 시간대 사이 여백(8px)은 «앞 시간대 안쪽»의 빈 요소로 둔다 — margin 으로 두면 붙은 머리글이 다음 머리글이
+     닿기 여백만큼 전에 먼저 밀려나 두 머리글 사이에 빈 틈이 생긴다(오너 지적, 2026-09-11). 안쪽 내용이면 붙는
      범위에 포함돼 다음 머리글이 닿는 순간 밀려난다(padding 은 안 됨 — 붙는 범위가 내용 상자까지라 더 일찍 밀려남).
      접힌 시간대는 여백 없이 선으로만 잇는다. 멈춰 있을 때 배치는 margin 방식과 픽셀까지 같다. */
   .group{margin-top:0}
@@ -490,7 +473,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   @keyframes checkpop{ 0%{transform:scale(.55)} 55%{transform:scale(1.16)} 100%{transform:scale(1)} }
   .check.pop{animation:checkpop .26s cubic-bezier(.34,1.56,.64,1)}
   /* 누르는 요소에는 직접 지정한다. body 에만 걸면 아이폰에서 두 번 탭 판정이 남는다 */
-  .main, .more, .ghead, .foot button, .menu button, .tools button, .nav button{
+  .main, .more, .ghead, .foot button, .menu button, .nav button{
     touch-action:manipulation;
   }
   /* stretch 로 두어야 이름이 칸 폭에 맞춰 «...» 로 줄어든다.
@@ -514,7 +497,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
-  /* 인원칸을 체크(24)와 한 줄에 맞춘다. 칩 둥글기는 앱 공통 8 */
   /* 인원 — 맨 글자. «정보는 글자, 조작만 알약»(카드 구성 줄과 같은 원칙, 2026-09-11). 알약으로 그리면 옆 ⋯ 보다 더 눌리는 것처럼 보였다 */
   .pax{
     height:24px;display:inline-flex;align-items:center;
@@ -588,7 +570,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .panel.asSheet.kb{ padding-bottom:14px }
   .panelScrim{position:fixed;inset:0;z-index:70;background:var(--scrim)}
-  .panelScrim.hide{display:none}
   .panel{scroll-margin-top:var(--topH, 140px);}
   .panel{
     background:var(--panel);border-radius:var(--radius);
@@ -660,7 +641,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* footer — 떠 있는 유리 알약 바 (2026-09-11 오너: 「리얼 아이폰처럼」). 명단은 바 «아래로» 지나가고(.wrap 아래 여백),
      바는 반투명 판 + 뒤 흐림이라 지나가는 명단이 비친다. 안은 세 항목 같은 글자색 — 가운데 칠·색 강조는 반려
      («명단 복사를 추가보다 많이 쓴다»는 강조하라는 뜻이 아니었다). 키보드가 올라오면 통째로 숨는다(위 규칙). */
-  .foot.hide{display:none}
   .foot{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
     /* 홈 바 위 높이 = 아이폰 뮤직 알약 바와 같게: 안전 영역(34) − 10 → 바닥에서 24. 노치 없는 폰은 바닥에서 10 */
@@ -774,7 +754,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:fixed;inset:0;z-index:70;background:var(--scrim);
     display:flex;align-items:flex-end;justify-content:center;
   }
-  .sheetScrim.hide{display:none}
   /* 잠금화면(300) 위로 올린다 — 설치 안내는 로그인 전에 보여야 하는 것이라 잠금보다 앞이다.
      조건은 .lock 의 표시 조건과 정확히 짝(html[data-authed="1"] .lock{display:none}) */
   html:not([data-authed="1"]) .sheetScrim{ z-index:310 }
@@ -1001,7 +980,6 @@ window.addEventListener('pageshow', remeasureSbcut);
      .2s 는 그 사이 boot() 이 명단을 받아 첫 로그인의 빈 화면을 가리는 시간도 겸한다. */
   .lock{transition:opacity .2s ease-out}
   .lock.out{opacity:0;pointer-events:none}
-  .lock.hide{display:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) — 그 사이는 .splash 가 덮는다 */
   /* 잠금화면은 스플래시와 일부러 다르게 둔다 — 스플래시는 앱을 열 때 한 번 스치는 브랜드
      화면이지만, 잠금은 하루에 여러 번 보는 기능 화면(PIN 패드 헤더)이라 다른 시트 제목들과
@@ -1123,7 +1101,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:grid;place-items:center;
     padding:22px;
   }
-  .scrim.hide{display:none}
   .dialog{
     width:100%;max-width:330px;
     background:var(--panel);
@@ -1240,17 +1217,11 @@ window.addEventListener('pageshow', remeasureSbcut);
       <div class="tools">
         <span class="dayprog num hide" id="dayProg"></span>
         <span class="offtag">연결 안 됨</span>
-        <button type="button" id="searchBtn" class="off" aria-label="이름 검색">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/>
-          </svg>
-        </button>
       </div>
     </div>
     <div class="lead hide">
       <div class="leadrow">
         <span class="slottime num" id="slotTime"></span>
-        <span class="slotlab"></span>
         <span class="leadmain num" id="leadMain"></span>
         <div class="seg viewseg" role="group" aria-label="예약 표시">
           <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
@@ -1294,19 +1265,19 @@ window.addEventListener('pageshow', remeasureSbcut);
 <div class="foot hide">
   <div class="inner">
     <div class="frow">
-      <!-- 가운데 = 가장 자주 쓰는 「명단 복사」(강조). 아이콘 18px·획 2 로 통일 -->
+      <!-- 가운데 = 가장 자주 쓰는 「명단 복사」. 아이콘 16px·획 2 로 통일(크기는 CSS .foot button svg) -->
       <button id="addBtn" type="button">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span>예약 추가</span>
       </button>
       <button id="copyBtn" type="button">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         <span>명단 복사</span>
       </button>
       <button id="foldBtn" type="button">
         <!-- 접기 = 화살표가 가운데 선으로 모임 / 펼치기 = 선에서 밖으로 벌어짐. 모양이 위아래 대칭이라
              «뒤집기»로는 안 바뀐다 — render() 가 경로(d)를 통째로 갈아 끼운다 -->
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="foldp" d="M6 10l6-6 6 6M6 20l6-6 6 6"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="foldp" d="M6 10l6-6 6 6M6 20l6-6 6 6"/></svg>
         <span class="foldlbl">전체 접기</span>
       </button>
     </div>
@@ -1315,7 +1286,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 
 <div class="panel asSheet hide" id="addPanel">
   <h2 id="addTitle">예약 추가</h2>
-  <div class="edit">
+  <div>
     <div class="erow">
       <label>시<select id="a-hour"></select></label>
       <label>분<select id="a-min"></select></label>
@@ -2169,7 +2140,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 시간대 머리글 오른쪽 「방문 n · 취소 n   처리/전체」 — 진행도 숫자가 맨 끝(행의 ⋯ 열 쪽).
   // render 와 patchStatus 가 같이 쓴다.
-  // 시간대 머리글 오른쪽 「처리/전체 방문 n · 취소 n」. render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
     // 아직 아무도 안 온 시간대는 「방문 0」을 쓰지 않는다 — 「0/1」 만으로 충분
@@ -2192,16 +2162,14 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     var leadRow = document.querySelector('.lead');
     var st = document.getElementById('slotTime');
-    var lb = document.querySelector('.slotlab');
     var lm = document.getElementById('leadMain');
     var ls = document.getElementById('leadSub');
 
     if (slotPend.length){
-      // 첫 줄 = 「다음」 라벨 + 시각 · 팀 수 (+ 오른쪽 토글). 둘째 줄 = 몇인 몇팀 칩이 한 줄을 다 쓴다.
-      // 라벨은 지금/다음 구분 없이 「다음」으로 통일(오너, 2026-09-11) — 이 박스는 늘 «다음에 처리할 시간대»다.
-      // 팀 수를 둘째 줄에 넣어 봤더니 칩 자리가 줄어 첫 줄로 되돌림(오너).
+      // 첫 줄 = 시각  팀 수 (+ 오른쪽 토글). 둘째 줄 = 몇인 몇팀 글자가 한 줄을 다 쓴다.
+      // 「지금/다음」 라벨은 없다(오너, 2026-09-11) — 이 박스는 늘 «다음에 처리할 시간대»다.
+      // 팀 수를 둘째 줄에 넣어 봤더니 구성 자리가 줄어 첫 줄로 되돌림(오너).
       st.textContent = nowTime;
-      lb.textContent = '';   // 점 없이 — 색(금/흰)이 가른다
       lm.className = 'leadmain num';
       lm.textContent = slotPend.length + '팀';
       var byPax = {};
@@ -2211,10 +2179,10 @@ window.dispatchEvent(new Event('fb-ready'));
         .map(function(p){ return '<span class="pc">' + p + '인<b>' + byPax[p] + '</b>팀</span>'; })
         .join('');
     } else {
-      st.textContent = ''; lb.textContent = '';
+      st.textContent = '';
       lm.className = 'leadmain num done';
       lm.textContent = all.length ? '남은 예약 없음' : '';
-      ls.className = 'leadsub num tally';
+      ls.className = 'leadsub num';
       ls.innerHTML = all.length ? dayTally(all) : '';
     }
     if (leadRow) leadRow.classList.toggle('hide', !st.textContent && !lm.textContent);
@@ -2271,7 +2239,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var allCount = all.length;
     var footEl = document.querySelector('.foot');
     if (footEl) footEl.classList.toggle('hide', !allCount);
-    searchBtn.classList.toggle('off', !allCount);
+    listEmpty = !allCount;   // 서랍 「이름 검색」이 읽는다 — 명단이 없으면 검색할 게 없다
     if (!allCount && !searchbar.classList.contains('hide')) closeSearch(false);
 
     // 목록
@@ -3616,14 +3584,13 @@ window.dispatchEvent(new Event('fb-ready'));
   var qEl = document.getElementById('q');
   var qClear = document.getElementById('qClear');
   var searchbar = document.getElementById('searchbar');
-  var searchBtn = document.getElementById('searchBtn');
+  var listEmpty = true;   // 명단 유무 — render 가 갱신. (예전엔 숨은 검색 버튼의 .off 가 이 역할을 했다)
 
   var scrollBeforeSearch = 0;
 
   function closeSearch(restore){
     var wasOpen = !searchbar.classList.contains('hide');
     searchbar.classList.add('hide');
-    searchBtn.classList.remove('on');
     qEl.value = ''; query = '';
     qClear.classList.add('hide');
     // 검색을 열 때 잡아둔 뒤로가기 기록은 어떤 경로로 닫히든 여기서 함께 놓는다 —
@@ -3638,20 +3605,11 @@ window.dispatchEvent(new Event('fb-ready'));
   function openSearch(){
     scrollBeforeSearch = wrapEl ? wrapEl.scrollTop : 0;
     searchbar.classList.remove('hide');
-    searchBtn.classList.add('on');
     if (wrapEl) wrapEl.scrollTop = 0;
     qEl.focus();
     backOpen(function(){ closeSearch(true); render(); });
     render();
   }
-  searchBtn.addEventListener('click', function(){
-    // 명단이 없으면 검색 버튼은 흐리게(.off) 꺼져 있다 — 그때는 아무 일도 하지 않는다.
-    // (안 막으면 openSearch 가 뒤로가기 기록을 쌓은 직후 render 가 검색바를 도로 닫아,
-    //  화면엔 아무 변화가 없는데 다음 뒤로가기 한 번이 그 유령 기록에 먹힌다.)
-    if (searchBtn.classList.contains('off')) return;
-    if (searchbar.classList.contains('hide')) openSearch();
-    else { closeSearch(true); render(); }
-  });
   document.getElementById('qBack').addEventListener('click', function(){
     closeSearch(true); render();
   });
@@ -4137,7 +4095,9 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<div class="wnet"><span class="k">비밀번호</span><span class="v">' + n.pw + '</span></div>';
   }
   document.getElementById('searchItem').addEventListener('click', function(){
-    if (searchBtn.classList.contains('off')){ closeDrawer(); toast('검색할 명단이 없습니다'); return; }
+    // 명단이 없으면 열지 않는다 — 열면 openSearch 가 뒤로가기 기록을 쌓은 직후 render 가 검색바를 도로 닫아
+    // 화면엔 변화가 없는데 다음 뒤로가기 한 번이 그 유령 기록에 먹힌다.
+    if (listEmpty){ closeDrawer(); toast('검색할 명단이 없습니다'); return; }
     hideDrawer();
     if (searchbar.classList.contains('hide')) openSearch();
   });
@@ -4802,14 +4762,14 @@ window.dispatchEvent(new Event('fb-ready'));
 })();
 </script>
 <script>
-// 상단 셸 높이 → --topH (명단 padding-top · 붙는 시간대 머리글 top). 칩 줄·검색창·업데이트 띠에 따라 변하므로 관찰한다.
+// 상단 셸 높이 → --topH (명단 padding-top · 붙는 시간대 머리글 top). 카드 내용·검색창·업데이트 띠에 따라 변하므로 관찰한다.
 (function(){
   var sh = document.getElementById('topShell');
   if (!sh) return;
   function set(){ document.documentElement.style.setProperty('--topH', Math.round(sh.getBoundingClientRect().height) + 'px'); }
   set();
   if (window.ResizeObserver) new ResizeObserver(set).observe(sh);
-  // 칩이 나중에 그려지거나 검색창·업데이트 띠가 켜지는 건 DOM 변화 — 크기 관찰이 늦는 환경을 대비해 이것도 본다
+  // 카드 내용이 나중에 그려지거나 검색창·업데이트 띠가 켜지는 건 DOM 변화 — 크기 관찰이 늦는 환경을 대비해 이것도 본다
   if (window.MutationObserver) new MutationObserver(set).observe(sh, { childList:true, subtree:true, attributes:true, characterData:true });
   window.addEventListener('resize', set);
 })();
