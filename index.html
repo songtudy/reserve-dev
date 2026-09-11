@@ -200,16 +200,26 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:640px;margin:0 auto;
     /* 키보드가 올라오면 그만큼 아래 여백 → 아무 입력칸이나 키보드 위로 스크롤 가능.
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
-    padding:0 16px calc(84px + env(safe-area-inset-bottom) + var(--kb, 0px));   /* 떠 있는 하단 바(12+52) 밑으로 끝까지 스크롤되게 */
+    padding:0 16px calc(84px + env(safe-area-inset-bottom) + var(--kb, 0px));   /* 아래: 떠 있는 하단 바(12+52) 밑으로 끝까지. 위 여백은 ::before 스페이서 */
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
+  /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
+     크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
+  .wrap::before{content:"";display:block;height:var(--topH, 140px)}
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
+  /* 상단 셸 — 떠 있는 유리 판(하단바와 같은 재질). 명단은 그 밑으로 지나가고(.wrap padding-top),
+     붙는 시간대 머리글은 셸 바로 아래에 붙는다(.ghead top). 높이는 JS 가 재서 --topH 로 넣는다
+     (칩 줄 수·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
+  .shell{
+    position:absolute;top:0;left:0;right:0;z-index:20;
+    background:color-mix(in srgb, var(--ink) 72%, transparent);
+    -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
+  }
   header{
-    flex:0 0 auto;z-index:20;
-    background:var(--ink);
+    background:transparent;
     border-bottom:1px solid var(--line);
     padding:calc(env(safe-area-inset-top) + 12px) 16px 8px;
   }
@@ -282,7 +292,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadmain.done{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
   /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
-  .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
+  .viewseg{margin-left:auto;flex:0 0 auto;align-self:center;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}   /* 두 칸 같은 너비 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
   /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
   .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
   .leadsub:empty{display:none}
@@ -316,8 +326,8 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   /* search */
   .searchbar{
-    flex:0 0 auto;position:relative;z-index:19;
-    padding:10px 16px;background:var(--ink);
+    position:relative;z-index:19;
+    padding:10px 16px;background:transparent;
     border-bottom:1px solid var(--line);
   }
   .searchbar.hide{display:none}
@@ -366,7 +376,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.shut::after{height:0}
 
   .ghead{
-    position:relative;position:sticky;top:0;z-index:10;
+    position:relative;position:sticky;top:var(--topH, 140px);z-index:10;   /* 유리 상단 셸 바로 아래에 붙는다 */
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
     width:calc(100% + 32px);margin:0 -16px;padding:12px 18px 11px;   /* 높이 44 = 애플 최소 누름 크기 */
@@ -547,6 +557,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .panel.asSheet.kb{ padding-bottom:14px }
   .panelScrim{position:fixed;inset:0;z-index:70;background:var(--scrim)}
   .panelScrim.hide{display:none}
+  .panel{scroll-margin-top:var(--topH, 140px);}
   .panel{
     background:var(--panel);border-radius:var(--radius);
     padding:16px;margin-top:10px;overflow:hidden;
@@ -1160,6 +1171,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 <body>
 
 
+<div class="shell" id="topShell"><!-- 상단 셸: 헤더·업데이트 띠·검색창을 한 유리 판에 — 명단이 이 밑으로 지나간다 -->
 <header>
     <div class="toprow">
       <div class="nav">
@@ -1184,7 +1196,7 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="leadmain num" id="leadMain"></span>
         <div class="seg viewseg" role="group" aria-label="예약 표시">
           <button type="button" id="viewAllBtn" aria-pressed="true">전체</button>
-          <button type="button" id="viewPendBtn" aria-pressed="false">남은 팀</button>
+          <button type="button" id="viewPendBtn" aria-pressed="false">대기</button>
         </div>
       </div>
       <span class="leadsub num" id="leadSub"></span>
@@ -1199,6 +1211,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <span class="qcount hide" id="qCount"></span>
   <button type="button" id="qClear" class="hide" aria-label="검색어 지우기"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button>
 </div>
+</div><!-- /shell -->
 
 <div class="wrap">
   <div id="list"></div>
@@ -2270,7 +2283,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (viewMode === 'pending' && !pendRows && !q){
       list.innerHTML = '';
       em.classList.remove('hide');
-      em.textContent = '남은 팀이 없습니다\n모두 확인했어요';
+      em.textContent = '대기 중인 팀이 없습니다\n모두 확인했어요';
     }
 
     var foldBtnEl = document.getElementById('foldBtn');
@@ -4719,6 +4732,19 @@ window.dispatchEvent(new Event('fb-ready'));
     window.addEventListener('fb-ready', lockStart, { once: true });
     setTimeout(function(){ if (!window.__fb) lockShow('앱을 다시 열어 주세요'); }, 15000);
   }
+})();
+</script>
+<script>
+// 상단 셸 높이 → --topH (명단 padding-top · 붙는 시간대 머리글 top). 칩 줄·검색창·업데이트 띠에 따라 변하므로 관찰한다.
+(function(){
+  var sh = document.getElementById('topShell');
+  if (!sh) return;
+  function set(){ document.documentElement.style.setProperty('--topH', Math.round(sh.getBoundingClientRect().height) + 'px'); }
+  set();
+  if (window.ResizeObserver) new ResizeObserver(set).observe(sh);
+  // 칩이 나중에 그려지거나 검색창·업데이트 띠가 켜지는 건 DOM 변화 — 크기 관찰이 늦는 환경을 대비해 이것도 본다
+  if (window.MutationObserver) new MutationObserver(set).observe(sh, { childList:true, subtree:true, attributes:true, characterData:true });
+  window.addEventListener('resize', set);
 })();
 </script>
 </body>
