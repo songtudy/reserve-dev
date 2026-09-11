@@ -949,7 +949,10 @@ window.addEventListener('pageshow', remeasureSbcut);
        (홈 화면 앱 모드엔 주소창이 없어 원래 안 튀지만, 브라우저로 열 때를 위해.) */
     position:fixed;top:0;left:0;right:0;z-index:300;
     height:100vh;height:100svh;
-    background:var(--ink);
+    /* --bar(상단 셸 색): 설치 앱의 상태 표시줄 띠는 «앱을 여는 순간 화면 맨 위에 있던 면»의 색을 붙잡아 둔다
+       (시뮬레이터 확인 2026-09-11 — body·html·theme-color·manifest·아이콘 다 바꿔도 안 바뀌고, 잠금/스플래시 색만 따라옴).
+       잠금·스플래시가 셸과 같은 색이라야 띠가 셸과 한 장이 된다. */
+    background:var(--bar);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     /* safe-area-inset 을 쓰지 않는다 — 내용이 세로 가운데 정렬이고 위아래로 180px 넘게
        남아서 노치/홈바에 닿을 일이 없는데, env() 가 뒤늦게 0 → 실제값으로 풀리면
@@ -1051,7 +1054,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .splash{ display:none }
   html[data-authed="1"] .splash{
     position:fixed;inset:0;z-index:290;
-    background:var(--ink);
+    background:var(--bar);   /* .lock 과 같은 이유 — 상태 표시줄 띠 색의 출처 */
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
     padding-bottom:var(--sbcut, 0px);   /* standalone 상태바 보정 (위 head 스크립트). 가운데 락업만
