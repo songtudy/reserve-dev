@@ -50,12 +50,12 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f4f6f9' : (t === 'black') ? '#000000' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
   // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
-  var bar = (t === 'light') ? '#f4f6f9' : (t === 'black') ? '#000000' : '#0f1319';   // = --bar
+  var bar = (t === 'light') ? '#f4f6f9' : '#0f1319';   // = --bar
   d.setAttribute('data-theme', t);
-  d.style.colorScheme = (t === 'light') ? 'light' : 'dark';
+  d.style.colorScheme = t;
   // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
   // body 가 화면 전체를 ink 로 덮으니 html 배경은 띠와 오버스크롤에만 보인다 → 셸 색으로. (콜드 런치 흰 화면 방지 역할은 그대로)
   d.style.background = bar;
@@ -67,7 +67,7 @@ window.setThemeChrome = function(t){
 // 화면이 그려지기 전에 정한다. 나중에 바꾸면 어두운 화면이 한 번 번쩍인다.
 (function(){
   var t = 'dark';
-  try { var s0 = localStorage.getItem('theme'); if (s0 === 'light' || s0 === 'black') t = s0; } catch(e){}
+  try { if (localStorage.getItem('theme') === 'light') t = 'light'; } catch(e){}
   window.setThemeChrome(t);
 })();
 // 전에 이 기기에서 로그인했으면 잠금 화면을 아예 그리지 않는다 (앱 열 때마다 키패드가 번쩍이지 않게).
@@ -144,15 +144,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     --onWarn:#e0aca6;
     /* 붙여넣기 오류 (줄 강조 + 안내문) */
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
-  }
-  /* A/B 비교용 세 번째 테마 「검정」 = 아이폰 시스템 다크 그대로(#000 · #1c1c1e · #2c2c2e · 구분선 rgba(84,84,88,.6) · 보조 글자 #8e8e93 ·
-     채움 rgba(120,120,128,.24/.36)). 강조·완료·취소는 다크와 같다. 오너가 홀 조명에서 남색과 번갈아 보고 고르기 위한 것(2026-09-12). */
-  html[data-theme="black"]{
-    --ink:#000000;      --panel:#1c1c1e;    --panel2:#2c2c2e;   --bar:#000000;
-    --line:rgba(84,84,88,.6);  --press:rgba(120,120,128,.18);  --keyDn:rgba(120,120,128,.36);
-    --text:#ffffff;     --dim:#8e8e93;      --off:#636366;      --ph:#8e8e93;
-    --btn:rgba(120,120,128,.24);  --btnPress:rgba(120,120,128,.36);  --field:#1c1c1e;
-    --scrim:rgba(0,0,0,.7);  --scrimLite:rgba(0,0,0,.55);
   }
   html[data-theme="light"]{
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
@@ -753,9 +744,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border-radius:999px;background:var(--btnPress);box-shadow:0 1px 3px rgba(0,0,0,.35);
     transition:transform .22s cubic-bezier(.2,.8,.2,1);
   }
-  .seg.alt::before{transform:translateX(calc(100% + 2px))}
-  .seg.n3::before{width:calc(33.333% - 2.67px)}
-  .seg.n3.alt2::before{transform:translateX(calc(200% + 4px))}   /* .alt = 2번째 칸 선택 — 아래 세그먼트 감시 스크립트가 붙인다(:has 는 가상 요소에 불안정) */
+  .seg.alt::before{transform:translateX(calc(100% + 2px))}   /* .alt = 2번째 칸 선택 — 아래 세그먼트 감시 스크립트가 붙인다(:has 는 가상 요소에 불안정) */
   .seg button{
     position:relative;                /* 썸(::before) 위에 글자가 오게 */
     height:30px;padding:0 14px;border-radius:999px;
@@ -1368,8 +1357,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <div class="dwtheme">
     <span class="dwthlab">테마</span>
     <div class="seg">
-      <button type="button" data-theme-set="dark">남색</button>
-      <button type="button" data-theme-set="black">검정</button>
+      <button type="button" data-theme-set="dark">다크</button>
       <button type="button" data-theme-set="light">라이트</button>
     </div>
   </div>
@@ -3748,7 +3736,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var THEME_KEY = 'theme';
 
   function theme(){
-    try { var s = localStorage.getItem(THEME_KEY); return (s === 'light' || s === 'black') ? s : 'dark'; }
+    try { return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; }
     catch(e){ return 'dark'; }
   }
   function applyTheme(){
@@ -4868,13 +4856,8 @@ window.dispatchEvent(new Event('fb-ready'));
 // 세그먼트 썸: 2번째 칸이 선택(.on 또는 aria-pressed=true)이면 .seg 에 .alt — 썸이 그 칸으로 미끄러진다. 모든 .seg 공용.
 (function(){
   function sync(seg){ var b = seg.querySelectorAll('button'); if (b.length < 2) return;
-    function isOn(x){ return x.classList.contains('on') || x.getAttribute('aria-pressed') === 'true'; }
-    // 원하는 상태를 먼저 계산해 한 번씩만 toggle — 같은 클래스를 지웠다 붙이면 DOM 변화가 생겨 이 감시자가 다시 돌고,
-    // 그게 무한 루프가 되어 페이지가 얼었다(2026-09-12, 「검정」 선택 상태에서 앱이 안 켜짐). force 값이 현재와 같으면 변화 없음.
-    var n3 = b.length === 3, alt = isOn(b[1]), alt2 = n3 && isOn(b[2]);
-    if (seg.classList.contains('n3') !== n3) seg.classList.toggle('n3', n3);
-    if (seg.classList.contains('alt') !== alt) seg.classList.toggle('alt', alt);
-    if (seg.classList.contains('alt2') !== alt2) seg.classList.toggle('alt2', alt2); }
+    var on = b[1].classList.contains('on') || b[1].getAttribute('aria-pressed') === 'true';
+    seg.classList.toggle('alt', on); }
   function all(){ document.querySelectorAll('.seg').forEach(sync); }
   if (window.MutationObserver) new MutationObserver(all).observe(document.body, { subtree:true, childList:true, attributes:true, attributeFilter:['class','aria-pressed'] });
   all();
