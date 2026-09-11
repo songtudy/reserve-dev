@@ -50,10 +50,10 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f9f9f7' : '#151515';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#fcfcfb' : '#151515';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
   // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
-  var bar = (t === 'light') ? '#f9f9f7' : '#151515';   // = --bar
+  var bar = (t === 'light') ? '#fcfcfb' : '#151515';   // = --bar
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
@@ -118,42 +118,42 @@ window.addEventListener('pageshow', remeasureSbcut);
        불만 없음 ③ WCAG 전 자리 통과·층 간격 고름. 애플식 순검정은 층 간격 불균일(σ .073)과 OLED 잔상·번짐으로
        탈락, 따뜻한 색조는 라이트가 베이지로 가는 방향이라 탈락. 이 값은 다시 흔들지 않는다.
        면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
-    /* ★ 2026-09-11(2차) 오너 요청 「클로드 오피셜 색 그대로」 — claude.ai v2 "claude" 테마 토큰(HSL→hex 환산)을 대응: 다크 페이지 bg-100 #151515 · 면 surface-2/3 #1a1a19/#20201f · 글자 text-000/400 · 강조 brand clay #d97757 · 완료 success · 취소 danger. 라이트: bg-100 #f9f9f7 · 카드 #fff · bg-200/300/400 면 · 같은 clay.
+    /* ★ 2026-09-11(2차) 오너 요청 「클로드 오피셜 색 그대로」 — claude.ai 앱 디자인 시스템(cds) 토큰을 두 모드에서 직접 읽어 대응: 다크 page #151515 · surface-2/3 #1a1a19/#20201f · text-primary #f0efec · muted #898781 · brand clay #d97757 · text-success #0ca30c · text-danger #ec7e7e · bg-danger #3c0e0e. 라이트: page #fcfcfb · surface #fff/#f9f9f7 · text #0b0b0b · muted #898781 · success #006300 · danger #8e2626 · bg-danger #fad6d6. 버튼 면·선·눌림은 흰/검 10% 계열(cds fill-secondary)에서 파생.
        (아래 9/11 1차 주석은 순검정 시절 기록) 순검정 + 중성 회색(iOS 시스템 다크 팔레트:
        #000 · #1c1c1e · #8e8e93). 남색 기운은 금색과 미묘하게 싸웠고, 중성 회색 위에서 금색이 그대로 산다. 아이콘 PNG 배경도
        #000 으로 다시 굽는다(tools/make-icons.py BG). 면은 여전히 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
     --ink:#151515;      --panel:#1a1a19;    --panel2:#20201f;
     --bar:#151515;      /* 상태 표시줄 띠 색. 잠금·스플래시·body 가 이 색 */
-    --line:#343332;     --press:#1e1e1d;   --keyDn:#3a3a38;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
-    --text:#f9f9f7;     --dim:#97958d;      --off:#6b6a64;
-    --ph:#7a7973;
+    --line:#2a2a29;     --press:#1e1e1d;   --keyDn:#3a3a39;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
+    --text:#f0efec;     --dim:#898781;      --off:#5f5e59;
+    --ph:#6f6e68;
     /* 보조 버튼 = 테두리 없는 «면». 입력칸(선)과 버튼(면)이 한눈에 갈린다.
        눌림은 면이 한 단 밝아진다(--press 는 이 면과 거의 같아 안 보여서 따로 둔다). */
-    --btn:#2a2a28;      --btnPress:#353533;  --btnWarn:#3a2424;  --btnWarnPress:#4a2e2e;
+    --btn:#2c2c2b;      --btnPress:#3a3a39;  --btnWarn:#3c0e0e;  --btnWarnPress:#4d1414;
     --scrim:rgba(0,0,0,.72);   --scrimLite:rgba(0,0,0,.6);
     /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
     --wait:#d97757;     --waitTx:#d97757;  --waitBig:#d97757;
     --onWait:#ffffff;   --mark:#4a3128;
     /* 방문 — 초록 (상태 색은 체크 원 하나에만 쓴다) */
-    --go:#91d68b;       --goTx:#91d68b;      --onGo:#0d2a0b;
+    --go:#0ca30c;       --goTx:#0ca30c;      --onGo:#ffffff;
     /* 취소·경고 — 붉은색 */
-    --warn:#f4abab;
+    --warn:#ec7e7e;
     /* 초기화 버튼 글자 — --btnWarn 면 위에서도, 그 위로 --warn 이 42% 차올라도 읽힌다. --onWait·--onGo 와 같은 작명 */
-    --onWarn:#f4abab;
+    --onWarn:#ec7e7e;
     /* 붙여넣기 오류 (줄 강조 + 안내문) */
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   html[data-theme="light"]{
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
-    --ink:#f9f9f7;      --panel:#ffffff;    --panel2:#f3f3f0;
-    --bar:#f9f9f7;
-    --line:#d8d8d6;     --press:#f0efec;   --keyDn:#d9d8d3;
-    --text:#131313;     --dim:#7b7974;      --off:#a3a29b;
-    --ph:#8f8e88;
+    --ink:#fcfcfb;      --panel:#ffffff;    --panel2:#f9f9f7;
+    --bar:#fcfcfb;
+    --line:#e5e5e4;     --press:#f0f0ef;   --keyDn:#d9d9d8;
+    --text:#0b0b0b;     --dim:#898781;      --off:#b0afa9;
+    --ph:#a3a29b;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
-    --btn:#f0efec;      --btnPress:#e7e6e1;  --btnWarn:#f8e4e4;  --btnWarnPress:#f1d3d3;
-    --scrim:rgba(19,19,19,.44); --scrimLite:rgba(19,19,19,.34);
+    --btn:#f0f0ef;      --btnPress:#e3e3e2;  --btnWarn:#fad6d6;  --btnWarnPress:#f5c2c2;
+    --scrim:rgba(11,11,11,.44); --scrimLite:rgba(11,11,11,.34);
     /* ★ 라이트의 포인트는 파랑 (2026-09-10 오너 결정). 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 물리적 상한이라
        (노란 계열 한계) 어떻게 해도 «어둡게» 보인다 — 오너가 실기기에서 두 번 같은 판단. 다크는 금 유지.
        #2a5bd7 = 4.5 를 모든 자리에서 넘기는 가장 밝은 파랑: 바탕 5.4 · 칩(--panel2) 위 5.0 · 버튼 면 위 4.8 ·
