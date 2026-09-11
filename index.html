@@ -4,12 +4,12 @@
      여기 적힌 건 스크립트가 돌기 전의 씨앗값(다크 = 대개 맞는 쪽)이고, 바로 아래 head 스크립트의
      setThemeChrome 이 저장된 테마로 곧바로 덮어쓴다 — 고정값으로 두면 이 인라인이
      스타일시트(html,body{background:var(--ink)})를 이겨 라이트에서 루트만 어둡게 남는다. -->
-<html lang="ko" style="background:#171c24">
+<html lang="ko" style="background:#0f1319">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow"><!-- 매장 내부용 — 검색 색인 차단 (robots.txt 와 함께) -->
-<meta name="theme-color" content="#171c24"><!-- 상단 유리 셸 합성색(다크). setThemeChrome 이 테마에 맞게 갱신 -->
+<meta name="theme-color" content="#0f1319"><!-- = --bar(다크). setThemeChrome 이 테마에 맞게 갱신 -->
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -56,7 +56,7 @@ window.setThemeChrome = function(t){
   var ink = (t === 'light') ? '#f4f6f9' : '#0f1319';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
   // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
-  var bar = (t === 'light') ? '#fbfcfd' : '#171c24';
+  var bar = (t === 'light') ? '#f4f6f9' : '#0f1319';   // = --bar
   d.setAttribute('data-theme', t);
   d.style.colorScheme = t;
   // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
@@ -122,7 +122,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        탈락, 따뜻한 색조는 라이트가 베이지로 가는 방향이라 탈락. 이 값은 다시 흔들지 않는다.
        면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
     --ink:#0f1319;      --panel:#161b22;    --panel2:#1c222b;
-    --bar:#171c24;      /* 상단 유리 셸 합성색(panel2 62% over ink) = 상태 표시줄 띠 색. 셸 재질이 바뀌면 같이 */
+    --bar:#0f1319;      /* 상태 표시줄 띠 색 = 날짜 줄(ink 72% over ink = ink). 잠금·스플래시·body 가 이 색 */
     --line:#252c36;     --press:#26313d;   --keyDn:#404e5f;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
     --text:#f0f3f6;     --dim:#8792a0;      --off:#646f84;
     --ph:#7b8695;
@@ -146,7 +146,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
     --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e2e6ec;
-    --bar:#fbfcfd;
+    --bar:#f4f6f9;
     --line:#d5dae2;     --press:#d2d7df;   --keyDn:#b6bec8;
     --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
     --ph:#676f7d;
@@ -225,19 +225,19 @@ window.addEventListener('pageshow', remeasureSbcut);
      (칩 줄 수·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
-    /* 하단바와 같은 재질(칩색 62% + 흐림) — 상단·하단 셸이 한 재질이고, 명단(바탕색)보다 한 단계 밝은 판으로 구분된다 */
-    background:color-mix(in srgb, var(--panel2) 62%, transparent);
+    /* 흐림은 셸이, 색은 두 줄이 따로 칠한다(2026-09-11 오너 「상단바와 메인 박스가 구분이 안 됨」 → 6안 비교 후 C):
+       날짜 줄 = 바탕색 계열(조용한 내비게이션), 메인 시각 박스 = 칩색 62%(한 단계 밝은 판, 이 화면의 주인공).
+       하단 알약 바와 메인 박스가 같은 재질이고, 날짜 줄은 명단과 같은 바탕이라 층이 셋: 바탕 / 판 / 알약. */
     -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
   }
-  html[data-theme="light"] .shell{background:color-mix(in srgb, #ffffff 62%, transparent)}
   /* 셸 위의 구성 칩은 면을 한 단계 올린다(밝기 사다리 ink<panel<panel2<btn — 판이 panel2 계열이라 panel2 칩은 묻힌다).
      올린 면 위에선 회색 글자가 4.45:1 로 기준 미달 → 글자색 600, 개수는 800 으로 굵기로만 위계.
      토글 트랙은 그대로(panel2) — 올리면 선택 안 된 글자가 2.8:1 로 떨어진다. 선택 칸(btnPress)이 밝아 트랙이 옅어도 읽힌다. */
   .shell .leadsub.comp .pc{background:var(--btn);color:var(--text);font-weight:600}
   header{
-    background:transparent;
+    background:color-mix(in srgb, var(--ink) 72%, transparent);   /* 날짜 줄(+상태 표시줄 밑) — 바탕색 계열 */
     border-bottom:1px solid var(--line);
-    padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;   /* 아래 10: 칩 밑→선 간격을 시각→칩 간격과 같게 */
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 0;
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
   /* 날짜는 줄의 «제목» — 화면 가운데(iOS 내비게이션 바 문법). 왼쪽 메뉴 아이콘·오른쪽 진행도 하나씩이라 균형이 맞는다.
@@ -303,7 +303,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot.stale{background:var(--warn)}
 
   /* 상단 요약 — 「16:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 그 아래 인원 구성 칩 */
-  .lead{display:block;margin-top:10px}
+  .lead{
+    display:block;margin:10px -16px 0;padding:10px 16px 10px;
+    background:color-mix(in srgb, var(--panel2) 62%, transparent);
+    border-top:1px solid var(--line);
+  }
+  html[data-theme="light"] .lead{background:color-mix(in srgb, #ffffff 62%, transparent)}
   .lead.hide{display:none}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
   .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
