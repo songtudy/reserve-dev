@@ -155,8 +155,9 @@ window.addEventListener('pageshow', remeasureSbcut);
        #2a5bd7 = 4.5 를 모든 자리에서 넘기는 가장 밝은 파랑: 바탕 5.4 · 칩(--panel2) 위 5.0 · 버튼 면 위 4.8 ·
        그 위 흰 글자 5.9. 아이폰 기본 파랑 #007aff 는 글자로 3.7 이라 탈락. 초록·빨강·회색과 전 유형 색약에서 뚜렷.
        한 값으로 채움·큰 숫자·아이콘을 다 쓴다. (작은 글자엔 포인트를 안 쓰는 규칙은 다크와 맞추려 유지) */
-    --wait:#2a5bd7;     --waitTx:#2a5bd7;   --waitBig:#2a5bd7;
-    --onWait:#ffffff;   --mark:#dde6fb;
+    /* 라이트도 금색 — 같은 의미(지금·주동작)는 테마가 달라도 같은 색(2026-09-11). 흰 바탕용으로 어둡게: 글자 #8a5a00 5.5:1, 채움 #c9962a 위 진한 글자 6.4:1. 파랑(#2a5bd7)은 다른 앱처럼 보였다 */
+    --wait:#c9962a;     --waitTx:#8a5a00;   --waitBig:#8a5a00;
+    --onWait:#241a05;   --mark:#f3e3b8;
     --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
     --warn:#b43f36;
     --onWarn:#7a2a20;
@@ -807,7 +808,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .qa:first-child .q{padding-top:6px}   /* 첫 질문은 제목에 붙인다 (다른 시트 제목↔내용 간격에 맞춤) */
   .qa .q:active, .qa .q.dn{background:var(--press)}   /* 시간대 헤더(.ghead)와 같은 접기 토글 눌림 */
   .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .15s}
-  .qa.open .qchev{transform:rotate(90deg);color:var(--waitTx)}
+  .qa.open .qchev{transform:rotate(90deg);color:var(--text)}   /* 열림 표시는 회전으로 충분 — 금색은 「지금·주동작」에만 */
   .qa .a{
     display:none;padding:0 0 15px;
     font-size:13px;line-height:1.7;color:var(--dim);white-space:pre-line;
@@ -942,7 +943,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     flex:0 0 auto;position:relative;
     width:32px;height:32px;padding:0;display:grid;place-items:center;
     background:var(--btn);border:0;border-radius:999px;
-    color:var(--waitTx);cursor:pointer;
+    color:var(--text);cursor:pointer;   /* 보조 버튼 — 금색은 「지금·주동작」에만 */
   }
   .urlcopy svg{display:block}
   /* 보이는 건 32px 그대로 — 누르는 영역만 넓힌다 (.bkback 과 같은 방식) */
