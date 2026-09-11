@@ -355,12 +355,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   #qBack:active, #qBack.dn{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
   .qcount{
     position:absolute;right:52px;top:calc(50% - 4px);transform:translateY(-50%);
-    font-size:12px;font-weight:700;color:var(--dim);
+    font-size:13px;font-weight:600;color:var(--dim);
     font-variant-numeric:tabular-nums;pointer-events:none;
   }
   .qcount.zero{color:var(--warn)}
   .searchbar input::placeholder{color:var(--dim)}
-  .searchbar input:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
+  .searchbar input:focus{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}   /* 금색 링은 큰 금색 버튼처럼 보였다(오너) — 금색은 「지금」의 색. 포커스는 커서·키보드가 말한다 */
   .searchbar input::-webkit-search-cancel-button{display:none}
   .searchbar button{
     position:absolute;right:16px;top:calc(50% - 4px);transform:translateY(-50%);
