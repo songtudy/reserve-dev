@@ -237,7 +237,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 아래 10 = 카드 밑 «판의 일부»(불투명). 붙는 시간바는 이 밑면(--topH)에 도킹하고, 밀려 나가는 시간바는 판 뒤로 사라진다.
        이 10 을 명단 쪽 여백으로 두면 밀려 나가는 시간바 조각(금색 막대·선)이 카드 밑 틈에 보였다(오너 스크린샷, 2026-09-11). */
     padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;
-    /* 선 없음 — 위쪽은 «떠 있는 둥근 카드»(아래 .lead) 언어라 직선 경계를 긋지 않는다 (2026-09-11 오너: 「위가 딱딱」) */
+    /* 판 밑면의 가는 선 — 시간바가 «보이는 경계» 밑으로 들어가게. 선을 뺐더니 카드 아래 10px 이 명단과 같은 색이라
+       시간바가 허공에서 뚝 잘려 이질적이었다(오너, 2026-09-11 「원래는 안 그랬는데 카드로 바꾼 뒤부터」). 카드·알약은 그대로. */
+    border-bottom:1px solid var(--line);
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
   /* 날짜는 줄의 «제목» — 화면 가운데(iOS 내비게이션 바 문법). 왼쪽 메뉴 아이콘·오른쪽 진행도 하나씩이라 균형이 맞는다.
