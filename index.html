@@ -314,7 +314,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
   .slotlab{font-size:20px;font-weight:800;color:var(--off);margin:0 7px}
   .slotlab:empty{display:none}
-  .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+  /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
+  .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
   /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
   .leadmain.done{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
   /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
@@ -327,18 +328,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
   .leadsub .tally-off{color:var(--warn);font-weight:700}
   .leadsub .pcsep{color:var(--off)}
-  /* 대기 팀의 「인원 구성」 — 줄글이 아니라 칩. 테이블 미리 빼는 데 쓰는 핵심 정보라
-     낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다. 개수만 금색으로 도드라지게. */
-  /* 보통 3~4종, 많아야 5종(드물게 6) — 5종까지 375px 폭 한 줄에 들어가게 조였다 */
-  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
-
-  .leadsub.comp .pc{
-    display:inline-block;
-    background:var(--panel2);border-radius:999px;   /* 알약 — 하단 바·토글·인원칸과 같은 둥글기 언어 */
-    padding:6px 12px;font-size:14px;font-weight:700;color:var(--dim);
-  }
+  /* 대기 팀의 「인원 구성」 — 테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다.
+     «정보는 글자, 조작만 알약»: 칩(채움)으로 그렸더니 옆 토글과 같은 옷이라 눌리는 버튼처럼 보였다(2026-09-11) → 맨 글자.
+     보통 3~4종, 많아야 5종 — 5종(각 ≈52px)+간격 14 가 아이폰 카드 안폭 338 에 한 줄로 들어간다 */
+  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;margin-top:6px}
+  .leadsub.comp .pc{font-size:14px;font-weight:600;color:var(--dim)}
   /* 개수는 색이 아니라 굵기·밝기로 — 포인트 색은 작은 글자엔 안 쓴다(라이트 대비) */
-  .leadsub.comp .pc b{color:var(--text);font-weight:800;margin-left:4px}
+  .leadsub.comp .pc b{color:var(--text);font-weight:800;margin-left:3px}
 
   /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 띠 자체가 「업데이트」 버튼이다 (누르면 새로 불러옴).
      하단에 별도 새로고침 버튼은 없앴다. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
@@ -2202,7 +2198,7 @@ window.dispatchEvent(new Event('fb-ready'));
       // 라벨은 지금/다음 구분 없이 「다음」으로 통일(오너, 2026-09-11) — 이 박스는 늘 «다음에 처리할 시간대»다.
       // 팀 수를 둘째 줄에 넣어 봤더니 칩 자리가 줄어 첫 줄로 되돌림(오너).
       st.textContent = nowTime;
-      lb.textContent = '·';
+      lb.textContent = '';   // 점 없이 — 색(금/흰)이 가른다
       lm.className = 'leadmain num';
       lm.textContent = slotPend.length + '팀';
       var byPax = {};
