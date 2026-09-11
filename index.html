@@ -457,6 +457,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     content:"";position:absolute;left:54px;right:0;top:-1px;height:1px;
     background:var(--line);
   }
+  /* 시간대 끝선 — 마지막 행 밑에 시간바 밑선과 같은 «끝까지 닿는» 1px. 행 사이는 들여쓴 선, 목록 끝만 전폭
+     (애플 뮤직 목록과 같은 규칙, 오너 2026-09-11). 열린·접힌 시간대 모두 «전폭 선 하나»로 끝난다. */
+  .group:not(.shut) .row:last-child::after{
+    content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:1px;
+    background:var(--line);pointer-events:none;
+  }
   /* 눌리는 곳은 여기뿐. 왼쪽 54칸 × 56 이라 손가락에 넉넉하다.
      누름은 칸(네모)이 아니라 «원»이 받는다 — 면 없는 목록에서 네모가 번쩍이면 유령 박스처럼 보인다. */
   .main{
