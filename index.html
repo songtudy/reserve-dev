@@ -216,7 +216,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
      크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
-  .wrap::before{content:"";display:block;height:calc(var(--topH, 140px) + 10px)}   /* +10 = 쉴 때 카드와 첫 시간바 사이 숨 — 붙을 땐 시간바가 카드에 밀착 */
+  .wrap::before{content:"";display:block;height:var(--topH, 140px)}   /* 셸(카드 + 밑 10) 높이만큼 — 쉴 때 간격은 셸의 밑 10 이 준다 */
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -234,7 +234,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .shell .leadsub.comp .pc{background:var(--btn);color:var(--text);font-weight:600}
   header{
     background:var(--ink);   /* 날짜 줄(+상태 표시줄 밑) — 바탕색, 불투명 */
-    padding:calc(env(safe-area-inset-top) + 12px) 16px 0;
+    /* 아래 10 = 카드 밑 «판의 일부»(불투명). 붙는 시간바는 이 밑면(--topH)에 도킹하고, 밀려 나가는 시간바는 판 뒤로 사라진다.
+       이 10 을 명단 쪽 여백으로 두면 밀려 나가는 시간바 조각(금색 막대·선)이 카드 밑 틈에 보였다(오너 스크린샷, 2026-09-11). */
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;
     /* 선 없음 — 위쪽은 «떠 있는 둥근 카드»(아래 .lead) 언어라 직선 경계를 긋지 않는다 (2026-09-11 오너: 「위가 딱딱」) */
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
