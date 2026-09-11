@@ -237,7 +237,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   header{
     background:transparent;
     border-bottom:1px solid var(--line);
-    padding:calc(env(safe-area-inset-top) + 12px) 16px 8px;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;   /* 아래 10: 칩 밑→선 간격을 시각→칩 간격과 같게 */
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
   .nav{display:flex;align-items:center;gap:0;margin-left:-10px;min-width:0}
@@ -271,7 +271,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:40px;height:40px;flex:0 0 auto;
     display:grid;place-items:center;
     background:none;border:0;border-radius:12px;
-    color:var(--dim);cursor:pointer;margin-right:-8px;
+    color:var(--dim);cursor:pointer;margin-right:-10px;   /* 40 버튼 안 20 아이콘 → 아이콘 오른쪽 끝 = 본문 오른쪽 끝(왼쪽 메뉴 아이콘과 대칭) */
   }
   .tools button.on{color:var(--waitTx);background:var(--panel2)}
   /* 헤더 아이콘 버튼(메뉴·검색)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
@@ -310,7 +310,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
   .viewseg{margin-left:auto;flex:0 0 auto;align-self:center;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}   /* 두 칸 같은 너비 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
   /* 인원 요약(칩 or 「방문 n·취소 n」)은 요약 줄 아래 */
-  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:6px}
+  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:8px}
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
@@ -319,7 +319,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 대기 팀의 「인원 구성」 — 줄글이 아니라 칩. 테이블 미리 빼는 데 쓰는 핵심 정보라
      낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다. 개수만 금색으로 도드라지게. */
   /* 보통 3~4종, 많아야 5종(드물게 6) — 5종까지 375px 폭 한 줄에 들어가게 조였다 */
-  .leadsub.comp{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .leadsub.comp{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
   .leadsub.comp .pc{
     display:inline-block;
     background:var(--panel2);border-radius:8px;   /* 칩 = 면만 (인원칸과 같은 꼴) */
@@ -1197,7 +1197,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 <header>
     <div class="toprow">
       <div class="nav">
-        <button type="button" id="menuBtn" aria-label="메뉴"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <button type="button" id="menuBtn" aria-label="메뉴"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
         <span class="date num" id="dateLabel"></span>
       </div>
       <div class="tools">
@@ -1205,7 +1205,7 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="offtag">연결 안 됨</span>
         <span class="devtag hide" id="devTag">테스트</span>
         <button type="button" id="searchBtn" class="off" aria-label="이름 검색">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
             <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/>
           </svg>
         </button>
