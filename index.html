@@ -671,7 +671,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:color-mix(in srgb, var(--panel2) 62%, transparent);
     -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
     /* 림 1px(14%) + 위쪽 하이라이트 1px — 유리 가장자리가 잡힌다(뮤직 알약 바 비교 후 9%→14%) */
-    box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 20%, transparent), inset 0 1px 0 color-mix(in srgb, var(--text) 14%, transparent);   /* 림 20%·위 하이라이트 14% — 어두운 명단 위에서 유리 가장자리가 보이게(2026-09-11) */
+    box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);   /* 림 12%·위 하이라이트 8% — 20% 는 테두리처럼 보였다(오너). 유리 가장자리는 빛이 스치는 정도로 */
   }
   html[data-theme="light"] .foot .inner{
     background:color-mix(in srgb, #ffffff 62%, transparent);
