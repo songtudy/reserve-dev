@@ -331,9 +331,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다. 개수만 금색으로 도드라지게. */
   /* 보통 3~4종, 많아야 5종(드물게 6) — 5종까지 375px 폭 한 줄에 들어가게 조였다 */
   .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
-  /* 둘째 줄 맨 앞 팀 수 — 칩과 같은 줄, 글자로(칩이면 인원 칩과 헷갈린다). 시각(20)보다 한 단계 아래 18 */
-  .leadsub.comp .cnt{font-size:18px;font-weight:800;color:var(--text);margin-right:4px;letter-spacing:-.01em}
-  /* 첫 줄 「지금/다음」 라벨 — 시각 앞 작은 금색 글자. 시각이 지났으면 지금, 아니면 다음(paintHead) */
+  /* 첫 줄 「다음」 라벨 — 시각 앞 작은 금색 글자 */
   .nowlab{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--waitTx);margin-right:8px;vertical-align:middle;position:relative;top:-2px}
   .leadsub.comp .pc{
     display:inline-block;
@@ -2189,19 +2187,17 @@ window.dispatchEvent(new Event('fb-ready'));
     var ls = document.getElementById('leadSub');
 
     if (slotPend.length){
-      // 첫 줄 = «언제»: 「지금/다음」 라벨 + 시각 (+ 오른쪽 토글). 둘째 줄 = «뭘 준비하나»: 팀 수 + 몇인 몇팀 칩.
-      // 팀 수와 구성은 같은 무게(오너: 「몇 팀도 중요하지만 동급으로 몇인 몇팀도 중요」) — 2026-09-11 5안 비교 후.
-      var nowD = new Date(serverNow());
-      var curMin = nowD.getHours() * 60 + nowD.getMinutes();
-      st.innerHTML = '<span class="nowlab">' + (slotMin(nowTime) <= curMin ? '지금' : '다음') + '</span>' + nowTime;
-      lb.textContent = '';
+      // 첫 줄 = 「다음」 라벨 + 시각 · 팀 수 (+ 오른쪽 토글). 둘째 줄 = 몇인 몇팀 칩이 한 줄을 다 쓴다.
+      // 라벨은 지금/다음 구분 없이 「다음」으로 통일(오너, 2026-09-11) — 이 박스는 늘 «다음에 처리할 시간대»다.
+      // 팀 수를 둘째 줄에 넣어 봤더니 칩 자리가 줄어 첫 줄로 되돌림(오너).
+      st.innerHTML = '<span class="nowlab">다음</span>' + nowTime;
+      lb.textContent = '·';
       lm.className = 'leadmain num';
-      lm.textContent = '';
+      lm.textContent = slotPend.length + '팀';
       var byPax = {};
       slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
       ls.className = 'leadsub num comp';
-      ls.innerHTML = '<span class="cnt">' + slotPend.length + '팀</span>'
-        + Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
+      ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
         .map(function(p){ return '<span class="pc">' + p + '인<b>' + byPax[p] + '</b>팀</span>'; })
         .join('');
     } else {
