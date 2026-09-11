@@ -680,11 +680,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   .frow{display:flex;gap:4px}
   .foot button{
     flex:1;height:40px;border:0;border-radius:999px;background:transparent;cursor:pointer;
-    color:var(--text);font-family:inherit;font-size:14px;font-weight:600;
-    display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
+    color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:6px;position:relative;
     transition:background .12s;
   }
-  .foot button svg{width:18px;height:18px}   /* 글자 14 옆 아이콘 18 — 20 은 글자보다 커 보였다 */
+  .foot button svg{width:16px;height:16px}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
   /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
   .foot button:active{background:var(--btnPress);opacity:1;transition:none}
   .foot button svg{display:block}
