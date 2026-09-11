@@ -332,9 +332,10 @@ window.addEventListener('pageshow', remeasureSbcut);
      «정보는 글자, 조작만 알약»: 칩(채움)으로 그렸더니 옆 토글과 같은 옷이라 눌리는 버튼처럼 보였다(2026-09-11) → 맨 글자.
      보통 3~4종, 많아야 5종 — 5종(각 ≈52px)+간격 14 가 아이폰 카드 안폭 338 에 한 줄로 들어간다 */
   .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;margin-top:6px}
-  .leadsub.comp .pc{font-size:14px;font-weight:600;color:var(--dim)}
-  /* 개수는 색이 아니라 굵기·밝기로 — 포인트 색은 작은 글자엔 안 쓴다(라이트 대비) */
-  .leadsub.comp .pc b{color:var(--text);font-weight:800;margin-left:3px}
+  /* 인원·팀수 둘 다 주 정보(오너: 동급) — 전부 밝게 700. 「5인」만 흐리면 테이블 준비의 핵심 숫자가 가라앉는다(2026-09-11).
+     포인트 색은 작은 글자엔 안 쓴다(라이트 대비). */
+  .leadsub.comp .pc{font-size:14px;font-weight:700;color:var(--text)}
+  .leadsub.comp .pc b{font-weight:700;margin-left:3px}
 
   /* 새 버전 알림 띠 — 헤더와 목록 사이의 안내 줄. 띠 자체가 「업데이트」 버튼이다 (누르면 새로 불러옴).
      하단에 별도 새로고침 버튼은 없앴다. flex 항목이라 목록을 아래로 밀 뿐 안 겹친다. */
