@@ -555,7 +555,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* ⋯ 행 메뉴 — 앱의 보조 버튼(면만)을 «작게» 넷. 새 부품을 만들지 않는다. 행 안의 작은 버튼 = 높이 40.
      목록 폭 그대로(좌우 여백 대칭). 이름 열(54px)에서 시작하면 왼쪽만 비어 오른쪽으로 쏠려 보였다. */
-  .menu{display:flex;gap:6px;margin:0}   /* 밑 여백 0 — 구분선이 메뉴 바로 밑. 알약 위로 올릴 때 메뉴 밑변 → 선 → 알약으로 끝나야 「최소 이동」(오너 2026-09-11) */
+  .menu{display:flex;gap:6px;margin:0 0 10px}   /* 밑 10 = 원래 레이아웃. 스크롤 「최소 이동」은 스크롤 쪽(roomScroll)에서만 다룬다 — 여백을 줄여 맞추려던 건 잘못(2026-09-11) */
   .menu button{
     flex:1;height:40px;border:0;border-radius:999px;background:var(--btn);cursor:pointer;
     color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
