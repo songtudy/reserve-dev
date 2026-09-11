@@ -702,7 +702,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .seg button{
     height:30px;padding:0 13px;border-radius:8px;
     border:0;background:transparent;
-    color:var(--off);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+    /* 미선택 글자는 --dim — --off 는 트랙(panel2) 위 3.2:1(라이트 2.9)로 기준 미달이었다(2026-09-11). 선택 칸은 면+밝은 글자라 구분 유지 */
+    color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
     transition:opacity .12s;
   }
   .seg button:active{opacity:.4;transition:none}
