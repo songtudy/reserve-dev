@@ -216,7 +216,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
      크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
-  .wrap::before{content:"";display:block;height:var(--topH, 140px)}
+  .wrap::before{content:"";display:block;height:calc(var(--topH, 140px) + 10px)}   /* +10 = 쉴 때 카드와 첫 시간바 사이 숨 — 붙을 땐 시간바가 카드에 밀착 */
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -305,7 +305,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 상단 요약 — 「16:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 그 아래 인원 구성 칩 */
   /* 메인 박스 = 떠 있는 둥근 카드 — 하단 알약 바와 같은 재질(칩색 62% + 셸의 흐림)·같은 링. 위아래가 같은 «물건»이 된다. */
   .lead{
-    display:block;margin:6px -4px 10px;padding:12px 14px;border-radius:18px;
+    /* 아래 여백 0 — 셸 높이(--topH)가 카드 밑면과 같아져 붙는 시간바가 카드에 딱 붙는다.
+       여백을 두면 그 띠(반투명)로 지나가는 시간대 글자가 비쳐 보였다(오너 영상, 2026-09-11). 쉴 때 간격은 .wrap::before 가 준다. */
+    display:block;margin:6px -4px 0;padding:12px 14px;border-radius:18px;
     background:color-mix(in srgb, var(--panel2) 62%, transparent);
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
