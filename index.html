@@ -301,12 +301,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
   /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
-  .leadmain.done{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+  .leadmain.done{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
   /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
   .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 두 칸 같은 너비·썸은 공용 .seg 규칙 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
   /* 인원 요약(구성 글자 or 「방문 n·취소 n」)은 요약 줄 아래 */
-  .leadsub{font-size:13px;font-weight:600;color:var(--dim);display:block;margin-top:8px}
+  .leadsub{font-size:14px;font-weight:600;color:var(--dim);display:block;margin-top:6px}   /* 구성 줄(14)과 같은 단계·간격 */
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
@@ -2202,7 +2202,8 @@ window.dispatchEvent(new Event('fb-ready'));
     } else {
       st.textContent = '';
       lm.className = 'leadmain num done';
-      lm.textContent = all.length ? '남은 예약 없음' : '';
+      var pendLeft = all.filter(function(x){ return x.status === 'pending'; }).length;   // 지난 시간대에 남은 대기(지금 시간대는 없으니 전부 지난 것)
+      lm.textContent = !all.length ? '' : pendLeft ? '지난 시간대 대기 ' + pendLeft + '팀' : '남은 예약 없음';
       ls.className = 'leadsub num';
       ls.innerHTML = all.length ? dayTally(all) : '';
     }
@@ -2366,9 +2367,10 @@ window.dispatchEvent(new Event('fb-ready'));
   // 아주 짧은 이동(SMOOTH_MIN 미만)만 즉시. 예전엔 44 였는데 시간바에 반쯤 가린 행(20~40px)이 전부 «점프»가 돼
   // 「부드럽게 됐다 안 됐다」로 보였다(오너 2026-09-11). ⋯ 메뉴는 통째 render 없이 붙이므로 짧아도 부드럽게 굴려도 된다.
   var SMOOTH_MIN = 6;
-  function roomScroll(el, smooth){
+  function roomScroll(el, smooth, bottomEl){
     if (!el || !wrapEl) return;
     var er = el.getBoundingClientRect();
+    var erBottom = bottomEl ? bottomEl.getBoundingClientRect().bottom : er.bottom;   // ⋯ 메뉴처럼 「이것까지 보이면 됨」 을 따로 줄 때
     var wr = wrapEl.getBoundingClientRect();
     // 보이는 영역 = 스크롤러에서 «떠 있는 것»을 뺀 부분 — 위엔 상단 셸(날짜 줄+카드)이, 아래엔 알약 바가 명단 위에 떠 있다.
     // 리뉴얼 전엔 둘 다 스크롤러 밖의 고정 띠라 wr.top/bottom 이 곧 경계였는데, 지금은 그 안에 떠 있어 따로 뺀다(2026-09-11).
@@ -2381,13 +2383,15 @@ window.dispatchEvent(new Event('fb-ready'));
     var shellB = shell ? shell.getBoundingClientRect().bottom : wr.top;
     var footEl = document.querySelector('.foot'), footIn = footEl && footEl.querySelector('.inner');
     var footT = (footIn && !footEl.classList.contains('hide')) ? footIn.getBoundingClientRect().top : wr.bottom;
-    var topEdge = Math.max(wr.top, shellB) + pad + 8;
+    // 행: 도킹된 시간바(pad) «바로 밑» — 8 을 더하면 시간바가 도킹에서 8 밀려 내려와 앞 시간대 밑선이 비쳤다(오너 스크린샷 2026-09-11).
+    // 시간대(펼침): 카드 밑 8 = 쉴 때와 같은 자리.
+    var topEdge = Math.max(wr.top, shellB) + (isGroup ? 8 : pad);
     var bottomEdge = Math.min(wr.bottom, footT) - 8;
     // 「딱 맞게」 — 가려진 만큼만 움직인다(여백 위·아래 8, 오너 2026-09-11). 아래가 가려졌을 땐 필요한 만큼만 올리되
     // 위(시간바)가 경계를 넘어가는 지점에서 멈춘다 — 화면보다 긴 시간대를 펼치면 결과적으로 시간바가 맨 위에 서고, 그게 가장 많이 보여주는 자리다.
     var move = 0;
     if (er.top < topEdge) move = er.top - topEdge;
-    else if (er.bottom > bottomEdge) move = Math.min(er.bottom - bottomEdge, er.top - topEdge);
+    else if (erBottom > bottomEdge) move = Math.min(erBottom - bottomEdge, er.top - topEdge);
     if (Math.abs(move) <= 1) return;
     if (smooth && Math.abs(move) >= SMOOTH_MIN && wrapEl.scrollTo) wrapEl.scrollTo({ top: wrapEl.scrollTop + move, behavior: 'smooth' });
     else wrapEl.scrollTop += move;
@@ -2551,8 +2555,9 @@ window.dispatchEvent(new Event('fb-ready'));
     closeRowMenu();
     var row = rowForId(id);
     if (!row){ render(); return; }   // 그 행이 DOM 에 없으면(접힌 시간대 등) 안전하게 통째로
-    row.querySelector('.rbody').appendChild(buildMenu(id));
-    roomScroll(row, true);
+    var menu = buildMenu(id);
+    row.querySelector('.rbody').appendChild(menu);
+    roomScroll(row, true, menu);   // 메뉴 밑변 기준 — 행 상자엔 메뉴 밑 여백(10)이 들어가 8+10 만큼 더 올라갔다
   }
 
   // "1530" "15:30" "15시30분" "15.30" → "15:30"
