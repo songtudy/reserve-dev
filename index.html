@@ -236,8 +236,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .shell .leadsub.comp .pc{background:var(--btn);color:var(--text);font-weight:600}
   header{
     background:color-mix(in srgb, var(--ink) 72%, transparent);   /* 날짜 줄(+상태 표시줄 밑) — 바탕색 계열 */
-    border-bottom:1px solid var(--line);
     padding:calc(env(safe-area-inset-top) + 12px) 16px 0;
+    /* 선 없음 — 위쪽은 «떠 있는 둥근 카드»(아래 .lead) 언어라 직선 경계를 긋지 않는다 (2026-09-11 오너: 「위가 딱딱」) */
   }
   .toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;position:relative}
   /* 날짜는 줄의 «제목» — 화면 가운데(iOS 내비게이션 바 문법). 왼쪽 메뉴 아이콘·오른쪽 진행도 하나씩이라 균형이 맞는다.
@@ -303,12 +303,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dot.stale{background:var(--warn)}
 
   /* 상단 요약 — 「16:00 · 7팀」 한 줄(같은 크기 두 덩어리) + 그 아래 인원 구성 칩 */
+  /* 메인 박스 = 떠 있는 둥근 카드 — 하단 알약 바와 같은 재질(칩색 62% + 셸의 흐림)·같은 링. 위아래가 같은 «물건»이 된다. */
   .lead{
-    display:block;margin:10px -16px 0;padding:10px 16px 10px;
+    display:block;margin:6px -4px 10px;padding:12px 14px;border-radius:18px;
     background:color-mix(in srgb, var(--panel2) 62%, transparent);
-    border-top:1px solid var(--line);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
-  html[data-theme="light"] .lead{background:color-mix(in srgb, #ffffff 62%, transparent)}
+  html[data-theme="light"] .lead{background:color-mix(in srgb, #ffffff 62%, transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(20,30,50,.08)}
   .lead.hide{display:none}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
   .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
@@ -331,12 +332,11 @@ window.addEventListener('pageshow', remeasureSbcut);
      낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다. 개수만 금색으로 도드라지게. */
   /* 보통 3~4종, 많아야 5종(드물게 6) — 5종까지 375px 폭 한 줄에 들어가게 조였다 */
   .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
-  /* 첫 줄 「다음」 라벨 — 시각 앞 작은 금색 글자 */
-  .nowlab{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--waitTx);margin-right:8px;vertical-align:middle;position:relative;top:-2px}
+
   .leadsub.comp .pc{
     display:inline-block;
-    background:var(--panel2);border-radius:8px;   /* 칩 = 면만 (인원칸과 같은 꼴) */
-    padding:5px 10px;font-size:14px;font-weight:700;color:var(--dim);
+    background:var(--panel2);border-radius:999px;   /* 알약 — 하단 바·토글·인원칸과 같은 둥글기 언어 */
+    padding:6px 12px;font-size:14px;font-weight:700;color:var(--dim);
   }
   /* 개수는 색이 아니라 굵기·밝기로 — 포인트 색은 작은 글자엔 안 쓴다(라이트 대비) */
   .leadsub.comp .pc b{color:var(--text);font-weight:800;margin-left:4px}
@@ -515,7 +515,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .pax{
     height:24px;display:inline-flex;align-items:center;
     font-size:14px;font-weight:700;color:var(--text);
-    background:var(--panel2);border-radius:8px;padding:0 9px;flex:0 0 auto;
+    background:var(--panel2);border-radius:999px;padding:0 10px;flex:0 0 auto;   /* 알약 언어 */
   }
   .more{
     width:42px;flex:0 0 auto;border:0;
@@ -728,17 +728,17 @@ window.addEventListener('pageshow', remeasureSbcut);
      썸 폭 = 50% − 3px (패딩 2·틈 2 보정), 2번째 칸으로는 썸 폭 + 틈 2 만큼 이동. reduced-motion 은 전역 규칙이 트랜지션을 끈다. */
   .seg{
     display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;position:relative;
-    gap:2px;padding:2px;background:var(--ink);border-radius:10px;
+    gap:2px;padding:2px;background:var(--ink);border-radius:999px;   /* 알약 언어(2026-09-11) */
   }
   .seg::before{
     content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 3px);
-    border-radius:8px;background:var(--btnPress);box-shadow:0 1px 3px rgba(0,0,0,.35);
+    border-radius:999px;background:var(--btnPress);box-shadow:0 1px 3px rgba(0,0,0,.35);
     transition:transform .22s cubic-bezier(.2,.8,.2,1);
   }
   .seg.alt::before{transform:translateX(calc(100% + 2px))}   /* .alt = 2번째 칸 선택 — 아래 세그먼트 감시 스크립트가 붙인다(:has 는 가상 요소에 불안정) */
   .seg button{
     position:relative;                /* 썸(::before) 위에 글자가 오게 */
-    height:30px;padding:0 13px;border-radius:8px;
+    height:30px;padding:0 14px;border-radius:999px;
     border:0;background:transparent;
     /* 미선택 글자는 --dim — --off 는 트랙 위 대비 미달(2026-09-11). 선택 칸은 썸+밝은 글자라 구분 유지 */
     color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
@@ -2190,7 +2190,7 @@ window.dispatchEvent(new Event('fb-ready'));
       // 첫 줄 = 「다음」 라벨 + 시각 · 팀 수 (+ 오른쪽 토글). 둘째 줄 = 몇인 몇팀 칩이 한 줄을 다 쓴다.
       // 라벨은 지금/다음 구분 없이 「다음」으로 통일(오너, 2026-09-11) — 이 박스는 늘 «다음에 처리할 시간대»다.
       // 팀 수를 둘째 줄에 넣어 봤더니 칩 자리가 줄어 첫 줄로 되돌림(오너).
-      st.innerHTML = '<span class="nowlab">다음</span>' + nowTime;
+      st.textContent = nowTime;
       lb.textContent = '·';
       lm.className = 'leadmain num';
       lm.textContent = slotPend.length + '팀';
