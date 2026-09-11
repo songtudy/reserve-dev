@@ -2188,7 +2188,7 @@ window.dispatchEvent(new Event('fb-ready'));
       st.textContent = nowTime;
       lb.textContent = '·';
       lm.className = 'leadmain num';
-      lm.textContent = slotPend.length + '팀';
+      lm.textContent = slotPend.length + '팀 남음';   // 「3팀」만으론 전체인지 남은 수인지 안 읽혀(바로 아래 시간바 「1/4」와 헷갈림) — 2026-09-11
       var byPax = {};
       slotPend.forEach(function(x){ byPax[x.pax] = (byPax[x.pax] || 0) + 1; });
       ls.className = 'leadsub num comp';
