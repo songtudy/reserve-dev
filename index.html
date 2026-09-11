@@ -315,7 +315,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 대기 팀의 「인원 구성」 — 테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다.
      «정보는 글자, 조작만 알약»: 칩(채움)으로 그렸더니 옆 토글과 같은 옷이라 눌리는 버튼처럼 보였다(2026-09-11) → 맨 글자.
      보통 3~4종, 많아야 5종 — 5종(각 ≈52px)+간격 14 가 아이폰 카드 안폭 338 에 한 줄로 들어간다 */
-  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;margin-top:6px}
+  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin-top:6px}
+  .leadsub.comp .pcsep{font-size:14px;font-weight:600;color:var(--off)}
   /* 인원·팀수 둘 다 주 정보(오너: 동급) — 전부 밝게 700. 「5인」만 흐리면 테이블 준비의 핵심 숫자가 가라앉는다(2026-09-11).
      포인트 색은 작은 글자엔 안 쓴다(라이트 대비). */
   .leadsub.comp .pc{font-size:14px;font-weight:700;color:var(--text)}
@@ -334,25 +335,26 @@ window.addEventListener('pageshow', remeasureSbcut);
   .updbar:active, .updbar.dn{filter:brightness(.92)}
 
   /* search */
+  /* 검색 띠 — 셸의 일부라 불투명(--ink). 투명이면 카드와 도킹된 시간바 사이 띠로 명단이 비쳐 지나갔다(오너 스크린샷 2026-09-11).
+     위 8(카드 밑) · 아래 8(도킹 시간바 위) = 「시간바 앞 여백 8」. 선은 없다 — 시간바 밑선이 곧 경계 */
   .searchbar{
     position:relative;z-index:19;
-    padding:10px 16px;background:transparent;
-    border-bottom:1px solid var(--line);
+    padding:0 16px 8px;background:var(--ink);
   }
   .searchbar input{
     width:100%;background:var(--panel);color:var(--text);
     border:1px solid var(--line);border-radius:999px;
-    padding:11px 74px 11px 42px;font-family:inherit;font-size:16px;
+    padding:11px 86px 11px 52px;font-family:inherit;font-size:16px;
     -webkit-appearance:none;appearance:none;
   }
   #qBack{
-    position:absolute;left:3px;top:50%;transform:translateY(-50%);
+    position:absolute;left:16px;top:calc(50% - 4px);transform:translateY(-50%);   /* 알약 안쪽 16 — 둥근 끝에 붙지 않게 */
     width:36px;height:36px;display:grid;place-items:center;border-radius:12px;
     background:none;border:0;color:var(--dim);cursor:pointer;
   }
   #qBack:active, #qBack.dn{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
   .qcount{
-    position:absolute;right:40px;top:50%;transform:translateY(-50%);
+    position:absolute;right:52px;top:calc(50% - 4px);transform:translateY(-50%);
     font-size:12px;font-weight:700;color:var(--dim);
     font-variant-numeric:tabular-nums;pointer-events:none;
   }
@@ -361,7 +363,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar input:focus{outline:2px solid var(--waitTx);outline-offset:-1px}
   .searchbar input::-webkit-search-cancel-button{display:none}
   .searchbar button{
-    position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    position:absolute;right:16px;top:calc(50% - 4px);transform:translateY(-50%);
     width:36px;height:36px;border:0;border-radius:12px;
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
@@ -383,9 +385,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 접기/펼치기 — 그 시간대만 높이를 접는다(grid 1fr→0fr, .22s, 토글 썸과 같은 곡선). transform/opacity 가 아닌 유일한 움직임이지만
      한 시간대 분량이라 가볍다. .closing 은 접힐 때 JS 가 붙이고 220ms 뒤 render, .opening 은 펼친 직후 한 프레임만 붙였다 뗀다. */
   /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). 행 래퍼(.rows)는 끝선 자리로만 쓴다. */
-  /* 전체/대기 전환 — 목록을 짧게 크로스페이드(내용이 통째로 바뀌는 순간을 부드럽게) */
-  #list{transition:opacity .12s}
-  #list.swap{opacity:0}
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 12 에 선다 */
@@ -445,11 +444,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 시간대 끝선 — 마지막 행 밑에 시간바 밑선과 같은 «끝까지 닿는» 1px. 행 사이는 들여쓴 선, 목록 끝만 전폭
      (애플 뮤직 목록과 같은 규칙, 오너 2026-09-11). 열린·접힌 시간대 모두 «전폭 선 하나»로 끝난다. */
-  .rows{position:relative}
-  .rows::after{
-    content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:1px;
-    background:var(--line);pointer-events:none;   /* 시간대 끝선 — 행 묶음(.rows)에 전폭으로 */
-  }
+  /* 시간대 끝선은 뺐다 — 시간바 밑선과 8px 간격으로 겹쳐 «선이 많고 시간바가 두 선 사이 중앙이 아니다»(오너 2026-09-11) */
   /* 눌리는 곳은 여기뿐. 왼쪽 54칸 × 56 이라 손가락에 넉넉하다.
      누름은 칸(네모)이 아니라 «원»이 받는다 — 면 없는 목록에서 네모가 번쩍이면 유령 박스처럼 보인다. */
   .main{
@@ -524,9 +519,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.arrived .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.arrived .pax, .row.cancelled .pax{color:var(--dim);-webkit-text-fill-color:var(--dim)}
   /* 취소 이름은 방문 이름과 같은 회색 — --off 는 16px 에서 3.7:1(라이트 3.3)로 읽기 기준 미달(2026-09-11 점검).
-     «취소»는 취소선 + 빨간 ✕ 가 이미 말한다. 글자까지 더 죽일 필요 없다. */
-  .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600;
-    text-decoration:line-through;text-decoration-thickness:1px}
+     «취소»는 빨간 ✕ 가 말한다 — 취소선은 뺐다(상태는 원 하나에만, 선을 줄인다. 오너 2026-09-11). */
+  .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
   /* 「남은 팀」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
   .row.leaving{opacity:0;transition:opacity .22s ease}
@@ -1589,7 +1583,9 @@ window.dispatchEvent(new Event('fb-ready'));
   try { if (localStorage.getItem('ix-view') === 'pending') viewMode = 'pending'; } catch(e){}
 
   // 목록 안에서 손대는 중인 것 = 열린 ⋯ 메뉴뿐 (수정은 바텀시트라 목록과 무관 — 그 사이 통째 render 돼도 된다)
-  function interactionActive(){ return !!openMenu; }
+  // 체크 직후 300ms 는 «팝이 뛰는 중» — 이 사이 서버 에코(내 쓰기)가 통째 render 로 돌아오면 팝이 끊긴다(오너: 「체크가 매끄럽지 않다」).
+  var popUntil = 0;
+  function interactionActive(){ return !!openMenu || Date.now() < popUntil; }
   function renderWhenIdle(){
     if (interactionActive()){
       backgroundRenderPending = true;
@@ -2200,7 +2196,7 @@ window.dispatchEvent(new Event('fb-ready'));
       ls.className = 'leadsub num comp';
       ls.innerHTML = Object.keys(byPax).map(Number).sort(function(a, b){ return a - b; })
         .map(function(p){ return '<span class="pc">' + p + '인<b>' + byPax[p] + '</b>팀</span>'; })
-        .join('');
+        .join('<span class="pcsep">·</span>');   // 「5인 1팀 · 7인 1팀」 — 짝이 한 덩어리로 읽히게(시간바 「방문 n · 취소 n」과 같은 구분)
     } else {
       st.textContent = '';
       lm.className = 'leadmain num done';
@@ -2963,6 +2959,8 @@ window.dispatchEvent(new Event('fb-ready'));
       if (it.status === 'arrived' || it.status === 'cancelled'){
         void chk.offsetWidth;
         chk.classList.add('pop');
+        popUntil = Date.now() + 300;
+        setTimeout(function(){ if (backgroundRenderPending && !interactionActive()) render(); }, 320);   // 미뤄 둔 서버 상태 반영
       }
     }
     closeRowMenu();   // 부분 갱신이라 다른 행에 열려 있던 ⋯ 메뉴 DOM 이 남는다 — 지운다
@@ -3689,10 +3687,7 @@ window.dispatchEvent(new Event('fb-ready'));
     syncViewSeg();
     openMenu = null;
     cancelAllLeaves();   // 「남은 팀」에서 빠지려던 행이 있으면 그 타이머는 무의미 (통째로 다시 그린다)
-    var listEl = document.getElementById('list');
-    if (reducedMotion() || !listEl){ render(); return; }
-    listEl.classList.add('swap');                       // 짧게 흐려졌다가
-    setTimeout(function(){ render(); listEl.classList.remove('swap'); }, 120);   // 새 목록으로 돌아온다
+    render();   // 즉시 — 크로스페이드는 「깜빡이다 확 넘어가는」 느낌(오너 2026-09-11)
   }
   viewAllBtn.addEventListener('click', function(){ setViewMode('all'); });
   viewPendBtn.addEventListener('click', function(){ setViewMode('pending'); });
