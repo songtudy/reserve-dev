@@ -396,7 +396,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      범위에 포함돼 다음 머리글이 닿는 순간 밀려난다(padding 은 안 됨 — 붙는 범위가 내용 상자까지라 더 일찍 밀려남).
      접힌 시간대는 여백 없이 선으로만 잇는다. 멈춰 있을 때 배치는 margin 방식과 픽셀까지 같다. */
   .group{margin-top:0}
-  .group::after{content:"";display:block;height:18px}
+  .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 12 에 선다 */
 
