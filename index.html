@@ -212,7 +212,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        iOS 는 이 .wrap 을 스스로 스크롤해 포커스 칸을 드러내고, 화면 전체를 밀지 않는다. */
     /* 아래: 끝까지 내리면 마지막 명단이 알약 바 위 24 에 선다 — 알약 밑면 max(10, safe−10) + 알약 52 + 24.
        24 = 알약 바가 홈 바에서 뜬 높이와 같은 리듬(애플 뮤직 비교 후, 2026-09-11). 노치 유무와 무관. */
-    padding:0 16px calc(max(10px, env(safe-area-inset-bottom) - 10px) + 76px + var(--kb, 0px));
+    padding:0 16px calc(max(10px, env(safe-area-inset-bottom) - 10px) + 80px + var(--kb, 0px));   /* 알약 56 + 24 */
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
@@ -662,16 +662,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   .foot{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
     /* 홈 바 위 높이 = 아이폰 뮤직 알약 바와 같게: 안전 영역(34) − 10 → 바닥에서 24. 노치 없는 폰은 바닥에서 10 */
-    padding:0 16px max(10px, calc(env(safe-area-inset-bottom) - 10px));
+    padding:0 20px max(10px, calc(env(safe-area-inset-bottom) - 10px));   /* 좌우 20 — 떠 있는 물건은 본문(16)보다 안쪽 */
     pointer-events:none;                        /* 알약 밖 여백은 명단을 그대로 누르게 */
   }
   .foot .inner{
     pointer-events:auto;max-width:520px;margin:0 auto;
-    border-radius:999px;padding:4px;
+    border-radius:999px;padding:5px;   /* 5 + 46 + 5 = 56 */
     background:color-mix(in srgb, var(--panel2) 62%, transparent);
     -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
     /* 림 1px(14%) + 위쪽 하이라이트 1px — 유리 가장자리가 잡힌다(뮤직 알약 바 비교 후 9%→14%) */
-    box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 14%, transparent), inset 0 1px 0 color-mix(in srgb, var(--text) 10%, transparent);
+    box-shadow:0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--text) 20%, transparent), inset 0 1px 0 color-mix(in srgb, var(--text) 14%, transparent);   /* 림 20%·위 하이라이트 14% — 어두운 명단 위에서 유리 가장자리가 보이게(2026-09-11) */
   }
   html[data-theme="light"] .foot .inner{
     background:color-mix(in srgb, #ffffff 62%, transparent);
@@ -679,10 +679,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .frow{display:flex;gap:4px}
   .foot button{
-    flex:1;height:44px;border:0;border-radius:999px;background:transparent;cursor:pointer;
-    color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
-    display:flex;align-items:center;justify-content:center;gap:7px;position:relative;
+    flex:1;height:46px;border:0;border-radius:999px;background:transparent;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:14px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:8px;position:relative;
+    transition:background .12s;
   }
+  .foot button svg{width:20px;height:20px}
+  /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
+  .foot button:active{background:var(--btnPress);opacity:1;transition:none}
   .foot button svg{display:block}
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
@@ -1199,7 +1203,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
 
   .toast{
-    position:fixed;left:50%;bottom:calc(84px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);
+    position:fixed;left:50%;bottom:calc(max(10px, env(safe-area-inset-bottom) - 10px) + 56px + 12px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);   /* 알약 바(56) 위 12 */
     background:var(--btnPress);box-shadow:0 4px 14px rgba(0,0,0,.35);
     padding:10px 16px;border-radius:99px;font-size:13px;font-weight:600;
     opacity:0;pointer-events:none;transition:.2s;z-index:200;white-space:nowrap;
