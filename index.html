@@ -382,12 +382,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group{margin-top:0}
   /* 접기/펼치기 — 그 시간대만 높이를 접는다(grid 1fr→0fr, .22s, 토글 썸과 같은 곡선). transform/opacity 가 아닌 유일한 움직임이지만
      한 시간대 분량이라 가볍다. .closing 은 접힐 때 JS 가 붙이고 220ms 뒤 render, .opening 은 펼친 직후 한 프레임만 붙였다 뗀다. */
-  /* 접기/펼치기는 transform 만 움직인다(레이아웃 계산 0 = 120Hz 에서도 매 프레임). .rows 는 클리핑 틀(높이 그대로),
-     .rowsIn 이 그 안에서 위로 미끄러져 시간바 밑으로 들어가고, 뒤 시간대들은 같은 거리만큼 translate 로 따라온다.
-     끝나면 render 가 같은 자리에 다시 그린다(툭 없음). 높이 전환은 120Hz 폰에서 끊겨 보였다(오너 영상). */
-  .rows{overflow:hidden;margin:0 -16px;padding:0 16px}   /* 좌우로 넓혀 끝선이 전폭 */
-  .rowsIn, .group{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
-  .group.folding .chev{transform:rotate(0)}   /* 화살표는 누르는 순간 */
+  /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). 행 래퍼(.rows)는 끝선 자리로만 쓴다. */
   /* 전체/대기 전환 — 목록을 짧게 크로스페이드(내용이 통째로 바뀌는 순간을 부드럽게) */
   #list{transition:opacity .12s}
   #list.swap{opacity:0}
@@ -452,8 +447,8 @@ window.addEventListener('pageshow', remeasureSbcut);
      (애플 뮤직 목록과 같은 규칙, 오너 2026-09-11). 열린·접힌 시간대 모두 «전폭 선 하나»로 끝난다. */
   .rows{position:relative}
   .rows::after{
-    content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
-    background:var(--line);pointer-events:none;   /* 행 묶음(.rows)에 그린다 — 행에 그리면 .rowsIn 의 overflow:hidden 에 잘린다 */
+    content:"";position:absolute;left:-16px;right:-16px;bottom:0;height:1px;
+    background:var(--line);pointer-events:none;   /* 시간대 끝선 — 행 묶음(.rows)에 전폭으로 */
   }
   /* 눌리는 곳은 여기뿐. 왼쪽 54칸 × 56 이라 손가락에 넉넉하다.
      누름은 칸(네모)이 아니라 «원»이 받는다 — 면 없는 목록에서 네모가 번쩍이면 유령 박스처럼 보인다. */
@@ -2332,11 +2327,9 @@ window.dispatchEvent(new Event('fb-ready'));
       sec.appendChild(head);
 
       if (!shut){
-        // 행은 .rows > .rowsIn 안에 — 접기/펼치기 때 .rows 의 grid-template-rows 를 1fr↔0fr 로 움직여 높이가 접힌다
-        var rw = document.createElement('div'); rw.className = 'rows';
-        var ri = document.createElement('div'); ri.className = 'rowsIn';
-        rows.forEach(function(it){ ri.appendChild(rowEl(it)); });
-        rw.appendChild(ri); sec.appendChild(rw);
+        var rw = document.createElement('div'); rw.className = 'rows';   // 행 묶음 — 끝선(.rows::after) 자리
+        rows.forEach(function(it){ rw.appendChild(rowEl(it)); });
+        sec.appendChild(rw);
       }
       list.appendChild(sec);
       openCount += shut ? 0 : 1;
@@ -2987,67 +2980,16 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 시간대 접기 / 펼치기
   function reducedMotion(){ try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; } }
-  var FOLD_MS = 220;   // CSS .rows 전환 시간과 같아야 한다
-  // transform 만으로 움직인다 — from 에서 시작해 to 로 전환 (transition 은 CSS .rowsIn/.group 이 갖는다)
-  function slideY(el, from, to){
-    el.style.transition = 'none'; el.style.transform = 'translateY(' + from + 'px)'; void el.offsetHeight;
-    el.style.transition = ''; el.style.transform = 'translateY(' + to + 'px)';
-  }
-  // 시간대가 접힐 때 줄어드는 높이 = 행 묶음 + 뒤 여백(.group::after)
-  function foldDelta(g){ var gh = g.querySelector('.ghead'); return g.offsetHeight - (gh ? gh.offsetHeight : 0); }
-  // 접힐 시간대들 — 행은 시간바 밑으로 미끄러져 들어가고(클리핑 틀 안에서 translate), 뒤 시간대들은 누적 거리만큼 따라 올라온다.
-  // 화살표는 누르는 순간 돌린다. 레이아웃은 그대로 두고 render 는 전환이 끝난 뒤(같은 자리라 툭이 없다). 지연 시간을 돌려준다.
-  function foldOut(groups){
-    if (reducedMotion() || !groups.length) return 0;
-    var set = groups.filter(function(g){ return g && g.querySelector('.rowsIn'); });
-    if (!set.length) return 0;
-    var all = [].slice.call(document.querySelectorAll('#list .group')), acc = 0;
-    all.forEach(function(g){
-      if (acc) slideY(g, 0, -acc);                        // 앞에서 접힌 만큼 위로
-      if (set.indexOf(g) >= 0){
-        var d = foldDelta(g);
-        g.classList.add('folding');
-        slideY(g.querySelector('.rowsIn'), 0, -d);        // 행이 시간바 밑으로
-        acc += d;
-      }
-    });
-    return FOLD_MS;
-  }
-  // 방금 render 로 펼쳐진 시간대들 — 행은 시간바 밑에서 내려오고, 뒤 시간대들은 위에서 제자리로 내려온다
-  function foldIn(groups){
-    if (reducedMotion() || !groups.length) return;
-    var set = groups.filter(function(g){ return g && g.querySelector('.rowsIn'); });
-    if (!set.length) return;
-    var all = [].slice.call(document.querySelectorAll('#list .group')), acc = 0;
-    all.forEach(function(g){
-      if (acc) slideY(g, -acc, 0);
-      if (set.indexOf(g) >= 0){
-        var d = foldDelta(g);
-        slideY(g.querySelector('.rowsIn'), -d, 0);
-        acc += d;
-      }
-    });
-    setTimeout(function(){
-      all.forEach(function(g){ if (g.isConnected){ g.style.transform = ''; var ri = g.querySelector('.rowsIn'); if (ri) ri.style.transform = ''; } });
-    }, FOLD_MS);
-  }
   function toggleSlot(time){
     if (!state) return;
     var mine = itemsAt(time);
     if (!mine.length) return;
     var grp = slotEl(time);
-    if (grp && grp.dataset.folding) return;          // 접히는 중 두 번 누름 무시
     var willShut = !(grp && grp.classList.contains('shut'));
     openMenu = null;      // 열려 있던 ⋯ 메뉴는 닫는다 (어느 시간대든)
     setCollapsed(time, willShut, tallyStatus(mine).pend === 0);
-    if (willShut){
-      var wait = foldOut([grp]);
-      if (wait){ grp.dataset.folding = '1'; setTimeout(render, wait); return; }
-      render(); return;
-    }
     render();
-    foldIn([slotEl(time)]);
-    setTimeout(function(){ roomScroll(slotEl(time), true); }, reducedMotion() ? 0 : FOLD_MS);   // 펼친 시간대가 길어 가려지면 부드럽게 맞춰 보여준다
+    if (!willShut) roomScroll(slotEl(time), true);   // 펼친 시간대가 길어 가려지면 부드럽게 맞춰 보여준다
   }
 
   // 「지금 시간대」가 어디인지 다시 계산해서 시간대 색과 왼쪽 막대를 맞춘다
@@ -3761,14 +3703,8 @@ window.dispatchEvent(new Event('fb-ready'));
       return d;
     });
     slots.forEach(function(g, i){ setCollapsed(g.time, anyOpen, done[i]); });
-    if (anyOpen){
-      openMenu = null;   // 전부 접을 땐 열린 메뉴도 닫는다
-      var wait = foldOut([].slice.call(document.querySelectorAll('.group:not(.shut)')));
-      if (wait){ setTimeout(render, wait); return; }
-      render(); return;
-    }
+    if (anyOpen) openMenu = null;   // 전부 접을 땐 열린 메뉴도 닫는다
     render();
-    foldIn([].slice.call(document.querySelectorAll('.group:not(.shut)')));
   });
 
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
