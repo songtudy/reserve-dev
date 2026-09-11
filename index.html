@@ -389,7 +389,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group{margin-top:0}
   /* 접기/펼치기 — 그 시간대만 높이를 접는다(grid 1fr→0fr, .22s, 토글 썸과 같은 곡선). transform/opacity 가 아닌 유일한 움직임이지만
      한 시간대 분량이라 가볍다. .closing 은 접힐 때 JS 가 붙이고 220ms 뒤 render, .opening 은 펼친 직후 한 프레임만 붙였다 뗀다. */
-  /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). 행 래퍼(.rows)는 끝선 자리로만 쓴다. */
+  /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). */
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 12 에 선다 */
@@ -2329,11 +2329,7 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       sec.appendChild(head);
 
-      if (!shut){
-        var rw = document.createElement('div'); rw.className = 'rows';   // 행 묶음 — 끝선(.rows::after) 자리
-        rows.forEach(function(it){ rw.appendChild(rowEl(it)); });
-        sec.appendChild(rw);
-      }
+      if (!shut) rows.forEach(function(it){ sec.appendChild(rowEl(it)); });
       list.appendChild(sec);
       openCount += shut ? 0 : 1;
     });
@@ -2997,7 +2993,6 @@ window.dispatchEvent(new Event('fb-ready'));
   function slotEl(time){ return document.querySelector('.group[data-time="' + time + '"]'); }
 
   // 시간대 접기 / 펼치기
-  function reducedMotion(){ try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; } }
   function toggleSlot(time){
     if (!state) return;
     var mine = itemsAt(time);
