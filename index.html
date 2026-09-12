@@ -109,7 +109,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 <title>익순이</title>
 <style>
   :root{
-    /* 둥글기 3단계 — 8(칩) · 12(버튼·입력칸·행 메뉴) · 18(시트·팝업·카드) */
+    /* 둥글기 — 누르는 면·입력칸·토글·행 메뉴는 알약(999) · 시트·팝업·카드 18(--radius) · 칩 8 */
     --radius:18px;
     /* 움직임 — 곡선 하나, 시간 3단계 (2026-09-12 통일). 눌림 120 · 상태(색·회전·체크) 150 · 이동(시트·창·서랍·토스트·썸·페이드) 200.
        예외 둘: 잠금 흔들림(.32s, 피드백)·확인 중 맥동(.9s 반복). 룰렛은 놀이라 제 곡선. */
@@ -247,11 +247,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .nav button svg{display:block}
   /* ── 누름 규칙 (앱 공통) ──
-     ① 면 있는 버튼 → 면이 --press (채운 금색은 brightness)   ② 면 없는 글자·아이콘 → 흐려짐
+     ① 면 있는 버튼 → 면이 --press (채운 금색은 --waitHover)   ② 면 없는 글자·아이콘 → 흐려짐
      ③ 체크 원 → 원이 눌려 들어감.   누르면 즉시, 떼면 .12s 에 돌아온다(:active 에서만 transition 끔). */
-  .nav button, .more, .foot button{transition:opacity var(--tPress)}
-  .nav button:active, .more:active, .foot button:active, .nav button.dn, .more.dn, .foot button.dn{opacity:.4;transition:none}
-  .nav button:disabled{opacity:.22}
+  .nav button, .more{transition:opacity var(--tPress)}
+  .nav button:active, .more:active, .nav button.dn, .more.dn{opacity:.4;transition:none}
   .date{
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     font-size:17px;color:var(--text);font-weight:600;letter-spacing:.01em;   /* 17/600 = iOS 내비 제목. 15 는 사다리에서 날짜만 쓰던 단계 → 활자 사다리 20/17/14/13 (2026-09-11) */
@@ -303,15 +302,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
   /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
   .leadmain.done{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
-  /* 전체 / 남은 팀 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
+  /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
   .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 두 칸 같은 너비·썸은 공용 .seg 규칙 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
   /* 인원 요약(구성 글자 or 「방문 n·취소 n」)은 요약 줄 아래 */
   .leadsub{font-size:14px;font-weight:600;color:var(--dim);display:block;margin-top:8px}   /* 구성 줄(14)과 같은 단계·간격 */
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
-  .leadsub .tally-go{color:var(--goTx);font-weight:700}
-  .leadsub .tally-off{color:var(--warn);font-weight:700}
+  /* 카드의 방문·취소 내역도 맨 글자 — 상태색은 체크 원 하나에만 쓴다(시간바 초록 분수와 함께 2026-09-12 정리) */
   .leadsub .pcsep{color:var(--off)}
   /* 대기 팀의 「인원 구성」 — 테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다.
      «정보는 글자, 조작만 알약»: 칩(채움)으로 그렸더니 옆 토글과 같은 옷이라 눌리는 버튼처럼 보였다(2026-09-11) → 맨 글자.
@@ -338,7 +336,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .updbar svg{width:16px;height:16px;display:block}
   body.upd-on .wrap{padding-bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 78px + 48px + var(--kb, 0px))}
   body.upd-on .toast{bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + 48px + var(--kb, 0px))}
-  .updbar:active, .updbar.dn{background:var(--waitHover)}
+  .foot .updbar:active, .foot .updbar.dn{background:var(--waitHover)}   /* .foot button:active(특이성 0,2,1)보다 앞서야 금색 눌림이 산다 */
 
   /* search */
   /* 검색 띠 — 셸의 일부라 불투명(--ink). 투명이면 카드와 도킹된 시간바 사이 띠로 명단이 비쳐 지나갔다(오너 스크린샷 2026-09-11).
@@ -353,12 +351,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding:11px 86px 11px 52px;font-family:inherit;font-size:16px;
     -webkit-appearance:none;appearance:none;
   }
-  #qBack{
-    position:absolute;left:16px;top:calc(50% - 4px);transform:translateY(-50%);   /* 알약 안쪽 16 — 둥근 끝에 붙지 않게 */
-    width:36px;height:36px;display:grid;place-items:center;border-radius:12px;
-    background:none;border:0;color:var(--dim);cursor:pointer;
-  }
-  #qBack:active, #qBack.dn{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
+  #qBack{left:16px}    /* 알약 안쪽 16 — 둥근 끝에 붙지 않게. 공통 꼴은 아래 .searchbar button */
+  #qClear{right:16px}
   .qcount{
     position:absolute;right:52px;top:calc(50% - 4px);transform:translateY(-50%);
     font-size:13px;font-weight:600;color:var(--dim);
@@ -369,13 +363,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .searchbar input:focus{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}   /* 금색 링은 큰 금색 버튼처럼 보였다(오너) — 금색은 「지금」의 색. 포커스는 커서·키보드가 말한다 */
   .searchbar input::-webkit-search-cancel-button{display:none}
   .searchbar button{
-    position:absolute;right:16px;top:calc(50% - 4px);transform:translateY(-50%);
+    position:absolute;top:calc(50% - 4px);transform:translateY(-50%);
     width:36px;height:36px;border:0;border-radius:12px;
     background:none;color:var(--dim);cursor:pointer;
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .searchbar button svg{display:block}
-  .searchbar button:active, .searchbar button.dn{opacity:.4}
+  .searchbar button:active, .searchbar button.dn{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
   mark{background:var(--mark);color:var(--text);-webkit-text-fill-color:var(--text);border-radius:3px;padding:0 1px}
 
   /* time group — 시간대 머리글 + 그 명단 (2026-09-11 오너 확정: 「5시 버전 + 다듬기」).
@@ -387,14 +381,13 @@ window.addEventListener('pageshow', remeasureSbcut);
      닿기 여백만큼 전에 먼저 밀려나 두 머리글 사이에 빈 틈이 생긴다(오너 지적, 2026-09-11). 안쪽 내용이면 붙는
      범위에 포함돼 다음 머리글이 닿는 순간 밀려난다(padding 은 안 됨 — 붙는 범위가 내용 상자까지라 더 일찍 밀려남).
      접힌 시간대는 여백 없이 선으로만 잇는다. 멈춰 있을 때 배치는 margin 방식과 픽셀까지 같다. */
-  .group{margin-top:0}
   /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). */
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 12 에 선다 */
 
   .ghead{
-    position:relative;position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
+    position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
     width:calc(100% + 32px);margin:0 -16px;padding:12px 16px 11px;   /* 높이 44 = 애플 최소 누름 크기. 좌우 16 = 메뉴·진행도와 같은 열 */
@@ -433,14 +426,13 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--wait);
   }
   .group.done .gtime{color:var(--dim)}
-  .group.done .gmeta b{color:var(--goTx)}
 
   /* row — 카드도 슬래브도 레일도 없음. 바탕 위에 «들여쓴» 헤어라인으로만 나뉜 「명단」
-     (체크 칸 54px 다음부터 그어 이름줄에 맞춘다). 상태는 체크·태그·옅은 배경으로만. */
+     (체크 칸 54px 다음부터 그어 이름줄에 맞춘다). 상태는 체크 원 하나로만. */
   .row{
     position:relative;
     display:flex;align-items:stretch;gap:0;
-    transition:opacity var(--tState),background var(--tState);
+    transition:opacity var(--tState);
   }
   .row + .row::before{
     content:"";position:absolute;left:54px;right:0;top:-1px;height:1px;
@@ -487,7 +479,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
   /* 메모는 이름 아래 보조 정보 — 금색(경보처럼 보임)에서 낮춰 조용하게. 앞에 작은 점. */
   .memo{
-    margin-top:2px;font-size:13px;font-weight:600;line-height:1.3;
+    margin-top:2px;font-size:13px;font-weight:600;line-height:1.35;
     color:var(--dim);text-align:left;
     word-break:break-all;
   }
@@ -518,7 +510,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   /* 방문/취소 — 상태 색은 «원 하나에만». 행을 칠하지도, 태그를 붙이지도 않는다
      (원 안의 ✓/✕ 가 이미 같은 말). 처리된 행은 글자가 같이 가라앉을 뿐 크기·높이는 그대로
-     — 이름 열이 들쭉날쭉하지 않게. 줄여서 공간을 아끼는 건 「남은 팀」 보기가 맡는다. */
+     — 이름 열이 들쭉날쭉하지 않게. 줄여서 공간을 아끼는 건 「대기」 보기가 맡는다. */
   .row.arrived .check{background:var(--go);border-color:var(--go);color:var(--onGo);-webkit-text-fill-color:var(--onGo)}
   .row.arrived .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.arrived .pax, .row.cancelled .pax{color:var(--dim);-webkit-text-fill-color:var(--dim)}
@@ -526,8 +518,8 @@ window.addEventListener('pageshow', remeasureSbcut);
      «취소»는 빨간 ✕ 가 말한다 — 취소선은 뺐다(상태는 원 하나에만, 선을 줄인다. 오너 2026-09-11). */
   .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
-  /* 「남은 팀」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
-  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--ease)}
+  /* 「대기」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
+  .row.leaving{opacity:0;overflow:hidden;transition:opacity var(--tMove) var(--ease),height var(--tMove) var(--ease)}   /* 높이는 JS 가 px→0 (아래 scheduleLeave) */
 
 
   .erow{display:flex;gap:6px}
@@ -588,8 +580,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 명단 붙여넣기 — 명단이 비었을 때의 화면. .panel 카드 모양 그대로, 내용만큼만 크다.
      입력칸 높이는 창을 열 때 JS 가 한 번 고정하고 키보드와 무관하게 유지한다.
      경고문이 뜨면 입력칸을 그만큼만 줄여 등록 버튼 위치가 안 변한다 (버튼 씹힘 방지). */
-  #pastePanel{ margin-top:10px }
-  #pastePanel h2{font-size:17px}
 
   /* .tawrap 은 높이 고정 + overflow:hidden 인 '틀'이다 (스크롤러 아님). 그 안에서 <textarea>
      가 내부 스크롤을 갖고, .hl(빨간줄 레이어)은 textarea.scrollTop 에 맞춰 안쪽 .hlmove 를
@@ -631,7 +621,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 오류 안내는 위 안내문이 빨갛게 바뀌는 것뿐. 레이아웃은 전혀 안 움직인다 */
   #pasteHint.bad{ color:var(--errTx);font-weight:700 }
 
-  /* ── 큰 버튼 (시트·팝업·폼 공통) — 높이 48 · 15px/700 · 둥글기 12 ──
+  /* ── 큰 버튼 (시트·팝업·폼 공통) — 높이 48 · 17px/600 · 알약(999) ──
      주동작 = 금색 채움 / 보조 = --btn 면(테두리 없음) / 위험 = --btnWarn 면 + 붉은 글자. 이 꼴 하나뿐.
      (.btn · .dbtn button · .sheetClose · .sheetNever · .sheetCopy 가 전부 이 값을 쓴다) */
   .btns{display:flex;gap:8px;margin-top:14px}
@@ -645,7 +635,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   .btn.ghost{background:var(--btn);color:var(--text)}
   .btn.primary:active, .btn.primary.dn{background:var(--waitHover)}   /* 클로드 fill-brand → fill-brand-hover */
   .btn.ghost:active, .btn.ghost.dn{background:var(--btnPress)}
-  textarea::placeholder{ color:var(--ph) }
 
   /* footer — 떠 있는 유리 알약 바 (2026-09-11 오너: 「리얼 아이폰처럼」). 명단은 바 «아래로» 지나가고(.wrap 아래 여백),
      바는 반투명 판 + 뒤 흐림이라 지나가는 명단이 비친다. 안은 세 항목 같은 글자색 — 가운데 칠·색 강조는 반려
@@ -677,13 +666,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:flex;align-items:center;justify-content:center;gap:6px;position:relative;
     transition:background var(--tPress);
   }
-  .foot button svg{width:16px;height:16px}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
+  .foot button svg{width:16px;height:16px;display:block}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
   /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
   .foot button:active, .foot button.dn{background:var(--btnPress);opacity:1;transition:none}
   .foot button:disabled{opacity:.4;pointer-events:none}   /* 클로드 opacity-disabled .4 */   /* 접을 시간대가 없을 때(대기 모드·전부 처리) — 자리는 지키고 꺼 둔다 */
-  .foot button svg{display:block}
 
-  .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.7;white-space:pre-line}
+  .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.6;white-space:pre-line}
   /* ---------- 메뉴 서랍 ---------- */
   .drawerScrim{
     position:fixed;inset:0;z-index:60;background:var(--scrimLite);
@@ -721,7 +709,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 세그먼트 토글 — 테마 다크/라이트, Wi-Fi 본관/별관 공용.
      강조색(--wait)은 두 테마 모두 「켜짐」으로 읽힌다. .wide 는 시트 안에서 꽉 차게. */
   /* 고르기(선택)는 «누르기(동작)»와 달라 보여야 한다 — 금색 채움이면 「저장」 같은 주동작 버튼으로 읽힌다.
-     상단 「전체 / 남은 팀」·서랍 테마·Wi-Fi 본관/별관이 전부 이 한 부품: 오목한 트랙 + 고른 칸만 면·밝은 글자. */
+     상단 「전체 / 대기」·서랍 테마·Wi-Fi 본관/별관이 전부 이 한 부품: 오목한 트랙 + 고른 칸만 면·밝은 글자. */
   /* iOS 세그먼트 꼴(2026-09-11 오너 채택): 트랙은 바탕색으로 «파이고», 선택 칸은 밝은 썸 + 그림자.
      썸은 ::before 하나 — 누르면 선택 칸 자리로 «미끄러진다»(오너 요청 애니메이션). 두 칸이 같은 너비(grid 1fr)라야 썸 폭 계산이 맞는다.
      썸 폭 = 50% − 3px (패딩 2·틈 2 보정), 2번째 칸으로는 썸 폭 + 틈 2 만큼 이동. reduced-motion 은 전역 규칙이 트랜지션을 끈다. */
@@ -787,13 +775,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   }
   .sheetBtns{flex:0 0 auto;display:flex;gap:8px;margin:8px 16px 0}  /* 위 8px = 스크롤 목록과 버튼이 안 붙게 */
-  .sheetBtns .sheetClose{flex:1}
-  .sheetNever{
-    flex:1;height:48px;padding:0;border-radius:999px;
-    border:0;background:var(--btn);
-    color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;   /* 글자 버튼은 --text (닫기와 같은 급) */
-  }
-  .sheetNever:active, .sheetNever.dn{background:var(--btnPress)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
+  .sheetBtns .sheetClose, .sheetBtns .sheetNever, .sheetBtns .sheetCopy{flex:1}
   .faq{padding-bottom:8px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
   .qa{border-bottom:1px solid var(--line)}
   .qa:last-child{border-bottom:0}
@@ -809,7 +791,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .qa.open .qchev{transform:rotate(90deg);color:var(--text)}   /* 열림 표시는 회전으로 충분 — 금색은 「지금·주동작」에만 */
   .qa .a{
     display:none;padding:0 0 15px;
-    font-size:13px;line-height:1.7;color:var(--dim);white-space:pre-line;
+    font-size:13px;line-height:1.6;color:var(--dim);white-space:pre-line;
   }
   .qa.open .a{display:block}
   .qa .a em{font-style:normal;color:var(--text);font-weight:600}
@@ -906,7 +888,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 읽기 전용 행 — 상태 표시 · 이름 · 오른쪽 인원.
      원(체크박스)은 안 그린다 — 읽기 전용인데 빈 원이 있으면 「눌러야 하나」로 보인다.
      방문 ✓ 초록 / 취소 ✕ 빨강 표시만, 대기는 빈칸(이름 열은 그대로 맞춰 둔다). */
-  .bkvrow{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:14px;line-height:1.3}
+  .bkvrow{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:14px;line-height:1.35}
   .bkvrow .ck{width:14px;height:14px;flex:0 0 auto;display:grid;place-items:center;line-height:0;color:transparent}
   .bkvrow .ck svg{display:block}
   .bkvrow.go .ck{color:var(--goTx)}
@@ -918,7 +900,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkvrow.off .nm{color:var(--off);text-decoration:line-through;text-decoration-thickness:1px}
   /* 시트 기본 하단바(닫기) 오른쪽에 그 시트의 주동작 버튼을 하나 더 붙인다
      (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 포인트색. */
-  .sheetBtns .sheetCopy{flex:1;border:0;background:var(--wait);color:var(--onWait);font-weight:700}
+  .sheetBtns .sheetCopy{border:0;background:var(--wait);color:var(--onWait);font-weight:700}
   .sheetBtns .sheetCopy:active, .sheetBtns .sheetCopy.dn{background:var(--waitHover)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
@@ -949,19 +931,18 @@ window.addEventListener('pageshow', remeasureSbcut);
   .urlcopy:active, .urlcopy.dn{background:var(--btnPress)}
   .wnet .k{font-size:13px;font-weight:700;color:var(--dim);flex:0 0 52px}
   .wnet .v{font-size:17px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
-  .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
-  .about:last-of-type{margin-bottom:16px}
+  .about{font-size:14px;line-height:1.6;color:var(--dim);margin:0 0 12px}
   .about b{color:var(--text);font-weight:700}
   .credit{
     border-top:1px solid var(--line);padding-top:12px;margin:16px 0 2px;
     font-size:13px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
-  .sheetClose{
-    width:100%;height:48px;padding:0;margin-top:2px;border-radius:999px;
+  .sheetClose, .sheetNever{   /* 닫기 · 다시 보지 않기 — 같은 보조 버튼 */
+    height:48px;padding:0;margin-top:2px;border-radius:999px;
     border:0;background:var(--btn);
     color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
-  .sheetClose:active, .sheetClose.dn{background:var(--btnPress)}
+  .sheetClose:active, .sheetClose.dn, .sheetNever:active, .sheetNever.dn{background:var(--btnPress)}
 
   /* ---------- 잠금 화면 (공유 비밀번호) ----------
      네이티브 키보드를 안 쓴다 — 직접 만든 숫자 키패드. iOS 는 입력칸에 포커스가 가면
@@ -1006,7 +987,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:1.5px solid var(--off);background-color:transparent;
     transition:background-color var(--tPress), border-color var(--tPress);
   }
-  /* 글자용 포인트 토큰 — 다크는 --wait 와 같은 값, 라이트는 파랑 */
+  /* 글자용 포인트 토큰 — 다크는 --wait 와 같은 값, 라이트는 테라코타 */
   .lockdots i.on{background-color:var(--waitTx);border-color:var(--waitTx)}
   .lock.bad .lockdots{animation:lockshake .32s}
   @keyframes lockshake{
@@ -1061,7 +1042,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   /* ---------- 스플래시 (앱 로딩) ----------
      재로그인 상태(data-authed)로 앱을 열면 명단이 뜨기 전 ~1초가 빈다 — 그 사이를 앱 아이콘·이름으로 덮는다.
-     그 상태에선 첫 프레임부터 떠 있고, app IIFE 의 첫 render() 가 .out 로 0.25s 페이드시켜 걷는다
+     그 상태에선 첫 프레임부터 떠 있고, app IIFE 의 첫 render() 가 .out 로 --tMove 페이드시켜 걷는다
      (안전망: 12초). 로그인 안 됐으면 잠금 키패드가 그 역할을 하므로 스플래시는 안 띄운다.
      접속을 빠르게 하지는 않는다 — 빈 화면을 브랜드 화면으로 바꿀 뿐, 고정 지연 없이 준비되면 사라진다. */
   /* 스플래시 워드마크(익순이) 전용 서체 — 카페24 써라운드(Cafe24 Ssurround), 상업적 임베드 자유
@@ -1119,7 +1100,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 세로 위치는 .scrim 의 place-items:center 가 잡는다. 입력칸이 없어 키보드가 안 뜨므로
        예전의 --kb 이동은 필요 없다. */
   }
-  .dialog h3{margin:0 0 4px;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.45;white-space:pre-line}
+  .dialog h3{margin:0 0 4px;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.35;white-space:pre-line}
   /* 같은 막에 뜨는 형제 창(룰렛)의 .rltsub 와 같은 크기·색. 아래 여백은 안 준다
      — 인접 마진 상쇄로 .dbtn 의 margin-top 에 먹혀 무의미하다. */
   .dialog .dlgnote{margin:0;font-size:13px;line-height:1.5;color:var(--dim)}   /* 보조 설명 = 13 (시트 안내문과 같은 크기) */
@@ -1130,7 +1111,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
   }
   .dbtn #dlgNo:active, .dbtn #rltClose:active, .dbtn #dlgNo.dn, .dbtn #rltClose.dn{background:var(--btnPress)}   /* 취소·닫기 = 면이 밝아짐 */
-  .dbtn #rltGo:active, .dbtn #rltGo.dn{background:var(--waitHover)}                           /* 채운 버튼 = 살짝 어둡게 */
+  .dbtn #rltGo:active, .dbtn #rltGo.dn{background:var(--waitHover)}                           /* 채운 버튼 눌림 = --waitHover */
   /* 「초기화」는 한 번 눌러서가 아니라 「길게 눌러」 실행된다.
      예전엔 '예' 를 타이핑하게 했는데, 그 키보드가 뜨면 아이폰이 화면(비주얼 뷰포트)을
      밀어 올려 팝업이 위로 잘려 나갔다. 키보드를 아예 없애되 8/31 실수 방지 장치는
@@ -1143,7 +1124,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
   .dbtn #dlgYes.holdmode{ touch-action:none }            /* 길게 누르기 제스처를 스크롤로 뺏기지 않게 */
-  .dbtn #dlgYes.holdmode:active, .dbtn #dlgYes.holdmode.dn{filter:none}             /* 차오르는 면이 눌림을 말한다 — 겹치지 않게 */
   .dbtn #dlgYes:not(.holdmode):active, .dbtn #dlgYes:not(.holdmode).dn{background:var(--btnWarnPress)}   /* 탭 모드 눌림 = 붉은 면이 한 단 짙어짐 (행 메뉴 삭제와 같음) */
   /* 누르는 동안 버튼 전체가 왼쪽부터 차오른다. 글자는 --onWarn 이라 채움 위에서도 읽힌다
      (다크 4.68:1 / 라이트 4.62:1) — 글자색을 안 바꾸면 여기서 3.65 / 2.90 으로 묻혔다. */
@@ -1192,7 +1172,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   .rltchip.win{ transform:scale(1.09) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
   .rltresult{ margin:14px 2px 2px;text-align:center;font-size:20px;font-weight:800;color:var(--waitBig) }
-  .dbtn #rltGo{background:var(--wait);color:var(--onWait);border-color:var(--wait)}
+  .dbtn #rltGo{background:var(--wait);color:var(--onWait)}
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
 
   .toast{
@@ -1217,7 +1197,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px)}
   .scrim.hide .dialog{opacity:0;transform:scale(.96)}
   .scrim.hide .rlt{opacity:0;transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96)}
-  .panel.asSheet.hide{display:block !important;opacity:0;visibility:hidden;pointer-events:none;
+  .panel.asSheet.hide{display:flex !important;opacity:0;visibility:hidden;pointer-events:none;
     transform:translateX(-50%) translateY(calc(24px - var(--kb, 0px)));transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease),visibility 0s var(--tMove)}
   @keyframes fadeIn{from{opacity:0}}
   @keyframes sheetIn{from{opacity:0;transform:translateY(24px)}}   /* 업데이트 알약 등장 */
@@ -2170,13 +2150,18 @@ window.dispatchEvent(new Event('fb-ready'));
     if (t.off) out.push('<span class="pc tally-off">취소 ' + t.off + '</span>');
     return out.join('<span class="pcsep"> · </span>');
   }
-  // 시간대 머리글 오른쪽 「방문 n · 취소 n   처리/전체」 — 진행도 숫자가 맨 끝(행의 ⋯ 열 쪽).
+  // 시간대 머리글 오른쪽 — 열린 칸은 「처리/전체」, 끝난 칸은 「방문 n · 취소 n」 (맨 끝 = 행의 ⋯ 열 쪽).
   // render 와 patchStatus 가 같이 쓴다.
   function slotMetaHtml(items){
     var t = tallyStatus(items);
-    // 아직 아무도 안 온 시간대는 「방문 0」을 쓰지 않는다 — 「0/1」 만으로 충분
-    var br = (t.came || t.off) ? '<span class="gbreak">방문 ' + t.came + (t.off ? ' · 취소 ' + t.off : '') + '</span>' : '';
-    return br + '<b>' + (t.came + t.off) + '/' + t.total + '</b>';
+    // 열린 시간대 = 진행도 「처리/전체」 하나. 다 처리된 시간대 = 내역 「방문 n · 취소 n」 하나 (0인 쪽은 안 쓴다).
+    // 둘을 같이 쓰면 「취소 1  1/4」처럼 숫자가 겹치고, 「방문 0」 같은 빈 정보가 생겼다(2026-09-12 정리).
+    var done = t.total > 0 && (t.came + t.off) >= t.total;
+    if (!done) return '<b>' + (t.came + t.off) + '/' + t.total + '</b>';
+    var parts = [];
+    if (t.came) parts.push('방문 ' + t.came);
+    if (t.off) parts.push('취소 ' + t.off);
+    return '<span class="gbreak">' + parts.join(' · ') + '</span>';
   }
 
 
@@ -2254,7 +2239,6 @@ window.dispatchEvent(new Event('fb-ready'));
 
     var qc = document.getElementById('qCount');
     if (q){
-      qc.classList.remove('hide');
       qc.className = 'qcount' + (items.length ? '' : ' zero');
       qc.textContent = items.length + '건';
     } else {
@@ -2296,7 +2280,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!panel.classList.contains('hide') && !taEl.value.trim()) closePaste();
 
     var openCount = 0;
-    var pendRows = 0;   // 「남은 팀」 보기에서 보여줄 행 수 — 접혀 있어도 센다 (접힘 ≠ 없음)
+    var pendRows = 0;   // 「대기」 보기에서 보여줄 행 수 — 접혀 있어도 센다 (접힘 ≠ 없음)
     // 검색 중엔 groups 가 «걸린 사람만»이다. 머리글 숫자·끝남 판정은 시간대 «전체» 기준이어야
     // 체크 직후 부분 갱신(patchStatus — 전체 기준)과 숫자가 어긋나지 않는다 (0/1 → 3/9 로 튀던 것).
     var fullAt = {};
@@ -2905,7 +2889,6 @@ window.dispatchEvent(new Event('fb-ready'));
       catch(e){ failed(); }
       return;
     }
-    if (api.logGet) api.logGet(forDate).then(apply).catch(failed);
   }
 
   window.addEventListener('storage', function(e){
@@ -2938,7 +2921,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 바뀐 행과 그 시간대 머리글만 손본다. 요소를 새로 만들지 않고 내용만 고친다.
   // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
-  // 「남은 팀」 보기에서 방금 처리한 행 — 바로 지우면 「내가 뭘 눌렀지」가 된다.
+  // 「대기」 보기에서 방금 처리한 행 — 바로 지우면 「내가 뭘 눌렀지」가 된다.
   // 채워진 원을 LEAVE_MS 동안 보여준 뒤 흐려지며 빠진다. 그 사이 다시 누르면(체크 해제) 그대로 남는다.
   var LEAVE_MS = 900, leaveTimers = {};
   function cancelLeave(id){
@@ -2950,7 +2933,13 @@ window.dispatchEvent(new Event('fb-ready'));
     leaveTimers[id] = setTimeout(function(){
       if (viewMode !== 'pending'){ delete leaveTimers[id]; return; }   // 그새 「전체」로 갔으면 남는다
       var row = rowForId(id);
-      if (row) row.classList.add('leaving');
+      if (row){
+        // 흐려지는 동안 높이도 0 으로 — 아래 행이 같은 곡선으로 따라 올라온다. 빈 칸이 남았다가 render 에서 툭 당겨지던 것을 없앰(2026-09-12).
+        row.style.height = row.offsetHeight + 'px';
+        void row.offsetHeight;   // 시작 높이를 확정한 뒤 전환
+        row.classList.add('leaving');
+        row.style.height = '0px';
+      }
       leaveTimers[id] = setTimeout(function(){
         delete leaveTimers[id];
         if (viewMode !== 'pending') return;
@@ -2990,7 +2979,6 @@ window.dispatchEvent(new Event('fb-ready'));
       if (man && man.done !== (tallyStatus(mine).pend === 0)) delete collapsed[it.time];
       var meta = grp.querySelector('.gmeta');
       if (meta) meta.innerHTML = slotMetaHtml(mine);
-      grp.setAttribute('data-time', it.time);
     }
     repaintNow();
     paintHead();
@@ -3508,7 +3496,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   document.getElementById('resetBtn').addEventListener('click', function(){
     hideDrawer();
-    if (!state || !state.items.length){ toast('명단이 없습니다'); return; }
+    if (!state || !state.items.length){ closeDrawer(); toast('명단이 없습니다'); return; }   // backDone 까지 — 유령 뒤로가기 기록 방지
     // 안내문은 조작법 하나만 — 앱의 다른 창 보조문(#pasteHint·.rltsub)과 같은 규칙이다.
     // 건수는 묻는 자리(안내문)가 아니라 끝난 자리(토스트)에 둔다: 「명단 초기화」를 누른
     // 사람에게 건수는 결정을 바꾸지 않지만, 끝난 뒤엔 무엇이 사라졌는지 알려 주는 영수증이 된다.
@@ -3702,7 +3690,7 @@ window.dispatchEvent(new Event('fb-ready'));
     try { localStorage.setItem('ix-view', m); } catch(e){}
     syncViewSeg();
     openMenu = null;
-    cancelAllLeaves();   // 「남은 팀」에서 빠지려던 행이 있으면 그 타이머는 무의미 (통째로 다시 그린다)
+    cancelAllLeaves();   // 「대기」에서 빠지려던 행이 있으면 그 타이머는 무의미 (통째로 다시 그린다)
     render();   // 즉시 — 크로스페이드는 「깜빡이다 확 넘어가는」 느낌(오너 2026-09-11)
   }
   viewAllBtn.addEventListener('click', function(){ setViewMode('all'); });
@@ -4014,6 +4002,9 @@ window.dispatchEvent(new Event('fb-ready'));
   sheetScrim.addEventListener('click', function(e){ if (e.target === sheetScrim) closeSheet(); });
 
   var FAQ = [
+    ['「대기」는 뭔가요?',
+      '아직 체크하지 않은 팀만 보여줍니다.\n'
+      + '체크하면 잠시 뒤 목록에서 빠지고, <em>전체</em>로 돌아오면 다시 보입니다.'],
     ['손님이 오지 않으면?',
       '예약 시각 15분 뒤까지 방문 체크가 없으면 자동으로 취소됩니다.\n'
       + '늦게 와도 체크하면 방문으로 바뀝니다.'],
@@ -4023,7 +4014,7 @@ window.dispatchEvent(new Event('fb-ready'));
     ['시간대는 왜 자동으로 접히나요?',
       '남은 예약이 없으면 5초 뒤 자동으로 접힙니다.'],
     ['메모는 어떻게 쓰나요?',
-      '예약 <em>수정</em>에서 입력하면 이름 아래에 표시됩니다.\n'
+      '예약 <em>추가</em>·<em>수정</em>의 메모 칸에 입력하면 이름 아래에 표시됩니다.\n'
       + '메모는 명단 복사에 포함되지 않습니다.'],
     ['연결이 끊기면?',
       '화면에 <em>연결 안 됨</em>이 표시됩니다.\n'
@@ -4031,7 +4022,7 @@ window.dispatchEvent(new Event('fb-ready'));
     ['명단이 사라지면?',
       '메뉴 → <em>지난 명단</em>에서 원하는 시점의 명단을 복사해 다시 등록하면 됩니다.'],
     ['업데이트 알림이 뜨면?',
-      '화면 위쪽 <em>업데이트</em> 띠를 누르거나, 앱을 완전히 종료했다가 다시 열면 적용됩니다.\n'
+      '아래 <em>새 버전으로 업데이트</em> 버튼을 누르거나, 앱을 완전히 종료했다가 다시 열면 적용됩니다.\n'
       + '당장 하지 않아도 괜찮습니다.']
   ];
   var CHEV = '<span class="qchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>';
@@ -4451,7 +4442,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
   /* ---------- 새 버전 알림 ---------- */
   // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면 헤더 아래에
-  // 「새 버전이 나왔어요」 금색 띠를 띄운다 — 그 띠를 눌러야 새로 뜬다. 저절로는 안 바뀜.
+  // 하단에 「새 버전으로 업데이트」 알약을 띄운다 — 그걸 눌러야 새로 뜬다. 저절로는 안 바뀜.
   // 확인 시점: 앱으로 돌아올 때 · 켜 둔 채면 5분마다. (둘이 자정 케이스도 덮는다)
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
   var updShown = false;
@@ -4482,7 +4473,7 @@ window.dispatchEvent(new Event('fb-ready'));
   try {
     if (sessionStorage.getItem('ix-updated')){
       sessionStorage.removeItem('ix-updated');
-      setTimeout(function(){ toast('업데이트되었습니다'); }, 700);
+      setTimeout(function(){ toast('업데이트됨'); }, 700);
     }
   } catch(e){}
 
@@ -4744,7 +4735,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // pointerdown 에 .dn 을 붙이고, 손을 떼도 최소 130ms 는 유지한다. CSS 의 모든 :active 규칙엔 .dn 짝이 있다.
   // (키패드는 아래 자기 보정을 쓴다 — 여기서 제외)
   (function(){
-    var SEL = 'button:not(.lockkey), .main, .ghead, .dwitem, .bkrow, .qa .q, .updbar';
+    var SEL = 'button:not(.lockkey), .bkrow, .bkback';   // 나머지 누르는 것들은 전부 <button>. .bkrow·.bkback 만 div/span
     var cur = null, since = 0, timer = null;
     function release(){
       if (!cur) return;
