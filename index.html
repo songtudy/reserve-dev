@@ -511,7 +511,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
   /* 「대기」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
-  .row.leaving{opacity:0;overflow:hidden;transition:opacity var(--tMove) var(--ease),height var(--tMove) var(--ease)}   /* 높이는 JS 가 px→0 (아래 scheduleLeave) */
+  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--ease)}   /* 흐려지기만 — 높이까지 접으면 매 프레임 목록 전체가 다시 배치돼 «렉 걸린 듯» 보인다(오너 2026-09-12). 접기/펼치기를 즉시로 둔 것과 같은 이유 */
 
 
   .erow{display:flex;gap:6px}
@@ -692,7 +692,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dwitem{
     display:flex;align-items:center;gap:8px;
     padding:13px 16px;border:0;background:none;cursor:pointer;
-    color:var(--text);font-family:inherit;font-size:17px;font-weight:600;text-align:left;   /* 17 = 명단 이름과 같은 목록 행 */
+    color:var(--text);font-family:inherit;font-size:14px;font-weight:600;text-align:left;   /* 14 = FAQ 질문과 같은 «패널 안 누르는 줄». 17 은 제목(익순이)과 같아져 위계가 무너졌다(2026-09-12) */
   }
   .dwitem:active, .dwitem.dn{background:var(--press)}
   /* 위험한 동작(명단 초기화) — 붉게. 실행 자체는 여전히 「길게 눌러」 확인을 거친다 */
@@ -2921,13 +2921,7 @@ window.dispatchEvent(new Event('fb-ready'));
     leaveTimers[id] = setTimeout(function(){
       if (viewMode !== 'pending'){ delete leaveTimers[id]; return; }   // 그새 「전체」로 갔으면 남는다
       var row = rowForId(id);
-      if (row){
-        // 흐려지는 동안 높이도 0 으로 — 아래 행이 같은 곡선으로 따라 올라온다. 빈 칸이 남았다가 render 에서 툭 당겨지던 것을 없앰(2026-09-12).
-        row.style.height = row.offsetHeight + 'px';
-        void row.offsetHeight;   // 시작 높이를 확정한 뒤 전환
-        row.classList.add('leaving');
-        row.style.height = '0px';
-      }
+      if (row) row.classList.add('leaving');   // 흐려지는 것만 — 자리는 아래 render 가 한 번에 거둔다
       leaveTimers[id] = setTimeout(function(){
         delete leaveTimers[id];
         if (viewMode !== 'pending') return;
@@ -2943,7 +2937,6 @@ window.dispatchEvent(new Event('fb-ready'));
 
     cancelLeave(it.id);
     row.className = 'row ' + it.status;
-    row.style.height = '';   // 축소(.leaving) 중이었다면 인라인 높이도 되돌린다
     if (viewMode === 'pending' && it.status !== 'pending') scheduleLeave(it.id);
     var chk = row.querySelector('.check');
     if (chk){
