@@ -295,7 +295,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   .slottime{font-size:20px;font-weight:800;color:var(--wait);letter-spacing:-.02em}
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
-  /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
+  /* 끝난 상태 = 퇴근 타이머 「퇴근까지 2:31:07」 — 라벨은 부제 단계(14·흐림), 숫자는 지금 시각과 같은 급(20·금).
+     「남은 예약 없음」「지난 시간대 대기 n팀」은 뺐다(오너 2026-09-12): 대기 토글이 이미 그 상태를 보여주고 문구가 길었다. */
+  .leadmain .cdlab{font-size:14px;font-weight:600;color:var(--dim);margin-right:8px}
+  .leadmain .cd{color:var(--wait)}
+  /* 퇴근 시각이 지나면 숫자 없이 상태 한마디 — 숫자(20)보다 한 단계 아래 */
   .leadmain.done{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
   /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
@@ -2091,6 +2095,7 @@ window.dispatchEvent(new Event('fb-ready'));
   //  - 비정각 예약   : 그 시각이 되면 (5초)
   // 어느 쪽이든 그 시간대를 다 체크하면 그 즉시 넘어간다.
   var GRACE_ON_HOUR = 11, GRACE_OFF_HOUR = 5/60;
+  var CLOSE_HM = '21:00';      // 퇴근 시각 — 상단 카드의 퇴근 타이머 기준 (KST · 서버 시계)
   var AUTO_CANCEL_MIN = 15;    // 예약 시각에서 이만큼 지나도 체크가 없으면 취소 (직원 :10 컷의 백스톱)
   var AUTO_CANCEL_WINDOW = 1;  // 그 순간에만 한 번. 지나간 시간대를 뒤늦게 훑지 않는다
 
@@ -2152,6 +2157,24 @@ window.dispatchEvent(new Event('fb-ready'));
 
 
   // 상단 요약과 진행도만 다시 그린다 (목록은 건드리지 않는다)
+  // 퇴근 타이머 — 1초마다 숫자만 갈아 끼운다(render 없음). 끝난 상태에서만 돌고, 다른 상태로 바뀌면 멈춘다.
+  // 초 단위까지만: 소수점은 읽히지 않는 잔상이 되고 iOS 가 백그라운드·저전력에서 타이머를 조이니 의미가 없다.
+  function closeLeftSec(){ return Math.max(0, Math.round((slotMin(CLOSE_HM) - nowMin()) * 60)); }
+  function fmtLeft(s){
+    var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x;
+  }
+  var cdTimer = null;
+  function cdTick(){
+    var el = document.getElementById('cdNum');
+    if (!el){ cdStop(); return; }
+    var s = closeLeftSec();
+    if (!s){ cdStop(); paintHead(); return; }   // 0 이 되면 「퇴근 시간」으로
+    el.textContent = fmtLeft(s);
+  }
+  function cdStart(){ if (!cdTimer) cdTimer = setInterval(cdTick, 1000); }
+  function cdStop(){ if (cdTimer){ clearInterval(cdTimer); cdTimer = null; } }
+
   function paintHead(){
     paintDate();
     var all = state ? state.items.slice().sort(sortItems) : [];
@@ -2169,6 +2192,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var ls = document.getElementById('leadSub');
 
     if (slotPend.length){
+      cdStop();
       // 첫 줄 = 시각  팀 수 (+ 오른쪽 토글). 둘째 줄 = 몇인 몇팀 글자가 한 줄을 다 쓴다.
       // 「지금/다음」 라벨은 없다(오너, 2026-09-11) — 이 박스는 늘 «다음에 처리할 시간대»다.
       // 팀 수를 둘째 줄에 넣어 봤더니 구성 자리가 줄어 첫 줄로 되돌림(오너).
@@ -2182,10 +2206,15 @@ window.dispatchEvent(new Event('fb-ready'));
         .map(function(p){ return '<span class="pc">' + p + '인<b>' + byPax[p] + '</b>팀</span>'; })
         .join('<span class="pcsep">·</span>');   // 「5인 1팀 · 7인 1팀」 — 짝이 한 덩어리로 읽히게(시간바 「방문 n · 취소 n」과 같은 구분)
     } else {
+      // 처리할 시간대가 없으면 퇴근 타이머. 지난 시간대에 남은 대기는 대기 토글이 보여주므로 여기선 말하지 않는다.
       st.textContent = '';
-      lm.className = 'leadmain num done';
-      var pendLeft = all.filter(function(x){ return x.status === 'pending'; }).length;   // 지난 시간대에 남은 대기(지금 시간대는 없으니 전부 지난 것)
-      lm.textContent = !all.length ? '' : pendLeft ? '지난 시간대 대기 ' + pendLeft + '팀' : '남은 예약 없음';
+      var left = closeLeftSec();
+      if (!all.length){ lm.className = 'leadmain num done'; lm.textContent = ''; cdStop(); }
+      else if (left > 0){
+        lm.className = 'leadmain num';
+        lm.innerHTML = '<span class="cdlab">퇴근까지</span><span class="cd" id="cdNum">' + fmtLeft(left) + '</span>';
+        cdStart();
+      } else { lm.className = 'leadmain num done'; lm.textContent = '퇴근 시간'; cdStop(); }
       ls.className = 'leadsub num';
       ls.innerHTML = all.length ? dayTally(all) : '';
     }
