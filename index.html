@@ -277,7 +277,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:none;align-items:center;flex:0 0 auto;
     padding:6px 10px;border-radius:8px;   /* 칩 = 면만 */
     background:var(--btnWarn);
-    color:var(--warn);font-size:12px;font-weight:700;white-space:nowrap;line-height:1.2;
+    color:var(--warn);font-size:13px;font-weight:700;white-space:nowrap;line-height:1.2;
   }
   html[data-off] .offtag{display:inline-flex}
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
@@ -288,7 +288,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lead{
     /* 아래 여백 0 — 셸 높이(--topH)가 카드 밑면과 같아져 붙는 시간바가 카드에 딱 붙는다.
        여백을 두면 그 띠로 지나가는 시간대 글자가 비쳐 보였다(오너 영상, 2026-09-11). 쉴 때 간격은 .wrap::before 가 준다. */
-    display:block;margin:8px 0 0;padding:12px 12px;border-radius:18px;   /* 테두리 16 = 메뉴·진행도 열, 안 글자 28 = 알약 좌우·⋯ 아이콘 열 (2026-09-11 일관성 점검) */
+    display:block;margin:8px 0 0;padding:14px 12px;border-radius:18px;   /* 세로 14 — 구성 줄이 5종까지 늘면 12 는 답답했다(2026-09-12). 가로 12 는 안 글자 28 열 */   /* 테두리 16 = 메뉴·진행도 열, 안 글자 28 = 알약 좌우·⋯ 아이콘 열 (2026-09-11 일관성 점검) */
     background:var(--panel2);   /* 불투명 카드 — 상단 전체가 안 비친다 */
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
@@ -303,7 +303,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
   .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 두 칸 같은 너비·썸은 공용 .seg 규칙 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
   /* 인원 요약(구성 글자 or 「방문 n·취소 n」)은 요약 줄 아래 */
-  .leadsub{font-size:14px;font-weight:600;color:var(--dim);display:block;margin-top:6px}   /* 구성 줄(14)과 같은 단계·간격 */
+  .leadsub{font-size:14px;font-weight:600;color:var(--dim);display:block;margin-top:8px}   /* 구성 줄(14)과 같은 단계·간격 */
   .leadsub:empty{display:none}
   .leadsub .pc{white-space:nowrap}
   .leadsub .tally-go{color:var(--goTx);font-weight:700}
@@ -312,7 +312,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 대기 팀의 「인원 구성」 — 테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다.
      «정보는 글자, 조작만 알약»: 칩(채움)으로 그렸더니 옆 토글과 같은 옷이라 눌리는 버튼처럼 보였다(2026-09-11) → 맨 글자.
      보통 3~4종, 많아야 5종 — 5종(각 ≈52px)+간격 14 가 아이폰 카드 안폭 338 에 한 줄로 들어간다 */
-  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin-top:6px}
+  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin-top:8px}
   .leadsub.comp .pcsep{font-size:14px;font-weight:600;color:var(--off)}
   /* 인원·팀수 둘 다 주 정보(오너: 동급) — 전부 밝게 700. 「5인」만 흐리면 테이블 준비의 핵심 숫자가 가라앉는다(2026-09-11).
      포인트 색은 작은 글자엔 안 쓴다(라이트 대비). */
@@ -344,7 +344,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding:0 16px 8px;background:var(--ink);
   }
   .searchbar input{
-    width:100%;background:var(--panel);color:var(--text);
+    width:100%;background:var(--field);color:var(--text);   /* 입력칸 바탕은 전부 --field */
     border:1px solid var(--line);border-radius:999px;
     padding:11px 86px 11px 52px;font-family:inherit;font-size:16px;
     -webkit-appearance:none;appearance:none;
@@ -419,7 +419,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      17px 은 «큰 글씨» 대비 기준 밖이라 지금 색은 글자용 금색(--waitTx). */
   .gtime{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
   .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
-  .gbreak{font-size:13px;font-weight:600;color:var(--dim)}   /* 옆 「n/n」과 같은 단계(13) — 활자 사다리 20/17/16/15/14/13 에서 12 를 없앴다 */
+  .gbreak{font-size:13px;font-weight:600;color:var(--dim)}   /* 옆 「n/n」과 같은 단계(13) — 활자 사다리 25(잠금·스플래시)/20/17/16(입력칸)/14/13, 15·12 는 2026-09-12 정리 */
   .gmeta b{font-size:13px;font-weight:800;color:var(--text)}
   /* 「지금」 = 금색 시각 + 왼쪽 가장자리 3px 막대 (2026-09-11 오너: 「막대 같은 건 괜찮은 것 같다」).
      밑줄·점·띠·선 색 강조는 전부 반려됐고, 막대만 통과. 여섯 꼴(들임·굵기·둥글기·안쪽 배치) 비교 끝에
@@ -531,7 +531,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .erow{display:flex;gap:6px}
   .erow label{
     display:flex;flex-direction:column;gap:4px;
-    font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--dim);
+    font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--dim);
   }
   .erow label.grow{flex:1;min-width:0}
   .erow input, .erow select{
@@ -596,7 +596,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .tawrap{
     position:relative;height:273px;overflow:hidden;
     border:1px solid var(--line);border-radius:12px;
-    background:var(--ink);
+    background:var(--field);   /* 다른 입력칸과 같은 바탕 */
   }
   .tawrap:focus-within{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}
   .tawrap textarea, .hl{
@@ -706,12 +706,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .dwnames{display:flex;flex-direction:column;gap:2px;min-width:0}
   .dwname{font-size:17px;font-weight:800;letter-spacing:-.02em}
-  .dwsubtitle{font-size:12px;font-weight:600;color:var(--dim)}
+  .dwsubtitle{font-size:13px;font-weight:600;color:var(--dim)}
   .dwsep{height:1px;background:var(--line);margin:10px 16px}
   .dwitem{
     display:flex;align-items:center;gap:8px;
     padding:13px 16px;border:0;background:none;cursor:pointer;
-    color:var(--text);font-family:inherit;font-size:15px;font-weight:600;text-align:left;
+    color:var(--text);font-family:inherit;font-size:17px;font-weight:600;text-align:left;   /* 17 = 명단 이름과 같은 목록 행 */
   }
   .dwitem:active, .dwitem.dn{background:var(--press)}
   /* 위험한 동작(명단 초기화) — 붉게. 실행 자체는 여전히 「길게 눌러」 확인을 거친다 */
@@ -746,14 +746,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .seg button:active, .seg button.dn{opacity:.4;transition:none}
   .seg button.on, .seg button[aria-pressed="true"]{color:var(--text)}
   .seg.wide{display:grid;margin:-2px 0 14px}
-  .seg.wide button{height:40px;font-size:15px}
+  .seg.wide button{height:40px;font-size:14px}   /* 30 높이 세그(13)보다 한 단계 */
   .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 16px 2px}
   .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
   .dwtheme .seg{margin-left:auto}
   .dwsep.push{margin-top:auto}
   .dwfoot{
     padding:12px 16px 0;
-    font-size:12px;font-weight:600;color:var(--dim);
+    font-size:13px;font-weight:600;color:var(--dim);
     display:flex;align-items:center;gap:6px;
   }
   .dwfoot.off{color:var(--warn)}
@@ -789,7 +789,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheetNever{
     flex:1;height:48px;padding:0;border-radius:999px;
     border:0;background:var(--btn);
-    color:var(--dim);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;
+    color:var(--text);font-family:inherit;font-size:17px;font-weight:600;cursor:pointer;   /* 글자 버튼은 --text (닫기와 같은 급) */
   }
   .sheetNever:active, .sheetNever.dn{background:var(--btnPress)}   /* 옆의 닫기·ghost 버튼과 같은 눌림 */
   .faq{padding-bottom:8px}  /* margin 아님 — 스크롤 끝에서 margin-bottom 은 iOS 에서 안 보임 */
@@ -896,11 +896,11 @@ window.addEventListener('pageshow', remeasureSbcut);
      머리글은 자기 명단에 붙는다(위 넓게, 아래 선). */
   .bkvt{
     display:flex;align-items:baseline;gap:8px;
-    font-size:15px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--text);
+    font-size:17px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--text);   /* 시간바(.gtime)와 같은 단계 */
     padding:16px 0 7px;border-bottom:1px solid var(--line);margin-bottom:3px;
   }
   .bkvt:first-child{padding-top:4px}
-  .bkvm{margin-left:auto;font-size:12px;font-weight:600;color:var(--dim)}
+  .bkvm{margin-left:auto;font-size:13px;font-weight:600;color:var(--dim)}
   /* 읽기 전용 행 — 상태 표시 · 이름 · 오른쪽 인원.
      원(체크박스)은 안 그린다 — 읽기 전용인데 빈 원이 있으면 「눌러야 하나」로 보인다.
      방문 ✓ 초록 / 취소 ✕ 빨강 표시만, 대기는 빈칸(이름 열은 그대로 맞춰 둔다). */
@@ -945,14 +945,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 보이는 건 32px 그대로 — 누르는 영역만 넓힌다 (.bkback 과 같은 방식) */
   .urlcopy::after{content:"";position:absolute;inset:-8px}
   .urlcopy:active, .urlcopy.dn{background:var(--btnPress)}
-  .wnet .k{font-size:12px;font-weight:700;color:var(--dim);flex:0 0 52px}
-  .wnet .v{font-size:15px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
+  .wnet .k{font-size:13px;font-weight:700;color:var(--dim);flex:0 0 52px}
+  .wnet .v{font-size:17px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
   .about{font-size:14px;line-height:1.75;color:var(--dim);margin:0 0 12px}
   .about:last-of-type{margin-bottom:16px}
   .about b{color:var(--text);font-weight:700}
   .credit{
     border-top:1px solid var(--line);padding-top:12px;margin:16px 0 2px;
-    font-size:12px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
+    font-size:13px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
   .sheetClose{
     width:100%;height:48px;padding:0;margin-top:2px;border-radius:999px;
@@ -1101,7 +1101,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* --off(가장 흐린 토큰)로는 대비가 다크 3.7:1 · 라이트 3.3:1 이라 「공식 표기」로 넣은 줄이
        배경에 묻혔다. --dim 은 5.9:1 · 5.3:1 로 읽히면서도, 이름(25px·16:1)과는 크기·밝기
        양쪽으로 충분히 벌어져 위계가 그대로다. */
-    font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--dim);
+    font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--dim);
   }
 
   .scrim{
