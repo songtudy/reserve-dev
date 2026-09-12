@@ -9,7 +9,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow"><!-- 매장 내부용 — 검색 색인 차단 (robots.txt 와 함께) -->
-<meta name="theme-color" content="#1c1c1e"><!-- = --bar(다크). setThemeChrome 이 테마에 맞게 갱신 -->
+<meta name="theme-color" content="#1c1c1e"><!-- = --ink(다크). setThemeChrome 이 테마에 맞게 갱신 -->
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -50,10 +50,8 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f6f5f2' : '#1c1c1e';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
-  // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
-  // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
-  var bar = (t === 'light') ? '#f6f5f2' : '#1c1c1e';   // = --bar
+  // 상태 표시줄(노치 띠) 색 = 바탕색 --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴). 상단 셸도 같은 색이라 한 층으로 보인다.
+  var bar = (t === 'light') ? '#f6f5f2' : '#1c1c1e';   // = --ink
   d.setAttribute('data-theme', t);
   d.style.colorScheme = (t === 'light') ? 'light' : 'dark';
   // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
@@ -123,7 +121,6 @@ window.addEventListener('pageshow', remeasureSbcut);
        기울기(OKLCh h≈286, C≤.008)라 한 가족. 상태 3색은 L .65~.81 · C .10~.13 으로 밝기·채도 폭을 맞춘 무채 바탕용
        세트: 금(강조)·세이지 초록(방문)·연빨강(취소). 2026-09-12 항목별 색 점검에서 다크 토큰은 손댈 곳 없음. */
     --ink:#1c1c1e;      --panel:#232325;    --panel2:#2a2a2c;
-    --bar:#1c1c1e;      /* 상태 표시줄 띠 색. 잠금·스플래시·body 가 이 색 */
     --line:#323234;     --press:#262628;   --keyDn:#49494b;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
     --text:#f2f3f5;     --dim:#a0a0a5;      --off:#78787d;
     --ph:#878789;
@@ -131,8 +128,8 @@ window.addEventListener('pageshow', remeasureSbcut);
        눌림은 면이 한 단 밝아진다(--press 는 이 면과 거의 같아 안 보여서 따로 둔다). */
     --btn:#303032;      --btnPress:#3c3c3e;  --btnWarn:#3a2a2c;  --btnWarnPress:#4a3336;
     --scrim:rgba(0,0,0,.62);   --scrimLite:rgba(0,0,0,.5);
-    /* 대기 — 금색. 다크는 한 값, 라이트만 칠/글자/큰글자를 나눈다 (대비 때문에) */
-    --wait:#e8b757;     --waitTx:var(--wait);  --waitBig:var(--wait);
+    /* 강조 — 다크 금색 · 라이트 테라코타. 칠·글자·큰 숫자 한 값 */
+    --wait:#e8b757;
     --onWait:#241a05;   --waitHover:#f0c46e;   --field:#202022;   /* 클로드 fill-brand-hover · fill-field */   --mark:#463a13;
     /* 방문 — 초록 (상태 색은 체크 원 하나에만 쓴다) */
     --go:#5fb08a;       --goTx:var(--go);      --onGo:#08241a;
@@ -148,7 +145,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
     --ink:#f6f5f2;      --panel:#ffffff;    --panel2:#e9e7e2;
-    --bar:#f6f5f2;
     --line:#dad7d1;     --press:#e8e6e1;   --keyDn:#c9c5bd;
     --text:#1d1913;     --dim:#6b665f;   /* 글자·스크림·그림자도 회색족과 같은 따뜻한 기울기(h≈78) — 남색 잔재 #161a20 정리 */      --off:#8a857d;
     --ph:#9a958e;
@@ -156,7 +152,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     --btn:#e2dfd9;      --btnPress:#d3cfc8;  --btnWarn:#fbe6e3;  --btnWarnPress:#f5d2cd;
     --scrim:rgba(29,25,19,.44); --scrimLite:rgba(29,25,19,.34);
     /* 강조 한 값(--wait)으로 채움·큰 숫자·아이콘을 다 쓴다. 작은 글자엔 강조색을 안 쓰는 규칙은 다크와 같다. */
-    --wait:#b5541e;     --waitTx:#b5541e;   --waitBig:#b5541e;
+    --wait:#b5541e;
     --onWait:#ffffff;   --waitHover:#c9652b;   --field:#ffffff;    /* 클로드 fill-brand-hover · fill-field(light) */   --mark:#f6e0d3;
     --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
     --warn:#b43f36;
@@ -164,18 +160,17 @@ window.addEventListener('pageshow', remeasureSbcut);
     --errRow:rgba(192,72,60,.12);   --errTx:#9e4438;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;background:var(--ink)}
-  /* 설치된 앱의 상태 표시줄 띠는 body 배경으로 칠해진다(시뮬레이터 확인: html 배경·theme-color 로는 안 바뀜).
-     body 는 --bar(셸 색), 명단 영역(.wrap)이 --ink 를 따로 깐다 → 띠와 상단 셸이 한 장으로 이어진다. */
-  .wrap{background:var(--ink)}
+  html,body{margin:0;padding:0}
+  /* 상태 표시줄 띠·오버스크롤·body·상단 셸 전부 --ink 한 색. 어느 층이 띠를 칠하는지 기록이 엇갈렸는데(html 인라인 / body / 첫 화면 면)
+     셋 다 같은 값이라 어느 쪽이든 같은 색이 나온다. html 인라인 배경은 head 의 setThemeChrome 이 같은 리터럴로 칠한다. */
   /* 앱 셸 구조 — body 는 화면 전체를 덮는 고정 틀. 절대 크기가 안 변한다.
      키보드는 그 위에 얹혀 올라오고(일반 앱처럼 뒤가 비침), 스크롤은 .wrap 안에서만.
-     하단 바가 position:fixed 가 아니라 flex 항목이라 옛날처럼 뜨지 않는다. */
+     하단 알약 바는 position:fixed 로 떠 있고 명단이 그 밑으로 지나간다. */
   html{height:100%;overflow:hidden;overscroll-behavior:none}
   body{
     position:fixed;inset:0;
     overscroll-behavior:none;
-    background:var(--bar);   /* 상태 표시줄 띠 색 — 위 주석 참고. 화면 본문은 .wrap 이 --ink */
+    background:var(--ink);
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR",system-ui,sans-serif;
     font-size:16px;
@@ -219,7 +214,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
-  /* 상단 셸 — 떠 있는 유리 판(하단바와 같은 재질). 명단은 그 밑으로 지나가고(.wrap padding-top),
+  /* 상단 셸 — 떠 있는 유리 판(하단바와 같은 재질). 명단은 그 밑으로 지나가고(.wrap::before 스페이서),
      붙는 시간대 머리글은 셸 바로 아래에 붙는다(.ghead top). 높이는 JS 가 재서 --topH 로 넣는다
      (카드 내용·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
   .shell{
@@ -297,11 +292,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   html[data-theme="light"] .lead{background:var(--panel);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(29,25,19,.08)}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
-  .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
+  .slottime{font-size:20px;font-weight:800;color:var(--wait);letter-spacing:-.02em}
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
   /* 「남은 예약 없음」은 숫자가 아니라 상태 설명 — 한 단계 작게 */
-  .leadmain.done{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
+  .leadmain.done{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
   /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
   .viewseg{margin-left:auto;flex:0 0 auto;align-self:center}   /* 두 칸 같은 너비·썸은 공용 .seg 규칙 */   /* 모양은 공용 .seg (서랍 테마·Wi-Fi 토글과 같은 부품) */
@@ -314,15 +309,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 대기 팀의 「인원 구성」 — 테이블 미리 빼는 데 쓰는 핵심 정보라 낱개 「N명」을 눈으로 합산하지 않게 앱이 모아 보여준다.
      «정보는 글자, 조작만 알약»: 칩(채움)으로 그렸더니 옆 토글과 같은 옷이라 눌리는 버튼처럼 보였다(2026-09-11) → 맨 글자.
      보통 3~4종, 많아야 5종 — 5종(각 ≈52px)+간격 14 가 아이폰 카드 안폭 338 에 한 줄로 들어간다 */
-  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin-top:8px}
-  .leadsub.comp .pcsep{font-size:14px;font-weight:600;color:var(--off)}
+  .leadsub.comp{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
   /* 인원·팀수 둘 다 주 정보(오너: 동급) — 전부 밝게 700. 「5인」만 흐리면 테이블 준비의 핵심 숫자가 가라앉는다(2026-09-11).
      포인트 색은 작은 글자엔 안 쓴다(라이트 대비). */
-  .leadsub.comp .pc{font-size:14px;font-weight:700;color:var(--text)}
+  .leadsub.comp .pc{font-weight:700;color:var(--text)}
   .leadsub.comp .pc b{font-weight:700;margin-left:3px}
 
-  /* 새 버전 알림 — 하단 알약 바 «위에 떠 있는» 금색 알약(같은 폭·같은 높이 48·8 위). 명단 칸을 잡아먹지 않는다(오너 2026-09-11 — 카드 밑 인라인은 명단을 밀었다).
-     금색 채움 = 주동작 버튼 언어(추가·저장). 문구 「새 버전으로 업데이트」 — 버튼은 한 행위(예약 추가·명단 복사와 같은 명사구). 「·」은 정보 나열 기호라 버튼엔 안 쓴다. 누르면 새로 불러온다. 보이는 동안 body.upd-on 으로 명단 아래 여백·토스트를 56 올린다. */
+  /* 새 버전 알림 — 하단 알약 바 «위에 떠 있는» 금색 알약(내용 폭·높이 40·바 위 8). 명단 칸을 잡아먹지 않는다(오너 2026-09-11 — 카드 밑 인라인은 명단을 밀었다).
+     금색 채움 = 주동작 버튼 언어(추가·저장). 문구 「새 버전으로 업데이트」 — 버튼은 한 행위(예약 추가·명단 복사와 같은 명사구). 「·」은 정보 나열 기호라 버튼엔 안 쓴다. 누르면 새로 불러온다. 보이는 동안 body.upd-on 으로 명단 아래 여백·토스트를 48 올린다. */
   .foot .updbar{
     pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:7px;
     width:max-content;max-width:520px;margin:0 auto 8px;height:40px;padding:0 18px;border-radius:999px;   /* 알림이지 툴바가 아니다 — 토스트처럼 내용 폭·40 */
@@ -333,10 +327,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     animation:sheetIn var(--tMove) var(--ease);
   }
   html[data-theme="light"] .foot .updbar{box-shadow:0 8px 28px rgba(29,25,19,.16)}
-  .updbar svg{width:16px;height:16px;display:block}
   body.upd-on .wrap{padding-bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 78px + 48px + var(--kb, 0px))}
   body.upd-on .toast{bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + 48px + var(--kb, 0px))}
-  .foot .updbar:active, .foot .updbar.dn{background:var(--waitHover)}   /* .foot button:active(특이성 0,2,1)보다 앞서야 금색 눌림이 산다 */
+  .foot .updbar:active, .foot .updbar.dn{background:var(--waitHover)}   /* 특이성 0,3,0 — .foot button:active(0,2,1)를 이겨야 금색 눌림이 산다 */
 
   /* search */
   /* 검색 띠 — 셸의 일부라 불투명(--ink). 투명이면 카드와 도킹된 시간바 사이 띠로 명단이 비쳐 지나갔다(오너 스크린샷 2026-09-11).
@@ -384,7 +377,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). */
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
-  .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 12 에 선다 */
+  .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 30 에 선다(.wrap 아래 여백) */
 
   .ghead{
     position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
@@ -406,12 +399,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   .chev{
     color:var(--dim);flex:0 0 auto;
     display:grid;place-items:center;width:12px;height:12px;line-height:0;
-    transform:rotate(90deg);transition:transform var(--tState) var(--ease);
+    transform:rotate(90deg);   /* 접기는 즉시라 전환 없음 */
   }
   .chev svg{display:block;width:12px;height:12px}
   .group.shut .chev{transform:rotate(0)}
   /* 밝기 3단계로 「언제」를 말한다 — 지금 = 금색 / 앞으로 = 흰색 / 다 끝남 = 회색.
-     17px 은 «큰 글씨» 대비 기준 밖이라 지금 색은 글자용 금색(--waitTx). */
+     17px 은 «큰 글씨» 대비 기준 밖이라 지금 색은 --wait. */
   .gtime{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
   .gmeta{margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
   .gbreak{font-size:13px;font-weight:600;color:var(--dim)}   /* 옆 「n/n」과 같은 단계(13) — 활자 사다리 25(잠금·스플래시)/20/17/16(입력칸)/14/13, 15·12 는 2026-09-12 정리 */
@@ -420,7 +413,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      밑줄·점·띠·선 색 강조는 전부 반려됐고, 막대만 통과. 여섯 꼴(들임·굵기·둥글기·안쪽 배치) 비교 끝에
      «칸 가장자리» — 머리글 높이 전체(선에서 선까지), 둥글기 없음. 떠 있는 표식이 아니라 행의 한 변이라
      헤어라인 표 체계와 같은 기하를 쓴다. 붙어 있을 때도 같이 따라간다. */
-  .group.now .gtime{color:var(--waitTx)}
+  .group.now .gtime{color:var(--wait)}
   .group.now .ghead::before{
     content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
     background:var(--wait);
@@ -432,7 +425,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row{
     position:relative;
     display:flex;align-items:stretch;gap:0;
-    transition:opacity var(--tState);
   }
   .row + .row::before{
     content:"";position:absolute;left:54px;right:0;top:-1px;height:1px;
@@ -641,7 +633,6 @@ window.addEventListener('pageshow', remeasureSbcut);
      («명단 복사를 추가보다 많이 쓴다»는 강조하라는 뜻이 아니었다). 키보드가 올라오면 통째로 숨는다(위 규칙). */
   .foot{
     position:fixed;left:0;right:0;bottom:0;z-index:30;
-    /* 홈 바 위 높이 = 아이폰 뮤직 알약 바와 같게: 안전 영역(34) − 10 → 바닥에서 24. 노치 없는 폰은 바닥에서 10 */
     /* 아이폰 뮤직·설정의 알약 바 실측(iOS 26, 393pt 폰): 높이 47, 바닥에서 28, 좌우 28 → 그대로 맞춤(2026-09-11). 노치 없는 폰은 바닥 10 */
     padding:0 28px max(10px, calc(env(safe-area-inset-bottom) - 6px));
     pointer-events:none;                        /* 알약 밖 여백은 명단을 그대로 누르게 */
@@ -843,7 +834,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:flex;align-items:center;gap:10px;
     padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
   }
-  .bkrow:first-child{border-top:0}
   .bkrow:active, .bkrow.dn{background:var(--press)}
   .bkt{flex:0 0 46px;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .bksum{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
@@ -900,7 +890,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkvrow.off .nm{color:var(--off);text-decoration:line-through;text-decoration-thickness:1px}
   /* 시트 기본 하단바(닫기) 오른쪽에 그 시트의 주동작 버튼을 하나 더 붙인다
      (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 포인트색. */
-  .sheetBtns .sheetCopy{border:0;background:var(--wait);color:var(--onWait);font-weight:700}
+  .sheetBtns .sheetCopy{background:var(--wait);color:var(--onWait);font-weight:700}
   .sheetBtns .sheetCopy:active, .sheetBtns .sheetCopy.dn{background:var(--waitHover)}
 
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
@@ -956,19 +946,15 @@ window.addEventListener('pageshow', remeasureSbcut);
        (홈 화면 앱 모드엔 주소창이 없어 원래 안 튀지만, 브라우저로 열 때를 위해.) */
     position:fixed;top:0;left:0;right:0;z-index:300;
     height:100vh;height:100svh;
-    /* --bar(상단 셸 색): 설치 앱의 상태 표시줄 띠는 «앱을 여는 순간 화면 맨 위에 있던 면»의 색을 붙잡아 둔다
-       (시뮬레이터 확인 2026-09-11 — body·html·theme-color·manifest·아이콘 다 바꿔도 안 바뀌고, 잠금/스플래시 색만 따라옴).
-       잠금·스플래시가 셸과 같은 색이라야 띠가 셸과 한 장이 된다. */
-    background:var(--bar);
+    /* 잠금·스플래시도 --ink — 띠는 «앱을 여는 순간 맨 위에 있던 면»의 색을 붙잡는다는 기록(시뮬레이터 2026-09-11)이 있어 첫 화면 면도 같은 색 */
+    background:var(--ink);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     /* safe-area-inset 을 쓰지 않는다 — 내용이 세로 가운데 정렬이고 위아래로 180px 넘게
        남아서 노치/홈바에 닿을 일이 없는데, env() 가 뒤늦게 0 → 실제값으로 풀리면
        가운데가 그만큼 밀려 실행 직후 화면이 한 번 움직인다. 고정값이면 첫 프레임부터 확정. */
     padding:20px 24px;
   }
-  /* 해제될 때 .2s 페이드. 이 앱은 화면 전체를 덮는 것(팝업·룰렛·잠금)은 순수 페이드,
-     떠 있는 오버레이(서랍·시트)만 슬라이드한다 — 잠금은 전자라 transform 없이 페이드만.
-     ease-out 이라 빠르게 시작해 부드럽게 잦아든다(dismiss 에 맞는 결).
+  /* 해제될 때 --tMove 페이드(--ease). 화면 전체를 덮는 잠금·스플래시는 transform 없이 페이드만.
      .2s 는 그 사이 boot() 이 명단을 받아 첫 로그인의 빈 화면을 가리는 시간도 겸한다. */
   .lock{transition:opacity var(--tMove) var(--ease)}
   .lock.out{opacity:0;pointer-events:none}
@@ -988,7 +974,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     transition:background-color var(--tPress), border-color var(--tPress);
   }
   /* 글자용 포인트 토큰 — 다크는 --wait 와 같은 값, 라이트는 테라코타 */
-  .lockdots i.on{background-color:var(--waitTx);border-color:var(--waitTx)}
+  .lockdots i.on{background-color:var(--wait);border-color:var(--wait)}
   .lock.bad .lockdots{animation:lockshake .32s}
   @keyframes lockshake{
     0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)}
@@ -1060,7 +1046,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .splash{ display:none }
   html[data-authed="1"] .splash{
     position:fixed;inset:0;z-index:290;
-    background:var(--bar);   /* .lock 과 같은 이유 — 상태 표시줄 띠 색의 출처 */
+    background:var(--ink);   /* .lock 과 같은 이유 — 상태 표시줄 띠 색의 출처 */
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
     padding-bottom:var(--sbcut, 0px);   /* standalone 상태바 보정 (위 head 스크립트). 가운데 락업만
@@ -1171,7 +1157,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   .rltchip.win{ transform:scale(1.09) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
-  .rltresult{ margin:14px 2px 2px;text-align:center;font-size:20px;font-weight:800;color:var(--waitBig) }
+  .rltresult{ margin:14px 2px 2px;text-align:center;font-size:20px;font-weight:800;color:var(--wait) }
   .dbtn #rltGo{background:var(--wait);color:var(--onWait)}
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
 
@@ -1263,8 +1249,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     </div>
     <div class="btns">
       <!-- 주동작은 오른쪽 (iOS·Android 공통 관습, 오른손 엄지 쪽) — 앱의 모든 버튼 쌍이 [보조][주] 순서 -->
-      <button class="btn ghost hide" id="cancelPaste">취소</button>
-      <button class="btn primary" id="loadBtn">명단 등록</button>
+      <button type="button" class="btn ghost hide" id="cancelPaste">취소</button>
+      <button type="button" class="btn primary" id="loadBtn">명단 등록</button>
     </div>
   </div>
 
@@ -1308,8 +1294,8 @@ window.addEventListener('pageshow', remeasureSbcut);
     </div>
   </div>
   <div class="btns">
-    <button class="btn ghost" id="addNo">취소</button>
-    <button class="btn primary" id="addOk">추가</button>
+    <button type="button" class="btn ghost" id="addNo">취소</button>
+    <button type="button" class="btn primary" id="addOk">추가</button>
   </div>
 </div>
 
@@ -2146,8 +2132,8 @@ window.dispatchEvent(new Event('fb-ready'));
   // 「17/17」만으로는 몇 팀이 실제로 왔는지 알 수 없다.
   function dayTally(items){
     var t = tallyStatus(items);
-    var out = ['<span class="pc tally-go">방문 ' + t.came + '</span>'];
-    if (t.off) out.push('<span class="pc tally-off">취소 ' + t.off + '</span>');
+    var out = ['<span class="pc">방문 ' + t.came + '</span>'];
+    if (t.off) out.push('<span class="pc">취소 ' + t.off + '</span>');
     return out.join('<span class="pcsep"> · </span>');
   }
   // 시간대 머리글 오른쪽 — 열린 칸은 「처리/전체」, 끝난 칸은 「방문 n · 취소 n」 (맨 끝 = 행의 ⋯ 열 쪽).
@@ -2309,7 +2295,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var head = document.createElement('button');
       head.className = 'ghead';
       head.type = 'button';
-      head.innerHTML = '<span class="chev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>'
+      head.innerHTML = '<span class="chev">' + CHEV_SVG + '</span>'
         + '<span class="gtime num">' + g.time + '</span>'
         + '<span class="gmeta num">' + slotMetaHtml(slotAll) + '</span>';
       head.setAttribute('aria-expanded', String(!shut));
@@ -2406,6 +2392,7 @@ window.dispatchEvent(new Event('fb-ready'));
     setTimeout(function(){ if (pendingReveal === id){ pendingReveal = null; roomScroll(rowForId(id), true); } }, 700);   // 백스톱
   }
 
+  var CHEV_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg>';   // 시간바·FAQ·지난 명단 공용 셰브론
   var ICON_GO = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
     + ' stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
   var ICON_OFF = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
@@ -2427,7 +2414,7 @@ window.dispatchEvent(new Event('fb-ready'));
       openRowMenu(id);
     } else {
       closeRowMenu();
-      if (deferredState && !interactionActive()) render();   // 메뉴 닫히면 밀려 있던 서버 상태 반영
+      if ((deferredState || backgroundRenderPending) && !interactionActive()) render();   // 메뉴 닫히면 밀려 있던 상태 반영
     }
   }
 
@@ -2472,7 +2459,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var main = document.createElement('button');
     main.className = 'main';
     main.type = 'button';
-    main.setAttribute('aria-label', it.name + ' 방문 체크');
+    main.setAttribute('aria-label', it.name + (it.status === 'arrived' ? ' 방문 해제' : ' 방문 체크'));
     main.innerHTML = '<span class="check">' + mark + '</span>';
 
     var info = document.createElement('div');
@@ -2884,11 +2871,8 @@ window.dispatchEvent(new Event('fb-ready'));
         toast('동기화 실패 — 연결되면 다시 시도합니다');
       }
     }
-    if (api.logWatch){
-      try { logUnwatch = api.logWatch(forDate, apply, failed) || null; }
-      catch(e){ failed(); }
-      return;
-    }
+    try { logUnwatch = api.logWatch(forDate, apply, failed) || null; }
+    catch(e){ failed(); }
   }
 
   window.addEventListener('storage', function(e){
@@ -2955,6 +2939,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     cancelLeave(it.id);
     row.className = 'row ' + it.status;
+    row.style.height = '';   // 축소(.leaving) 중이었다면 인라인 높이도 되돌린다
     if (viewMode === 'pending' && it.status !== 'pending') scheduleLeave(it.id);
     var chk = row.querySelector('.check');
     if (chk){
@@ -3205,7 +3190,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }, { passive: false });
   // 명단이 비었을 때의 전체 화면 폼. 한 건 추가는 「예약 추가」 폼이 맡는다.
   function openPaste(silent){
-    document.getElementById('pasteTitle').textContent = '오늘 예약 명단 붙여넣기';
     // 명단이 아예 없을 땐 돌아갈 화면이 없으므로 취소 버튼을 숨긴다
     var hasItems = !!(state && state.items && state.items.length);
     document.getElementById('cancelPaste').classList.toggle('hide', !hasItems);
@@ -3295,7 +3279,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function hideAdd(){
     addPanel.classList.add('hide');
-    if (panel.classList.contains('hide')) panelScrim.classList.add('hide');
+    panelScrim.classList.add('hide');   // 막은 이 시트 전용 — 조건 없이 걷는다(붙여넣기 카드가 켜져 있으면 막이 남아 갇히던 버그, 2026-09-12)
     sheetEditId = null;
   }
   function closeAdd(){ hideAdd(); backDone(); }
@@ -3537,7 +3521,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 누른 동작이 먼저 처리된 뒤에 메뉴만 지운다 (통째 render 안 함)
     setTimeout(function(){
       closeRowMenu();
-      if (deferredState && !interactionActive()) render();
+      if ((deferredState || backgroundRenderPending) && !interactionActive()) render();
     }, 0);
   }, true);
 
@@ -3969,7 +3953,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var bc = document.querySelector('.sheetBtns .sheetCopy');
     if (bc) bc.remove();                     // 시트 전용 복사 버튼(지난 명단 상세의 '명단 복사')
   }
-  // 하단바(닫기) 왼쪽에 그 시트의 주동작 복사 버튼을 끼운다. openSheet 이 매번 걷어내므로
+  // 하단바(닫기) 오른쪽에 그 시트의 주동작 복사 버튼을 끼운다. openSheet 이 매번 걷어내므로
   // 반드시 openSheet 뒤에 부른다.
   function sheetCopyBtn(label, onClick){
     var sb = document.querySelector('.sheetBtns');
@@ -4025,7 +4009,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '아래 <em>새 버전으로 업데이트</em> 버튼을 누르거나, 앱을 완전히 종료했다가 다시 열면 적용됩니다.\n'
       + '당장 하지 않아도 괜찮습니다.']
   ];
-  var CHEV = '<span class="qchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span>';
+  var CHEV = '<span class="qchev">' + CHEV_SVG + '</span>';
 
   document.getElementById('faqBtn').addEventListener('click', function(){
     hideDrawer();
@@ -4037,7 +4021,7 @@ window.dispatchEvent(new Event('fb-ready'));
             + '<div class="a">' + f[1] + '</div></div>';
         }).join('')
       + '</div>');
-    // 시트 높이는 고정하지 않는다 — 질문 7개 + 답 1개(한 번에 하나만 펼침)면 어느 폰에서도
+    // 시트 높이는 고정하지 않는다 — 질문 8개 + 답 1개(한 번에 하나만 펼침)면 어느 폰에서도
     // 82vh 에 한참 못 미쳐 스크롤이 안 생긴다. 펼치면 답 한 뼘(~80px)만큼 위로 늘어나
     // 답 전체가 보이고, 접으면 되돌아온다. (max-height:82vh 는 안전망으로만)
   });
@@ -4171,7 +4155,7 @@ window.dispatchEvent(new Event('fb-ready'));
     return '<div class="bkrow" data-key="' + esc(key) + '">'
       + '<span class="bkt">' + esc(label) + '</span>'
       + '<span class="bksum">' + bkSummary(e) + '</span>'
-      + '<span class="bkchev"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 L16 12 L9 19"/></svg></span></div>';
+      + '<span class="bkchev">' + CHEV_SVG + '</span></div>';
   }
   function backupSheetHtml(map){
     var snaps = [], days = [];
@@ -4211,8 +4195,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!list.length) return '<p class="sheetMsg">명단이 비어 있습니다</p>';
     // 본 명단의 축소판 — 머리글(시각 + 방문·취소 수, 아래 선) / 행(작은 상태 원 · 이름 · 인원).
     // 상태 색은 원에만, 글자 태그는 안 붙인다 (본 화면과 같은 규칙).
-    var GO = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
-    var OFF = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M7 7 L17 17M17 7 L7 17"/></svg>';
+    var GO = ICON_GO.replace('width="17" height="17"', 'width="14" height="14"');
+    var OFF = ICON_OFF.replace('width="17" height="17"', 'width="12" height="12"');
     return groupByTime(list.slice().sort(sortItems)).map(function(g){
       var t = tallyStatus(g.items);
       return '<div class="bkvt"><span>' + esc(g.time) + '</span><span class="bkvm">방문 ' + t.came
@@ -4248,7 +4232,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 전환을 그려 앱 전체가 밀리는 것처럼 보인다 — HAS_BACK_KEY 설명 참고).
     if (HAS_BACK_KEY && !(history.state && history.state.ov)){ try { history.pushState({ ov: 1 }, ''); } catch(e){} }
   }
-  // 「지난 명단」 = 어제 하나만 보여준다. (DB 엔 정리 여유로 며칠 더 남지만 화면엔 어제만)
+  // 「지난 명단」 = 어제 하나만 보여준다. (DB 도 오늘+어제만 남긴다 — KEEP_DAYS)
   function loadPastRosters(){
     if (!fb().itemsGet) return Promise.resolve({});
     var d = shiftDate(bizDate(), -1);
@@ -4434,7 +4418,7 @@ window.dispatchEvent(new Event('fb-ready'));
       maybeInstallHint();   // 중복 방지는 maybeInstallHint 안에서 한다
     }).catch(function(){
       if (!ticketCurrent(ticket)) return;
-      stageBackgroundState(state || { date: ticket.date, items: [] });
+      stageBackgroundState((state && state.date === ticket.date) ? state : { date: ticket.date, items: [] });   // 날짜가 넘어간 뒤면 어제 명단을 오늘로 올리지 않는다
       watchRemote();
       if (hasStore() && fb().reconnect) fb().reconnect();
     });
@@ -4608,18 +4592,19 @@ window.dispatchEvent(new Event('fb-ready'));
 
   var tickSig = '', tickMin = -1;
   setInterval(function(){
-    if (openMenu) return;
     if (rolloverIfNeeded()) return;
-    var changed = autoCancel();
+    var changed = autoCancel();   // ⋯ 메뉴가 열려 있어도 자동취소는 돈다(1분 창을 놓치지 않게) — 그리기만 미룬다
     maybeHourlyBackup();   // autoCancel 반영된 상태를 :20 백업이 잡게 — 순서 보장
     // 명단 내용이 바뀌었으면(자동취소 포함) 통째로 다시 그린다.
     // itemsSig 는 화면에 영향 주는 필드만 본다 — ts 만 바뀐 쓰기로는 안 그린다.
     var sig = (state ? itemsSig(state.items) : '') + '|' + viewDate;
     if (changed || sig !== tickSig){
       tickSig = sig; tickMin = Math.floor(nowMin());
-      render();
+      if (interactionActive()) backgroundRenderPending = true;   // 메뉴·체크 중이면 닫힐 때 그린다
+      else render();
       return;
     }
+    if (openMenu) return;
     // 시간만 흘렀으면 「지금 시간대」와 상단 요약만 손본다 (통째 render 안 함)
     var m = Math.floor(nowMin());
     if (m === tickMin) return;
