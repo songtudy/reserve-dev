@@ -3706,6 +3706,7 @@ window.dispatchEvent(new Event('fb-ready'));
   /* ---------- 자정 넘어감 뒷정리 ---------- */
   // 날짜가 바뀌면(rolloverIfNeeded) 하루 단위 UI 상태를 싹 비운다.
   function resetDateScopedUi(){
+    cdStop(); cancelAllLeaves();   // 날짜가 바뀌면 어제 기준 타이머·퇴장 예약은 무의미
     openMenu = null; collapsed = {}; touched = {};
     deferredState = null; backgroundRenderPending = false;
     backupState = { hour: -1, tries: 0, triesHour: -1 };
@@ -4707,6 +4708,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function lockShow(msg){
     if (unlockTimer){ clearTimeout(unlockTimer); unlockTimer = null; }   // 위 경합 차단
+    cdStop();                            // 잠금 밑에서 1초 타이머가 돌 이유 없음
     try { localStorage.removeItem('ix-authed'); } catch(e){}
     document.documentElement.removeAttribute('data-authed');   // 표식을 지워야 잠금이 실제로 보인다
     clearPin();                          // 키패드는 늘 빈 상태로 나타난다 (finish 는 성공 시 안 비우므로 여기서)
