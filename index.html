@@ -50,10 +50,10 @@
 //     둘 다 불투명이라 웹 뷰포트 높이(--sbcut 62pt)는 안 건드린다(black-translucent 만 바꾼다).
 window.setThemeChrome = function(t){
   var d = document.documentElement;
-  var ink = (t === 'light') ? '#f4f6f9' : '#1c1c1e';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
+  var ink = (t === 'light') ? '#f6f5f2' : '#1c1c1e';   // --ink 와 같은 값 (토큰을 못 읽는 시점이라 리터럴)
   // 상태 표시줄(노치 띠) 색 = 상단 유리 셸이 바탕 위에 얹힌 «합성색» (panel2 62% over ink / white 62% over ink).
   // ink 를 주면 띠가 셸보다 어두워 두 층으로 보인다(오너 지적, 2026-09-11). 셸 색이 바뀌면 여기도 같이.
-  var bar = (t === 'light') ? '#f4f6f9' : '#1c1c1e';   // = --bar
+  var bar = (t === 'light') ? '#f6f5f2' : '#1c1c1e';   // = --bar
   d.setAttribute('data-theme', t);
   d.style.colorScheme = (t === 'light') ? 'light' : 'dark';
   // 설치된 앱(standalone)의 상태 표시줄 띠는 theme-color 가 아니라 «문서(html) 배경색»으로 칠해진다 — 시뮬레이터로 확인(2026-09-11).
@@ -147,16 +147,17 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 붙여넣기 오류 (줄 강조 + 안내문) */
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
+  /* ★ 2026-09-12 라이트 리메이크(L3): 따뜻한 회백 #f6f5f2(베이지 아님, 본문 15.7:1) + 테라코타 강조 #b5541e(5.0:1, 클로드 코드 clay 계열을 대비 기준까지 진하게). 다크 금색과 같은 따뜻한 가족. 파랑(#2a5bd7)은 다크와 정체성이 갈려 교체(오너). */
   html[data-theme="light"]{
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
-    --ink:#f4f6f9;      --panel:#ffffff;    --panel2:#e2e6ec;
-    --bar:#f4f6f9;
-    --line:#d5dae2;     --press:#d2d7df;   --keyDn:#b6bec8;
-    --text:#161a20;     --dim:#5c6772;      --off:#7e8899;
-    --ph:#676f7d;
+    --ink:#f6f5f2;      --panel:#ffffff;    --panel2:#e9e7e2;
+    --bar:#f6f5f2;
+    --line:#dad7d1;     --press:#e8e6e1;   --keyDn:#c9c5bd;
+    --text:#161a20;     --dim:#6b665f;      --off:#8a857d;
+    --ph:#9a958e;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
-    --btn:#d8dce2;      --btnPress:#c3c9d1;  --btnWarn:#fbe6e3;  --btnWarnPress:#f5d2cd;
+    --btn:#e2dfd9;      --btnPress:#d3cfc8;  --btnWarn:#fbe6e3;  --btnWarnPress:#f5d2cd;
     --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
     /* ★ 라이트의 포인트는 파랑 (2026-09-10 오너 결정). 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 물리적 상한이라
        (노란 계열 한계) 어떻게 해도 «어둡게» 보인다 — 오너가 실기기에서 두 번 같은 판단. 다크는 금 유지.
@@ -164,8 +165,8 @@ window.addEventListener('pageshow', remeasureSbcut);
        그 위 흰 글자 5.9. 아이폰 기본 파랑 #007aff 는 글자로 3.7 이라 탈락. 초록·빨강·회색과 전 유형 색약에서 뚜렷.
        한 값으로 채움·큰 숫자·아이콘을 다 쓴다. (작은 글자엔 포인트를 안 쓰는 규칙은 다크와 맞추려 유지) */
     /* 2026-09-11: 진한 금색(#8a5a00/#c9962a)으로 통일하려다 위 오너 결정을 확인하고 되돌림 — 라이트 강조색 변경은 오너 실기기 판단 없이는 손대지 말 것 */
-    --wait:#2a5bd7;     --waitTx:#2a5bd7;   --waitBig:#2a5bd7;
-    --onWait:#ffffff;   --waitHover:#4a74dd;   --field:#ffffff;    /* 클로드 fill-brand-hover · fill-field(light) */   --mark:#dde6fb;
+    --wait:#b5541e;     --waitTx:#b5541e;   --waitBig:#b5541e;
+    --onWait:#ffffff;   --waitHover:#c9652b;   --field:#ffffff;    /* 클로드 fill-brand-hover · fill-field(light) */   --mark:#f6e0d3;
     --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
     --warn:#b43f36;
     --onWarn:#7a2a20;
