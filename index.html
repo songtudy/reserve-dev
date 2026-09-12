@@ -111,6 +111,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   :root{
     /* 둥글기 3단계 — 8(칩) · 12(버튼·입력칸·행 메뉴) · 18(시트·팝업·카드) */
     --radius:18px;
+    /* 움직임 — 곡선 하나, 시간 3단계 (2026-09-12 통일). 눌림 120 · 상태(색·회전·체크) 150 · 이동(시트·창·서랍·토스트·썸·페이드) 200.
+       예외 둘: 잠금 흔들림(.32s, 피드백)·확인 중 맥동(.9s 반복). 룰렛은 놀이라 제 곡선. */
+    --ease:cubic-bezier(.2,.8,.2,1);
+    --tPress:.12s;  --tState:.15s;  --tMove:.2s;
     /* 바탕 */
     /* ★ 바탕 N4 #1c1c1e (2026-09-12 확정, 애플 secondarySystemBackground 계열 중성 회색). 면·선·눌림은 바탕에서
        +7/+14/+22/+10/+45/+20/+32 로 파생 — 면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress).
@@ -245,7 +249,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* ── 누름 규칙 (앱 공통) ──
      ① 면 있는 버튼 → 면이 --press (채운 금색은 brightness)   ② 면 없는 글자·아이콘 → 흐려짐
      ③ 체크 원 → 원이 눌려 들어감.   누르면 즉시, 떼면 .12s 에 돌아온다(:active 에서만 transition 끔). */
-  .nav button, .more, .foot button{transition:opacity .12s}
+  .nav button, .more, .foot button{transition:opacity var(--tPress)}
   .nav button:active, .more:active, .foot button:active, .nav button.dn, .more.dn, .foot button.dn{opacity:.4;transition:none}
   .nav button:disabled{opacity:.22}
   .date{
@@ -328,7 +332,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     box-shadow:0 8px 28px rgba(0,0,0,.35);
     font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
     -webkit-appearance:none;appearance:none;
-    animation:sheetIn .22s cubic-bezier(.2,.8,.2,1);
+    animation:sheetIn var(--tMove) var(--ease);
   }
   html[data-theme="light"] .foot .updbar{box-shadow:0 8px 28px rgba(29,25,19,.16)}
   .updbar svg{width:16px;height:16px;display:block}
@@ -384,8 +388,6 @@ window.addEventListener('pageshow', remeasureSbcut);
      범위에 포함돼 다음 머리글이 닿는 순간 밀려난다(padding 은 안 됨 — 붙는 범위가 내용 상자까지라 더 일찍 밀려남).
      접힌 시간대는 여백 없이 선으로만 잇는다. 멈춰 있을 때 배치는 margin 방식과 픽셀까지 같다. */
   .group{margin-top:0}
-  /* 접기/펼치기 — 그 시간대만 높이를 접는다(grid 1fr→0fr, .22s, 토글 썸과 같은 곡선). transform/opacity 가 아닌 유일한 움직임이지만
-     한 시간대 분량이라 가볍다. .closing 은 접힐 때 JS 가 붙이고 220ms 뒤 render, .opening 은 펼친 직후 한 프레임만 붙였다 뗀다. */
   /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). */
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
@@ -411,7 +413,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .chev{
     color:var(--dim);flex:0 0 auto;
     display:grid;place-items:center;width:12px;height:12px;line-height:0;
-    transform:rotate(90deg);transition:transform .15s;
+    transform:rotate(90deg);transition:transform var(--tState) var(--ease);
   }
   .chev svg{display:block;width:12px;height:12px}
   .group.shut .chev{transform:rotate(0)}
@@ -438,7 +440,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row{
     position:relative;
     display:flex;align-items:stretch;gap:0;
-    transition:opacity .15s,background .15s;
+    transition:opacity var(--tState),background var(--tState);
   }
   .row + .row::before{
     content:"";position:absolute;left:54px;right:0;top:-1px;height:1px;
@@ -469,13 +471,13 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:24px;height:24px;border-radius:50%;flex:0 0 auto;
     border:2px solid var(--off);
     display:grid;place-items:center;line-height:0;color:transparent;
-    transition:transform .12s,background .15s,border-color .15s;
+    transition:transform var(--tPress) var(--ease),background var(--tState),border-color var(--tState);
   }
   .check svg{display:block}
   /* 직접 체크한 순간에만 — 채워지며 탁 튄다 (이 앱의 핵심 동작에 손맛). 로컬 체크만 이 클래스가 붙는다.
      다른 폰 변경·최초 로딩은 통째 render 라 여기 안 옴. reduced-motion 에선 아래 블록이 죽인다. */
   @keyframes checkpop{ 0%{transform:scale(.8)} 60%{transform:scale(1.08)} 100%{transform:scale(1)} }
-  .check.pop{animation:checkpop .2s cubic-bezier(.2,.8,.2,1)}   /* 0.55→1.16 은 «요동»으로 느껴졌다(오너) → 살짝만 튄다 */
+  .check.pop{animation:checkpop var(--tMove) var(--ease)}   /* 0.55→1.16 은 «요동»으로 느껴졌다(오너) → 살짝만 튄다 */
   /* 누르는 요소에는 직접 지정한다. body 에만 걸면 아이폰에서 두 번 탭 판정이 남는다 */
   .main, .more, .ghead, .foot button, .menu button, .nav button{
     touch-action:manipulation;
@@ -497,7 +499,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .erow.memorow{margin-top:6px}
   #addPanel h2{margin-bottom:12px}
   .name{
-    transition:color .15s,-webkit-text-fill-color .15s;   /* 체크 직후 이름이 «띡» 흐려지지 않게 */
+    transition:color var(--tState),-webkit-text-fill-color var(--tState);   /* 체크 직후 이름이 «띡» 흐려지지 않게 */
     display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;   /* 17 = iOS 목록 본문·시간바 시각과 같은 단계(굵기 700 vs 800 으로 위계). 18 은 시간바보다 커져 뒤집힘, 16 은 사다리의 외톨이였다(시뮬레이터 비교, 2026-09-11) */
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -525,7 +527,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
   /* 「남은 팀」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
-  .row.leaving{opacity:0;transition:opacity .22s ease}
+  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--ease)}
 
 
   .erow{display:flex;gap:6px}
@@ -566,7 +568,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .panel.asSheet{
     position:fixed;left:50%;bottom:0;
     transform:translateX(-50%) translateY(calc(-1 * var(--kb, 0px)));
-    transition:transform .2s ease;
+    transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease),visibility 0s;
     z-index:71;width:100%;max-width:520px;margin:0;
     border-radius:18px 18px 0 0;
     display:flex;flex-direction:column;
@@ -673,7 +675,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     flex:1;height:40px;border:0;border-radius:999px;background:transparent;cursor:pointer;
     color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
     display:flex;align-items:center;justify-content:center;gap:6px;position:relative;
-    transition:background .12s;
+    transition:background var(--tPress);
   }
   .foot button svg{width:16px;height:16px}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
   /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
@@ -685,7 +687,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* ---------- 메뉴 서랍 ---------- */
   .drawerScrim{
     position:fixed;inset:0;z-index:60;background:var(--scrimLite);
-    opacity:1;transition:opacity .2s;
+    opacity:1;transition:opacity var(--tMove) var(--ease);
   }
   /* 전역 .hide는 display:none이라 페이드가 안 된다 — 서랍 막은 따로 둔다 */
   .drawerScrim.off{opacity:0;pointer-events:none}
@@ -694,7 +696,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:min(68vw, 258px);
     background:var(--panel);
     padding:calc(env(safe-area-inset-top) + 18px) 0 calc(env(safe-area-inset-bottom) + 14px);
-    transform:translateX(-101%);transition:transform .2s ease;
+    transform:translateX(-101%);transition:transform var(--tMove) var(--ease);
     display:flex;flex-direction:column;overflow-y:auto;
   }
   .drawer.open{transform:translateX(0)}
@@ -732,7 +734,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .seg::before{
     content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 3px);
     border-radius:999px;background:var(--btnPress);box-shadow:0 1px 3px rgba(0,0,0,.35);
-    transition:transform .22s cubic-bezier(.2,.8,.2,1);
+    transition:transform var(--tMove) var(--ease);
   }
   .seg.alt::before{transform:translateX(calc(100% + 2px))}   /* .alt = 2번째 칸 선택 — 아래 세그먼트 감시 스크립트가 붙인다(:has 는 가상 요소에 불안정) */
   .seg button{
@@ -741,7 +743,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:0;background:transparent;
     /* 미선택 글자는 --dim — --off 는 트랙 위 대비 미달(2026-09-11). 선택 칸은 썸+밝은 글자라 구분 유지 */
     color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
-    transition:color .15s, opacity .12s;
+    transition:color var(--tState), opacity var(--tPress);
   }
   .seg button:active, .seg button.dn{opacity:.4;transition:none}
   .seg button.on, .seg button[aria-pressed="true"]{color:var(--text)}
@@ -803,7 +805,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .qa:first-child .q{padding-top:6px}   /* 첫 질문은 제목에 붙인다 (다른 시트 제목↔내용 간격에 맞춤) */
   .qa .q:active, .qa .q.dn{background:var(--press)}   /* 시간대 헤더(.ghead)와 같은 접기 토글 눌림 */
-  .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform .15s}
+  .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform var(--tState) var(--ease)}
   .qa.open .qchev{transform:rotate(90deg);color:var(--text)}   /* 열림 표시는 회전으로 충분 — 금색은 「지금·주동작」에만 */
   .qa .a{
     display:none;padding:0 0 15px;
@@ -987,7 +989,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      떠 있는 오버레이(서랍·시트)만 슬라이드한다 — 잠금은 전자라 transform 없이 페이드만.
      ease-out 이라 빠르게 시작해 부드럽게 잦아든다(dismiss 에 맞는 결).
      .2s 는 그 사이 boot() 이 명단을 받아 첫 로그인의 빈 화면을 가리는 시간도 겸한다. */
-  .lock{transition:opacity .2s ease-out}
+  .lock{transition:opacity var(--tMove) var(--ease)}
   .lock.out{opacity:0;pointer-events:none}
   html[data-authed="1"] .lock{display:none}   /* 재실행 시 깜빡임 방지 (위 head 스크립트) — 그 사이는 .splash 가 덮는다 */
   /* 잠금화면은 스플래시와 일부러 다르게 둔다 — 스플래시는 앱을 열 때 한 번 스치는 브랜드
@@ -1002,7 +1004,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lockdots i{
     width:12px;height:12px;border-radius:50%;
     border:1.5px solid var(--off);background-color:transparent;
-    transition:background-color .12s, border-color .12s;
+    transition:background-color var(--tPress), border-color var(--tPress);
   }
   /* 글자용 포인트 토큰 — 다크는 --wait 와 같은 값, 라이트는 파랑 */
   .lockdots i.on{background-color:var(--waitTx);border-color:var(--waitTx)}
@@ -1085,7 +1087,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* padding-bottom 에는 일부러 트랜지션을 걸지 않는다 — 한때 걸어봤더니 --sbcut 이
        뒤늦게 고쳐질 때 락업이 위로 스르륵 미끄러지는 게 그대로 보여서 「로고가 올라온다」는
        새 증상이 됐다. 보정은 순간 스냅이라야 눈에 안 띈다. */
-    transition:opacity .25s ease-out;
+    transition:opacity var(--tMove) var(--ease);
   }
   .splash.out{opacity:0;pointer-events:none}
   /* 스플래시는 「홈화면 아이콘」이 아니라 마크만 보여준다 (카카오·네이버·KT 등 통용되는 방식).
@@ -1147,7 +1149,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      (다크 4.68:1 / 라이트 4.62:1) — 글자색을 안 바꾸면 여기서 3.65 / 2.90 으로 묻혔다. */
   .dbtn #dlgYes .hf{
     position:absolute;inset:0;background:var(--warn);opacity:.42;
-    transform:scaleX(0);transform-origin:left;transition:transform .18s ease;
+    transform:scaleX(0);transform-origin:left;transition:transform var(--tState) var(--ease);
   }
   .dbtn #dlgYes.hold .hf{transform:scaleX(1);transition:transform var(--holdms) linear}
   .dbtn #dlgYes .ht{position:relative}
@@ -1161,7 +1163,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:340px;
     background:var(--panel);border-radius:18px;
     padding:20px 16px 16px;
-    transition:transform .2s ease;
+    transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease);
     transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px));
   }
   .rlt h3{margin:0 0 3px;font-size:17px;font-weight:800;letter-spacing:-.02em}
@@ -1197,22 +1199,29 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:fixed;left:50%;bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);   /* 알약 바(48) 위 12 */
     background:var(--btnPress);box-shadow:0 4px 14px rgba(0,0,0,.35);
     padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;
-    opacity:0;pointer-events:none;transition:.2s;z-index:200;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity var(--tMove) var(--ease),transform var(--tMove) var(--ease);z-index:200;white-space:nowrap;
   }
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
   .hide{display:none !important}
-  /* 등장 — display:none 에서 나타날 때 한 번 재생되는 애니메이션(전역 .hide 토글과 그대로 맞물린다).
-     곡선은 토글 썸과 같은 cubic-bezier(.2,.8,.2,1) 하나. 시트 = 아래서 슬라이드, 대화상자 = 살짝 커지며, 막 = 페이드, 행 메뉴 = 짧은 페이드.
-     사라질 땐 즉시(iOS 도 닫힘은 빠르다). reduced-motion 이면 아래 블록이 전부 끈다. */
+  /* 겹창(막·시트·대화상자·예약 추가) 등장과 퇴장 — 둘 다 같은 길·같은 시간(--tMove)·같은 곡선(--ease).
+     서랍·토스트·잠금·스플래시는 이미 transition 으로 오갔는데 시트·대화상자만 등장은 animation, 퇴장은 즉시였다(2026-09-12 통일).
+     .hide 는 전역이 display:none 이라 여기선 opacity+visibility 로 바꿔 둔다 — JS 는 여전히 .hide 만 켜고 끈다.
+     visibility 는 숨길 때만 --tMove 뒤에 걸려 페이드가 끝난 뒤 사라지고, 보일 땐 즉시 켜진다.
+     시트 = 아래서 24px, 대화상자 = .96 에서, 막 = 페이드, 행 메뉴 = 짧은 페이드(DOM 에서 빠지므로 등장만). */
+  .scrim, .sheetScrim, .panelScrim{transition:opacity var(--tMove) var(--ease),visibility 0s}
+  .scrim.hide{display:grid !important}
+  .sheetScrim.hide{display:flex !important}
+  .panelScrim.hide{display:block !important}
+  .scrim.hide, .sheetScrim.hide, .panelScrim.hide{opacity:0;visibility:hidden;pointer-events:none;transition:opacity var(--tMove) var(--ease),visibility 0s var(--tMove)}
+  .sheet, .dialog{transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease)}
+  .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px)}
+  .scrim.hide .dialog{opacity:0;transform:scale(.96)}
+  .scrim.hide .rlt{opacity:0;transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96)}
+  .panel.asSheet.hide{display:block !important;opacity:0;visibility:hidden;pointer-events:none;
+    transform:translateX(-50%) translateY(calc(24px - var(--kb, 0px)));transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease),visibility 0s var(--tMove)}
   @keyframes fadeIn{from{opacity:0}}
-  @keyframes sheetIn{from{opacity:0;transform:translateY(24px)}}
-  @keyframes sheetInX{from{opacity:0;transform:translateX(-50%) translateY(24px)}}
-  @keyframes popIn{from{opacity:0;transform:scale(.96)}}
-  .scrim, .sheetScrim, .panelScrim{animation:fadeIn .2s cubic-bezier(.2,.8,.2,1)}
-  .sheet{animation:sheetIn .22s cubic-bezier(.2,.8,.2,1)}
-  .panel.asSheet{animation:sheetInX .22s cubic-bezier(.2,.8,.2,1)}
-  .dialog, .rlt{animation:popIn .18s cubic-bezier(.2,.8,.2,1)}
-  .menu{animation:fadeIn .15s cubic-bezier(.2,.8,.2,1)}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(24px)}}   /* 업데이트 알약 등장 */
+  .menu{animation:fadeIn var(--tState) var(--ease)}
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important;transition:none !important}
     /* 단 하나의 예외 — 「길게 눌러 초기화」의 차오르는 면.
