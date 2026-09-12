@@ -112,20 +112,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 둥글기 3단계 — 8(칩) · 12(버튼·입력칸·행 메뉴) · 18(시트·팝업·카드) */
     --radius:18px;
     /* 바탕 */
-    /* ★ 바탕색 확정 (2026-09-10) — 후보 7개(청회색·중립·애플 순검정·금 색조·살짝 냉·M2)를 측정 항목 7개로
-       비교해 «원래 청회색»으로 돌아왔다. 결정적이었던 것: ① 홈 화면 아이콘 PNG 에 이 색(#0f1319)이 구워져
-       있어 잠금 화면 타일과 정확히 일치(다른 후보는 ΔE .026~.042 로 눈에 띄는 차이) ② 몇 달 실사용에서 색
-       불만 없음 ③ WCAG 전 자리 통과·층 간격 고름. 애플식 순검정은 층 간격 불균일(σ .073)과 OLED 잔상·번짐으로
-       탈락, 따뜻한 색조는 라이트가 베이지로 가는 방향이라 탈락. 이 값은 다시 흔들지 않는다.
-       면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
-    /* ★ 2026-09-12 최종: 색 실험(순검정·클로드·스포티파이·13개 비교) 끝에 «원래 남색 세트»로 복귀 — 나란히 두면 세이지 초록·연빨강+남색이 가장 조용하고 금색도 충분히 산다. 스포티파이 상태색은 네온처럼 튀었다. 아이콘 PNG(#0f1319)와도 일치. 아래는 실험 기록.
-    /* (실험) 2026-09-12 오너 요청 「스포티파이 다크와 동일」 — open.spotify.com Encore 다크 토큰 직접 읽음: background-base #121212 · elevated #1f1f1f/#2a2a2a · decorative-subdued #292929(선) · text #fff/#b3b3b3 · essential-subdued #7c7c7c · tinted 흰10%/21%(버튼·눌림) · negative #f3727f/#ed2c3f · positive #1ed760(완료). 강조는 금색 유지(스포티파이 초록은 그쪽 시스템에서 브랜드=완료 같은 색이라 우리 「지금」과 「완료」가 겹침). 라이트는 클로드 오피셜 유지.
-    /* (이전) 2026-09-11(2차) 오너 요청 「클로드 오피셜 색 그대로」 — claude.ai 앱 디자인 시스템(cds) 토큰을 두 모드에서 직접 읽어 대응: 다크 page #151515 · surface-2/3 #1a1a19/#20201f · text-primary #f0efec · muted #898781 · brand clay #d97757 · text-success #0ca30c · text-danger #ec7e7e · bg-danger #3c0e0e. 라이트: page #fcfcfb · surface #fff/#f9f9f7 · text #0b0b0b · muted #898781 · success #006300 · danger #8e2626 · bg-danger #fad6d6. 버튼 면·선·눌림은 흰/검 10% 계열(cds fill-secondary)에서 파생.
-       (아래 9/11 1차 주석은 순검정 시절 기록) 순검정 + 중성 회색(iOS 시스템 다크 팔레트:
-       #000 · #1c1c1e · #8e8e93). 남색 기운은 금색과 미묘하게 싸웠고, 중성 회색 위에서 금색이 그대로 산다. 아이콘 PNG 배경도
-       #000 으로 다시 굽는다(tools/make-icons.py BG). 면은 여전히 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress). */
-    /* ★ 2026-09-12 리메이크: 바탕 N4 #1c1c1e(애플 secondarySystemBackground, 중성·캐스트 0). 면·선·눌림은 바탕 +7/+14/+22/+10/+45/+20/+32 파생.
-       근거: 중성 vs 찬 기운 비교표 — 판독 동률, 오래 보기·층 분리·캐스트 3항목 중성 우위(오너 확정). 아래 9/10·9/11 기록은 이전 남색 시절. */
+    /* ★ 바탕 N4 #1c1c1e (2026-09-12 확정, 애플 secondarySystemBackground 계열 중성 회색). 면·선·눌림은 바탕에서
+       +7/+14/+22/+10/+45/+20/+32 로 파생 — 면은 선이 아니라 «밝기»로만 구분 (ink < panel < panel2 < btn < btnPress).
+       경위: 원래 청회색 #0f1319 → 순검정·클로드·스포티파이·구글·중성 N1~N7·찬 기운 C1~C10 을 나란히 비교, 중성이
+       판독 동률·오래 보기·층 분리·캐스트에서 우위(오너 확정). 회색족(text·dim·off·ph·line)은 전부 같은 미세 청색
+       기울기(OKLCh h≈286, C≤.008)라 한 가족. 상태 3색은 L .65~.81 · C .10~.13 으로 밝기·채도 폭을 맞춘 무채 바탕용
+       세트: 금(강조)·세이지 초록(방문)·연빨강(취소). 2026-09-12 항목별 색 점검에서 다크 토큰은 손댈 곳 없음. */
     --ink:#1c1c1e;      --panel:#232325;    --panel2:#2a2a2c;
     --bar:#1c1c1e;      /* 상태 표시줄 띠 색. 잠금·스플래시·body 가 이 색 */
     --line:#323234;     --press:#262628;   --keyDn:#49494b;   /* 키패드 눌림 — --press 보다 확실히 밝게 */
@@ -147,24 +139,19 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 붙여넣기 오류 (줄 강조 + 안내문) */
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
-  /* ★ 2026-09-12 라이트 리메이크(L3): 따뜻한 회백 #f6f5f2(베이지 아님, 본문 15.7:1) + 테라코타 강조 #b5541e(5.0:1, 클로드 코드 clay 계열을 대비 기준까지 진하게). 다크 금색과 같은 따뜻한 가족. 파랑(#2a5bd7)은 다크와 정체성이 갈려 교체(오너). */
+  /* ★ 라이트 L3 (2026-09-12 확정): 따뜻한 회백 #f6f5f2(베이지 아님) + 테라코타 강조 #b5541e(클로드 코드 clay 계열을 4.5:1 넘게 진하게). 다크 금색과 같은 따뜻한 가족. 이전 파랑(#2a5bd7) 강조와 베이지 시범은 폐기. */
   html[data-theme="light"]{
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
        전엔 라이트가 다크의 절반 간격이라 구분선·칩·눌림이 희미했다. */
     --ink:#f6f5f2;      --panel:#ffffff;    --panel2:#e9e7e2;
     --bar:#f6f5f2;
     --line:#dad7d1;     --press:#e8e6e1;   --keyDn:#c9c5bd;
-    --text:#161a20;     --dim:#6b665f;      --off:#8a857d;
+    --text:#1d1913;     --dim:#6b665f;   /* 글자·스크림·그림자도 회색족과 같은 따뜻한 기울기(h≈78) — 남색 잔재 #161a20 정리 */      --off:#8a857d;
     --ph:#9a958e;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
     --btn:#e2dfd9;      --btnPress:#d3cfc8;  --btnWarn:#fbe6e3;  --btnWarnPress:#f5d2cd;
-    --scrim:rgba(20,26,34,.44); --scrimLite:rgba(20,26,34,.34);
-    /* ★ 라이트의 포인트는 파랑 (2026-09-10 오너 결정). 흰 바탕 위 금색은 큰 숫자도 3.3:1 이 물리적 상한이라
-       (노란 계열 한계) 어떻게 해도 «어둡게» 보인다 — 오너가 실기기에서 두 번 같은 판단. 다크는 금 유지.
-       #2a5bd7 = 4.5 를 모든 자리에서 넘기는 가장 밝은 파랑: 바탕 5.4 · 칩(--panel2) 위 5.0 · 버튼 면 위 4.8 ·
-       그 위 흰 글자 5.9. 아이폰 기본 파랑 #007aff 는 글자로 3.7 이라 탈락. 초록·빨강·회색과 전 유형 색약에서 뚜렷.
-       한 값으로 채움·큰 숫자·아이콘을 다 쓴다. (작은 글자엔 포인트를 안 쓰는 규칙은 다크와 맞추려 유지) */
-    /* 2026-09-11: 진한 금색(#8a5a00/#c9962a)으로 통일하려다 위 오너 결정을 확인하고 되돌림 — 라이트 강조색 변경은 오너 실기기 판단 없이는 손대지 말 것 */
+    --scrim:rgba(29,25,19,.44); --scrimLite:rgba(29,25,19,.34);
+    /* 강조 한 값(--wait)으로 채움·큰 숫자·아이콘을 다 쓴다. 작은 글자엔 강조색을 안 쓰는 규칙은 다크와 같다. */
     --wait:#b5541e;     --waitTx:#b5541e;   --waitBig:#b5541e;
     --onWait:#ffffff;   --waitHover:#c9652b;   --field:#ffffff;    /* 클로드 fill-brand-hover · fill-field(light) */   --mark:#f6e0d3;
     --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
@@ -305,7 +292,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--panel2);   /* 불투명 카드 — 상단 전체가 안 비친다 */
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
-  html[data-theme="light"] .lead{background:var(--panel);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(20,30,50,.08)}
+  html[data-theme="light"] .lead{background:var(--panel);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(29,25,19,.08)}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
   .slottime{font-size:20px;font-weight:800;color:var(--waitBig);letter-spacing:-.02em}
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
@@ -343,7 +330,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     -webkit-appearance:none;appearance:none;
     animation:sheetIn .22s cubic-bezier(.2,.8,.2,1);
   }
-  html[data-theme="light"] .foot .updbar{box-shadow:0 8px 28px rgba(20,30,50,.16)}
+  html[data-theme="light"] .foot .updbar{box-shadow:0 8px 28px rgba(29,25,19,.16)}
   .updbar svg{width:16px;height:16px;display:block}
   body.upd-on .wrap{padding-bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 78px + 48px + var(--kb, 0px))}
   body.upd-on .toast{bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + 48px + var(--kb, 0px))}
@@ -679,7 +666,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   html[data-theme="light"] .foot .inner{
     background:color-mix(in srgb, #ffffff 62%, transparent);
-    box-shadow:0 8px 28px rgba(20,30,50,.16), inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent);
+    box-shadow:0 8px 28px rgba(29,25,19,.16), inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent);
   }
   .frow{display:flex;gap:4px}
   .foot button{
@@ -740,7 +727,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;position:relative;
     gap:2px;padding:2px;background:var(--ink);border-radius:999px;   /* 알약 언어(2026-09-11) */
   }
-  /* 라이트: 트랙 --ink(#f4f6f9)가 흰 카드와 1.05:1 이라 트랙이 사라지고 썸만 떠 보였다(시뮬레이터, 2026-09-11) → 한 단계 어두운 면 */
+  /* 라이트: 트랙 --ink(회백)가 흰 카드와 1.05:1 이라 트랙이 사라지고 썸만 떠 보였다(시뮬레이터, 2026-09-11) → 한 단계 어두운 면 */
   html[data-theme="light"] .seg{background:var(--panel2)}
   .seg::before{
     content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 3px);
@@ -1410,7 +1397,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 <!-- 스플래시 — 앱이 첫 명단을 받기 전까지 화면을 덮는다 (위 CSS 참고). 첫 render() 에서 걷힌다. -->
 <div class="splash" id="splash">
   <!-- 마크는 인라인 SVG — 앱 아이콘(make-icons.py)과 같은 도형을, 타일 없이 색 토큰으로 그린다.
-       PNG 아이콘을 쓰면 그 안에 구워진 배경(#0f1319) 때문에 다크는 마크만 뜨고 라이트는
+       PNG 아이콘을 쓰면 그 안에 구워진 배경(실사용 #0f1319 · 테스트 #1c1c1e) 때문에 다크는 마크만 뜨고 라이트는
        검은 타일이 돼 테마마다 다른 그림이 된다. 좌표는 make-icons.py 의 100 그리드 그대로
        (전체 y+1.5 광학 보정 반영). 획 8, 둥근 끝. -->
   <svg class="splashMark" viewBox="16 12.5 68 73" aria-hidden="true">
