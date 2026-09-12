@@ -256,7 +256,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-size:13px;font-weight:800;color:var(--text);
     padding:0;   /* 칩 면 없음 — 시간바의 「2/9」와 같은 꼴. 오른쪽 끝이 본문 끝(토글·칩과 같은 선)에 맞는다 */
   }
-  .dayprog.full{color:var(--goTx)}
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   /* 검색 버튼은 상단에 없다(오너: 한 번도 안 씀) — 서랍의 「이름 검색」이 대신. */
   /* 헤더 아이콘 버튼(메뉴)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
@@ -297,6 +296,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
   /* 끝난 상태 = 퇴근 타이머 「퇴근까지 2:31:07」 — 라벨은 부제 단계(14·흐림), 숫자는 지금 시각과 같은 급(20·금).
      「남은 예약 없음」「지난 시간대 대기 n팀」은 뺐다(오너 2026-09-12): 대기 토글이 이미 그 상태를 보여주고 문구가 길었다. */
+  .leadmain.cdmode{margin-left:0}   /* 앞에 시각이 없으니 시각 옆 여백도 없다 — 첫 줄과 둘째 줄의 왼쪽선이 같아야 한다(오너 2026-09-12 「밸런스」) */
   .leadmain .cdlab{font-size:14px;font-weight:600;color:var(--dim);margin-right:8px}
   .leadmain .cd{color:var(--wait)}
   /* 퇴근 시각이 지나면 숫자 없이 상태 한마디 — 숫자(20)보다 한 단계 아래 */
@@ -2211,7 +2211,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var left = closeLeftSec();
       if (!all.length){ lm.className = 'leadmain num done'; lm.textContent = ''; cdStop(); }
       else if (left > 0){
-        lm.className = 'leadmain num';
+        lm.className = 'leadmain num cdmode';
         lm.innerHTML = '<span class="cdlab">퇴근까지</span><span class="cd" id="cdNum">' + fmtLeft(left) + '</span>';
         cdStart();
       } else { lm.className = 'leadmain num done'; lm.textContent = '퇴근 시간'; cdStop(); }
@@ -2224,7 +2224,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var dp = document.getElementById('dayProg');
     dp.textContent = done + '/' + all.length;
     dp.className = 'dayprog num' + (all.length ? '' : ' hide')
-      + (all.length && done === all.length ? ' full' : '');
+      ;   // 다 끝나도 색을 바꾸지 않는다 — 상태색은 체크 원에만(2026-09-12)
   }
 
   // 스플래시 걷기 — 첫 render() 에서(명단이든 붙여넣기 화면이든 「보여줄 게 준비됨」) 페이드.
