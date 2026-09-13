@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="익순이">
+<meta name="apple-mobile-web-app-title" content="노치2">
 
 <!-- PREVIEW -->
 
@@ -93,7 +93,7 @@ function remeasureSbcut(){ [0, 60, 200, 500].forEach(function(t){ setTimeout(app
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') remeasureSbcut(); });
 window.addEventListener('pageshow', remeasureSbcut);
 </script>
-<link rel="manifest" href="manifest.json">
+<!-- 실험 페이지: manifest 를 뗀다 — 홈 화면에 추가하면 start_url("./")로 튀어 진짜 앱이 열린다 -->
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <title>익순이</title>
@@ -4878,7 +4878,7 @@ window.addEventListener('pageshow', remeasureSbcut);
       ' | body ' + getComputedStyle(b).position +
       ' | 테마 ' + (d.getAttribute('data-theme')||'dark') +
       '\nhtml배경 ' + (d.style.background||'(없음)') +
-      ' | 상태바 ' + document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content;
+      ' | 상태바 ' + document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content + '\n' + location.pathname;
     document.querySelectorAll('#ntPanel button[data-p]').forEach(function(x){ x.classList.toggle('on', x.dataset.p===cfg()); });
   }
   apply(); info();
