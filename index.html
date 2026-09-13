@@ -130,9 +130,6 @@ window.addEventListener('pageshow', remeasureSbcut);
     --scrim:rgba(0,0,0,.62);   --scrimLite:rgba(0,0,0,.5);
     /* 강조 — 다크 금색 · 라이트 테라코타. 칠·글자·큰 숫자 한 값 */
     --wait:#e8b757;
-    /* --waitTx = 강조 «글자» 전용. 다크는 바탕이 어두워 칠과 같은 값이면 되지만, 라이트는 종이 위라
-       칠(면)은 밝아야 하고 글자는 진해야 해서 값이 갈린다 — 초록의 --go/--goTx 와 같은 구조. */
-    --waitTx:var(--wait);
     /* 마크(캐릭터)의 눈 — 테마와 무관하게 항상 이 값. 라이트 블록에서 «일부러 안 덮는다».
        옛날엔 눈이 --ink(바탕색 = 구멍)였는데, 그러면 라이트에서 종이색 눈이 돼 얼굴이 텅 비어 보이고
        홈 화면 아이콘(PNG 라 늘 검은 눈)과도 얼굴이 달라졌다(오너 확인 2026-09-13).
@@ -150,7 +147,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     --errRow:rgba(201,115,106,.16);   --errTx:#e0a49d;
   }
   /* ★ 라이트 L3 (2026-09-12 확정 · 2026-09-13 강조색 교체): 따뜻한 회백 #f6f5f2(베이지 아님) +
-     클로드 clay 강조 — 칠 #d8714f(어두운 글자) / 글자 #bd4d21. 다크 금색과 같은 따뜻한 가족.
+     클로드 clay 강조 #d8714f — 면·글자 한 값(면 위 글자는 --onWait). 다크 금색과 같은 따뜻한 가족.
      이전 파랑(#2a5bd7) 강조와 베이지 시범은 폐기. */
   html[data-theme="light"]{
     /* 면 층 간격을 다크와 같은 지각 밝기(OKLab ΔL)로 맞춤 — 선 .085 · 칩 .05 · 버튼 .08 · 눌림 .14.
@@ -170,11 +167,15 @@ window.addEventListener('pageshow', remeasureSbcut);
        이제 두 테마가 같은 규칙이다(다크 금색 #e8b757 + #241a05 / 라이트 clay #d8714f + #39180d).
        L .559 → .661 로 실제로 밝아지면서, 종이 위 그래픽 대비 3.01 을 지키는 상한이기도 하다. */
     --wait:#d8714f;
-    /* 글자용은 따로 — 면(#d8714f)은 종이 대비 3.01 이라 17px 굵은 시간 머리글엔 모자란다(4.5 필요).
-       클로드도 같은 이유로 면(fill-brand)과 글자(text-tint-orange)를 다른 토큰으로 나눠 쓴다.
-       클로드 글자값 #863311(7.72:1)은 우리 크기에선 짙은 갈색이라, 같은 색상대에서 4.5 를 넘는
-       «가장 밝은» 값을 쓴다. 초록의 --go/--goTx 와 같은 구조. */
-    --waitTx:#bd4d21;
+    /* ★ 강조는 «한 값»이다 — 면이든 글자든 --wait 하나. (2026-09-13 오너 확정: 「일관성을 위해 글자 색도
+       클로드 주황으로」.) 한때 글자용 --waitTx(#bd4d21)를 따로 뒀다가 폐기 — 같은 「시간」 표시가
+       카드에선 밝은 주황, 명단 머리글에선 진한 주황으로 갈려 두 색이 됐다.
+       대가는 정직하게 적어 둔다: 「지금」 시간대 머리글(.gtime 17px/800)이 종이 위 3.01:1 로,
+       보통 글자 기준 4.5 에 못 미친다(큰 글자 기준 3.0 은 넘지만 17px 는 18.66px 문턱에 1.66 모자람).
+       판단 근거 — ① 20px 인 카드 시각·퇴근 타이머·룰렛 결과는 큰 글자라 3.28:1 로 충족 ② 「지금」이라는
+       뜻은 색 말고 왼쪽 3px 포인트색 레일(.group.now .ghead::before)이 이미 따로 지고 있어
+       색이 유일한 단서가 아니다 ③ 이 대비를 4.5 로 올리려면 강조색을 L .566 아래로 내려야 해서
+       교체 전 갈색(#b5541e)으로 되돌아간다. 색을 다시 나누려면 이 세 가지를 먼저 다시 볼 것. */
     /* 강조 눌림은 «밝아진다» — 다크(#e8b757→#f0c46e, ΔL .047)와 같은 단차, 클로드 fill-brand-hover 와도 같은 방향.
        어두운 글자를 얹으므로 밝아질수록 대비가 오른다(4.88 → 5.87). 회색 버튼의 눌림(라이트는 어두워짐)과는 별개 규칙. */
     --onWait:#39180d;   --waitHover:#e58261;   --field:#ffffff;    /* --field = 클로드 fill-field(light) */   --mark:#f7d8cb;   /* --mark = 클로드 bg-tint-orange */
@@ -315,14 +316,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   html[data-theme="light"] .lead{background:var(--panel);box-shadow:inset 0 0 0 1px color-mix(in srgb, #ffffff 85%, transparent), 0 4px 16px rgba(29,25,19,.08)}
   .leadrow{display:flex;align-items:center;gap:0;min-height:34px}
-  .slottime{font-size:20px;font-weight:800;color:var(--waitTx);letter-spacing:-.02em}
+  .slottime{font-size:20px;font-weight:800;color:var(--wait);letter-spacing:-.02em}
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
   /* 끝난 상태 = 퇴근 타이머 「퇴근까지 2:31:07」 — 라벨은 부제 단계(14·흐림), 숫자는 지금 시각과 같은 급(20·금).
      「남은 예약 없음」「지난 시간대 대기 n팀」은 뺐다(오너 2026-09-12): 대기 토글이 이미 그 상태를 보여주고 문구가 길었다. */
   .leadmain.cdmode{margin-left:0}   /* 앞에 시각이 없으니 시각 옆 여백도 없다 — 첫 줄과 둘째 줄의 왼쪽선이 같아야 한다(오너 2026-09-12 「밸런스」) */
   .leadmain .cdlab{font-size:14px;font-weight:600;color:var(--dim);margin-right:8px}
-  .leadmain .cd{color:var(--waitTx)}
+  .leadmain .cd{color:var(--wait)}
   /* 퇴근 시각이 지나면 숫자 없이 상태 한마디 — 숫자(20)보다 한 단계 아래 */
   .leadmain.done{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
   /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
@@ -441,7 +442,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      밑줄·점·띠·선 색 강조는 전부 반려됐고, 막대만 통과. 여섯 꼴(들임·굵기·둥글기·안쪽 배치) 비교 끝에
      «칸 가장자리» — 머리글 높이 전체(선에서 선까지), 둥글기 없음. 떠 있는 표식이 아니라 행의 한 변이라
      헤어라인 표 체계와 같은 기하를 쓴다. 붙어 있을 때도 같이 따라간다. */
-  .group.now .gtime{color:var(--waitTx)}
+  .group.now .gtime{color:var(--wait)}
   .group.now .ghead::before{
     content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
     background:var(--wait);
@@ -1200,7 +1201,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   .rltchip.win{ transform:scale(1.09) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
-  .rltresult{ margin:14px 2px 2px;text-align:center;font-size:20px;font-weight:800;color:var(--waitTx) }
+  .rltresult{ margin:14px 2px 2px;text-align:center;font-size:20px;font-weight:800;color:var(--wait) }
   .dbtn #rltGo{background:var(--wait);color:var(--onWait)}
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
 
