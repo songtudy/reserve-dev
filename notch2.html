@@ -4871,6 +4871,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     <button data-off="shell">껍데기 빼기</button>
   </div>
   <div class="r">
+    <button data-h="rootbg">★루트배경 빼기</button>
+    <button data-h="zoom">★확대금지 빼기</button>
+  </div>
+  <div class="r">
     <button data-off="foot">하단바 빼기</button>
     <button data-off="overlay">스플래시·잠금 빼기</button>
     <button id="ntAll">전부 빼기</button>
@@ -4881,6 +4885,24 @@ window.addEventListener('pageshow', remeasureSbcut);
 (function(){
   function cfg(){ try{ return localStorage.getItem('ntpos')||'fixed'; }catch(e){ return 'fixed'; } }
   var OFFKEYS=['scrim','drawer','shell','foot','overlay'];
+  function heads(){ try{ return JSON.parse(localStorage.getItem('nthead')||'{}'); }catch(e){ return {}; } }
+  function applyHead(){
+    var H=heads();
+    if (H.rootbg){
+      document.documentElement.style.background = '';
+      // 이후 setThemeChrome 이 다시 칠하지 못하게 가로챈다
+      var orig = window.setThemeChrome;
+      window.setThemeChrome = function(t){
+        orig(t);
+        document.documentElement.style.background = '';
+      };
+    }
+    if (H.zoom){
+      var v=document.querySelector('meta[name="viewport"]');
+      if (v) v.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+    }
+    document.querySelectorAll('#ntPanel button[data-h]').forEach(function(b){ b.classList.toggle('on', !!H[b.dataset.h]); });
+  }
   function offs(){ try{ return JSON.parse(localStorage.getItem('ntoff')||'{}'); }catch(e){ return {}; } }
   var SEL={ scrim:'.panelScrim,.drawerScrim,.sheetScrim,.scrim,.rltScrim',
             drawer:'.drawer', shell:'.shell', foot:'.foot', overlay:'.splash,.lock' };
@@ -4902,11 +4924,12 @@ window.addEventListener('pageshow', remeasureSbcut);
       ' | 테마 ' + (d.getAttribute('data-theme')||'dark') +
       '\nhtml배경 ' + (d.style.background||'(없음)') +
       ' | 상태바 ' + document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content +
-      '\n뺀 것: ' + (Object.keys(offs()).filter(function(k){return offs()[k];}).join(',') || '없음') +
+      '\n뺀 것: ' + ((Object.keys(offs()).filter(function(k){return offs()[k];}).concat(Object.keys(heads()).filter(function(k){return heads()[k];}))).join(',') || '없음') +
+      '\nhtml style: ' + (document.documentElement.getAttribute('style')||'(없음)') +
       '  |  ' + location.pathname;
     document.querySelectorAll('#ntPanel button[data-p]').forEach(function(x){ x.classList.toggle('on', x.dataset.p===cfg()); });
   }
-  apply(); applyOff(); info();
+  apply(); applyOff(); applyHead(); info();
   document.getElementById('ntTheme').addEventListener('click', function(){
     var cur=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';
     try{ localStorage.setItem('theme',cur); }catch(e){}
@@ -4919,6 +4942,13 @@ window.addEventListener('pageshow', remeasureSbcut);
     btn.addEventListener('click', function(){
       var O=offs(); O[btn.dataset.off]=!O[btn.dataset.off];
       try{ localStorage.setItem('ntoff', JSON.stringify(O)); }catch(e){}
+      location.reload();
+    });
+  });
+  document.querySelectorAll('#ntPanel button[data-h]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var H=heads(); H[btn.dataset.h]=!H[btn.dataset.h];
+      try{ localStorage.setItem('nthead', JSON.stringify(H)); }catch(e){}
       location.reload();
     });
   });
