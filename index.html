@@ -856,8 +856,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sheetMsg{font-size:14px;color:var(--dim);padding:6px 0 14px}
 
-  /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세.
-     요약 배색·굵기는 상단 「방문 n · 취소 n」(.leadsub) 과 맞춘다. */
+  /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
   .bklist{padding-top:2px}   /* 다른 시트처럼 제목 밑 선 없이 — 8px 뒤 바로 내용 */
   .bkrow{
     display:flex;align-items:center;gap:10px;
@@ -867,8 +866,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkt{flex:0 0 46px;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .bksum{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* 방문 초록 · 취소 빨강 — 「지난 명단」 목록의 요약(.bksum) 용. 상단 「방문 n·취소 n」과 같은 색.
-     (상세 명단은 .bkvrow.go/.off 로 따로 처리) */
+  /* 방문 초록 · 취소 빨강 — 「지난 명단」 목록의 요약(.bksum) 전용. (상세 명단은 .bkvrow.go/.off 로 따로 처리)
+     ★여기만 색을 쓰는 이유 — 본 화면(상단 카드 .leadsub · 시간대 머리글 .gbreak)의 「방문 n · 취소 n」은
+     일부러 «맨 글자»다. 거기엔 바로 옆·아래에 체크 원이 있어 같은 정보를 이미 색으로 말하고 있고,
+     시간대마다 반복돼 색 점이 쌓이면 정작 봐야 할 「지금」 칸이 묻힌다(상태색은 체크 원 하나에만 — 2026-09-12).
+     반면 이 시트는 «지나간 날의 아카이브»라 체크 원이 없다. 요약이 그 정보의 유일한 전달자이고
+     하루에 한 줄씩만 쌓이므로 색이 중복이 아니라 유일한 단서다.
+     (2026-09-13 정정: 예전 주석은 「상단과 같은 색」이라고 적혀 있었는데 본 화면이 맨 글자로 바뀐 뒤로 사실이 아니었다.) */
   #sheetBody em.go, #sheetBody em.off{font-style:normal;font-weight:700}
   #sheetBody em.go{color:var(--goTx)}
   #sheetBody em.off{color:var(--warn)}
