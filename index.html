@@ -326,7 +326,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .leadmain.cdmode{margin-left:0}   /* 앞에 시각이 없으니 시각 옆 여백도 없다 — 첫 줄과 둘째 줄의 왼쪽선이 같아야 한다(오너 2026-09-12 「밸런스」) */
   .leadmain .cdlab{font-size:14px;font-weight:600;color:var(--dim);margin-right:8px}
   .leadmain .cd{color:var(--wait)}
-  /* 퇴근 시각이 지나면 숫자 없이 상태 한마디 — 숫자(20)보다 한 단계 아래 */
+  /* 퇴근 시각이 지나면 숫자 없이 인사 한마디 「오늘도 고생하셨습니다」 — 숫자(20)보다 한 단계 아래.
+     2026-09-13 오너: 「퇴근 시간」은 사실만 말해서 바꿈. 말투는 앱 전체와 같은 «~습니다»
+     (「대기 중인 팀이 없습니다」·「비밀번호가 맞지 않습니다」와 한 목소리 — 여기만 「~했어요」면 혼자 튄다).
+     「오늘도」인 이유: 매일 밤 보는 화면이라 「오늘」만 쓰면 오늘만 특별한 일처럼 읽힌다. */
   .leadmain.done{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
   /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
@@ -2225,7 +2228,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var el = document.getElementById('cdNum');
     if (!el){ cdStop(); return; }
     var s = closeLeftSec();
-    if (!s){ cdStop(); paintHead(); return; }   // 0 이 되면 「퇴근 시간」으로
+    if (!s){ cdStop(); paintHead(); return; }   // 0 이 되면 「오늘도 고생하셨습니다」로
     el.textContent = fmtLeft(s);
   }
   function cdStart(){ if (!cdTimer) cdTimer = setInterval(cdTick, 1000); }
@@ -2270,7 +2273,7 @@ window.dispatchEvent(new Event('fb-ready'));
         lm.className = 'leadmain num cdmode';
         lm.innerHTML = '<span class="cdlab">퇴근까지</span><span class="cd" id="cdNum">' + fmtLeft(left) + '</span>';
         cdStart();
-      } else { lm.className = 'leadmain num done'; lm.textContent = '퇴근 시간'; cdStop(); }
+      } else { lm.className = 'leadmain num done'; lm.textContent = '오늘도 고생하셨습니다'; cdStop(); }
       ls.className = 'leadsub num';
       ls.innerHTML = all.length ? dayTally(all) : '';
     }
