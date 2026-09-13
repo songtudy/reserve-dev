@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="노치실험">
+<meta name="apple-mobile-web-app-title" content="노치1">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <title>노치 실험</title>
 <script>
@@ -21,7 +21,10 @@
     pos:   S.pos   || 'fixed',      // fixed | relative | static
     htmlbg: S.htmlbg === undefined ? true : !!S.htmlbg,
     bar:   S.bar   || 'auto',       // auto(테마따라) | black | default | translucent
-    scrim: S.scrim === undefined ? false : !!S.scrim   // 앱에 늘 떠 있는 «안 보이는 전체화면 막» 재현
+    scrim: S.scrim === undefined ? false : !!S.scrim,  // 앱에 늘 떠 있는 «안 보이는 전체화면 막» 재현
+    shell: !!S.shell,   // .shell — absolute 로 띄운 상단 껍데기
+    draw:  !!S.draw,    // .drawer — 화면 밖으로 밀어 둔 fixed 서랍
+    foot:  !!S.foot     // .foot — 바닥 고정 알약 바
   };
   window.applyAll = function(){
     var C = window.CFG, d = document.documentElement;
@@ -69,6 +72,13 @@
      화면엔 안 보이지만 position:fixed;inset:0 로 «항상» 깔려 있는 막들 */
   .ghost1{ position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.5);opacity:0;pointer-events:none }
   .ghost2{ position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.62);visibility:hidden;opacity:0;pointer-events:none }
+  /* 앱 부품 재현 */
+  .pShell{ position:absolute;top:0;left:0;right:0;z-index:20;background:var(--ink);
+           padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;font-weight:800 }
+  .pDraw{ position:fixed;top:0;left:0;bottom:0;z-index:61;width:min(68vw,258px);
+          background:var(--panel);transform:translateX(-101%) }
+  .pFoot{ position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 28px max(10px,calc(env(safe-area-inset-bottom) - 6px));pointer-events:none }
+  .pFoot i{ display:block;height:48px;border-radius:999px;background:var(--panel) }
   .hint{ color:var(--dim); font-size:13px; margin-top:14px; line-height:1.6 }
 </style>
 </head>
@@ -113,6 +123,14 @@
       <button data-scrim="1">막 있음(앱과 같음)</button>
     </div>
   </div>
+  <div class="grp">
+    <div class="lab">6. ★앱 부품 — 하나씩 켜 보며 «어디서 안 따라오는지» 찾습니다</div>
+    <div class="row">
+      <button data-part="shell">껍데기(absolute)</button>
+      <button data-part="draw">서랍(화면 밖 fixed)</button>
+      <button data-part="foot">하단바(fixed)</button>
+    </div>
+  </div>
   <pre id="info"></pre>
   <div class="hint">
     조합을 바꿀 때마다 ① 화면 맨 위 띠 색이 본문과 같은지 ② 「테마 전환」을 눌렀을 때 띠가 따라오는지<br>
@@ -126,6 +144,7 @@
     document.querySelectorAll('[data-bg]').forEach(function(b){ b.classList.toggle('on', (b.dataset.bg==='1')===C.htmlbg); });
     document.querySelectorAll('[data-bar]').forEach(function(b){ b.classList.toggle('on', b.dataset.bar===C.bar); });
     document.querySelectorAll('[data-scrim]').forEach(function(b){ b.classList.toggle('on', (b.dataset.scrim==='1')===C.scrim); });
+    document.querySelectorAll('[data-part]').forEach(function(b){ b.classList.toggle('on', !!C[b.dataset.part]); });
   }
   function info(){
     var d=document.documentElement, b=document.body;
@@ -138,10 +157,15 @@
       '\nhtml 배경 : ' + (d.style.background || '(없음)') +
       '\n상태바    : ' + bar +
       '\n숨은 막   : ' + (C.scrim ? '있음' : '없음') +
+      '\n앱 부품   : ' + [C.shell&&'껍데기', C.draw&&'서랍', C.foot&&'하단바'].filter(Boolean).join(' + ') + (C.shell||C.draw||C.foot ? '' : '없음') +
       '\ntheme-color: ' + document.querySelector('meta[name="theme-color"]').content +
       '\n헤더 위패딩: ' + getComputedStyle(document.querySelector('header')).paddingTop +
-      '\nscreen ' + screen.height + ' / inner ' + window.innerHeight + ' / 차이 ' + cut;
+      '\nscreen ' + screen.height + ' / inner ' + window.innerHeight + ' / 차이 ' + cut +
+      '\n주소 ' + location.pathname;
   }
+  if (C.shell){ var ps=document.createElement('div'); ps.className='pShell'; ps.textContent='껍데기'; document.body.appendChild(ps); }
+  if (C.draw){ var pd=document.createElement('div'); pd.className='pDraw'; document.body.appendChild(pd); }
+  if (C.foot){ var pf=document.createElement('div'); pf.className='pFoot'; pf.innerHTML='<i></i>'; document.body.appendChild(pf); }
   if (C.scrim){
     var g1=document.createElement('div'); g1.className='ghost1'; document.body.appendChild(g1);
     var g2=document.createElement('div'); g2.className='ghost2'; document.body.appendChild(g2);
@@ -156,6 +180,9 @@
   });
   document.querySelectorAll('button[data-bg]').forEach(function(btn){
     btn.addEventListener('click', function(){ C.htmlbg=(btn.dataset.bg==='1'); saveCfg(); location.reload(); });
+  });
+  document.querySelectorAll('button[data-part]').forEach(function(btn){
+    btn.addEventListener('click', function(){ var k=btn.dataset.part; C[k]=!C[k]; saveCfg(); location.reload(); });
   });
   document.querySelectorAll('button[data-scrim]').forEach(function(btn){
     btn.addEventListener('click', function(){ C.scrim=(btn.dataset.scrim==='1'); saveCfg(); location.reload(); });
