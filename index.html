@@ -685,7 +685,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .drawer.open{transform:translateX(0)}
   .dwtitle{display:flex;align-items:center;gap:11px;padding:0 16px 16px}
   .dwico{
-    width:36px;height:36px;flex:0 0 auto;border-radius:10px;
+    width:36px;height:36px;flex:0 0 auto;border-radius:8px;
     background:var(--panel2);
     -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;
   }
@@ -967,7 +967,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      화면이지만, 잠금은 하루에 여러 번 보는 기능 화면(PIN 패드 헤더)이라 다른 시트 제목들과
      같은 시스템 폰트·굵기를 쓰는 게 실제 UI 와 더 잘 붙는다. 아이콘도 타일(홈 화면 아이콘
      그대로)을 유지 — "이게 내 폰에 있는 그 앱 맞다"를 확인해주는 자리라 실물 아이콘이 낫다. */
-  .lockico{width:56px;height:56px;border-radius:12px;background:var(--panel2)}
+  .lockico{width:56px;height:56px;border-radius:12.5px;background:var(--panel2)}
   .lockname{margin-top:14px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
   /* 입력한 자릿수 표시 */
@@ -1379,18 +1379,20 @@ window.addEventListener('pageshow', remeasureSbcut);
 
 <!-- 스플래시 — 앱이 첫 명단을 받기 전까지 화면을 덮는다 (위 CSS 참고). 첫 render() 에서 걷힌다. -->
 <div class="splash" id="splash">
-  <!-- 마크는 인라인 SVG — 앱 아이콘(make-icons.py)과 같은 기하: 캐릭터 「익순이」(황금비 파생, 생성기 docstring 에 표).
+  <!-- 마크는 인라인 SVG — 앱 아이콘(make-icons.py)과 «같은 기하»: 캐릭터 「익순이」 v2.0.
+       뼈대는 황금비 파생이고 귀 위치·눈 지름·입 획·입 높이 네 값만 눈으로 맞췄다 (표는 생성기 docstring).
+       한쪽만 고치면 홈 화면 아이콘과 스플래시가 어긋난다 — 반드시 둘 다 고칠 것.
        타일 없이 색 토큰으로 그린다: 얼굴·귀 --wait, 눈 --ink(바탕과 같은 색 = 구멍), 입 --go.
        라이트에선 테라코타 얼굴·종이색 눈·초록 입이 된다. 2026-09-13. -->
   <svg class="splashMark" viewBox="14 14 72 72" aria-hidden="true">
     <g fill="var(--wait)">
-      <rect x="26.4" y="19.1" width="9.0" height="13.5" rx="4.5"/>
-      <rect x="64.6" y="19.1" width="9.0" height="13.5" rx="4.5"/>
+      <rect x="28.5" y="19.1" width="9.0" height="13.5" rx="4.5"/>
+      <rect x="62.5" y="19.1" width="9.0" height="13.5" rx="4.5"/>
       <rect x="19.1" y="28.1" width="61.8" height="52.8" rx="14.6"/>
     </g>
-    <circle cx="38.2" cy="48.3" r="4.5" fill="var(--ink)"/>
-    <circle cx="61.8" cy="48.3" r="4.5" fill="var(--ink)"/>
-    <path d="M44.45 69.46 50.0 72.89 55.55 63.91" fill="none" stroke="var(--go)" stroke-width="9.0"
+    <circle cx="38.2" cy="48.3" r="5.0" fill="var(--ink)"/>
+    <circle cx="61.8" cy="48.3" r="5.0" fill="var(--ink)"/>
+    <path d="M44.45 67.46 50.0 70.89 55.55 61.91" fill="none" stroke="var(--go)" stroke-width="6.5"
           stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
   <div class="splashName">익순이</div>
@@ -4348,7 +4350,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v1.8.0<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v2.0.0<br>© 2026 Jumin Labs</p>');
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
