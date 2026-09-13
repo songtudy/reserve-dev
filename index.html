@@ -1073,7 +1073,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:fixed;inset:0;z-index:290;
     background:var(--ink);   /* .lock 과 같은 이유 — 상태 표시줄 띠 색의 출처 */
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:27px;                    /* 마크 높이(107px)의 0.25배 — 로고 락업의 표준 간격 */
+    gap:24px;                    /* = 마크(96)의 0.25배 — 로고 락업의 표준 간격. 간격 토큰 8 의 배수이기도 하다.
+                                    2026-09-13: 규칙(0.25)은 원래 맞았는데 마크가 바뀌며 숫자만 낡아 있었다(107 기준 27).
+                                    아래 viewBox·line-height 손질로 «적은 값 ≒ 보이는 값»이 됐다(잔차 3px = 글꼴 위 여백). */
     padding-bottom:var(--sbcut, 0px);   /* standalone 상태바 보정 (위 head 스크립트). 가운데 락업만
                                            그 절반만큼 올라간다 — 회사명은 absolute 라 하단 고정 유지 */
     /* padding-bottom 에는 일부러 트랜지션을 걸지 않는다 — 한때 걸어봤더니 --sbcut 이
@@ -1088,8 +1090,14 @@ window.addEventListener('pageshow', remeasureSbcut);
   .splash.out{opacity:0;pointer-events:none}
   /* 스플래시는 「홈화면 아이콘」이 아니라 마크만 보여준다 (카카오·네이버·KT 등 통용되는 방식).
      타일·테두리 없음 — 색은 토큰이라 두 테마에서 같은 그림이 된다. */
-  .splashMark{ display:block;width:100px;height:auto }   /* 화면폭의 25% — 실측한 심볼형 스플래시 대역(카카오 24%·초록앱 23%) */
-  .splashName{font-family:'IksuniMark',-apple-system,"Apple SD Gothic Neo",system-ui,sans-serif;font-size:25px;font-weight:400;color:var(--text)}
+  /* viewBox 를 «그림에 딱» 맞췄다(19.1 19.1 61.8 61.8 = 실루엣 그대로) — 예전 14 14 72 72 는 상자에
+     여백이 있어 width:100px 이라 적어도 실제로는 85px 만 보였다. 이제 적은 값이 곧 보이는 크기다.
+     96px = 화면폭의 24.4%(393 기준. 375 에서 25.6 · 430 에서 22.3) — 실측한 심볼형 스플래시 대역
+     (카카오 24%·초록앱 23%) 한가운데. 간격 토큰 8 의 배수. */
+  .splashMark{ display:block;width:96px;height:auto }
+  /* line-height:1 — 줄상자가 글자를 딱 감싸야 위 gap 이 «보이는 간격»과 맞는다(기본 줄간격은 위에 8px 를 더 얹었다).
+     크기 25 는 활자 사다리 최상단 그대로 — 마크(96) : 이름 잉크(21.5) = 4.5:1 로 락업 통상 범위 안이다. */
+  .splashName{font-family:'IksuniMark',-apple-system,"Apple SD Gothic Neo",system-ui,sans-serif;font-size:25px;line-height:1;font-weight:400;color:var(--text)}
   /* 만든 곳 — 화면 아래 작게. 제품 이름(익순이)과 만든 회사(Jumin Labs)가 다를 때 적는
      통용 방식 (Claude→ANTHROPIC, 요기요→Delivery Hero, 타다→VCNC 와 같은 자리·크기).
      가운데 락업과 겹치지 않게 absolute — 마크·이름의 세로 중앙 정렬에 영향을 주지 않는다. */
@@ -1422,7 +1430,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 </svg>
 
 <div class="splash" id="splash">
-  <svg class="splashMark" viewBox="14 14 72 72" aria-hidden="true"><use href="#mkIksuni"/></svg>
+  <svg class="splashMark" viewBox="19.1 19.1 61.8 61.8" aria-hidden="true"><use href="#mkIksuni"/></svg>
   <div class="splashName">익순이</div>
   <div class="splashBy">Jumin Labs</div>
 </div>
