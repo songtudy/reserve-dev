@@ -155,7 +155,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     --ink:#f6f5f2;      --panel:#ffffff;    --panel2:#e9e7e2;
     --line:#dad7d1;     --press:#e8e6e1;   --keyDn:#c9c5bd;
     --text:#1d1913;     --dim:#6b665f;   /* 글자·스크림·그림자도 회색족과 같은 따뜻한 기울기(h≈78) — 남색 잔재 #161a20 정리 */      --off:#8a857d;
-    --ph:#9a958e;
+    /* 입력 힌트 — 흰 칸 위 2.97:1 로 비텍스트 최소선(3.0)에도 못 미쳤다(2026-09-13 전수 점검).
+       회색 사다리 순서(text .216 < dim .513 < off .619 < ph)는 지키면서 3.30:1 까지만 진하게. */
+    --ph:#918d86;
     /* 흰 시트 위에도, 연회색 바탕(--ink) 위에도 보이게 한 단 진하게 */
     --btn:#e2dfd9;      --btnPress:#d3cfc8;  --btnWarn:#fbe6e3;  --btnWarnPress:#f5d2cd;
     --scrim:rgba(29,25,19,.44); --scrimLite:rgba(29,25,19,.34);
@@ -831,7 +833,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .step .n{
     width:17px;height:17px;flex:0 0 auto;border-radius:50%;
     background:var(--line);color:var(--text);
-    font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;
+    font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;   /* 활자 사다리 예외 — 17px 원 안의 단계 숫자(글이 아니라 표식). 사다리 밖 값은 여기와 .bkback 의 「‹」 둘뿐이다 */
   }
   .step b{color:var(--text);font-weight:700}
   .key{
@@ -891,7 +893,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     margin-left:-2px;padding:3px 5px 3px 0;
     color:var(--text);cursor:pointer;line-height:1;
   }
-  .bkback::before{content:"‹";font-size:23px;font-weight:400;position:relative;top:-1px}
+  .bkback::before{content:"‹";font-size:23px;font-weight:400;position:relative;top:-1px}   /* 활자 사다리 예외 — 글자가 아니라 «아이콘»으로 쓰는 글리프. 크기는 제목(17)과 나란히 보이게 맞춘 값 */
   /* 보이는 건 화살표 그대로 — 누르는 영역만 넓힌다 (레이아웃·헤더 높이 영향 없음).
      엄지가 왼쪽·위로 빗나가기 쉬워 그쪽을 더 준다. 오른쪽은 제목 글자 안 먹게 조금만. */
   .bkback::after{content:"";position:absolute;inset:-11px -4px -8px -11px}
@@ -1289,7 +1291,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <div id="list"></div>
 
   <div class="panel hide" id="pastePanel">
-    <h2 id="pasteTitle">오늘 예약 명단 붙여넣기</h2>
+    <h2>오늘 예약 명단 붙여넣기</h2>
     <p id="pasteHint">양식에 맞게 붙여넣어 주세요</p>
     <div class="tawrap">
       <div class="hl" id="hl" aria-hidden="true"></div>
@@ -4103,6 +4105,9 @@ window.dispatchEvent(new Event('fb-ready'));
     ['상단 시간은 언제 바뀌나요?',
       '정각 예약은 11분 뒤, 그 외는 예약 시각이 되면 다음 시간대로 넘어갑니다.\n'
       + '또는 그 시간대 예약을 모두 처리하면 바로 넘어갑니다.'],
+    ['「퇴근까지」는 뭔가요?',
+      '그날 예약을 모두 처리하면 퇴근 시각(오후 9시)까지 남은 시간이 표시됩니다.\n'
+      + '새 예약이 들어오면 다시 시간대 화면으로 돌아옵니다.'],
     ['시간대는 왜 자동으로 접히나요?',
       '남은 예약이 없으면 5초 뒤 자동으로 접힙니다.'],
     ['메모는 어떻게 쓰나요?',
@@ -4129,9 +4134,12 @@ window.dispatchEvent(new Event('fb-ready'));
             + '<div class="a">' + f[1] + '</div></div>';
         }).join('')
       + '</div>');
-    // 시트 높이는 고정하지 않는다 — 질문 8개 + 답 1개(한 번에 하나만 펼침)면 어느 폰에서도
-    // 82vh 에 한참 못 미쳐 스크롤이 안 생긴다. 펼치면 답 한 뼘(~80px)만큼 위로 늘어나
-    // 답 전체가 보이고, 접으면 되돌아온다. (max-height:82vh 는 안전망으로만)
+    // 시트 높이는 고정하지 않는다 — 펼치면 답 한 뼘(~80px)만큼 위로 늘어나 답 전체가 보이고,
+    // 접으면 되돌아온다. 높이 상한은 max-height:82vh.
+    // 실측(2026-09-13, 질문 9개 기준): 852 화면은 시트 556 = 73% 로 스크롤 없음.
+    // 667·700 화면은 82vh 상한에 닿아 시트 안이 스크롤된다 — «질문 8개였을 때도 똑같았다»(476/580·503/613).
+    // 즉 작은 화면의 스크롤은 질문 수 탓이 아니라 화면이 낮아서이고, 시트 기본 동작이라 그대로 둔다.
+    // (예전 주석은 「8개면 어느 폰에서도 스크롤이 안 생긴다」고 적혀 있었는데 실측과 달랐다.)
   });
   // 한 번에 하나만 펼친다
   document.getElementById('sheetBody').addEventListener('click', function(e){
