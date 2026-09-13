@@ -133,6 +133,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* --waitTx = 강조 «글자» 전용. 다크는 바탕이 어두워 칠과 같은 값이면 되지만, 라이트는 종이 위라
        칠(면)은 밝아야 하고 글자는 진해야 해서 값이 갈린다 — 초록의 --go/--goTx 와 같은 구조. */
     --waitTx:var(--wait);
+    /* 마크(캐릭터)의 눈 — 테마와 무관하게 항상 이 값. 라이트 블록에서 «일부러 안 덮는다».
+       옛날엔 눈이 --ink(바탕색 = 구멍)였는데, 그러면 라이트에서 종이색 눈이 돼 얼굴이 텅 비어 보이고
+       홈 화면 아이콘(PNG 라 늘 검은 눈)과도 얼굴이 달라졌다(오너 확인 2026-09-13).
+       값은 다크 --ink 와 같은 #1c1c1e — 아이콘 생성기의 눈 색(INK)과도 같은 값이라 셋이 완전히 일치한다.
+       대비: 금색 얼굴 위 9.19:1 · 클레이 얼굴 위 5.18:1. */
+    --markEye:#1c1c1e;
     --onWait:#241a05;   --waitHover:#f0c46e;   --field:#202022;   /* 클로드 fill-brand-hover · fill-field */   --mark:#463a13;
     /* 방문 — 초록 (상태 색은 체크 원 하나에만 쓴다) */
     --go:#5fb08a;       --goTx:var(--go);      --onGo:#08241a;
@@ -1410,7 +1416,8 @@ window.addEventListener('pageshow', remeasureSbcut);
 <!-- 캐릭터 「익순이」 마크 — 앱 아이콘(tools/make-icons.py)과 «같은 기하·같은 100 그리드».
      뼈대는 황금비 파생이고 귀 위치·눈 지름·입 획·입 높이 네 값만 눈으로 맞췄다(표는 생성기 docstring).
      한쪽만 고치면 홈 화면 아이콘과 앱 안의 마크가 어긋난다 — 반드시 둘 다 고칠 것.
-     색은 토큰이라 테마를 따라간다: 얼굴·귀 --wait, 눈 --ink(타일 바탕과 같은 색 = 구멍), 입 --go.
+     색은 토큰이라 테마를 따라간다: 얼굴·귀 --wait, 입 --go. 눈만 --markEye 로 «두 테마 같은 검정» —
+     구멍(바탕색)으로 두면 라이트에서 흰 눈이 돼 홈 화면 아이콘과 얼굴이 달라진다(오너 확정 2026-09-13).
      홈 화면 PNG 는 색이 구워져 있어 테마를 못 따라가지만, 앱 «안»에서 보이는 자리(스플래시·잠금·서랍)는
      전부 이 하나를 <use> 로 가져다 쓰므로 라이트에선 클레이 얼굴이 된다. 2026-09-13. -->
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
@@ -1421,8 +1428,8 @@ window.addEventListener('pageshow', remeasureSbcut);
         <rect x="62.5" y="19.1" width="9.0" height="13.5" rx="4.5"/>
         <rect x="19.1" y="28.1" width="61.8" height="52.8" rx="14.6"/>
       </g>
-      <circle cx="38.2" cy="48.3" r="5.0" fill="var(--ink)"/>
-      <circle cx="61.8" cy="48.3" r="5.0" fill="var(--ink)"/>
+      <circle cx="38.2" cy="48.3" r="5.0" fill="var(--markEye)"/>
+      <circle cx="61.8" cy="48.3" r="5.0" fill="var(--markEye)"/>
       <path d="M44.45 67.46 50.0 70.89 55.55 61.91" fill="none" stroke="var(--go)" stroke-width="6.5"
             stroke-linecap="round" stroke-linejoin="round"/>
     </g>
