@@ -195,14 +195,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      하단 알약 바는 position:fixed 로 떠 있고 명단이 그 밑으로 지나간다. */
   html{height:100%;overflow:hidden;overscroll-behavior:none}
   body{
-    /* ★ position:fixed 가 «아니다» — 2026-09-14 실기기 확인(아이폰 15 프로, 새로 설치한 홈 화면 앱).
-       설치된 앱에서 「켜 둔 채 테마를 바꿀 때」 상태 표시줄 띠가 안 따라오던 원인이 이 한 줄이었다.
-       (v1.5.1 에서 들어왔고 v1.4 엔 없었다 — 오너가 「1.4 때는 바뀌었다」고 기억한 그대로다.)
-       ★함정: iOS 는 홈 화면 «설치본»마다 띠 색을 한 번 정하면 재실행해도 안 놓는다. 그래서 이 줄을
-       고친 뒤에는 반드시 «아이콘을 지우고 새로 추가»해야 확인된다. 한 설치본에서 오가며 비교하면 전부 거짓이다.
-       relative + height:100% 로 「껍데기는 고정, 스크롤은 .wrap 만」은 그대로 유지한다
-       (html 이 이미 height:100%·overflow:hidden 이고 .shell 의 absolute 기준도 body 그대로). */
-    position:relative;height:100%;
+    position:fixed;inset:0;
     overscroll-behavior:none;
     background:var(--ink);
     color:var(--text);
