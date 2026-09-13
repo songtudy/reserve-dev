@@ -489,7 +489,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:24px;height:24px;border-radius:50%;flex:0 0 auto;
     border:2px solid var(--off);
     display:grid;place-items:center;line-height:0;color:transparent;
-    transition:transform var(--tPress) var(--ease),background var(--tState),border-color var(--tState);
+    transition:transform var(--tPress) var(--ease),background var(--tState) var(--ease),border-color var(--tState) var(--ease);
   }
   .check svg{display:block}
   /* 직접 체크한 순간에만 — 채워지며 탁 튄다 (이 앱의 핵심 동작에 손맛). 로컬 체크만 이 클래스가 붙는다.
