@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1c1e">
+<meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="노치실험">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<title>노치 실험</title>
+<script>
+// 켜는 순간(페인트 전) 저장된 조합을 적용한다 — 「켤 때」와 「켜 둔 채」를 갈라 보기 위함.
+(function(){
+  var S = {};
+  try { S = JSON.parse(localStorage.getItem('notchcfg') || '{}'); } catch(e){}
+  window.CFG = {
+    theme: S.theme === 'light' ? 'light' : 'dark',
+    pos:   S.pos   || 'fixed',      // fixed | relative | static
+    htmlbg: S.htmlbg === undefined ? true : !!S.htmlbg,
+    bar:   S.bar   || 'auto'        // auto(테마따라) | black | default | translucent
+  };
+  window.applyAll = function(){
+    var C = window.CFG, d = document.documentElement;
+    var ink = (C.theme === 'light') ? '#f6f5f2' : '#1c1c1e';
+    d.setAttribute('data-theme', C.theme);
+    d.style.colorScheme = C.theme;
+    d.style.background = C.htmlbg ? ink : '';
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = ink;
+    var b = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (b) b.content = (C.bar === 'auto') ? (C.theme === 'light' ? 'default' : 'black') : (C.bar === 'translucent' ? 'black-translucent' : C.bar);
+    if (document.body) document.body.setAttribute('data-pos', C.pos);
+  };
+  window.saveCfg = function(){ try { localStorage.setItem('notchcfg', JSON.stringify(window.CFG)); } catch(e){} };
+  applyAll();
+})();
+</script>
+<style>
+  :root{ --ink:#1c1c1e; --panel:#2a2a2c; --text:#f2f3f5; --dim:#a0a0a5; --wait:#e8b757; --on:#241a05; --line:#3a3a3c }
+  html[data-theme="light"]{ --ink:#f6f5f2; --panel:#e9e7e2; --text:#1d1913; --dim:#6b665f; --wait:#d8714f; --on:#39180d; --line:#dad7d1 }
+  html{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{
+    margin:0; background:var(--ink); color:var(--text); overflow:hidden;
+    font:600 15px/1.45 -apple-system,"Apple SD Gothic Neo",system-ui,sans-serif;
+    display:flex; flex-direction:column;
+  }
+  body[data-pos="fixed"]{ position:fixed; inset:0 }
+  body[data-pos="relative"]{ position:relative; height:100% }
+  body[data-pos="static"]{ position:static; height:100% }
+  header{ background:var(--ink); padding:calc(env(safe-area-inset-top) + 10px) 16px 10px; flex:0 0 auto }
+  h1{ margin:0; font-size:17px; font-weight:800 }
+  .sub{ color:var(--dim); font-size:13px; margin-top:3px }
+  main{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 16px calc(env(safe-area-inset-bottom) + 20px) }
+  .grp{ margin-top:16px }
+  .lab{ color:var(--dim); font-size:13px; margin-bottom:7px }
+  .row{ display:flex; gap:8px; flex-wrap:wrap }
+  button{
+    flex:1 1 auto; min-width:78px; padding:13px 10px; border-radius:12px; border:1px solid var(--line);
+    background:var(--panel); color:var(--text); font:700 15px -apple-system,"Apple SD Gothic Neo",system-ui,sans-serif;
+  }
+  button.on{ background:var(--wait); color:var(--on); border-color:var(--wait) }
+  button.big{ flex:1 1 100%; padding:16px; font-size:17px }
+  pre{ margin:10px 0 0; padding:12px; border-radius:12px; background:var(--panel); color:var(--dim);
+       font:600 12px/1.5 ui-monospace,Menlo,monospace; white-space:pre-wrap; word-break:break-all }
+  .hint{ color:var(--dim); font-size:13px; margin-top:14px; line-height:1.6 }
+</style>
+</head>
+<body>
+<header>
+  <h1>노치 띠 실험</h1>
+  <div class="sub">홈 화면에 추가한 뒤 «앱으로» 열어야 의미가 있습니다</div>
+</header>
+<main>
+  <div class="grp">
+    <div class="lab">1. 테마 — 누르고 «화면 맨 위 띠»가 따라오는지 보세요</div>
+    <div class="row"><button class="big" id="bTheme">테마 전환</button></div>
+  </div>
+  <div class="grp">
+    <div class="lab">2. body 위치 — 바꾸면 바로 다시 불러옵니다(「켤 때」 기준으로 시험)</div>
+    <div class="row">
+      <button data-pos="fixed">fixed</button>
+      <button data-pos="relative">relative</button>
+      <button data-pos="static">static</button>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="lab">3. 루트(html) 배경</div>
+    <div class="row">
+      <button data-bg="1">인라인 O</button>
+      <button data-bg="0">인라인 X</button>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="lab">4. 상태바 스타일</div>
+    <div class="row">
+      <button data-bar="auto">auto</button>
+      <button data-bar="black">black</button>
+      <button data-bar="default">default</button>
+      <button data-bar="translucent">translucent</button>
+    </div>
+  </div>
+  <pre id="info"></pre>
+  <div class="hint">
+    조합을 바꿀 때마다 ① 화면 맨 위 띠 색이 본문과 같은지 ② 「테마 전환」을 눌렀을 때 띠가 따라오는지<br>
+    두 가지만 봐 주세요. 사진은 화면 «위쪽»만 보이면 충분합니다.
+  </div>
+</main>
+<script>
+  var C = window.CFG;
+  function mark(){
+    document.querySelectorAll('[data-pos]').forEach(function(b){ if(b.tagName==='BUTTON') b.classList.toggle('on', b.dataset.pos===C.pos); });
+    document.querySelectorAll('[data-bg]').forEach(function(b){ b.classList.toggle('on', (b.dataset.bg==='1')===C.htmlbg); });
+    document.querySelectorAll('[data-bar]').forEach(function(b){ b.classList.toggle('on', b.dataset.bar===C.bar); });
+  }
+  function info(){
+    var d=document.documentElement, b=document.body;
+    var bar=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content;
+    var cut = Math.round(screen.height - window.innerHeight);
+    document.getElementById('info').textContent =
+      '앱으로 열림(standalone) : ' + (navigator.standalone===true) +
+      '\n테마      : ' + C.theme +
+      '\nbody 위치 : ' + getComputedStyle(b).position +
+      '\nhtml 배경 : ' + (d.style.background || '(없음)') +
+      '\n상태바    : ' + bar +
+      '\ntheme-color: ' + document.querySelector('meta[name="theme-color"]').content +
+      '\n헤더 위패딩: ' + getComputedStyle(document.querySelector('header')).paddingTop +
+      '\nscreen ' + screen.height + ' / inner ' + window.innerHeight + ' / 차이 ' + cut;
+  }
+  applyAll(); mark(); info();
+  document.getElementById('bTheme').addEventListener('click', function(){
+    C.theme = (C.theme==='light') ? 'dark' : 'light';
+    saveCfg(); applyAll(); mark(); info();
+  });
+  document.querySelectorAll('button[data-pos]').forEach(function(btn){
+    btn.addEventListener('click', function(){ C.pos=btn.dataset.pos; saveCfg(); location.reload(); });
+  });
+  document.querySelectorAll('button[data-bg]').forEach(function(btn){
+    btn.addEventListener('click', function(){ C.htmlbg=(btn.dataset.bg==='1'); saveCfg(); location.reload(); });
+  });
+  document.querySelectorAll('button[data-bar]').forEach(function(btn){
+    btn.addEventListener('click', function(){ C.bar=btn.dataset.bar; saveCfg(); location.reload(); });
+  });
+</script>
+</body>
+</html>
