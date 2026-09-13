@@ -1379,18 +1379,18 @@ window.addEventListener('pageshow', remeasureSbcut);
 
 <!-- 스플래시 — 앱이 첫 명단을 받기 전까지 화면을 덮는다 (위 CSS 참고). 첫 render() 에서 걷힌다. -->
 <div class="splash" id="splash">
-  <!-- 마크는 인라인 SVG — 앱 아이콘(make-icons.py)과 같은 기하: 캐릭터 「익순이」(황금비 파생, 생성기 docstring 참고).
+  <!-- 마크는 인라인 SVG — 앱 아이콘(make-icons.py)과 같은 기하: 캐릭터 「익순이」(황금비 파생, 생성기 docstring 에 표).
        타일 없이 색 토큰으로 그린다: 얼굴·귀 --wait, 눈 --ink(바탕과 같은 색 = 구멍), 입 --go.
-       라이트에선 테라코타 얼굴·종이색 눈·초록 입이 된다. 2026-09-13. -->
-  <svg class="splashMark" viewBox="14 14 72 72" aria-hidden="true">
+       라이트에선 테라코타 얼굴·종이색 눈·초록 입이 된다. 2026-09-13 요소별 재점검 반영. -->
+  <svg class="splashMark" viewBox="11.3 11.3 77.4 77.4" aria-hidden="true">
     <g fill="var(--wait)">
-      <rect x="26.4" y="19.1" width="9.0" height="13.5" rx="4.5"/>
-      <rect x="64.6" y="19.1" width="9.0" height="13.5" rx="4.5"/>
-      <rect x="19.1" y="28.1" width="61.8" height="52.8" rx="14.6"/>
+      <rect x="20.45" y="11.3" width="11.3" height="16.95" rx="5.65"/>
+      <rect x="68.25" y="11.3" width="11.3" height="16.95" rx="5.65"/>
+      <rect x="11.3" y="22.6" width="77.4" height="66.1" rx="18.3"/>
     </g>
-    <circle cx="38.2" cy="48.3" r="4.5" fill="var(--ink)"/>
-    <circle cx="61.8" cy="48.3" r="4.5" fill="var(--ink)"/>
-    <path d="M44.45 69.46 50.0 72.89 55.55 63.91" fill="none" stroke="var(--go)" stroke-width="9.0"
+    <circle cx="35.2" cy="55.6" r="9.15" fill="var(--ink)"/>
+    <circle cx="64.8" cy="55.6" r="9.15" fill="var(--ink)"/>
+    <path d="M43.0 77.34 50.0 81.66 57.0 70.34" fill="none" stroke="var(--go)" stroke-width="11.3"
           stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
   <div class="splashName">익순이</div>
