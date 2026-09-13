@@ -201,7 +201,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",Pretendard,"Noto Sans KR",system-ui,sans-serif;
     font-size:16px;
-    line-height:1.4;
+    line-height:1.4;   /* 문서 기본값(대부분의 요소가 제 값으로 덮는다) — 줄높이 사다리는 «글 블록»에 적용되는 규칙이고 이건 그 밑바탕이다 */
     display:flex;flex-direction:column;
     overflow:hidden;
     -webkit-font-smoothing:antialiased;
@@ -271,7 +271,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* ── 누름 규칙 (앱 공통) ──
      ① 면 있는 버튼 → 면이 --press (채운 금색은 --waitHover)   ② 면 없는 글자·아이콘 → 흐려짐
      ③ 체크 원 → 원이 눌려 들어감.   누르면 즉시, 떼면 .12s 에 돌아온다(:active 에서만 transition 끔). */
-  .nav button, .more{transition:opacity var(--tPress)}
+  .nav button, .more{transition:opacity var(--tPress) var(--ease)}
   .nav button:active, .more:active, .nav button.dn, .more.dn{opacity:.4;transition:none}
   .date{
     min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -517,7 +517,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .erow.memorow{margin-top:6px}
   #addPanel h2{margin-bottom:12px}
   .name{
-    transition:color var(--tState),-webkit-text-fill-color var(--tState);   /* 체크 직후 이름이 «띡» 흐려지지 않게 */
+    transition:color var(--tState) var(--ease),-webkit-text-fill-color var(--tState) var(--ease);   /* 체크 직후 이름이 «띡» 흐려지지 않게 */
     display:block;font-size:17px;font-weight:700;letter-spacing:-.01em;   /* 17 = iOS 목록 본문·시간바 시각과 같은 단계(굵기 700 vs 800 으로 위계). 18 은 시간바보다 커져 뒤집힘, 16 은 사다리의 외톨이였다(시뮬레이터 비교, 2026-09-11) */
     color:var(--text);-webkit-text-fill-color:var(--text);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -618,7 +618,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .tawrap:focus-within{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}
   .tawrap textarea, .hl{
-    font-family:inherit;font-size:16px;line-height:1.65;
+    font-family:inherit;font-size:16px;line-height:1.65;   /* 줄높이 사다리(1.2/1.35/1.5/1.6) 예외 — textarea 와 그 위에 겹치는 빨간줄 레이어(.hl)가 «같은 줄에» 놓여야 해서 둘이 한 값을 공유한다. 붙여넣기 명단은 한 줄이 길어 1.65 가 읽기 편했다. */
     font-variant-numeric:tabular-nums;
     border:0;
     letter-spacing:0;
@@ -689,7 +689,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     flex:1;height:40px;border:0;border-radius:999px;background:transparent;cursor:pointer;
     color:var(--text);font-family:inherit;font-size:13px;font-weight:600;
     display:flex;align-items:center;justify-content:center;gap:6px;position:relative;
-    transition:background var(--tPress);
+    transition:background var(--tPress) var(--ease);
   }
   .foot button svg{width:16px;height:16px;display:block}   /* 글자 13·아이콘 16·간격 6 — 아이폰 칸(108px) 대비 내용 62~64% = 황금비. 14/18 은 68~70% 로 꽉 차 보였다(오너) */
   /* 누름 = 칸이 밝아짐(토글 썸과 같은 언어). 글자·아이콘이 흐려지는 공통 규칙은 여기선 쓰지 않는다 — 면이 있는 알약 안이라 면으로 반응 */
@@ -756,7 +756,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     border:0;background:transparent;
     /* 미선택 글자는 --dim — --off 는 트랙 위 대비 미달(2026-09-11). 선택 칸은 썸+밝은 글자라 구분 유지 */
     color:var(--dim);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
-    transition:color var(--tState), opacity var(--tPress);
+    transition:color var(--tState) var(--ease), opacity var(--tPress) var(--ease);
   }
   .seg button:active, .seg button.dn{opacity:.4;transition:none}
   .seg button.on, .seg button[aria-pressed="true"]{color:var(--text)}
@@ -1012,7 +1012,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lockdots i{
     width:12px;height:12px;border-radius:50%;
     border:1.5px solid var(--off);background-color:transparent;
-    transition:background-color var(--tPress), border-color var(--tPress);
+    transition:background-color var(--tPress) var(--ease), border-color var(--tPress) var(--ease);
   }
   /* 글자용 포인트 토큰 — 다크는 --wait 와 같은 값, 라이트는 테라코타 */
   .lockdots i.on{background-color:var(--wait);border-color:var(--wait)}
