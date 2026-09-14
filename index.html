@@ -108,7 +108,8 @@ window.addEventListener('pageshow', remeasureSbcut);
 <style>
   :root{
     /* 둥글기 — 누르는 면·입력칸·토글·행 메뉴는 알약(999) · 시트·팝업·카드 18(--radius) · 칩 8 */
-    --radius:18px;
+    --radius:18px;   /* «판»의 둥글기 — 시트·추가패널·카드·확인창·룰렛·QR 카드가 전부 이 하나를 쓴다.
+                        (알약은 999, 칩·작은 상자는 8, 누르는 사각 버튼·입력칸은 12 — 그 셋은 역할이 달라 토큰을 안 둔다.) */
     /* 움직임 — 곡선 하나, 시간 3단계 (2026-09-12 통일). 눌림 120 · 상태(색·회전·체크) 150 · 이동(시트·창·서랍·토스트·썸·페이드) 200.
        예외 둘: 잠금 흔들림(.32s, 피드백)·확인 중 맥동(.9s 반복). 룰렛은 놀이라 제 곡선. */
     --ease:cubic-bezier(.2,.8,.2,1);
@@ -319,7 +320,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lead{
     /* 아래 여백 0 — 셸 높이(--topH)가 카드 밑면과 같아져 붙는 시간바가 카드에 딱 붙는다.
        여백을 두면 그 띠로 지나가는 시간대 글자가 비쳐 보였다(오너 영상, 2026-09-11). 쉴 때 간격은 .wrap::before 가 준다. */
-    display:block;margin:8px 0 0;padding:14px 12px;border-radius:18px;   /* 세로 14 — 구성 줄이 5종까지 늘면 12 는 답답했다(2026-09-12). 가로 12 는 안 글자 28 열 */   /* 테두리 16 = 메뉴·진행도 열, 안 글자 28 = 알약 좌우·⋯ 아이콘 열 (2026-09-11 일관성 점검) */
+    display:block;margin:8px 0 0;padding:14px 12px;border-radius:var(--radius);   /* 세로 14 — 구성 줄이 5종까지 늘면 12 는 답답했다(2026-09-12). 가로 12 는 안 글자 28 열 */   /* 테두리 16 = 메뉴·진행도 열, 안 글자 28 = 알약 좌우·⋯ 아이콘 열 (2026-09-11 일관성 점검) */
     background:var(--panel2);   /* 불투명 카드 — 상단 전체가 안 비친다 */
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
@@ -595,7 +596,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     transform:translateX(-50%) translateY(calc(-1 * var(--kb, 0px)));
     transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease),visibility 0s;
     z-index:71;width:100%;max-width:520px;margin:0;
-    border-radius:18px 18px 0 0;
+    border-radius:var(--radius) var(--radius) 0 0;
     display:flex;flex-direction:column;
     max-height:calc(100dvh - var(--kb, 0px) - 8px);overflow-y:auto;
     padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
@@ -793,7 +794,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheet{
     width:100%;max-width:520px;
     background:var(--panel);
-    border-radius:18px 18px 0 0;
+    border-radius:var(--radius) var(--radius) 0 0;
     padding:20px 0 calc(env(safe-area-inset-bottom) + 16px);
     max-height:82vh;overflow:hidden;
     display:flex;flex-direction:column;
@@ -941,7 +942,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* Wi-Fi 안내 — 본관/별관 토글은 공용 .seg.wide (위쪽) */
   /* QR 은 어두운 배경에서 못 읽으니 테마와 무관하게 흰 바탕 */
   .qrcard{
-    background:#fff;border-radius:18px;padding:16px;margin:0 auto 16px;
+    background:#fff;border-radius:var(--radius);padding:16px;margin:0 auto 16px;
     width:236px;box-sizing:border-box;
   }
   .qrcard svg{display:block;width:100%;height:auto}
@@ -1142,7 +1143,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dialog{
     width:100%;max-width:330px;
     background:var(--panel);
-    border-radius:18px;padding:19px 16px 16px;
+    border-radius:var(--radius);padding:19px 16px 16px;
     /* 세로 위치는 .scrim 의 place-items:center 가 잡는다. 입력칸이 없어 키보드가 안 뜨므로
        예전의 --kb 이동은 필요 없다. */
   }
@@ -1187,7 +1188,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   #rltScrim{ z-index:62 }
   .rlt{
     width:100%;max-width:340px;
-    background:var(--panel);border-radius:18px;
+    background:var(--panel);border-radius:var(--radius);
     padding:20px 16px 16px;
     transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease);
     transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px));
@@ -4201,7 +4202,11 @@ window.dispatchEvent(new Event('fb-ready'));
   function appUrl(){
     return location.origin + location.pathname.replace(/index\.html$/, '');
   }
-  // 복사 아이콘 — 앱의 다른 아이콘과 같은 결(24 viewBox · stroke 2.2 · 둥근 끝)
+  // 복사 아이콘 — 24 viewBox · 둥근 끝 · stroke 2.2.
+  // ★획 굵기 규칙: «UI 라인 아이콘은 2.2»(메뉴 20 · 검색닫기 18 · 검색지우기 15 · 잠금지우기 24 · 이 복사 16)가 기본이고,
+  //   하단 알약 바만 16px·획 2 로 한 단 얇다(라벨 글자와 나란히 서서 아이콘이 앞서 보이지 않게 — 그 자리 셋이 서로 통일).
+  //   셰브론(13px·3)과 지난명단 체크/엑스(17px·3.2)는 «라인 아이콘»이 아니라 작은 표식이라 더 굵다.
+  //   새 아이콘을 그리면 이 셋 중 어디에 속하는지 먼저 정할 것.
   var ICON_COPY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"'
     + ' stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
     + '<rect x="9" y="9" width="12" height="12" rx="3"/>'
