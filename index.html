@@ -231,6 +231,11 @@ window.addEventListener('pageshow', remeasureSbcut);
      .wrap 을 네이티브 관성으로 스크롤해 입력칸을 드러낸다 (1.4.0 방식, iOS 에 맡김).
      입력칸 높이는 taFixedH 로 열 때 한 번만 정한다 (오류가 떠도 안 움직임 = 버튼 씹힘 방지). */
   body.paste-open #list{ display:none }        /* 붙여넣기 땐 명단이 비어 있다 */
+  /* ★시험 중 (2026-09-14, 오너 요청으로 테스트 레포에만) — 키보드가 올라온 동안 명단 영역을 못 끌게 막는다.
+     시뮬레이터 실측으로는 «막으면 더 밀린다»(손으로 끌 때 300px → 776px). 명단 영역은 제 내용 길이만큼만
+     움직이도록 한계가 걸려 있는데, 막으면 iOS 가 그 손짓을 visual viewport 로 넘기고 거긴 한계가 없다.
+     그래도 실기기에서 어떻게 느껴지는지 오너가 직접 보기로 했다. 판단 후 지우거나 남긴다. */
+  body.keyboard-open.paste-open .wrap{overflow:hidden}
   /* 예시 문구는 .hl 오버레이에 그린다 (iOS textarea 여러 줄 placeholder 버그 회피) */
   .hl .ln.ph{ color:var(--ph); -webkit-text-fill-color:var(--ph) }
   .wrap{
