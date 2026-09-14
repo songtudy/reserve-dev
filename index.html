@@ -1015,7 +1015,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 배경을 테마색이 아니라 «고정» 먹으로 둔다 — 마크가 자기 타일을 데리고 다니는데,
      SVG 타일의 모서리(22.4%)가 CSS 모서리(22.3%)보다 살짝 커서 라이트에선 밝은 실선이 비친다. */
   .lockico{width:56px;height:56px;border-radius:12.5px;background:#1c1c1e;display:block}
-  .lockname{margin-top:14px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+  /* 14 → 8: 같은 수치인데 새 마크가 더 벌어져 보인다 — 옛 얼굴은 금색 덩어리 하나라 밑변이 «선»으로
+     끝나 바닥이 분명했는데, 새 곰은 초록 체크로 덩어리가 갈라지고 밑변이 둥근 앞발로 흐려지며
+     하트가 무게를 위로 끌어올린다. bbox 간격은 오히려 1px 줄었는데도 체감은 늘었다(오너 지적 2026-09-14).
+     타일 아래 여백 9.4 + 글꼴 위 여백 5.3 이 더해져 «보이는» 간격은 8+14.7 = 22.7px 이다. */
+  .lockname{margin-top:8px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
   /* 입력한 자릿수 표시 */
   .lockdots{display:flex;gap:14px;margin-top:26px;height:12px;align-items:center}
