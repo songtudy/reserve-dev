@@ -3475,6 +3475,10 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!b.classList.contains('keyboard-open') || !b.classList.contains('paste-open')) return;
     var inTa = e.target && e.target.closest && e.target.closest('#ta');
     if (inTa && taEl && taEl.scrollHeight > taEl.clientHeight + 1) return;   // 입력칸 안 스크롤은 그대로
+    // 카드가 키보드 위 공간보다 길면 막지 않는다 — 작은 화면(SE 급)에서 「명단 등록」이
+    // 키보드 뒤에 숨은 채 손이 닿지 않게 되니까. (실측: 15 Pro 424 ≤ 483 막음 / SE 415 > 351 놔둠)
+    var kb = parseFloat(document.documentElement.style.getPropertyValue('--kb')) || 0;
+    if (wrapEl && panel && panel.offsetHeight > wrapEl.clientHeight - kb) return;
     e.preventDefault();
   }, { passive: false });
 
