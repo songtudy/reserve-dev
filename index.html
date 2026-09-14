@@ -3463,25 +3463,6 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
 
-  // 붙여넣기 화면에서 «키보드가 올라와 있는 동안» 화면을 손으로 끌어 돌아다니는 것을 막는다.
-  // (오너 영상 2026-09-14 — 카드가 위아래로 헤엄쳐 다녔다.)
-  //  · CSS 로 .wrap{overflow:hidden} 만 하면 소용없다: iOS 가 그 손짓을 visual viewport 로 넘기고
-  //    거긴 우리 레이아웃 기준의 한계가 없어 «더» 밀린다(실측 300px → 776px).
-  //  · 그래서 손짓 자체를 막는다. 단 입력칸 «안»에서 시작했고 실제로 더 스크롤할 게 있을 때만 통과시킨다 —
-  //    「입력칸 안이면 무조건 통과」로 두면 스크롤할 게 없을 때 iOS 가 바깥으로 넘겨 그대로 밀렸다(실측).
-  //  · 명단 화면에는 안 건다. 거긴 스크롤이 «본 기능»이다.
-  document.addEventListener('touchmove', function(e){
-    var b = document.body;
-    if (!b.classList.contains('keyboard-open') || !b.classList.contains('paste-open')) return;
-    var inTa = e.target && e.target.closest && e.target.closest('#ta');
-    if (inTa && taEl && taEl.scrollHeight > taEl.clientHeight + 1) return;   // 입력칸 안 스크롤은 그대로
-    // 카드가 키보드 위 공간보다 길면 막지 않는다 — 작은 화면(SE 급)에서 「명단 등록」이
-    // 키보드 뒤에 숨은 채 손이 닿지 않게 되니까. (실측: 15 Pro 424 ≤ 483 막음 / SE 415 > 351 놔둠)
-    var kb = parseFloat(document.documentElement.style.getPropertyValue('--kb')) || 0;
-    if (wrapEl && panel && panel.offsetHeight > wrapEl.clientHeight - kb) return;
-    e.preventDefault();
-  }, { passive: false });
-
   if (vv){
     vv.addEventListener('resize', applyViewport);
     vv.addEventListener('scroll', applyViewport);
