@@ -3463,27 +3463,6 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
 
-  // 붙여넣기 화면에서 카드가 보이는 영역 밖으로 밀려나 있으면 조용히 제자리로 돌린다.
-  // 아이폰은 앱에서 돌아올 때 키보드는 올린 채 .wrap 을 밀어둔 상태로 되돌려준다.
-  // 그러면 「명단 등록」이 키보드 뒤에 숨는다. (오너 신고 2026-09-14)
-  //  · 손 스크롤은 막지 않는다 — 막았더니 어긋난 상태에서 빠져나올 길이 없어졌다(같은 날 롤백).
-  //  · 카드가 보이는 높이보다 길면 건드리지 않는다. 그땐 사용자의 스크롤 위치가 뜻을 가진다.
-  //  · 재는 때는 remeasureViewport 가 도는 때뿐(복귀·회전·포커스 전환).
-  //    vv.scroll 마다 부르면 끄는 손가락과 싸운다.
-  function pasteHome(){
-    var b = document.body;
-    if (!wrapEl || !panel) return;
-    if (!b.classList.contains('paste-open') || !b.classList.contains('keyboard-open')) return;
-    var top = vv ? vv.offsetTop : 0;
-    var bot = top + (vv ? vv.height : (window.innerHeight || 0));
-    var r = panel.getBoundingClientRect();
-    if (r.height > bot - top) return;            // 카드가 화면보다 길면 그대로 둔다
-    var d = 0;
-    if (r.bottom > bot) d = r.bottom - bot;      // 아래로 삐져나옴 → 그만큼 올린다
-    else if (r.top < top) d = r.top - top;       // 위로 잘림 → 그만큼 내린다
-    if (d) wrapEl.scrollTop += d;
-  }
-
   if (vv){
     vv.addEventListener('resize', applyViewport);
     vv.addEventListener('scroll', applyViewport);
@@ -3493,7 +3472,7 @@ window.dispatchEvent(new Event('fb-ready'));
   window.addEventListener('orientationchange', function(){ remeasureViewport(); });
   // 키보드가 뜨고 내려갈 때 visualViewport 갱신이 아이폰 앱 모드에서 늦거나 빠질 수 있어
   // 포커스 전환 직후 몇 번 더 강제로 잰다. applyViewport 는 여러 번 불러도 무해하다.
-  function remeasureViewport(){ [40, 140, 320, 600].forEach(function(t){ setTimeout(function(){ applyViewport(); pasteHome(); }, t); }); }
+  function remeasureViewport(){ [40, 140, 320, 600].forEach(function(t){ setTimeout(applyViewport, t); }); }
   document.addEventListener('focusin', function(e){
     if (textKeyboardTarget(e.target)) remeasureViewport();
   });
