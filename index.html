@@ -888,8 +888,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .bkrow:active, .bkrow.dn{background:var(--press)}
   .bkt{flex:0 0 auto;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-  .bkn{margin-left:auto;font-size:14px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
-  .bkchev{flex:0 0 auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
+  /* 요약은 시각 «바로 뒤»에 붙는다 — 오른쪽 끝으로 밀면 문구 길이가 행마다 달라(「17명 · 방문 14」
+     vs 「9명」) 시작점이 들쭉날쭉해진다. 왼쪽에 뭉치면 늘 같은 자리에서 읽기 시작한다.
+     상세(.bkvrow)에서 인원을 이름 뒤에 붙인 것과 같은 규칙이다. */
+  .bkn{font-size:14px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums;
+       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bkchev{flex:0 0 auto;margin-left:auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
   /* 구역 라벨(오늘/어제) */
   .bkgroup{
     font-size:13px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--dim);
@@ -4345,11 +4349,16 @@ window.dispatchEvent(new Event('fb-ready'));
   //   지난 날 { kind:'day',  date, n, items } 키 = 'YYYY-MM-DD'
   var bkMap = null;
   function bkTitled(){ return document.getElementById('sheetTitle').textContent === '지난 명단'; }
+  // 한 줄 요약 — 「17명」 또는 「17명 · 방문 14」. 방문이 0 이면 아예 안 쓴다(「방문 0」이 여덟 줄
+  // 쌓이면 그게 곧 잡음이다). 방문 수를 같이 두는 건 명단이 다 찬 뒤엔 인원이 더 안 변해서
+  // (20:20·19:20 둘 다 17명) 시각 말고는 구분할 것이 없기 때문이다. 취소는 안 쓴다 — 셋이 되면
+  // 2026-09-15 에 「난잡하다」고 반려된 표로 되돌아간다. 상세에 시간대별로 다 있다.
   function bkRowHtml(key, label, e){
-    var n = (e && e.n != null) ? e.n : (e && e.items ? e.items.length : 0);
+    var t = tallyStatus(e && e.items);
+    var n = (e && e.n != null) ? e.n : t.total;
     return '<div class="bkrow" data-key="' + esc(key) + '">'
       + '<span class="bkt">' + esc(label) + '</span>'
-      + '<span class="bkn">' + n + '명</span>'
+      + '<span class="bkn">' + n + '명' + (t.came ? ' · 방문 ' + t.came : '') + '</span>'
       + '<span class="bkchev">' + CHEV_SVG + '</span></div>';
   }
   function backupSheetHtml(map){
