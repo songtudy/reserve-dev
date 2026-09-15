@@ -2075,6 +2075,9 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   var wqHolding = 0;
   function wqPush(id, op, payload){
+    // 마지막 그물 — 여기까지 오면 안 되지만, 왔다면 큐에 담지 않고 기록만 남긴다.
+    // 담아 버리면 연결됐을 때 «명단을 본 적도 없는 상태에서 만든 변경»이 서버로 올라간다.
+    if (!listKnown){ errLog('쓰기', '명단 미수신 상태의 쓰기 차단', op); return; }
     var date = viewDate, k = wqk(date, id);
     wqMap[k] = wqEntry(wqMap[k] || null, date, id, op, payload);
     wqSave();
@@ -3465,7 +3468,18 @@ window.dispatchEvent(new Event('fb-ready'));
     backOpen('add', hideAdd);
   }
 
+  // ★명단을 «한 번도 못 본» 상태에서는 아무것도 바꾸지 않는다.
+  //   없는 줄 알고 추가하면 이미 있는 예약과 중복이 된다 — 확인할 화면이 없기 때문이다.
+  //   반대로 «보다가 끊긴» 경우는 막지 않는다. 그건 원래 되던 일이고, 쓰기 큐가 합쳐 준다.
+  //   (명단 등록·초기화는 여기서 한 단계 더 엄하다 — 통째 교체라 연결까지 돼 있어야 한다.)
+  function canWrite(){
+    if (listKnown) return true;
+    toast(navigator.onLine === false ? '인터넷에 연결되면 쓸 수 있습니다'
+                                     : '명단을 불러온 뒤에 쓸 수 있습니다');
+    return false;
+  }
   function openAdd(){
+    if (!canWrite()) return;
     if (!panel.classList.contains('hide')) closePaste();
     fillAddOpts();
     sheetEditId = null;
