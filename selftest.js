@@ -359,7 +359,9 @@
 
   /* ==================== HTML 조각 sanity ==================== */
   group('HTML 헬퍼 sanity');
-  check('esc 는 < > & 만 변환 (따옴표는 그대로)', T.esc('<a href="&">'), '&lt;a href="&amp;"&gt;');
+  // 2026-09-15: esc 가 따옴표까지 막도록 바뀌었다 — 속성값에 써도 빠져나갈 수 없게.
+  check('esc 는 < > & " \' 를 전부 변환', T.esc('<a href="&">'), '&lt;a href=&quot;&amp;&quot;&gt;');
+  check('esc 는 홑따옴표도 막는다', T.esc("it's"), 'it&#39;s');
   tru('hourOptions 는 영업시간 범위', (function(){
     var h = T.hourOptions();
     return h.indexOf('value="' + T.pad(T.consts.HOUR_MIN) + '"') >= 0
