@@ -314,10 +314,12 @@ window.addEventListener('pageshow', remeasureSbcut);
        칩이 길어지면 날짜 위로 올라탄다(실제로 덮였다). 건수를 담으려고 띠로도 바꿔 봤는데,
        토스트·서랍까지 합쳐 네 겹이 됐다 — 끊길 일 자체가 드문데 장치가 과했다(오너).
        상태는 이 칩 하나, 건수가 궁금하면 서랍 한 줄. 그게 이 일의 무게에 맞다. */
+  /* ★칩(--btnWarn 면)이었는데 맨 글자로 바꿨다. 이 앱에서 --btnWarn 면 + 붉은 글자는
+     «위험 버튼»의 옷이고(삭제·초기화 확인 — 「이 꼴 하나뿐」), 규칙도 «정보는 글자,
+     조작만 알약»이다. 연결 상태는 정보지 누르는 것이 아니다. 점은 서랍 연결 표시(.dot.stale)와
+     같은 부품을 그대로 쓴다 — 한 개념이 두 자리에서 같은 꼴이 된다. 2026-09-15. */
   .offtag{
-    display:none;align-items:center;flex:0 0 auto;
-    padding:6px 10px;border-radius:8px;   /* 칩 = 면만 */
-    background:var(--btnWarn);
+    display:none;align-items:center;gap:5px;flex:0 0 auto;
     color:var(--warn);font-size:13px;font-weight:700;white-space:nowrap;line-height:1.2;
   }
   html[data-off] .offtag{display:inline-flex}
@@ -1371,7 +1373,7 @@ window.addEventListener('pageshow', remeasureSbcut);
       </div>
       <div class="tools">
         <span class="dayprog num hide" id="dayProg"></span>
-        <span class="offtag">연결 안 됨</span>
+        <span class="offtag"><span class="dot stale"></span>연결 안 됨</span>
       </div>
     </div>
     <div class="lead hide">
