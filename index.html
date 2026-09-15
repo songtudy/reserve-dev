@@ -4711,6 +4711,40 @@ window.dispatchEvent(new Event('fb-ready'));
     errLog('약속', (r && (r.message || r.code)) || r, '');
   });
 
+  /* ---------- 오프라인 실행(서비스워커) ----------
+     하는 일은 하나 — «인터넷이 없어도 앱이 열리게». 예전엔 마지막으로 연 지 10분이 지나면
+     (GitHub Pages 가 index.html 을 max-age=600 으로 준다) 껍데기를 받을 데가 없어 오류 화면이
+     떴다. 오프라인 쓰기 큐까지 만들어 놓고 정작 «끊긴 채로 켜는 것»은 안 됐던 것.
+     낡을 위험은 sw.js 안에서 «화면은 네트워크 먼저»로 막는다 — 거기 주석 참고.
+
+     ★비상 탈출: 주소 뒤에 ?nosw 를 붙여 한 번 열면 서비스워커를 지우고 저장본도 비운다.
+       서비스워커가 앱을 망가뜨리는 건 흔한 사고라, 앱을 지웠다 깔지 않고도 되돌릴 길을 둔다. */
+  (function(){
+    if (!('serviceWorker' in navigator)) return;
+    var kill = /[?&]nosw\b/.test(location.search);
+    if (kill){
+      navigator.serviceWorker.getRegistrations().then(function(rs){
+        rs.forEach(function(r){ r.unregister(); });
+      }).catch(function(){});
+      if (window.caches && caches.keys) caches.keys().then(function(ks){
+        ks.forEach(function(k){ caches.delete(k); });
+      }).catch(function(){});
+      toast('오프라인 저장을 껐습니다');
+      return;
+    }
+    // 등록은 화면이 다 뜬 뒤에 — 첫 그림을 늦추지 않는다.
+    // updateViaCache:'none' 이 중요하다. 이게 없으면 sw.js 자체가 10분 캐시에 걸려
+    // 고친 서비스워커가 늦게 반영된다.
+    window.addEventListener('load', function(){
+      setTimeout(function(){
+        try {
+          navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+            .catch(function(err){ errLog('SW', err && err.message, 'register'); });
+        } catch(e){ errLog('SW', e && e.message, 'register'); }
+      }, 1200);
+    });
+  })();
+
   /* ---------- 새 버전 알림 ---------- */
   // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면 헤더 아래에
   // 하단에 「새 버전으로 업데이트」 알약을 띄운다 — 그걸 눌러야 새로 뜬다. 저절로는 안 바뀜.
