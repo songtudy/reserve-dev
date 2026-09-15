@@ -138,12 +138,13 @@ window.addEventListener('pageshow', remeasureSbcut);
     --scrim:rgba(0,0,0,.62);   --scrimLite:rgba(0,0,0,.5);
     /* 강조 — 다크 금색 · 라이트 테라코타. 칠·글자·큰 숫자 한 값 */
     --wait:#e8b757;
-    /* 마크(캐릭터)의 눈 — 테마와 무관하게 항상 이 값. 라이트 블록에서 «일부러 안 덮는다».
-       옛날엔 눈이 --ink(바탕색 = 구멍)였는데, 그러면 라이트에서 종이색 눈이 돼 얼굴이 텅 비어 보이고
-       홈 화면 아이콘(PNG 라 늘 검은 눈)과도 얼굴이 달라졌다(오너 확인 2026-09-13).
-       값은 다크 --ink 와 같은 #1c1c1e — 아이콘 생성기의 눈 색(INK)과도 같은 값이라 셋이 완전히 일치한다.
-       대비: 금색 얼굴 위 9.19:1 · 클레이 얼굴 위 5.18:1. */
-    --markEye:#1c1c1e;
+    /* 마크가 데리고 다니는 «타일» 색 — 마크 자체의 색은 벡터에 구워져 있고(테마 안 따라감),
+       판만 테마를 따른다. 다크는 반드시 --ink 와 같은 값이어야 한다 — 스플래시·잠금은 바탕이
+       --ink 라 타일이 «사라져야» 곰만 뜬다. 서랍은 --panel 위라 은은한 홈처럼 보인다.
+       라이트는 순백 위 순먹이 화면에서 제일 무거운 덩어리가 돼 살짝 따뜻하게 든다(오너 지적 2026-09-15).
+       대비: 금색이 #1c1c1e 위 9.19:1 · #2b2521 위 8.16:1 — 둘 다 넉넉하다.
+       (옛 --markEye 토큰은 마크 색이 벡터에 구워지며 쓰임이 사라져 이 자리를 물려줬다.) */
+    --markTile:#1c1c1e;
     --onWait:#241a05;   --waitHover:#f0c46e;   --field:#202022;   /* 클로드 fill-brand-hover · fill-field */   --mark:#463a13;
     /* 방문 — 초록 (상태 색은 체크 원 하나에만 쓴다) */
     --go:#5fb08a;       --goTx:var(--go);      --onGo:#08241a;
@@ -188,6 +189,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        교체 전 갈색(#b5541e)으로 되돌아간다. 색을 다시 나누려면 이 세 가지를 먼저 다시 볼 것. */
     /* 강조 눌림은 «밝아진다» — 다크(#e8b757→#f0c46e, ΔL .047)와 같은 단차, 클로드 fill-brand-hover 와도 같은 방향.
        어두운 글자를 얹으므로 밝아질수록 대비가 오른다(4.88 → 5.87). 회색 버튼의 눌림(라이트는 어두워짐)과는 별개 규칙. */
+    --markTile:#2b2521;   /* 순백 위 순먹은 너무 세다 — 따뜻한 먹으로 */
     --onWait:#39180d;   --waitHover:#e58261;   --field:#ffffff;    /* --field = 클로드 fill-field(light) */   --mark:#f7d8cb;   /* --mark = 클로드 bg-tint-orange */
     --go:#2f9c6e;       --goTx:#1a7250;     --onGo:#ffffff;   /* 칩(--panel2) 위 4.9:1 */
     --warn:#b43f36;
@@ -724,7 +726,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .dwtitle{display:flex;align-items:center;gap:11px;padding:0 16px 16px}
   .dwico{   /* 잠금 아이콘과 같은 규칙. 배경 고정색 이유는 .lockico 주석 참고 */
     width:36px;height:36px;flex:0 0 auto;border-radius:8px;display:block;
-    background:#1c1c1e;
+    background:var(--markTile);
     -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;
   }
   .dwnames{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -1014,7 +1016,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      라이트에선 종이색 타일 + 클레이 얼굴이 된다. 모서리는 iOS 타일 곡률(변의 22.4%). */
   /* 배경을 테마색이 아니라 «고정» 먹으로 둔다 — 마크가 자기 타일을 데리고 다니는데,
      SVG 타일의 모서리(22.4%)가 CSS 모서리(22.3%)보다 살짝 커서 라이트에선 밝은 실선이 비친다. */
-  .lockico{width:56px;height:56px;border-radius:12.5px;background:#1c1c1e;display:block}
+  .lockico{width:56px;height:56px;border-radius:12.5px;background:var(--markTile);display:block}
   /* 14 → 8: 같은 수치인데 새 마크가 더 벌어져 보인다 — 옛 얼굴은 금색 덩어리 하나라 밑변이 «선»으로
      끝나 바닥이 분명했는데, 새 곰은 초록 체크로 덩어리가 갈라지고 밑변이 둥근 앞발로 흐려지며
      하트가 무게를 위로 끌어올린다. bbox 간격은 오히려 1px 줄었는데도 체감은 늘었다(오너 지적 2026-09-14).
@@ -1479,7 +1481,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 </svg>
 
 <div class="splash" id="splash">
-  <svg class="splashMark" viewBox="6.35 5.71 88.77 88.77" aria-hidden="true"><rect x="6.35" y="5.71" width="88.77" height="88.77" rx="19.88" fill="#1c1c1e"/><use href="#mkIksuni"/></svg>
+  <svg class="splashMark" viewBox="6.35 5.71 88.77 88.77" aria-hidden="true"><rect x="6.35" y="5.71" width="88.77" height="88.77" rx="19.88" fill="var(--markTile)"/><use href="#mkIksuni"/></svg>
   <div class="splashName">익순이</div>
   <div class="splashBy">Jumin Labs</div>
 </div>
