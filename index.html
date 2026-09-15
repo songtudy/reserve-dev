@@ -2004,8 +2004,8 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function applyRemoteItems(ds, res){
     listKnown = true;                                       // 실시간 수신도 «읽었다»
-    listFresh = true;                                       // 이번 연결에서 받은 명단이다
     if (ds !== viewDate) return;
+    listFresh = true;   // «지금 보는 날짜»의 명단을 이번 연결에서 받았다 — 자동 취소가 이걸 본다
     var next = itemsToState(ds, res);
     // 구 형식(items 가 배열)이면 신 형식(해시 키 객체)으로 1회 변환해 둔다.
     if (res.legacy && next.items.length && hasStore() && !migratedDates[ds]){
