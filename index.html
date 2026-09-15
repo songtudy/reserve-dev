@@ -1018,8 +1018,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 14 → 8: 같은 수치인데 새 마크가 더 벌어져 보인다 — 옛 얼굴은 금색 덩어리 하나라 밑변이 «선»으로
      끝나 바닥이 분명했는데, 새 곰은 초록 체크로 덩어리가 갈라지고 밑변이 둥근 앞발로 흐려지며
      하트가 무게를 위로 끌어올린다. bbox 간격은 오히려 1px 줄었는데도 체감은 늘었다(오너 지적 2026-09-14).
-     타일 아래 여백 8.1 + 글꼴 위 여백 5.3 이 더해져 «보이는» 간격은 9+13.4 = 22.4px 이다. */
-  .lockname{margin-top:9px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+     타일 아래 여백 8.1 + 글꼴 위 여백 5.3 = 13.4px 가 이미 깔려 있어, CSS 로 적는 값은 «보이는 것보다 훨씬 작다».
+     2 로 두면 보이는 간격 15.7px — 옛 마크(솔리드 얼굴, 보이는 29.7)와 같은 붙임새다.
+     9 였을 때 22.7px 로 여전히 떠 보인다는 지적을 받았다(2026-09-15). 0 에 가까운 수치가 «맞다». */
+  .lockname{margin-top:2px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
   .locksub{margin-top:3px;font-size:13px;color:var(--dim)}
   /* 입력한 자릿수 표시 */
   .lockdots{display:flex;gap:14px;margin-top:26px;height:12px;align-items:center}
