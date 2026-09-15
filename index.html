@@ -709,7 +709,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .foot button:disabled{opacity:.4;pointer-events:none}   /* 클로드 opacity-disabled .4 */   /* 접을 시간대가 없을 때(대기 모드·전부 처리) — 자리는 지키고 꺼 둔다 */
 
   .empty{text-align:center;color:var(--dim);font-size:13px;padding:36px 10px;line-height:1.6;white-space:pre-line}
-  .empty b{display:block;color:var(--text);font-weight:700;margin-bottom:2px}   /* 첫 줄만 또렷하게 — 크기는 그대로 */
+  .empty b{display:block;color:var(--text);font-weight:700}   /* 빈 화면의 유일한 글 — 크기는 그대로 두고 색·굵기로만 세운다 */
   /* ---------- 메뉴 서랍 ---------- */
   .drawerScrim{
     position:fixed;inset:0;z-index:60;background:var(--scrimLite);
@@ -2273,6 +2273,8 @@ window.dispatchEvent(new Event('fb-ready'));
        명단 복사               (명단 없음)    허용         화면에 있는 것을 그대로 옮길 뿐
        자동 백업·자동 취소       안 함         큐          connReady 가드가 이미 있다
        룰렛                   허용          허용         서버와 무관
+       끊김 알림               (안내문)      토스트 1회    B 는 끊긴 줄 모르고 계속 쓰는 게 위험 —
+                                                      2초 넘게 끊겼을 때만, 돌아오면 「n건 올리는 중」
 
      ★새 기능을 붙일 땐 이 표에 줄을 먼저 추가하고 구현할 것. 「그때그때」가 흔들림의 원인이었다. */
   function connReady(){ return online && hasStore(); }
@@ -2293,12 +2295,36 @@ window.dispatchEvent(new Event('fb-ready'));
       + (ready ? '연결됨' : '연결 안 됨')
       + (n ? (ready ? ' · ' + n + '건 올리는 중' : ' · ' + n + '건 대기') : '');
   }
+  // ★끊긴 «순간»에 한 번 알린다. 헤더 칩은 늘 떠 있지만 작아서 바쁠 때 놓친다 — 놓치면
+  //   내 변경이 다른 폰에 아직 안 갔다는 걸 모른 채 일하게 된다(같은 손님을 둘이 맞는 식).
+  //   리드 박스(「16:00 · 7팀」)를 덮지 않는 이유: 거기 있는 건 «지금 뭘 준비하나»라 끊겨도
+  //   유효한 정보다. 상태를 보이려고 일하는 정보를 지우면 손해다. 2026-09-15.
+  //   ★2초 넘게 끊겼을 때만 — 잠깐 깜빡이는 걸로 토스트가 튀면 그게 더 성가시다.
+  var connWas = null, connT = null;
+  function connChanged(){
+    var now = connReady();
+    if (connWas === null){ connWas = now; return; }   // 첫 판정은 알리지 않는다
+    if (now === connWas) return;
+    clearTimeout(connT);
+    if (!now){
+      connT = setTimeout(function(){
+        if (connReady()) return;                       // 그 사이 돌아왔으면 조용히
+        connWas = false;
+        toast('연결이 끊겼습니다 · 변경은 연결되면 올라갑니다');
+      }, 2000);
+    } else {
+      connWas = true;
+      var n = wqCount();
+      if (n) toast('연결됨 · ' + n + '건 올리는 중');   // 올릴 게 없으면 말할 것도 없다
+    }
+  }
   function setSync(ok){
     if (ok !== undefined) online = ok;
     var d = document.documentElement;
     if (connReady()) d.removeAttribute('data-off');
     else d.setAttribute('data-off', '');
     paintConn();
+    connChanged();
   }
 
   /* ---------- 렌더 ---------- */
@@ -2500,10 +2526,12 @@ window.dispatchEvent(new Event('fb-ready'));
         // 한다. ②그 뒤 — 고치면 «저절로» 채워진다(앱을 껐다 켜거나 명단을 다시 등록할 일이
         // 없다). 잠금화면의 「연결을 확인해 주세요」와 말이 다른 건 일부러다 — 거기선 사용자가
         // 조치해야 로그인이 되고, 여기선 조치 뒤 기다리기만 하면 된다. (.empty 는 pre-line)
-        // 첫 줄은 «사실»이라 또렷하게, 둘째 줄은 «그 뒤»라 흐리게. 크기는 그대로 13 —
-        // 활자를 키우지 않는다(오너 규칙). 색과 굵기만으로 위계를 만든다.
+        // 한 줄이면 된다. 「연결되면 불러옵니다」를 덧붙였다가 뺐다(2026-09-15) — 그건 「앱을
+        // 껐다 켜거나 명단을 다시 등록하려 들까 봐」 넣은 안전문이었는데, 그 사이 명단 등록을
+        // 코드로 막았으니 일어날 수 없는 일을 말로 막고 있던 셈이다. 연결되면 된다는 건
+        // 굳이 안 적어도 안다. 크기는 그대로 13 — 활자는 키우지 않는다(오너 규칙).
         if (navigator.onLine === false){
-          em.innerHTML = '<b>인터넷에 연결되어 있지 않습니다</b>\n연결되면 명단을 바로 불러옵니다';
+          em.innerHTML = '<b>인터넷에 연결되어 있지 않습니다</b>';
         } else {
           em.textContent = '명단을 불러오는 중입니다';
         }
