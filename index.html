@@ -309,21 +309,18 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:#e5484d;color:#fff;
     font-size:13px;font-weight:800;letter-spacing:.01em;line-height:1.2;
   }
-  /* 연결 끊김 — 날짜 줄 «왼쪽», 테스트 표시 옆. 글은 늘 「연결 안 됨」 하나다.
-     ★왼쪽인 이유는 devtag 와 같다 — 오른쪽에 두면 나타날 때마다 진행도(2/7)를 왼쪽으로
-       밀어낸다. 곁눈으로 보는 숫자가 자리를 옮기면 그게 더 성가시다(오너 2026-09-15).
-       날짜는 absolute 로 화면 한가운데 고정이라 어느 쪽이 늘어도 안 흔들린다.
+  /* 연결 끊김 — 날짜 줄 오른쪽, «진행도(2/7) 앞». 글은 늘 「연결 안 됨」 하나다.
+     ★순서가 핵심이다. 진행도 «뒤»에 두면 나타날 때마다 진행도가 왼쪽으로 밀린다 —
+       곁눈으로 보는 숫자가 자리를 옮기면 그게 성가시다(오너 2026-09-15). 앞에 두면
+       진행도는 오른쪽 끝(본문 끝)에 붙박이고 이것만 왼쪽으로 자란다.
+       왼쪽(devtag 옆)에도 놔 봤는데 테스트 표시와 나란히 서면 가운데 날짜를 덮었다.
      ★칩(--btnWarn 면)이었는데 맨 글자로 바꿨다. 이 앱에서 --btnWarn 면 + 붉은 글자는
        «위험 버튼»의 옷이고(삭제·초기화 확인 — 「이 꼴 하나뿐」), 규칙도 «정보는 글자,
        조작만 알약»이다. 연결 상태는 정보지 누르는 것이 아니다. 점은 서랍 연결 표시(.dot.stale)와
        같은 부품을 그대로 쓴다 — 한 개념이 두 자리에서 같은 꼴이 된다.
      ★대기 건수를 붙였다가 뺐고(칩이 길어져 가운데 날짜를 덮었다), 띠·토스트까지 갔다가
        전부 되돌렸다 — 끊길 일 자체가 드문데 장치가 과했다. 상태는 이것 하나. */
-  .nav .offtag{margin-left:6px}
-  /* 테스트 표시와 둘 다 왼쪽이라, 같이 뜨면 가운데 날짜(absolute)를 덮는다. 끊긴 순간엔
-     「테스트다」보다 「연결이 끊겼다」가 더 급한 소식이라 그쪽을 잠시 접는다.
-     실사용에는 devtag 자체가 없어 아무 영향이 없다. 2026-09-15. */
-  html[data-off] .devtag{display:none}
+
   .offtag{
     display:none;align-items:center;gap:5px;flex:0 0 auto;
     color:var(--warn);font-size:13px;font-weight:700;white-space:nowrap;line-height:1.2;
@@ -1375,10 +1372,10 @@ window.addEventListener('pageshow', remeasureSbcut);
       <div class="nav">
         <button type="button" id="menuBtn" aria-label="메뉴"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
         <span class="devtag hide" id="devTag">테스트</span><!-- 테스트 사이트 표시 — 왼쪽(메뉴 옆)에 두어 오른쪽 진행도가 본문 끝에 붙게 (2026-09-11) -->
-        <span class="offtag"><span class="dot stale"></span>연결 안 됨</span><!-- 같은 이유로 왼쪽 — 오른쪽에 두면 나타날 때마다 진행도가 밀린다 (2026-09-15) -->
         <span class="date num" id="dateLabel"></span>
       </div>
       <div class="tools">
+        <span class="offtag"><span class="dot stale"></span>연결 안 됨</span><!-- 분수 «앞» — 분수는 오른쪽 끝에 고정된 채 이것만 왼쪽으로 자란다 (2026-09-15) -->
         <span class="dayprog num hide" id="dayProg"></span>
       </div>
     </div>
