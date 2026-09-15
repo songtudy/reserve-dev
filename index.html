@@ -1200,7 +1200,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     62% { transform:translate(79.03px,25.45px) scale(1.07) translate(-79.03px,-25.45px) }
     to  { transform:translate(79.03px,25.45px) scale(1) translate(-79.03px,-25.45px) }
   }
-  .splashHeart{ animation:heartOut .3s cubic-bezier(.5,1,.89,1) var(--tMove) backwards }
+  /* 0.3초는 «보이는 성장»이 120ms 뿐이라 태어나는 게 아니라 나타나는 쪽으로 읽혔다.
+     0.45초면 240ms 에 걸쳐 자란다. 끝나는 시각이 500 → 650ms 로 늦어지지만 마지막 15%는
+     1px 짜리 오버슈트 가라앉기라 «보이기에는» 480ms 에 이미 끝난다 — 잘릴 위험은 거의 안 는다.
+     ★지연은 --tMove 그대로 둔다. 앞당기면(0.12초) 마크가 들어오는 중에 하트가 나와 둘 다 탁해진다. */
+  .splashHeart{ animation:heartOut .45s cubic-bezier(.5,1,.89,1) var(--tMove) backwards }
   /* line-height:1 — 줄상자가 글자를 딱 감싸야 위 gap 이 «보이는 간격»과 맞는다(기본 줄간격은 위에 8px 를 더 얹었다).
      크기 25 는 활자 사다리 최상단 그대로 — 곰(94) : 이름 잉크(21.5) = 4.4:1 로 락업 통상 범위 안이다.
      (「마크 96」은 얼굴만이던 옛 마크 값이라 2026-09-15 에 곰 실측으로 고쳤다 — 비율 결론은 그대로.) */
