@@ -2263,6 +2263,13 @@ window.dispatchEvent(new Event('fb-ready'));
   // 개별 읽기·쓰기 실패로는 켜지 않는다 — 잠깐 끊겼다 붙는 동안 계속 떠 있게 되므로.
   var online = false;
   /* ---------- 인터넷이 끊겼을 때 — 규칙 한 자리 ----------
+     ★말은 하나로 — 「인터넷이 연결되지 않았습니다」. 빈 화면·잠금화면·막힌 동작 토스트가
+       전부 이 한 문장을 쓴다. 예전엔 「연결되면 쓸 수 있습니다」(언제 되나)와 「연결이 끊겨
+       지금은 …할 수 없습니다」(왜 안 되나)가 섞여 다섯 가지였다 — 조건이 하나인데 말이
+       다섯이면 읽는 쪽이 매번 새로 해석해야 한다(오너 2026-09-15).
+       예외는 둘뿐이다. 「명단을 아직 불러오지 못했습니다」— 온라인인데 명단이 안 온 경우라
+       인터넷 탓이 아니다. 「연결을 확인해 주세요」(잠금화면 비번 시도) — 거긴 사용자가
+       실제로 조치해야 넘어가는 유일한 자리다.
      사례마다 따로 판단하다 보니 앞뒤가 흔들렸다(오너 2026-09-15). 기준을 둘로 못 박는다.
 
      ① listKnown — «서버 명단을 이 세션에서 한 번이라도 읽었나»
@@ -2522,7 +2529,7 @@ window.dispatchEvent(new Event('fb-ready'));
         // 코드로 막았으니 일어날 수 없는 일을 말로 막고 있던 셈이다. 연결되면 된다는 건
         // 굳이 안 적어도 안다. 크기는 그대로 13 — 활자는 키우지 않는다(오너 규칙).
         if (navigator.onLine === false){
-          em.innerHTML = '<b>인터넷에 연결되어 있지 않습니다</b>';
+          em.innerHTML = '<b>인터넷이 연결되지 않았습니다</b>';
         } else {
           em.textContent = '명단을 불러오는 중입니다';
         }
@@ -3412,7 +3419,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function applyPaste(text){
     // 끊긴 동안엔 등록하지 않는다 — 이건 «서버 명단을 이걸로 바꿔라» 라서, 서버에 무엇이
     // 있는지 모르는 상태로 보내면 남의 명단을 지운다. 낱개 변경과 달리 합칠 수가 없다.
-    if (!connReady()){ toast('연결이 끊겨 지금은 등록할 수 없습니다'); return false; }
+    if (!connReady()){ toast('인터넷이 연결되지 않았습니다'); return false; }
     var fresh = parse(text);
     if (fresh.bad.length){ showBad(fresh.bad); return false; }
     clearBad();
@@ -3540,8 +3547,7 @@ window.dispatchEvent(new Event('fb-ready'));
   //   (명단 등록·초기화는 여기서 한 단계 더 엄하다 — 통째 교체라 연결까지 돼 있어야 한다.)
   function canWrite(){
     if (listKnown) return true;
-    toast(navigator.onLine === false ? '인터넷에 연결되면 쓸 수 있습니다'
-                                     : '명단을 불러온 뒤에 쓸 수 있습니다');
+    toast(navigator.onLine === false ? '인터넷이 연결되지 않았습니다' : '명단을 아직 불러오지 못했습니다');
     return false;
   }
   function openAdd(){
@@ -3799,7 +3805,7 @@ window.dispatchEvent(new Event('fb-ready'));
     hideDrawer();
     if (!state || !state.items.length){ closeDrawer(); toast('명단이 없습니다'); return; }   // backDone 까지 — 유령 뒤로가기 기록 방지
     // 초기화도 «통째 교체»(set)라 끊긴 동안엔 막는다 — applyPaste 와 같은 이유.
-    if (!connReady()){ closeDrawer(); toast('연결이 끊겨 지금은 초기화할 수 없습니다'); return; }
+    if (!connReady()){ closeDrawer(); toast('인터넷이 연결되지 않았습니다'); return; }
     // 안내문은 조작법 하나만 — 앱의 다른 창 보조문(#pasteHint·.rltsub)과 같은 규칙이다.
     // 건수는 묻는 자리(안내문)가 아니라 끝난 자리(토스트)에 둔다: 「명단 초기화」를 누른
     // 사람에게 건수는 결정을 바꾸지 않지만, 끝난 뒤엔 무엇이 사라졌는지 알려 주는 영수증이 된다.
@@ -4429,7 +4435,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // ★끊긴 채로 로그아웃하면 스스로를 가둔다 — 비밀번호는 서버에서만 확인할 수 있어서
     //   연결이 돌아올 때까지 «다시 들어올 방법이 없다». 영업 중이면 그대로 업무 정지다.
     //   signOut 자체는 오프라인에서도 되기 때문에 여기서 막아야 한다. 2026-09-15.
-    if (!connReady()){ closeDrawer(); toast('연결이 끊겨 지금은 로그아웃할 수 없습니다'); return; }
+    if (!connReady()){ closeDrawer(); toast('인터넷이 연결되지 않았습니다'); return; }
     // 보조문 = 결과 안내. 초기화 창의 조작 안내와 종류는 다르지만(그쪽은 「어떻게」, 이쪽은 「무슨 일이」),
     // 제목만 덜렁 있으면 허전하고 이 앱의 로그아웃이 뭘 하는지(이 기기만·명단 유지)가 안 자명하다.
     confirmDlg('로그아웃할까요?', function(){
@@ -4750,6 +4756,12 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   var toastTimer;
+  /* 말투 — 세 갈래로 쓴다 (2026-09-15 전수 정리).
+       ① 상시 라벨(화면에 붙박이는 표시) : 명사형      「연결됨」 「연결 안 됨」
+       ② 끝났다는 통보(토스트)          : -됨         「명단 등록됨」 「복사됨」 「업데이트됨」
+       ③ 말을 거는 문장(안내·거절)       : -습니다/-주세요 「명단이 없습니다」 「이름을 입력해 주세요」
+     새 문구를 넣을 땐 셋 중 어디인지부터 정할 것. 「인터넷이 연결되지 않았습니다」는 ③이고,
+     헤더의 「연결 안 됨」은 ①이라 달라 보이는 게 맞다 — 역할이 다르지 어긋난 게 아니다. */
   function toast(msg){
     var t = document.getElementById('toast');
     t.textContent = msg;
@@ -4844,7 +4856,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (window.caches && caches.keys) caches.keys().then(function(ks){
         ks.forEach(function(k){ caches.delete(k); });
       }).catch(function(){});
-      toast('오프라인 저장을 껐습니다');
+      toast('오프라인 저장 꺼짐');
       return;
     }
     // 등록은 화면이 다 뜬 뒤에 — 첫 그림을 늦추지 않는다.
@@ -5223,7 +5235,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var staleBoot = false;
   function lockStart(){
     if (!window.__fb || !window.__fb.authWatch){   // Auth 를 못 불러왔을 때
-      lockShow(navigator.onLine === false ? '인터넷에 연결되어 있지 않습니다' : '앱을 다시 열어 주세요');
+      lockShow(navigator.onLine === false ? '인터넷이 연결되지 않았습니다' : '앱을 다시 열어 주세요');
       return;
     }
     if (document.documentElement.getAttribute('data-authed') === '1' && !booted){
@@ -5252,7 +5264,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 주세요」는 사실도 아니다(다시 열어도 인터넷이 없으면 똑같다). 2026-09-15.
   function fbGaveUp(){
     if (window.__fb) return;
-    lockShow(navigator.onLine === false ? '인터넷에 연결되어 있지 않습니다' : '앱을 다시 열어 주세요');
+    lockShow(navigator.onLine === false ? '인터넷이 연결되지 않았습니다' : '앱을 다시 열어 주세요');
   }
   if (window.__fb) lockStart();
   else {
