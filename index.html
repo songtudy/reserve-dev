@@ -961,6 +961,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkvrow.go .nm, .bkvrow.off .nm, .bkvrow.go .px, .bkvrow.off .px{color:var(--dim);font-weight:600}
   /* 시트 기본 하단바(닫기) 오른쪽에 그 시트의 주동작 버튼을 하나 더 붙인다
      (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 포인트색. */
+  .errline{margin-top:10px;color:var(--off);text-decoration:underline;cursor:pointer}
+  .errline:active{opacity:.5}
   .sheetBtns .sheetCopy{background:var(--wait);color:var(--onWait);font-weight:700}
   .sheetBtns .sheetCopy:active, .sheetBtns .sheetCopy.dn{background:var(--waitHover)}
 
@@ -3202,8 +3204,12 @@ window.dispatchEvent(new Event('fb-ready'));
   var taEl = document.getElementById('ta');
   var marking = false;   // 오류 표시 중인지
 
+  // 따옴표까지 막는다 — 글자 자리에선 &quot; 가 그대로 " 로 보이니 손해가 없고,
+  // 속성값에 쓸 때(지금은 .bkrow 의 data-key 하나) 따옴표로 빠져나가는 길이 막힌다. 2026-09-15.
   function esc(t){
-    return String(t).replace(/[<>&]/g, function(c){ return { '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]; });
+    return String(t).replace(/[<>&"']/g, function(c){
+      return { '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#39;' }[c];
+    });
   }
   // 입력칸 높이는 창을 열 때 한 번만 정한다 (내용·키보드·오류와 무관).
   // → 등록 버튼이 늘 같은 자리 (버튼 씹힘 방지). 넘치는 줄은 입력칸 안에서 스크롤.
@@ -4509,13 +4515,25 @@ window.dispatchEvent(new Event('fb-ready'));
     if (t){ wifiPick = t.getAttribute('data-wifi'); this.innerHTML = wifiHtml(); return; }
   });
 
+  // 문제 기록이 있을 때만 한 줄. 눌러 복사 → 나한테 그대로 붙여넣으면 된다.
+  function errHtml(){
+    var a = errList();
+    if (!a.length) return '';
+    return '<p class="credit errline" id="errCopy" role="button">문제 기록 ' + a.length + '건 · 눌러서 복사</p>';
+  }
   document.getElementById('aboutBtn').addEventListener('click', function(){
     hideDrawer();
     openSheet('익순이란?',
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v2.1.1<br>© 2026 Jumin Labs</p>');
+      + '<p class="credit">익순이 v2.1.1<br>© 2026 Jumin Labs</p>'
+      + errHtml());
+    var eb = document.getElementById('errCopy');
+    if (eb) eb.onclick = function(){
+      copyText(errList().map(function(x){ return x.t + ' ' + x.k + ' ' + x.m + ' ' + x.w; }).join('\n'),
+               '문제 기록 복사됨');
+    };
   });
 
   // 브라우저로 처음 들어온 사람에게 한 번 권한다
@@ -4553,7 +4571,17 @@ window.dispatchEvent(new Event('fb-ready'));
   function doUpdate(){
     if (typingNow()){ toast('입력을 마치고 눌러 주세요'); return; }
     try { sessionStorage.setItem('ix-updated', '1'); } catch(e){}   // 새로 뜬 뒤 확인 토스트용
-    try { window.location.reload(); } catch(e){}
+    // ★그냥 reload 하면 옛 파일이 다시 올 수 있다. GitHub Pages 가 index.html 을
+    //   cache-control: max-age=600 으로 주기 때문이다 — 새 버전을 감지해 띠까지 띄워 놓고도
+    //   최대 10분간 옛 화면이 뜬다(변경 감지는 fetchTag 의 cache:'no-store' 라 즉시인데,
+    //   정작 다시 뜨는 건 캐시에서 온다). cache:'reload' 로 HTTP 캐시 항목을 먼저 갈아끼운
+    //   뒤에 다시 뜬다. 실패하든(오프라인) 응답이 안 오든 결국 reload 는 한다. 2026-09-15.
+    var went = false;
+    var go = function(){ if (went) return; went = true; try { window.location.reload(); } catch(e){} };
+    if (window.fetch){
+      try { fetch(location.href, { cache: 'reload' }).then(go, go); } catch(e){ go(); }
+      setTimeout(go, 2500);   // 응답이 영영 안 와도 갇히지 않게
+    } else go();
   }
   // 하단 「새로고침」 버튼은 없앴다 — 실시간 동기화·자동 재연결이 대신하고,
   // 유일하게 남은 「업데이트」 역할은 새 버전 알림 띠(#updBar) 자체가 맡는다 (아래 flagUpdate 부근).
@@ -4653,6 +4681,31 @@ window.dispatchEvent(new Event('fb-ready'));
       if (hasStore() && fb().reconnect) fb().reconnect();
     });
   }
+
+  /* ---------- 오류 기록 ----------
+     빈 catch 가 서른 곳 넘게 있고(대개는 localStorage 가 막힌 기기처럼 «정상인 실패»다)
+     전역 포착이 없어서, 정작 진짜 오류가 나도 아무 데도 안 남았다. 화면에는 아무것도 안 띄운다
+     — 손님 앞에서 쓰는 앱이라 오류창이 뜨는 게 더 나쁘다. 마지막 다섯 건만 조용히 적어 두고,
+     서랍 「익순이란?」 맨 아래에서만 보인다(있을 때만). 2026-09-15. */
+  var ERR_KEY = 'ix-err';
+  function errLog(kind, msg, where){
+    try {
+      var a = JSON.parse(localStorage.getItem(ERR_KEY) || '[]');
+      a.push({ t: new Date().toISOString().slice(5, 19).replace('T', ' '),
+               k: kind, m: String(msg || '').slice(0, 200), w: String(where || '').slice(0, 120) });
+      localStorage.setItem(ERR_KEY, JSON.stringify(a.slice(-5)));
+    } catch(e){}
+  }
+  function errList(){
+    try { return JSON.parse(localStorage.getItem(ERR_KEY) || '[]'); } catch(e){ return []; }
+  }
+  window.addEventListener('error', function(e){
+    errLog('오류', e && e.message, (e && e.filename ? '' : '') + ':' + (e && e.lineno));
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    var r = e && e.reason;
+    errLog('약속', (r && (r.message || r.code)) || r, '');
+  });
 
   /* ---------- 새 버전 알림 ---------- */
   // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면 헤더 아래에
