@@ -4435,7 +4435,7 @@ window.dispatchEvent(new Event('fb-ready'));
     title.querySelector('.bkback').onclick = bkBack;
     document.getElementById('sheetBody').innerHTML = '<div class="bkvlist">' + bkRosterHtml(e.items) + '</div>';
     sheetCopyBtn('명단 복사', function(){
-      copyText(reportText(e.items), '명단 복사됨 · ' + (e.n != null ? e.n : e.items.length) + '건');
+      copyText(reportText(e.items, true), '명단 복사됨 · ' + (e.n != null ? e.n : e.items.length) + '건');
     });
     backSet(bkBack);   // 뒤로가기 = 목록으로 (시트 닫기 아님)
   }
@@ -4551,7 +4551,11 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // 보고용 텍스트 — 체크 안 된 건 뒤에 아무것도 안 붙임
   // items 를 주면 그 명단을, 안 주면 현재 화면 명단을 단톡방 양식 텍스트로.
-  function reportText(items){
+  // 복사 버튼이 둘인데 «읽는 쪽»이 다르다 — 그래서 내보내는 글도 다르다.
+  //   본 화면 「명단 복사」 : 단톡방에 붙여넣어 «사람이 읽는» 글 → 메모 없음 (오너 2026-09-15)
+  //   지난 명단 「명단 복사」: 앱에 도로 붙여넣어 «명단을 되살리는» 글 → 메모 포함
+  // 메모를 단톡방까지 딸려 보내면 남의 요청사항이 그대로 퍼지고 줄도 길어진다.
+  function reportText(items, withMemo){
     var list = items || (state ? state.items : null);
     if (!list || !list.length) return '';
     var prev = null, out = [];
@@ -4560,11 +4564,11 @@ window.dispatchEvent(new Event('fb-ready'));
       prev = it.time;
       var tail = it.status === 'arrived' ? ' 방문'
                : it.status === 'cancelled' ? ' 취소' : '';
-      // 메모는 맨 뒤 괄호 — parse() 가 tail 끝의 (…) 를 이미 메모로 떼어내므로 이 꼴이 곧 왕복이다
-      // (복사 → 붙여넣기 하면 메모까지 그대로 돌아온다). 예전엔 읽을 줄만 알고 쓸 줄을 몰라
-      // 「지난 명단」으로 복구하면 메모가 전부 사라졌다. 2026-09-15.
+      // 메모는 «복구용»에만 맨 뒤 괄호로 붙인다 — parse() 가 tail 끝의 (…) 를 이미 메모로 떼어내므로
+      // 이 꼴이 곧 왕복이다(복사 → 붙여넣기 하면 메모까지 그대로 돌아온다). 읽을 줄만 알고 쓸 줄을
+      // 몰라서 「지난 명단」으로 복구하면 메모가 전부 사라지던 걸 이걸로 막는다. 2026-09-15.
       out.push(it.time + ' ' + it.name + ' ' + it.pax + '명' + tail
-               + (it.memo ? ' (' + it.memo + ')' : ''));
+               + (withMemo && it.memo ? ' (' + it.memo + ')' : ''));
     });
     return out.join('\n');
   }
