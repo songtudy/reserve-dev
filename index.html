@@ -4357,16 +4357,22 @@ window.dispatchEvent(new Event('fb-ready'));
   //   지난 날 { kind:'day',  date, n, items } 키 = 'YYYY-MM-DD'
   var bkMap = null;
   function bkTitled(){ return document.getElementById('sheetTitle').textContent === '지난 명단'; }
-  // 한 줄 요약 — 「17명」 또는 「17명 · 방문 14」. 방문이 0 이면 아예 안 쓴다(「방문 0」이 여덟 줄
-  // 쌓이면 그게 곧 잡음이다). 방문 수를 같이 두는 건 명단이 다 찬 뒤엔 인원이 더 안 변해서
-  // (20:20·19:20 둘 다 17명) 시각 말고는 구분할 것이 없기 때문이다. 취소는 안 쓴다 — 셋이 되면
-  // 2026-09-15 에 「난잡하다」고 반려된 표로 되돌아간다. 상세에 시간대별로 다 있다.
+  // 한 줄 요약 — 「17명」 「17명 · 방문 14」 「17명 · 방문 14 · 취소 1」. 방문 수를 같이 두는 건
+  // 명단이 다 찬 뒤엔 인원이 더 안 변해서(20:20·19:20 둘 다 17명) 시각 말고는 구분할 것이
+  // 없기 때문이다. ★2026-09-15 에 취소를 뺐다가 되돌렸다 — 상세 머리글은 「방문 1 · 취소 1」로
+  // 둘 다 쓰는데 목록만 방문을 쓰면 같은 기능 안에서 앞뒤가 안 맞는다(오너 지적). 0 인 것을
+  // 안 쓰는 규칙 덕에 취소가 실제로 있는 줄에만 나타나므로 줄이 길어지지도 않는다.
+  // 방문·취소 요약 — 0 인 것은 아예 안 쓴다. 「방문 0 · 취소 0」이 여덟 줄 쌓이면 그게 곧 잡음이고,
+  // 반대로 «있을 때만» 나오니 눈에 띄는 게 곧 실제로 일어난 일이다. 목록과 상세 머리글이 같은 규칙.
+  function bkTally(t){
+    return (t.came ? ' · 방문 ' + t.came : '') + (t.off ? ' · 취소 ' + t.off : '');
+  }
   function bkRowHtml(key, label, e){
     var t = tallyStatus(e && e.items);
     var n = (e && e.n != null) ? e.n : t.total;
     return '<div class="bkrow" data-key="' + esc(key) + '">'
       + '<span class="bkt">' + esc(label) + '</span>'
-      + '<span class="bkn">' + n + '명' + (t.came ? ' · 방문 ' + t.came : '') + '</span>'
+      + '<span class="bkn">' + n + '명' + bkTally(t) + '</span>'
       + '<span class="bkchev">' + CHEV_SVG + '</span></div>';
   }
   function backupSheetHtml(map){
@@ -4411,8 +4417,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var OFF = ICON_OFF.replace('width="17" height="17"', 'width="12" height="12"');
     return groupByTime(list.slice().sort(sortItems)).map(function(g){
       var t = tallyStatus(g.items);
-      return '<div class="bkvt"><span>' + esc(g.time) + '</span><span class="bkvm">방문 ' + t.came
-        + (t.off ? ' · 취소 ' + t.off : '') + '</span></div>'
+      return '<div class="bkvt"><span>' + esc(g.time) + '</span><span class="bkvm">'
+        + bkTally(t).replace(/^ · /, '') + '</span></div>'
         + g.items.map(function(it){
             var cls = it.status === 'arrived' ? ' go' : it.status === 'cancelled' ? ' off' : '';
             var mk  = it.status === 'arrived' ? GO : it.status === 'cancelled' ? OFF : '';
