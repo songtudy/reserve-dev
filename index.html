@@ -18,7 +18,9 @@
 
 <!-- 콜드 스타트 단축 — Firebase 모듈 다운로드와 서버 연결을 HTML 파싱 중에 미리 시작한다.
      (평소엔 문서 끝의 모듈 스크립트까지 파싱이 도달해서야 시작됐다.)
-     로직은 하나도 안 바뀐다. 버전은 아래 import 문과 반드시 같아야 한다. -->
+     로직은 하나도 안 바뀐다. 버전은 아래 import 문과 반드시 같아야 한다.
+     ★Firebase 버전을 올릴 땐 «세 곳»을 같이 고쳐야 한다 — 이 preconnect · 문서 끝 import 문 ·
+       sw.js 의 FB 상수. sw.js 가 어긋나면 오프라인에서 옛 SDK 가 나오거나 아예 안 열린다. -->
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://ikseon-reserve-default-rtdb.asia-southeast1.firebasedatabase.app">
 <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
@@ -4670,9 +4672,13 @@ window.dispatchEvent(new Event('fb-ready'));
     // 되살린다. 실시간 수신(watchRemote)이 붙으면 곧 실제 데이터로 채워진다.
     var got = fb().itemsGet(ticket.date);
     got.catch(function(){});   // 시간 초과 뒤 뒤늦게 거부돼도 「미처리 거부」 경고가 안 뜨게
+    // 기기가 «인터넷 없음»이라고 말하면 BOOT_WAIT(8초)를 다 기다릴 이유가 없다 — 어차피 못 받는다.
+    // onLine 이 false 면 진짜로 끊긴 것이고(true 는 보장이 아니라 여기선 줄이는 데만 쓴다),
+    // 오프라인에서 스플래시가 8초 버티다 검은 화면이 되던 걸 막는다. 2026-09-15.
+    var bootWait = (navigator.onLine === false) ? 600 : BOOT_WAIT;
     Promise.race([
       got,
-      new Promise(function(_, rej){ setTimeout(rej, BOOT_WAIT, new Error('boot timeout')); })
+      new Promise(function(_, rej){ setTimeout(rej, bootWait, new Error('boot timeout')); })
     ]).then(function(res){
       if (!ticketCurrent(ticket)) return;
       stageBackgroundState(itemsToState(ticket.date, res));
@@ -5104,7 +5110,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var staleBoot = false;
   function lockStart(){
     if (!window.__fb || !window.__fb.authWatch){   // Auth 를 못 불러왔을 때
-      lockShow('앱을 다시 열어 주세요');
+      lockShow(navigator.onLine === false ? '인터넷에 연결되어 있지 않습니다' : '앱을 다시 열어 주세요');
       return;
     }
     if (document.documentElement.getAttribute('data-authed') === '1' && !booted){
@@ -5129,10 +5135,16 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   // Firebase 모듈이 먼저 준비되면 바로, 아니면 준비 신호를 기다린다
+  // Firebase 모듈을 끝내 못 받은 경우. 오프라인이면 15초를 버틸 이유가 없고, 「다시 열어
+  // 주세요」는 사실도 아니다(다시 열어도 인터넷이 없으면 똑같다). 2026-09-15.
+  function fbGaveUp(){
+    if (window.__fb) return;
+    lockShow(navigator.onLine === false ? '인터넷에 연결되어 있지 않습니다' : '앱을 다시 열어 주세요');
+  }
   if (window.__fb) lockStart();
   else {
     window.addEventListener('fb-ready', lockStart, { once: true });
-    setTimeout(function(){ if (!window.__fb) lockShow('앱을 다시 열어 주세요'); }, 15000);
+    setTimeout(fbGaveUp, navigator.onLine === false ? 4000 : 15000);
   }
 })();
 </script>
