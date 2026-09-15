@@ -929,16 +929,16 @@ window.addEventListener('pageshow', remeasureSbcut);
        오른쪽에 남는 자리는 이제 «여백»이지 «구멍»이 아니다.
      ★메모는 여태 안 그렸다. 백업 스냅샷은 항목을 통째로 담으므로(memo 포함) 가진 정보를
        안 보여준 것이었다 — 본 화면 .memo 와 같은 꼴(13 · --dim · 앞에 점)로 되살린다. */
-  .bkvrow{display:flex;align-items:flex-start;gap:9px;padding:7px 0;font-size:14px;line-height:1.35}
-  .bkvrow .ck{width:14px;height:14px;flex:0 0 auto;display:grid;place-items:center;line-height:0;color:transparent;margin-top:2px}
+  .bkvrow{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:14px;line-height:1.35}
+  .bkvrow .ck{width:14px;height:14px;flex:0 0 auto;display:grid;place-items:center;line-height:0;color:transparent}
   .bkvrow .ck svg{display:block}
   .bkvrow.go .ck{color:var(--goTx)}
   .bkvrow.off .ck{color:var(--warn)}
-  .bkvbody{flex:1;min-width:0;display:flex;flex-direction:column}
-  .bkvl1{display:flex;align-items:baseline;gap:8px;min-width:0}
-  .bkvrow .nm{flex:0 1 auto;min-width:0;color:var(--text);font-weight:600;
+  /* 이름은 늘지 않는다(flex:0 1) — 인원이 이름 바로 뒤에 붙고, 남는 자리는 오른쪽 «여백»이 된다.
+     굵기는 본 화면과 같은 규칙: 대기 700 · 처리된 행 600 + --dim (.row.arrived .name 과 짝). */
+  .bkvrow .nm{flex:0 1 auto;min-width:0;color:var(--text);font-weight:700;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bkvrow .px{flex:0 0 auto;color:var(--text);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .bkvrow .px{flex:0 0 auto;color:var(--text);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
   /* ★메모는 일부러 안 그린다 — 「명단 복사」가 내보내는 양식(reportText)에 메모가 없어서,
        화면에만 있고 붙여넣기엔 없는 것이 된다. 한 사람이 두 줄을 차지해 목록도 배가 된다.
        2026-09-15 에 넣어 봤다가 뺐다. (메모까지 되살리려면 복사 양식부터 바꿔야 한다 — 별건.) */
@@ -946,8 +946,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★취소 이름은 --off 에 취소선이었다. 본 화면은 2026-09-11 에 그 둘을 이미 버렸는데
        (「--off 는 3.7:1 로 읽기 기준 미달」 · 「상태는 원 하나에만, 선을 줄인다」 — 오너)
        이 시트만 옛 규칙이 남아 있었다. 글자가 14px 이라 대비는 오히려 더 나빴다. 2026-09-15. */
-  .bkvrow.go .nm, .bkvrow.off .nm{color:var(--dim)}
-  .bkvrow.go .px, .bkvrow.off .px{color:var(--dim)}
+  .bkvrow.go .nm, .bkvrow.off .nm, .bkvrow.go .px, .bkvrow.off .px{color:var(--dim);font-weight:600}
   /* 시트 기본 하단바(닫기) 오른쪽에 그 시트의 주동작 버튼을 하나 더 붙인다
      (지금은 지난 명단 상세의 「명단 복사」). 닫기와 크기·모양은 같고 색만 포인트색. */
   .sheetBtns .sheetCopy{background:var(--wait);color:var(--onWait);font-weight:700}
@@ -4401,9 +4400,8 @@ window.dispatchEvent(new Event('fb-ready'));
             var cls = it.status === 'arrived' ? ' go' : it.status === 'cancelled' ? ' off' : '';
             var mk  = it.status === 'arrived' ? GO : it.status === 'cancelled' ? OFF : '';
             return '<div class="bkvrow' + cls + '"><span class="ck">' + mk + '</span>'
-              + '<span class="bkvbody"><span class="bkvl1">'
-              +   '<span class="nm">' + esc(it.name) + '</span>'
-              +   '<span class="px">' + esc(String(it.pax)) + '명</span></span></span></div>';
+              + '<span class="nm">' + esc(it.name) + '</span>'
+              + '<span class="px">' + esc(String(it.pax)) + '명</span></div>';
           }).join('');
     }).join('');
   }
