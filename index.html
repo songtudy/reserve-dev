@@ -320,6 +320,10 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★대기 건수를 붙였다가 뺐고(칩이 길어져 가운데 날짜를 덮었다), 띠·토스트까지 갔다가
        전부 되돌렸다 — 끊길 일 자체가 드문데 장치가 과했다. 상태는 이것 하나. */
   .nav .offtag{margin-left:6px}
+  /* 테스트 표시와 둘 다 왼쪽이라, 같이 뜨면 가운데 날짜(absolute)를 덮는다. 끊긴 순간엔
+     「테스트다」보다 「연결이 끊겼다」가 더 급한 소식이라 그쪽을 잠시 접는다.
+     실사용에는 devtag 자체가 없어 아무 영향이 없다. 2026-09-15. */
+  html[data-off] .devtag{display:none}
   .offtag{
     display:none;align-items:center;gap:5px;flex:0 0 auto;
     color:var(--warn);font-size:13px;font-weight:700;white-space:nowrap;line-height:1.2;
