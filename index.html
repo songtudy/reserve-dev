@@ -1736,6 +1736,12 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
     return true;
   }
+  // ★«명단이 비었다» 와 «명단을 못 읽었다» 는 완전히 다른 일이다.
+  //   서버를 한 번이라도 성공적으로 읽기 전에는 비었다고 말하면 안 된다 — 그 상태에서
+  //   붙여넣기 창이 열리고 거기서 등록하면, 연결되는 순간 서버의 진짜 명단을 통째로
+  //   덮어쓴다(itemsReplace 는 set 이고 Firebase 는 오프라인 쓰기를 모아 뒀다 보낸다).
+  //   오프라인 실행을 열면서 생긴 길이라 같이 막았다. 2026-09-15.
+  var listKnown = false;
   function stageBackgroundState(next){
     if (interactionActive()){
       deferredState = next;   // 서버 최신 전체 상태 → 최신 것으로 덮으면 된다
@@ -1976,6 +1982,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }).join('');
   }
   function applyRemoteItems(ds, res){
+    listKnown = true;                                       // 실시간 수신도 «읽었다»
     if (ds !== viewDate) return;
     var next = itemsToState(ds, res);
     // 구 형식(items 가 배열)이면 신 형식(해시 키 객체)으로 1회 변환해 둔다.
@@ -2170,11 +2177,16 @@ window.dispatchEvent(new Event('fb-ready'));
   function putItem(item){ wqPush(item.id, 'put', { item: item, ts: item.ts }); }
   function delItem(id){ wqPush(id, 'del', { ts: Date.now() }); }
   // 명단을 통째로 새로 쓴다 (붙여넣기·초기화). 개별 대기분은 이 교체가 덮으니 큐에서 버린다.
+  // ★끊긴 동안에는 통째 교체를 하지 않는다. 낱개 변경(방문·취소·추가·삭제)은 쓰기 큐가
+  //   합쳐 주지만 이건 set 이라 «서버에 뭐가 있든 이걸로 바꿔라» 가 된다. 못 읽은 상태에서
+  //   보내면 남의 명단을 지운다. 부르는 쪽이 false 를 보고 사용자에게 알린다.
   function replaceItems(arr){
+    if (!connReady()) return false;
     wqClearDate(viewDate);
-    if (!hasStore()) return;
+    if (!hasStore()) return false;
     var ds = viewDate;
     fb().itemsReplace(ds, arr).catch(function(){});
+    return true;
   }
 
   /* ---------- 명단 백업 ----------
@@ -2439,6 +2451,13 @@ window.dispatchEvent(new Event('fb-ready'));
       if (q){
         em.classList.remove('hide');
         em.textContent = '「' + query.trim() + '」 검색 결과가 없습니다';
+      } else if (!listKnown){
+        // 아직 한 번도 못 읽었다 — 비어 있다고 말하지 않는다. 붙여넣기 창도 열지 않는다.
+        em.classList.remove('hide');
+        em.textContent = navigator.onLine === false
+          ? '인터넷에 연결되면 명단을 불러옵니다'
+          : '명단을 불러오는 중입니다';
+        document.body.classList.remove('paste-open');
       } else {
         em.classList.add('hide');
         if (state && panel.classList.contains('hide')) openPaste(true);
@@ -3322,6 +3341,9 @@ window.dispatchEvent(new Event('fb-ready'));
   });
 
   function applyPaste(text){
+    // 끊긴 동안엔 등록하지 않는다 — 이건 «서버 명단을 이걸로 바꿔라» 라서, 서버에 무엇이
+    // 있는지 모르는 상태로 보내면 남의 명단을 지운다. 낱개 변경과 달리 합칠 수가 없다.
+    if (!connReady()){ toast('연결이 끊겨 지금은 등록할 수 없습니다'); return false; }
     var fresh = parse(text);
     if (fresh.bad.length){ showBad(fresh.bad); return false; }
     clearBad();
@@ -3696,6 +3718,8 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('resetBtn').addEventListener('click', function(){
     hideDrawer();
     if (!state || !state.items.length){ closeDrawer(); toast('명단이 없습니다'); return; }   // backDone 까지 — 유령 뒤로가기 기록 방지
+    // 초기화도 «통째 교체»(set)라 끊긴 동안엔 막는다 — applyPaste 와 같은 이유.
+    if (!connReady()){ closeDrawer(); toast('연결이 끊겨 지금은 초기화할 수 없습니다'); return; }
     // 안내문은 조작법 하나만 — 앱의 다른 창 보조문(#pasteHint·.rltsub)과 같은 규칙이다.
     // 건수는 묻는 자리(안내문)가 아니라 끝난 자리(토스트)에 둔다: 「명단 초기화」를 누른
     // 사람에게 건수는 결정을 바꾸지 않지만, 끝난 뒤엔 무엇이 사라졌는지 알려 주는 영수증이 된다.
@@ -4681,6 +4705,7 @@ window.dispatchEvent(new Event('fb-ready'));
       new Promise(function(_, rej){ setTimeout(rej, bootWait, new Error('boot timeout')); })
     ]).then(function(res){
       if (!ticketCurrent(ticket)) return;
+      listKnown = true;                                     // 서버를 실제로 읽었다
       stageBackgroundState(itemsToState(ticket.date, res));
       watchRemote();   // 즉시 fire → applyRemoteItems 가 필요시 구 형식 변환도 한다
       maybeInstallHint();   // 중복 방지는 maybeInstallHint 안에서 한다
