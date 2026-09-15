@@ -2338,7 +2338,8 @@ window.dispatchEvent(new Event('fb-ready'));
   var GRACE_ON_HOUR = 11, GRACE_OFF_HOUR = 5/60;
   var CLOSE_HM = '21:00';      // 퇴근 시각 — 상단 카드의 퇴근 타이머 기준 (KST · 서버 시계)
   var AUTO_CANCEL_MIN = 15;    // 예약 시각에서 이만큼 지나도 체크가 없으면 취소 (직원 :10 컷의 백스톱)
-  var AUTO_CANCEL_WINDOW = 1;  // 그 순간에만 한 번. 지나간 시간대를 뒤늦게 훑지 않는다
+  var AUTO_CANCEL_WINDOW = 5;  // +15~+20분 사이에만. 지나간 시간대를 뒤늦게 훑지 않는다
+                               // (1분이면 그 1분 동안 앱이 닫혀·끊겨 있을 때 영영 놓친다)
 
   // 예약 시간 선택 범위 — 예약 추가·수정 폼 공용. (영업 11:45–21:00, 예약 12–19시,
   // 변경으로 20시까지 받을 수 있음). 범위 밖의 기존 예약은 수정 폼이 그 값을 따로 넣어준다.
@@ -3553,7 +3554,7 @@ window.dispatchEvent(new Event('fb-ready'));
   //   그 판정 기준(ts)이 폰 시계라 시계가 틀어진 폰이 이길 수 있다.
   //   ★같이 멈춰야 하는 것 — 자동 취소(autoCancel). 체크를 막아 둔 채 자동 취소만 돌면
   //     «끊겨서 체크를 못 한 사이 15분이 지나» 실제로 온 손님이 취소로 찍힌다.
-  //     AUTO_CANCEL_WINDOW=1 이라 그 순간을 건너뛰면 뒤늦게 훑지 않는다 — 예약은 대기로 남고
+  //     AUTO_CANCEL_WINDOW 창을 건너뛰면 뒤늦게 훑지 않는다 — 예약은 대기로 남고
   //     연결된 뒤 직원이 체크하면 된다.
   //   listKnown 도 여전히 필요하다: 명단을 본 적 없으면 무엇이 있는지 모른다.
   function canWrite(){
@@ -4993,7 +4994,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 예약 시각에서 15분이 지나도 체크가 없으면 취소로 넘긴다.
   // 노쇼도 취소로 처리하는 운영이라 직원이 어차피 누를 것을 대신 눌러주는 셈이다.
   // 이 예약이 지금(now, 분 단위) 자동취소 대상인가.
-  // 대기 상태 + 예약시각 + AUTO_CANCEL_MIN 이 지난 1분 창 안. 지나간 시간대는 사람 몫이라 제외.
+  // 대기 상태 + 예약시각 + AUTO_CANCEL_MIN 이 지난 창 안. 지나간 시간대는 사람 몫이라 제외.
   function autoCancelDue(it, now){
     if (!it || it.status !== 'pending') return false;
     var late = now - (slotMin(it.time) + AUTO_CANCEL_MIN);
@@ -5002,7 +5003,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function autoCancel(){
     if (!state) return false;
     // ★끊긴 동안은 돌지 않는다 — 직원이 체크를 못 하는 사이 15분이 지나면 실제로 온 손님이
-    //   취소로 찍힌다. 창(WINDOW=1분)을 건너뛰면 뒤늦게 훑지 않으니 대기로 남는다.
+    //   취소로 찍힌다. 창(WINDOW)을 건너뛰면 뒤늦게 훑지 않으니 대기로 남는다.
     if (!connReady()) return false;
     var now = nowMin(), hit = [];
     // (저녁에 하루치 명단을 한꺼번에 넣어도 낮 시간대가 무더기로 취소되지 않는다)
@@ -5057,7 +5058,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var tickSig = '', tickMin = -1;
   setInterval(function(){
     if (rolloverIfNeeded()) return;
-    var changed = autoCancel();   // ⋯ 메뉴가 열려 있어도 자동취소는 돈다(1분 창을 놓치지 않게) — 그리기만 미룬다
+    var changed = autoCancel();   // ⋯ 메뉴가 열려 있어도 자동취소는 돈다(창을 놓치지 않게) — 그리기만 미룬다
     maybeHourlyBackup();   // autoCancel 반영된 상태를 :20 백업이 잡게 — 순서 보장
     // 명단 내용이 바뀌었으면(자동취소 포함) 통째로 다시 그린다.
     // itemsSig 는 화면에 영향 주는 필드만 본다 — ts 만 바뀐 쓰기로는 안 그린다.
