@@ -9,15 +9,22 @@
  *   아이콘·manifest 는 «저장본 먼저, 뒤에서 갱신»(stale-while-revalidate) — 거의 안 바뀌고
  *   바뀌어도 한 번 늦게 보일 뿐이라 안전하다.
  *
- * ★Firebase SDK(gstatic)는 일부러 안 건드린다. 오프라인엔 어차피 받을 명단이 없고,
- *   남의 도메인 것을 우리가 오래 들고 있으면 그게 또 낡는다.
+ * ★Firebase SDK(gstatic) 도 담는다. 처음엔 「남의 도메인은 우리가 들고 있으면 낡는다」고
+ *   뺐는데 틀렸다 — 주소에 버전이 박혀 있고(/12.17.1/) 서버도 max-age=31536000 로 준다.
+ *   버전을 올리면 주소가 바뀌니 낡을 수가 없다. 그리고 이게 없으면 오프라인에서 앱이
+ *   «절반만» 산다: 껍데기는 뜨는데 __fb 가 없어 12초 스플래시 → 검은 화면 → 「앱을 다시
+ *   열어 주세요」 잠금화면 → 비번도 안 먹는다 (실기기 확인 2026-09-15).
+ *   담아 두면 Auth 가 저장된 로그인을 그대로 살려 잠금이 풀리고, DB 만 «연결 끊김»이 된다.
  *
  * ★오프라인에서 열면 «앱은 열리되 명단은 비어 있고 연결 끊김 표시가 뜬다».
  *   명단 자체를 저장해 두는 건 데이터 설계라 여기서 하지 않는다 (별건).
  */
-var VER   = 'iksuni-v1';
+var VER   = 'iksuni-v2';
 var SHELL = ['./', './index.html', './manifest.json',
              './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icon-maskable-512.png'];
+// 주소에 버전이 박혀 있어 통째로 «영구 저장»해도 되는 것들. index.html 의 import 문과 같아야 한다.
+var FB = 'https://www.gstatic.com/firebasejs/12.17.1/';
+var VENDOR = [FB + 'firebase-app.js', FB + 'firebase-auth.js', FB + 'firebase-database.js'];
 
 self.addEventListener('install', function(e){
   // 껍데기를 미리 담아 둔다.
@@ -26,7 +33,7 @@ self.addEventListener('install', function(e){
   e.waitUntil(
     caches.open(VER).then(function(c){
       return c.add('./index.html').then(function(){
-        return Promise.all(SHELL.map(function(u){
+        return Promise.all(SHELL.concat(VENDOR).map(function(u){
           return u === './index.html' ? null : c.add(u).catch(function(){});
         }));
       });
@@ -48,7 +55,24 @@ self.addEventListener('fetch', function(e){
   if (req.method !== 'GET') return;                     // 쓰기는 손대지 않는다
   var url;
   try { url = new URL(req.url); } catch(err){ return; }
-  if (url.origin !== self.location.origin) return;      // 남의 도메인(Firebase 등)은 그대로 통과
+  // Firebase SDK — 주소가 곧 버전이라 저장본 먼저(없을 때만 받아서 담는다). 이게 오프라인
+  // 실행의 핵심이다: 이 셋이 없으면 앱이 잠금화면에서 멈춘다.
+  if (VENDOR.indexOf(url.href) >= 0){
+    e.respondWith(
+      caches.match(req).then(function(hit){
+        if (hit) return hit;
+        return fetch(req).then(function(res){
+          if (res && res.ok){
+            var copy = res.clone();
+            caches.open(VER).then(function(c){ c.put(req, copy); }).catch(function(){});
+          }
+          return res;
+        });
+      }).catch(function(){ return fetch(req); })
+    );
+    return;
+  }
+  if (url.origin !== self.location.origin) return;      // 그 밖의 남의 도메인은 그대로 통과
 
   // ① 화면(HTML) — 네트워크 먼저. 실패할 때만 저장본.
   if (req.mode === 'navigate' || /\.html($|\?)/.test(url.pathname)){
