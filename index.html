@@ -874,31 +874,27 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
   .bklist{padding-top:2px}   /* 다른 시트처럼 제목 밑 선 없이 — 8px 뒤 바로 내용 */
-  /* 한 줄 = 한 스냅샷. 시각은 왼쪽, 세 숫자는 오른쪽에 «열»로 세운다.
-     ★줄글(「예약 17 · 방문 14 · 취소 1」)이었을 때는 낱말 셋이 행마다 되풀이돼, 바뀌는 건
-       숫자뿐인데도 매 줄을 다시 읽어야 했다. 이 화면의 값어치는 «저녁이 어떻게 찼는가»인데
-       (예약 2→4→6→9→12→15→17 · 방문 –→–→2→6→11→14) 줄글로는 그게 안 보인다.
-       열로 세우면 내려읽기만 하면 된다. 2026-09-15.
-     ★색(방문 초록·취소 빨강)도 같이 뺐다. 예전 주석의 근거는 「이 시트엔 체크 원이 없어
-       요약이 그 정보의 유일한 전달자」였는데, 열 이름이 생긴 지금은 «자리»가 그 일을 한다.
-       남겨 두고 보니 제일 안 중요한 「취소」 열만 빨갛게 눈을 끌었다. */
-  .bkgroup, .bkrow{
-    display:grid;grid-template-columns:54px 1fr 40px 40px 40px 20px;align-items:center;
+  /* 한 줄 = 한 시점. 시각과 «몇 명짜리 명단인가» 둘뿐이다.
+     ★이 화면은 통계를 보는 곳이 아니라 «명단을 되살리는» 곳이다 (FAQ: 「지난 명단에서 원하는
+       시점의 명단을 복사해 다시 등록하면 됩니다」). 고를 때 필요한 건 «언제»와 «몇 명»이고,
+       방문·취소 수는 고르는 데 쓰이지 않는다 — 그건 들어가서 볼 일이다.
+     ★2026-09-15 에 예약·방문·취소 세 열짜리 표로 만들어 봤다가 되돌렸다. 열 이름·0 자리의 「–」
+       까지 붙어 한 줄에 여섯 덩어리가 됐고, 「저녁이 어떻게 찼는가」는 이 화면이 맡을 일이
+       아니었다(오너: 「너무 난잡하다」). 색(방문 초록·취소 빨강)도 그때 같이 뺐다 — 숫자가
+       하나뿐이면 구분할 것이 없다. */
+  .bkrow{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
   }
-  .bkrow{padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
   .bkrow:active, .bkrow.dn{background:var(--press)}
-  .bkt{font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-  .bknum{font-size:14px;font-weight:700;text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
-  .bknum.zero{color:var(--off);font-weight:600}   /* 0 은 「–」로 — 0 이 여덟 개 쌓이는 것보다 조용하다 */
-  .bkchev{color:var(--off);display:flex;align-items:center;justify-content:flex-end}  /* FAQ 화살표와 같은 아이콘 */
-  /* 구역 라벨(오늘/어제) — 열 이름을 이 줄에 얹는다. 머리글 줄을 따로 두면 「오늘」 위에 떠서
-     어느 구역 것인지 모호해지고, 구역마다 되풀이하면 줄 수만 늘어난다. 한 줄이 둘 다 한다.
-     열 이름 13px 은 활자 사다리(25/20/17/16/14/13) 안 — 11 을 쓰면 사다리 밖으로 나간다. */
+  .bkt{flex:0 0 auto;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .bkn{margin-left:auto;font-size:14px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+  .bkchev{flex:0 0 auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
+  /* 구역 라벨(오늘/어제) */
   .bkgroup{
+    font-size:13px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--dim);
     padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px;
-    font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--dim);font-variant-numeric:tabular-nums;
   }
-  .bkgroup span:nth-child(n+3){font-size:13px;font-weight:600;color:var(--off);text-align:right;letter-spacing:0}
   .bkgroup + .bkrow{border-top:0;padding-top:4px}  /* 라벨 바로 밑 행은 라벨에 붙인다 (상세 .bkvt→.bkvrow 간격과 맞춤) */
   .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:6px}  /* 첫 라벨: 제목과 숨 쉴 틈 */
   /* 상세: 그 시점 명단을 읽기 전용으로 (본 화면처럼 시간대로 묶고 방문·취소 색 구분) */
@@ -943,10 +939,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkvrow .nm{flex:0 1 auto;min-width:0;color:var(--text);font-weight:600;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--text);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-  .bkvmemo{margin-top:2px;font-size:13px;font-weight:600;line-height:1.35;color:var(--dim);word-break:break-all}
-  .bkvmemo::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;
-    background:var(--off);vertical-align:middle;margin:0 6px 2px 1px}
-  .bkvrow.go .bkvmemo, .bkvrow.off .bkvmemo{color:var(--off)}   /* 본 화면 .row.arrived .memo 와 같게 */
+  /* ★메모는 일부러 안 그린다 — 「명단 복사」가 내보내는 양식(reportText)에 메모가 없어서,
+       화면에만 있고 붙여넣기엔 없는 것이 된다. 한 사람이 두 줄을 차지해 목록도 배가 된다.
+       2026-09-15 에 넣어 봤다가 뺐다. (메모까지 되살리려면 복사 양식부터 바꿔야 한다 — 별건.) */
   /* 처리된 행은 이름도 인원도 같이 가라앉는다 — 본 화면 .row.arrived/.cancelled 와 같은 규칙.
      ★취소 이름은 --off 에 취소선이었다. 본 화면은 2026-09-11 에 그 둘을 이미 버렸는데
        (「--off 는 3.7:1 로 읽기 기준 미달」 · 「상태는 원 하나에만, 선을 줄인다」 — 오너)
@@ -4345,15 +4340,6 @@ window.dispatchEvent(new Event('fb-ready'));
     startLogWatch(viewDate);
   });
 
-  // 한 스냅샷의 세 숫자 — 예약 / 방문 / 취소. 없으면 「–」 (0 을 늘어놓지 않는다).
-  function bkCell(v){
-    return v ? '<span class="bknum">' + v + '</span>'
-             : '<span class="bknum zero">\u2013</span>';
-  }
-  function bkGroupHtml(label){          // 구역 라벨 + 열 이름을 한 줄에
-    return '<div class="bkgroup"><span>' + esc(label) + '</span><span></span>'
-      + '<span>예약</span><span>방문</span><span>취소</span><span></span></div>';
-  }
   // 「지난 명단」 = 오늘 시간대별 자동 스냅샷 + 어제 최종 명단. 둘 다 같은 상세 화면
   // (명단 텍스트 + 복사)으로 이어진다. bkMap 엔트리:
   //   스냅샷 { kind:'snap', at, n, items }   키 = 'h12'..'h19'
@@ -4361,10 +4347,10 @@ window.dispatchEvent(new Event('fb-ready'));
   var bkMap = null;
   function bkTitled(){ return document.getElementById('sheetTitle').textContent === '지난 명단'; }
   function bkRowHtml(key, label, e){
-    var t = tallyStatus(e && e.items);
+    var n = (e && e.n != null) ? e.n : (e && e.items ? e.items.length : 0);
     return '<div class="bkrow" data-key="' + esc(key) + '">'
-      + '<span class="bkt">' + esc(label) + '</span><span></span>'
-      + bkCell(e && e.n != null ? e.n : t.total) + bkCell(t.came) + bkCell(t.off)
+      + '<span class="bkt">' + esc(label) + '</span>'
+      + '<span class="bkn">' + n + '명</span>'
       + '<span class="bkchev">' + CHEV_SVG + '</span></div>';
   }
   function backupSheetHtml(map){
@@ -4379,11 +4365,11 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!snaps.length && !days.length) return '<p class="sheetMsg">지난 명단이 없습니다</p>';
     var html = '<div class="bklist">';
     if (snaps.length){
-      html += bkGroupHtml('오늘');
+      html += '<div class="bkgroup">오늘</div>';
       snaps.forEach(function(r){ html += bkRowHtml(r.key, backupWhen(r.e.at), r.e); });
     }
     if (days.length){
-      html += bkGroupHtml('어제');
+      html += '<div class="bkgroup">어제</div>';
       days.forEach(function(r){
         var d = r.key.split('-');
         html += bkRowHtml(r.key, (+d[1]) + '/' + (+d[2]), r.e);   // 라벨이 '어제' 니 행엔 날짜만
@@ -4417,9 +4403,7 @@ window.dispatchEvent(new Event('fb-ready'));
             return '<div class="bkvrow' + cls + '"><span class="ck">' + mk + '</span>'
               + '<span class="bkvbody"><span class="bkvl1">'
               +   '<span class="nm">' + esc(it.name) + '</span>'
-              +   '<span class="px">' + esc(String(it.pax)) + '명</span></span>'
-              + (it.memo ? '<span class="bkvmemo">' + esc(it.memo) + '</span>' : '')
-              + '</span></div>';
+              +   '<span class="px">' + esc(String(it.pax)) + '명</span></span></span></div>';
           }).join('');
     }).join('');
   }
