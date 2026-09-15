@@ -1231,14 +1231,10 @@ window.addEventListener('pageshow', remeasureSbcut);
      0.45초면 240ms 에 걸쳐 자란다. 끝나는 시각이 500 → 650ms 로 늦어지지만 마지막 15%는
      1px 짜리 오버슈트 가라앉기라 «보이기에는» 480ms 에 이미 끝난다 — 잘릴 위험은 거의 안 는다.
      ★지연은 --tMove 그대로 둔다. 앞당기면(0.12초) 마크가 들어오는 중에 하트가 나와 둘 다 탁해진다. */
-  /* ★멈춰 세워 두고 JS 가 푼다(.run). CSS 지연만으로 두면 애니메이션 시계가 «파싱 시각»부터
-     도는데, 하필 그 구간이 파이어베이스 SDK 를 읽어 들이는 가장 바쁜 때라 앞 프레임이 통째로
-     떨어진다 → 하트가 0 에서 자라지 않고 절반쯤 자란 채 «툭» 나타난다.
-     실기기 실측(2026-09-16, 60fps): 0% … 0% → 47% 한 프레임 점프 → 그 뒤로는 매끄러움.
-     backwards + paused 라 푸는 순간까지 from(scale .05)에 서 있고, 그 크기는 곰 뒤에 완전히
-     가려 0픽셀이다(실측). 즉 «안 보이다가 태어난다»가 지켜진다. */
-  .splashHeart{ animation:heartOut .45s cubic-bezier(.5,1,.89,1) var(--tMove) backwards paused }
-  .splashHeart.run{ animation-play-state:running }
+  /* ★JS 로 «SDK 를 다 읽은 뒤» 시작시켜 봤다가 되돌렸다(2026-09-16). 부팅이 바쁜 동안 앞
+     프레임이 떨어지는 걸 피하려던 건데, 시작이 예전(파싱+200ms)보다 늦어져 스플래시가 0.3초에
+     걷히는 실행에서는 하트가 아예 안 나왔다 — 고치려던 것보다 나쁜 결과였다(오너 확인). */
+  .splashHeart{ animation:heartOut .45s cubic-bezier(.5,1,.89,1) var(--tMove) backwards }
   /* line-height:1 — 줄상자가 글자를 딱 감싸야 위 gap 이 «보이는 간격»과 맞는다(기본 줄간격은 위에 8px 를 더 얹었다).
      크기 25 는 활자 사다리 최상단 그대로 — 곰(94) : 이름 잉크(21.5) = 4.4:1 로 락업 통상 범위 안이다.
      (「마크 96」은 얼굴만이던 옛 마크 값이라 2026-09-15 에 곰 실측으로 고쳤다 — 비율 결론은 그대로.) */
@@ -4079,7 +4075,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 빌드 도장 — 테스트 사이트의 서랍 아래에만 보인다(MMDD.HHMM). 「고쳤다 / 아직 보인다」가
   // 어긋날 때 «폰이 어느 빌드를 들고 있나»부터 확인할 수 있어야 한다. 배포 스크립트가 찍는다.
   // 상단 배지에 붙이면 가운데 날짜를 밀어내므로(오너 2026-09-15) 거기엔 안 붙인다.
-  var BUILD_STAMP = '0916.0649';
+  var BUILD_STAMP = '0916.0653';
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
@@ -5352,35 +5348,6 @@ window.dispatchEvent(new Event('fb-ready'));
     setTimeout(fbGaveUp, navigator.onLine === false ? 4000 : 15000);
   }
 
-  // 스플래시 하트 — «그릴 수 있게 된 뒤에» 시작한다 (위 .splashHeart 주석 참고).
-  //  · fb-ready = 무거운 SDK 읽기가 끝난 시점. 그 뒤 두 번의 rAF = 한 프레임을 실제로 그린 뒤.
-  //  · 못 받는 경우(오프라인에서 SDK 실패)를 위해 1.5초 그물을 같이 둔다 — 안 풀면 하트가
-  //    from(scale .05) 에 선 채라 «곰만 있는 마크»가 되는데, 그건 틀린 그림이다.
-  (function(){
-    var done = false;
-    function start(){
-      var h = document.querySelector('.splashHeart');
-      if (!h) return;
-      // 지연은 «마크가 다 들어온 뒤에 시작」하려고 둔 값이다. 그 기준은 파싱 시각이므로,
-      // 여기서 푸는 시점엔 이미 지나 있는 경우가 대부분이다 — 그대로 두면 순수한 낭비고,
-      // 스플래시가 그 사이에 걷혀 하트가 아예 안 나온다(실기기 2026-09-16). 남은 만큼만 준다.
-      var fade = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tMove')) * 1000 || 200;
-      var left = Math.max(0, fade - (performance.now ? performance.now() : 0));
-      h.style.animationDelay = (left / 1000) + 's';
-      h.classList.add('run');
-    }
-    function run(){
-      if (done) return; done = true;
-      // 두 번의 rAF = «한 프레임을 실제로 그린 뒤». 그런데 탭이 숨어 있으면 rAF 가 아예 안 돈다
-      // → 하트가 from(scale .05)에 선 채로 남아 곰만 있는 마크가 된다. 그래서 시한 그물을 같이 둔다.
-      if (window.requestAnimationFrame){
-        requestAnimationFrame(function(){ requestAnimationFrame(start); });
-      }
-      setTimeout(start, 300);
-    }
-    window.addEventListener('fb-ready', run, { once: true });
-    setTimeout(run, 1500);   // SDK 를 끝내 못 받아도(오프라인) 하트는 나와야 한다
-  })();
 })();
 </script>
 <script>
