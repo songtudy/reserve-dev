@@ -2892,6 +2892,9 @@ window.dispatchEvent(new Event('fb-ready'));
     it.time = time; it.name = name; it.pax = pax; it.memo = memo;
     it.id = uniqueId(time, name, pax, id);
     it.ts = Date.now();
+    // 시각을 옮겼으면 «지켜본 적 있나»를 다시 판단한다. 지난 시각으로 옮기면 사람 몫이 되고,
+    // 미래로 옮기면 다시 앱 몫이다 — 안 지우면 한 번 붙은 면제가 영영 남는다.
+    if (timeMoved){ if (lateEntry(time, nowMin())) it.noAuto = 1; else delete it.noAuto; }
     touched[originalTime] = Date.now();
     touched[time] = Date.now();
     armSlotCollapse(originalTime);
@@ -3447,8 +3450,11 @@ window.dispatchEvent(new Event('fb-ready'));
     clearBad();
     if (!fresh.length){ toast('등록할 예약이 없습니다'); return false; }
     logAdd('명단 등록', fresh.length + '건');
-    var ts = Date.now();
-    fresh.forEach(function(it){ it.ts = ts; });
+    var ts = Date.now(), nm = nowMin();
+    fresh.forEach(function(it){
+      it.ts = ts;
+      if (lateEntry(it.time, nm)) it.noAuto = 1;   // 등록할 때 이미 지나 있던 것 → 사람 몫
+    });
     state = { date: viewDate, items: fresh.sort(sortItems) };
     render();
     replaceItems(state.items);   // items 서브트리 통째 교체
@@ -3620,6 +3626,7 @@ window.dispatchEvent(new Event('fb-ready'));
       id: uniqueId(time, name, pax), time: time, name: name, pax: pax,
       memo: memo, status: 'pending', ts: Date.now(), seq: nextSeq()
     };
+    if (lateEntry(time, nowMin())) item.noAuto = 1;   // 이미 지난 시각으로 넣은 예약 → 사람 몫
     state.items.push(item);
     state.items.sort(sortItems);
     logAdd('추가', time + ' ' + name + ' ' + pax + '명');
@@ -5017,8 +5024,13 @@ window.dispatchEvent(new Event('fb-ready'));
   // 노쇼도 취소로 처리하는 운영이라 직원이 어차피 누를 것을 대신 눌러주는 셈이다.
   // 이 예약이 지금(now, 분 단위) 자동취소 대상인가.
   // 대기 상태 + 예약시각 + AUTO_CANCEL_MIN 이 지난 창 안. 지나간 시간대는 사람 몫이라 제외.
+  // 등록하는 순간 이미 «예약 시각 +15분»이 지나 있었나. 그런 예약은 앱이 «대기»로 지켜본
+  // 적이 없다 — 그 사이에 손님이 왔는지 앱은 모른다. 지나간 시간대를 사람 몫으로 두는 것과
+  // 같은 이유다. 판단은 등록하는 기기가 한 번만 하고 항목에 실어 보낸다(모든 기기가 같은
+  // 답을 보게, 그리고 기기 시계 차이로 답이 갈리지 않게). 2026-09-15.
+  function lateEntry(time, now){ return now >= slotMin(time) + AUTO_CANCEL_MIN; }
   function autoCancelDue(it, now){
-    if (!it || it.status !== 'pending') return false;
+    if (!it || it.status !== 'pending' || it.noAuto) return false;
     var late = now - (slotMin(it.time) + AUTO_CANCEL_MIN);
     return late >= 0 && late < AUTO_CANCEL_WINDOW;
   }
@@ -5062,8 +5074,9 @@ window.dispatchEvent(new Event('fb-ready'));
       logKeyId: logKeyId, mergeLogRows: mergeLogRows,
       reportText: reportText, uniqueId: uniqueId, nextSeq: nextSeq, isCollapsed: isCollapsed,
       rltSteps: rltSteps, wqEntry: wqEntry, computeDev: computeDev, autoCancelDue: autoCancelDue,
-      stalePurgeDates: stalePurgeDates, kstParts: kstParts,
+      stalePurgeDates: stalePurgeDates, kstParts: kstParts, lateEntry: lateEntry,
       consts: { COLLAPSE_DELAY: COLLAPSE_DELAY, AUTO_CANCEL_MIN: AUTO_CANCEL_MIN,
+                AUTO_CANCEL_WINDOW: AUTO_CANCEL_WINDOW,
                 GRACE_ON_HOUR: GRACE_ON_HOUR, GRACE_OFF_HOUR: GRACE_OFF_HOUR,
                 HOUR_MIN: HOUR_MIN, HOUR_MAX: HOUR_MAX, KEEP_DAYS: KEEP_DAYS,
                 RLT_BASE: RLT_BASE, RLT_STEP_CAP: RLT_STEP_CAP },
