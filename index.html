@@ -350,15 +350,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   .slottime{font-size:20px;font-weight:800;color:var(--wait);letter-spacing:-.02em}
   /* 시각(금색)과 팀 수(흰색)는 색이 이미 가르므로 사이 「·」 없이 간격만 (오너 2026-09-11 「14:00·3팀 표기 맞나」 → 점 제거) */
   .leadmain{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-left:10px}
-  /* 끝난 상태 = 퇴근 타이머 「퇴근까지 2:31:07」 — 라벨은 부제 단계(14·흐림), 숫자는 지금 시각과 같은 급(20·금).
-     「남은 예약 없음」「지난 시간대 대기 n팀」은 뺐다(오너 2026-09-12): 대기 토글이 이미 그 상태를 보여주고 문구가 길었다. */
-  .leadmain.cdmode{margin-left:0}   /* 앞에 시각이 없으니 시각 옆 여백도 없다 — 첫 줄과 둘째 줄의 왼쪽선이 같아야 한다(오너 2026-09-12 「밸런스」) */
-  .leadmain .cdlab{font-size:14px;font-weight:600;color:var(--dim);margin-right:8px}
-  .leadmain .cd{color:var(--wait)}
-  /* 퇴근 시각이 지나면 숫자 없이 인사 한마디 「오늘도 고생하셨습니다」 — 숫자(20)보다 한 단계 아래.
-     2026-09-13 오너: 「퇴근 시간」은 사실만 말해서 바꿈. 말투는 앱 전체와 같은 «~습니다»
-     (「대기 중인 팀이 없습니다」·「비밀번호가 맞지 않습니다」와 한 목소리 — 여기만 「~했어요」면 혼자 튄다).
-     「오늘도」인 이유: 매일 밤 보는 화면이라 「오늘」만 쓰면 오늘만 특별한 일처럼 읽힌다. */
+  /* 끝난 상태 = 「남은 예약 없음」 하나뿐이다(2026-09-16). 여기 있던 퇴근 타이머(.cdmode/.cdlab/.cd)와
+     인사말은 곰 말풍선으로 옮겼고, 쓰는 데가 없어져 규칙도 같이 지웠다.
+     ★이 문구는 2026-09-12 에 한 번 뺐던 것이다 — 그땐 옆에 퇴근 카운트가 있어 군더더기였다.
+       카운트가 곰에게 가면서 주 줄이 비어 되돌렸다. 카드를 다시 손댈 땐 이 내력을 먼저 볼 것.
+     ★말투는 ① 명사형이다. 카드 주 줄은 원래 「7팀」 같은 상태 표시고, 예전의
+       「오늘도 고생하셨습니다」만 ③ 문장이라 혼자 튀었다. 그 말은 이제 곰이 한다. */
   .leadmain.done{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-left:0}   /* 상태 설명 — 숫자(20)보다 한 단계 아래, 사다리의 17 */
   /* 전체 / 대기 토글 — 처리된(방문·취소) 행을 숨겨 「아직 체크할 것」만 본다.
      트랙 + 선택칸. 금색은 「지금」·주동작 몫이라 선택은 밝은 글자로만. */
@@ -853,6 +850,37 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .qa.open .a{display:block}
   .qa .a em{font-style:normal;color:var(--text);font-weight:600}
+
+  /* ── 다 처리한 화면 — 곰이 말을 건다 ──
+     규칙: «처리할 게 없을 때만 곰이 나온다». 일하는 화면엔 그림이 하나도 없다(정보는 글자).
+     이 자리는 대기 모드에서 그날 대기가 전부 없어졌을 때만 나오므로 하루 한 번이다.
+     말풍선은 시트·확인창과 같은 재질(--panel2 · --radius · 글자색 8% 림) — 새 꼴을 안 만든다.
+     ★말투 ④ — 풍선 안은 «-어요». 풍선 모양이 「이건 곰이 하는 말」이라고 이미 알려 준다. */
+  .donebear{display:flex;flex-direction:column;align-items:center;padding-top:40px}
+  .donebear .mk{width:120px;height:auto;display:block}
+  .donebear .say{
+    position:relative;background:var(--panel2);border-radius:var(--radius);
+    padding:11px 16px;margin-top:12px;max-width:82%;
+    font-size:14px;font-weight:700;color:var(--text);line-height:1.35;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
+  }
+  .donebear .say::before{
+    content:"";position:absolute;left:50%;top:-7px;transform:translateX(-50%);
+    border-left:8px solid transparent;border-right:8px solid transparent;
+    border-bottom:8px solid var(--panel2);
+  }
+  /* ★반복 하트 — 시험판(2026-09-16 오너 요청). 자람 .45 · 머묾 2.55 · 줄어듦 .45 · 쉼 2.55.
+     지금 앱의 유일한 반복(잠금 확인 중 맥동)은 «확인이 끝나면 멈추는» 반복인데 이건 끝이 없다.
+     화면이 퇴근까지 몇 시간 떠 있을 수 있어 계속 깜빡이는 셈 — 써 보고 판단한다. */
+  @keyframes heartLoop{
+    0%    { transform:translate(79.03px,25.45px) scale(0)    translate(-79.03px,-25.45px) }
+    4.6%  { transform:translate(79.03px,25.45px) scale(1.07) translate(-79.03px,-25.45px) }
+    7.5%  { transform:translate(79.03px,25.45px) scale(1)    translate(-79.03px,-25.45px) }
+    50%   { transform:translate(79.03px,25.45px) scale(1)    translate(-79.03px,-25.45px) }
+    57.5% { transform:translate(79.03px,25.45px) scale(0)    translate(-79.03px,-25.45px) }
+    100%  { transform:translate(79.03px,25.45px) scale(0)    translate(-79.03px,-25.45px) }
+  }
+  .loopHeart{ animation:heartLoop 6s cubic-bezier(.5,1,.89,1) infinite }
   /* 설치 안내 — 기기별 카드 */
   /* 기기 카드 — 면만. 왼쪽 색 띠는 뺐다(본 명단에서도 없앤 장식). 기기 구분은 제목 색이 한다. */
   .plat{
@@ -1565,6 +1593,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      한쪽만 고치면 홈 화면 아이콘과 앱 안의 마크가 어긋난다 — 반드시 둘 다 고칠 것. -->
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
   <defs>
+    <g id="mkHeart"><g transform="translate(92.9833 11.8858) scale(2.09108) translate(-78.4100 -23.6000)"><path fill="#f2717a" d="M75.79 19.20 Q76.32 19.20 76.78 19.42 Q77.24 19.64 77.23 19.68 Q77.21 19.72 77.25 19.70 Q77.29 19.68 77.51 19.88 Q77.73 20.08 77.90 20.34 Q78.08 20.61 78.25 20.98 Q78.43 21.35 78.50 21.65 Q78.58 21.95 79.06 21.54 Q79.53 21.12 80.33 20.84 Q81.12 20.55 81.53 20.55 Q81.95 20.55 82.35 20.66 Q82.75 20.77 83.12 21.10 Q83.50 21.43 83.65 21.85 Q83.81 22.27 83.81 22.58 Q83.81 22.89 83.76 22.91 Q83.72 22.93 83.72 23.18 Q83.72 23.42 83.68 23.41 Q83.63 23.40 83.63 23.55 Q83.63 23.69 83.50 24.02 Q83.37 24.35 83.08 24.76 Q82.80 25.18 82.72 25.21 Q82.63 25.23 82.41 25.51 Q82.18 25.79 81.77 26.14 Q81.35 26.49 80.98 26.71 Q80.60 26.93 78.96 27.83 Q77.33 28.72 76.99 28.75 Q76.66 28.77 76.08 28.14 Q75.50 27.51 75.44 27.50 Q75.38 27.50 75.37 27.42 Q75.37 27.34 75.33 27.35 Q75.29 27.37 75.22 27.22 Q75.15 27.07 74.87 26.78 Q74.59 26.49 74.54 26.34 Q74.49 26.20 74.39 26.13 Q74.28 26.05 73.93 25.48 Q73.58 24.91 73.32 24.32 Q73.06 23.73 72.97 23.31 Q72.88 22.89 72.90 22.24 Q72.92 21.58 72.97 21.58 Q73.01 21.59 73.03 21.38 Q73.06 21.18 73.21 20.87 Q73.36 20.56 73.40 20.58 Q73.44 20.59 73.45 20.51 Q73.45 20.43 73.51 20.40 Q73.58 20.37 73.58 20.29 Q73.58 20.21 74.09 19.82 Q74.59 19.42 74.91 19.35 Q75.23 19.28 75.24 19.24 Q75.26 19.20 75.79 19.20 Z"/></g>
     <g id="mkIksuni">
       <!-- 익순이 마크 = 곰만. 하트는 스플래시에만 붙는다 (아이콘/잠금/서랍은 이 파일 그대로).
              곰이 타일의 80퍼센트 — 하트가 빠져 생긴 자리를 곰이 받았다 (64.5 → 75.0). -->
@@ -1574,7 +1603,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 </svg>
 
 <div class="splash" id="splash">
-  <svg class="splashMark" viewBox="-3.25 -1.80 111.80 96.10" aria-hidden="true"><g class="splashHeart"><g transform="translate(92.9833 11.8858) scale(2.09108) translate(-78.4100 -23.6000)"><path fill="#f2717a" d="M75.79 19.20 Q76.32 19.20 76.78 19.42 Q77.24 19.64 77.23 19.68 Q77.21 19.72 77.25 19.70 Q77.29 19.68 77.51 19.88 Q77.73 20.08 77.90 20.34 Q78.08 20.61 78.25 20.98 Q78.43 21.35 78.50 21.65 Q78.58 21.95 79.06 21.54 Q79.53 21.12 80.33 20.84 Q81.12 20.55 81.53 20.55 Q81.95 20.55 82.35 20.66 Q82.75 20.77 83.12 21.10 Q83.50 21.43 83.65 21.85 Q83.81 22.27 83.81 22.58 Q83.81 22.89 83.76 22.91 Q83.72 22.93 83.72 23.18 Q83.72 23.42 83.68 23.41 Q83.63 23.40 83.63 23.55 Q83.63 23.69 83.50 24.02 Q83.37 24.35 83.08 24.76 Q82.80 25.18 82.72 25.21 Q82.63 25.23 82.41 25.51 Q82.18 25.79 81.77 26.14 Q81.35 26.49 80.98 26.71 Q80.60 26.93 78.96 27.83 Q77.33 28.72 76.99 28.75 Q76.66 28.77 76.08 28.14 Q75.50 27.51 75.44 27.50 Q75.38 27.50 75.37 27.42 Q75.37 27.34 75.33 27.35 Q75.29 27.37 75.22 27.22 Q75.15 27.07 74.87 26.78 Q74.59 26.49 74.54 26.34 Q74.49 26.20 74.39 26.13 Q74.28 26.05 73.93 25.48 Q73.58 24.91 73.32 24.32 Q73.06 23.73 72.97 23.31 Q72.88 22.89 72.90 22.24 Q72.92 21.58 72.97 21.58 Q73.01 21.59 73.03 21.38 Q73.06 21.18 73.21 20.87 Q73.36 20.56 73.40 20.58 Q73.44 20.59 73.45 20.51 Q73.45 20.43 73.51 20.40 Q73.58 20.37 73.58 20.29 Q73.58 20.21 74.09 19.82 Q74.59 19.42 74.91 19.35 Q75.23 19.28 75.24 19.24 Q75.26 19.20 75.79 19.20 Z"/></g></g><use href="#mkIksuni"/></svg>
+  <svg class="splashMark" viewBox="-3.25 -1.80 111.80 96.10" aria-hidden="true"><g class="splashHeart"><use href="#mkHeart"/></g><use href="#mkIksuni"/></svg>
   <div class="splashName">익순이</div>
   <div class="splashBy">Jumin Labs</div>
 </div>
@@ -2427,16 +2456,30 @@ window.dispatchEvent(new Event('fb-ready'));
   // 퇴근 타이머 — 1초마다 숫자만 갈아 끼운다(render 없음). 끝난 상태에서만 돌고, 다른 상태로 바뀌면 멈춘다.
   // 초 단위까지만: 소수점은 읽히지 않는 잔상이 되고 iOS 가 백그라운드·저전력에서 타이머를 조이니 의미가 없다.
   function closeLeftSec(){ return Math.max(0, Math.round((slotMin(CLOSE_HM) - nowMin()) * 60)); }
+  // 다 처리한 화면에서 곰이 하는 말. 퇴근 전엔 남은 시간, 퇴근 뒤엔 인사.
+  // 시:분:초는 카드가 쓰던 fmtLeft 그대로 — 한 덩어리로 읽히고 매초 글자 폭이 안 출렁인다.
+  function doneSay(){
+    var left = closeLeftSec();
+    if (!left) return '오늘 하루 고생하셨어요!';
+    return '퇴근까지 <span id="doneCd">' + fmtLeft(left) + '</span> 남았어요!';
+  }
+  function doneBearHtml(){
+    return '<div class="donebear">'
+      + '<svg class="mk" viewBox="-3.25 -1.80 111.80 96.10" aria-hidden="true">'
+      +   '<g class="loopHeart"><use href="#mkHeart"/></g><use href="#mkIksuni"/>'
+      + '</svg>'
+      + '<div class="say">' + doneSay() + '</div></div>';
+  }
   function fmtLeft(s){
     var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
     return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x;
   }
   var cdTimer = null;
   function cdTick(){
-    var el = document.getElementById('cdNum');
+    var el = document.getElementById('doneCd');   // 이제 카드가 아니라 곰 말풍선 안의 숫자다
     if (!el){ cdStop(); return; }
     var s = closeLeftSec();
-    if (!s){ cdStop(); paintHead(); return; }   // 0 이 되면 「오늘도 고생하셨습니다」로
+    if (!s){ cdStop(); render(); return; }   // 0 이 되면 곰이 「오늘 하루 고생하셨어요!」로 바뀐다
     el.textContent = fmtLeft(s);
   }
   function cdStart(){ if (!cdTimer) cdTimer = setInterval(cdTick, 1000); }
@@ -2476,12 +2519,12 @@ window.dispatchEvent(new Event('fb-ready'));
       // 처리할 시간대가 없으면 퇴근 타이머. 지난 시간대에 남은 대기는 대기 토글이 보여주므로 여기선 말하지 않는다.
       st.textContent = '';
       var left = closeLeftSec();
-      if (!all.length){ lm.className = 'leadmain num done'; lm.textContent = ''; cdStop(); }
-      else if (left > 0){
-        lm.className = 'leadmain num cdmode';
-        lm.innerHTML = '<span class="cdlab">퇴근까지</span><span class="cd" id="cdNum">' + fmtLeft(left) + '</span>';
-        cdStart();
-      } else { lm.className = 'leadmain num done'; lm.textContent = '오늘도 고생하셨습니다'; cdStop(); }
+      // ★카드는 «상태»만 말한다(① 명사형). 퇴근까지 남은 시간과 인사는 곰 말풍선이 맡는다
+      //   (2026-09-16 오너). 여기 있던 「퇴근까지 h:mm:ss」와 「오늘도 고생하셨습니다」를 옮긴 것이다.
+      //   ※「남은 예약 없음」은 2026-09-12 에 한 번 뺐던 문구다(대기 토글이 이미 그 상태를 보여줘서).
+      //     그땐 옆에 퇴근 카운트가 있어 군더더기였는데, 카운트가 곰에게 가면서 주 줄이 비어 되돌렸다.
+      lm.className = 'leadmain num done';
+      lm.textContent = all.length ? '남은 예약 없음' : '';
       ls.className = 'leadsub num';
       ls.innerHTML = all.length ? dayTally(all) : '';
     }
@@ -2626,7 +2669,9 @@ window.dispatchEvent(new Event('fb-ready'));
     if (viewMode === 'pending' && !pendRows && !q){
       list.innerHTML = '';
       em.classList.remove('hide');
-      em.textContent = '대기 중인 팀이 없습니다';
+      // 글자 한 줄 대신 곰이 말을 건다 (.donebear 주석 참고). 남은 시간은 1초마다 cdTick 이 고친다.
+      em.innerHTML = doneBearHtml();
+      if (closeLeftSec()) cdStart(); else cdStop();
     }
 
     var foldBtnEl = document.getElementById('foldBtn');
@@ -4075,7 +4120,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 빌드 도장 — 테스트 사이트의 서랍 아래에만 보인다(MMDD.HHMM). 「고쳤다 / 아직 보인다」가
   // 어긋날 때 «폰이 어느 빌드를 들고 있나»부터 확인할 수 있어야 한다. 배포 스크립트가 찍는다.
   // 상단 배지에 붙이면 가운데 날짜를 밀어내므로(오너 2026-09-15) 거기엔 안 붙인다.
-  var BUILD_STAMP = '0916.0659';
+  var BUILD_STAMP = '0916.0804';
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
