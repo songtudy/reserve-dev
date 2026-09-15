@@ -1105,9 +1105,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:fixed;inset:0;z-index:290;
     background:var(--ink);   /* .lock 과 같은 이유 — 상태 표시줄 띠 색의 출처 */
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:10px;                    /* 잠금화면과 같은 이유로 규칙값보다 더 좁힌다 — 새 곰은 밑변이 둥근 앞발로
-                                    흐려지고 하트가 무게를 위로 끌어올려, 같은 수치가 더 벌어져 보인다.
-                                    보이는 간격 = 10 + 판 아래 여백 12.0 + 글꼴 위 여백 2.7 ≈ 24.7px
+    gap:6px;                     /* ★CSS 값 ≠ 보이는 값. 판 안쪽 여백이 다크에선 «안 보이는 허공»이 되어
+                                    이미 14.3px 이 깔려 있다 — 그래서 여기 적는 수는 아주 작아야 한다.
+                                    6 → 보이는 20.3px. 이름 잉크(21.3)와 0.95 로, 잠금화면(0.92)과 같은 관계다.
+                                    마크를 건드리면 판 여백이 변하니 반드시 다시 잰다.
                                     (옛 마크 gap 24 일 때의 27.0 과 같은 인상).
                                     2026-09-14: 또 낡았었다 — 마크를 120 으로 키우며 이 값을 안 고쳐
                                     실기기에서 보이는 간격이 44px 이 됐다(오너 신고). 마크를 건드리면 여기도 다시 계산할 것. */
