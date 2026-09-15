@@ -891,7 +891,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 요약은 시각 «바로 뒤»에 붙는다 — 오른쪽 끝으로 밀면 문구 길이가 행마다 달라(「17명 · 방문 14」
      vs 「9명」) 시작점이 들쭉날쭉해진다. 왼쪽에 뭉치면 늘 같은 자리에서 읽기 시작한다.
      상세(.bkvrow)에서 인원을 이름 뒤에 붙인 것과 같은 규칙이다. */
-  .bkn{font-size:14px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums;
+  /* 굵기 600 — 시각(700)과 색만 다르면 위계가 약하다. 형제 화면 「최근 변경 내역」도
+     종류(.lgk 700)와 요약(.lgs 400·13)을 굵기로 갈라 놓는다. */
+  .bkn{font-size:14px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkchev{flex:0 0 auto;margin-left:auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
   /* 구역 라벨(오늘/어제) */
