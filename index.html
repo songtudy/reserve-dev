@@ -2709,12 +2709,14 @@ window.dispatchEvent(new Event('fb-ready'));
       return;
     }
     if (action === 'edit'){
+      if (!canWrite()){ openMenu = null; closeRowMenu(); render(); return; }
       openMenu = null; closeRowMenu();
       pendingReveal = null;   // 이전 수정의 보여주기가 남아 있으면 새 편집을 튀게 한다
       openEdit(id);
       return;
     }
     if (action === 'delete'){
+      if (!canWrite()){ openMenu = null; closeRowMenu(); render(); return; }
       logAdd('삭제', it.time + ' ' + it.name);
       state.items = state.items.filter(function(x){ return x.id !== id; });
       openMenu = null; render();
@@ -3541,14 +3543,19 @@ window.dispatchEvent(new Event('fb-ready'));
     backOpen('add', hideAdd);
   }
 
-  // ★명단을 «한 번도 못 본» 상태에서는 아무것도 바꾸지 않는다.
-  //   없는 줄 알고 추가하면 이미 있는 예약과 중복이 된다 — 확인할 화면이 없기 때문이다.
-  //   반대로 «보다가 끊긴» 경우는 막지 않는다. 그건 원래 되던 일이고, 쓰기 큐가 합쳐 준다.
-  //   (명단 등록·초기화는 여기서 한 단계 더 엄하다 — 통째 교체라 연결까지 돼 있어야 한다.)
+  // ★«명단의 구성»을 바꾸는 것(추가·수정·삭제)은 연결돼 있을 때만 한다.
+  //   방문·취소 체크와 갈리는 지점이 여기다 — 체크는 «이미 있는 예약의 상태» 한 칸이라
+  //   다른 폰 것과 합쳐지지만, 추가·수정·삭제는 목록 자체를 바꿔 충돌한다:
+  //     추가 — 끊긴 사이 다른 폰이 같은 손님을 넣었으면 중복이 된다
+  //     수정 — 시각·이름·인원이 바뀌면 id 가 바뀌어 삭제+추가가 되고, 그 사이 남의 변경을 덮는다
+  //     삭제 — 끊긴 사이 남이 그 예약에 한 일을 통째로 지운다
+  //   끊길 일 자체가 드무니 막아도 영업에 지장이 없다(오너 2026-09-15). 반대로 체크는 손님이
+  //   들어오는 동안 계속 눌러야 해서, 막으면 직원이 기억으로 버텨야 한다 — 그래서 연다.
+  //   listKnown 도 여전히 필요하다: 명단을 본 적 없으면 무엇이 있는지 모른다.
   function canWrite(){
-    if (listKnown) return true;
-    toast(navigator.onLine === false ? MSG_OFF : '명단을 아직 불러오지 못했습니다');
-    return false;
+    if (!listKnown){ toast(navigator.onLine === false ? MSG_OFF : '명단을 아직 불러오지 못했습니다'); return false; }
+    if (!connReady()){ toast(MSG_OFF); return false; }
+    return true;
   }
   function openAdd(){
     if (!canWrite()) return;
