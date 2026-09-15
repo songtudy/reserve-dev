@@ -2457,8 +2457,12 @@ window.dispatchEvent(new Event('fb-ready'));
       } else if (!listKnown){
         // 아직 한 번도 못 읽었다 — 비어 있다고 말하지 않는다. 붙여넣기 창도 열지 않는다.
         em.classList.remove('hide');
+        // 두 가지를 다 말해야 한다. ①사실 — 가만히 기다려선 안 되고 누가 인터넷을 고쳐야
+        // 한다. ②그 뒤 — 고치면 «저절로» 채워진다(앱을 껐다 켜거나 명단을 다시 등록할 일이
+        // 없다). 잠금화면의 「연결을 확인해 주세요」와 말이 다른 건 일부러다 — 거기선 사용자가
+        // 조치해야 로그인이 되고, 여기선 조치 뒤 기다리기만 하면 된다. (.empty 는 pre-line)
         em.textContent = navigator.onLine === false
-          ? '인터넷에 연결되면 명단을 불러옵니다'
+          ? '인터넷에 연결되어 있지 않습니다\n연결되면 명단을 바로 불러옵니다'
           : '명단을 불러오는 중입니다';
         document.body.classList.remove('paste-open');
       } else {
