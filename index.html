@@ -4079,7 +4079,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 빌드 도장 — 테스트 사이트의 서랍 아래에만 보인다(MMDD.HHMM). 「고쳤다 / 아직 보인다」가
   // 어긋날 때 «폰이 어느 빌드를 들고 있나»부터 확인할 수 있어야 한다. 배포 스크립트가 찍는다.
   // 상단 배지에 붙이면 가운데 날짜를 밀어내므로(오너 2026-09-15) 거기엔 안 붙인다.
-  var BUILD_STAMP = '0915.2251';
+  var BUILD_STAMP = '0915.2255';
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
@@ -5360,7 +5360,11 @@ window.dispatchEvent(new Event('fb-ready'));
 (function(){
   var sh = document.getElementById('topShell');
   if (!sh) return;
-  function set(){ document.documentElement.style.setProperty('--topH', Math.round(sh.getBoundingClientRect().height) + 'px'); }
+  // ★올림이 아니라 «내림». 셸 높이는 소수(예: 211.67px)인데 올리면(212) 시간바가 셸이 칠한
+  //   자리보다 0.33px 아래에 붙는다 → 3배 화면에서 딱 1픽셀이 비어, 그 줄로 행 글자의 밑동이
+  //   비쳤다(오너 스크린샷에서 밝은 줄이 y=638 한 줄, 2026-09-15). 내리면 시간바가 셸과
+  //   살짝 겹쳐 붙어 틈이 생길 수 없다 — 겹치는 건 시간바 위쪽 여백(12px)이라 안 보인다.
+  function set(){ document.documentElement.style.setProperty('--topH', Math.floor(sh.getBoundingClientRect().height) + 'px'); }
   set();
   if (window.ResizeObserver) new ResizeObserver(set).observe(sh);
   // 카드 내용이 나중에 그려지거나 검색창·업데이트 띠가 켜지는 건 DOM 변화 — 크기 관찰이 늦는 환경을 대비해 이것도 본다
