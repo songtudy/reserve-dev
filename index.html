@@ -2337,7 +2337,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!cf) return;
     cf.className = 'dwfoot' + (ready ? '' : ' off');
     cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-      + (ready ? '연결됨' : '연결 안 됨');
+      + (ready ? '연결됨' : '연결 안 됨')
+      + (IS_DEV ? ' · ' + BUILD_STAMP : '');   // 테스트에서만 빌드 도장을 같이 보인다
   }
   function setSync(ok){
     if (ok === false) listFresh = false;   // 끊긴 순간부터 화면의 명단은 «옛 것»이다
@@ -4075,13 +4076,14 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   });
 
-  var BUILD_STAMP = '0915.2242';   // 배포 스크립트가 찍는 빌드 시각 (테스트 배지에만 보인다)
+  // 빌드 도장 — 테스트 사이트의 서랍 아래에만 보인다(MMDD.HHMM). 「고쳤다 / 아직 보인다」가
+  // 어긋날 때 «폰이 어느 빌드를 들고 있나»부터 확인할 수 있어야 한다. 배포 스크립트가 찍는다.
+  // 상단 배지에 붙이면 가운데 날짜를 밀어내므로(오너 2026-09-15) 거기엔 안 붙인다.
+  var BUILD_STAMP = '0915.2243';
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
-    // 테스트 배지에 빌드 도장을 같이 찍는다. 「고쳤다 / 아직 보인다」가 어긋날 때
-    // «폰이 어느 빌드인지»부터 확인할 수 있어야 한다. 실사용엔 배지 자체가 안 뜬다.
-    if (dt){ dt.textContent = '테스트 ' + BUILD_STAMP; dt.classList.remove('hide'); }
+    if (dt) dt.classList.remove('hide');
   }
 
   /* ---------- 테마 ---------- */
