@@ -19,7 +19,7 @@
  * ★오프라인에서 열면 «앱은 열리되 명단은 비어 있고 연결 끊김 표시가 뜬다».
  *   명단 자체를 저장해 두는 건 데이터 설계라 여기서 하지 않는다 (별건).
  */
-var VER   = 'iksuni-v2';
+var VER   = 'iksuni-v3';   // 판을 올리면 activate 가 옛 저장본을 통째로 지운다
 var SHELL = ['./', './index.html', './manifest.json',
              './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icon-maskable-512.png'];
 // 주소에 버전이 박혀 있어 통째로 «영구 저장»해도 되는 것들. index.html 의 import 문과 같아야 한다.
@@ -75,9 +75,14 @@ self.addEventListener('fetch', function(e){
   if (url.origin !== self.location.origin) return;      // 그 밖의 남의 도메인은 그대로 통과
 
   // ① 화면(HTML) — 네트워크 먼저. 실패할 때만 저장본.
+  // ★req 를 그대로 fetch() 에 넘기지 않는다. mode 가 'navigate' 인 요청을 fetch() 가 거부하는
+  //   구현이 있고(WebKit), 거부되면 곧장 catch 로 떨어져 «저장본»이 응답이 된다 — 온라인인데도
+  //   옛 화면이 영영 뜬다. 실기기에서 테스트 앱이 새 빌드를 못 받는 걸로 드러났다(2026-09-15).
+  //   주소로 새 요청을 만들고, cache:'reload' 로 HTTP 캐시(GitHub Pages max-age=600)도 건너뛴다.
+  //   화면은 한 장이라 매번 새로 받아도 부담이 없고, 「절대 낡지 않는다」는 이 파일의 원칙에 맞다.
   if (req.mode === 'navigate' || /\.html($|\?)/.test(url.pathname)){
     e.respondWith(
-      fetch(req).then(function(res){
+      fetch(url.href, { cache: 'reload', credentials: 'same-origin' }).then(function(res){
         if (res && res.ok){
           var copy = res.clone();
           caches.open(VER).then(function(c){ c.put('./index.html', copy); });
