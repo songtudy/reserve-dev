@@ -927,14 +927,26 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 읽기 전용 행 — 상태 표시 · 이름 · 오른쪽 인원.
      원(체크박스)은 안 그린다 — 읽기 전용인데 빈 원이 있으면 「눌러야 하나」로 보인다.
      방문 ✓ 초록 / 취소 ✕ 빨강 표시만, 대기는 빈칸(이름 열은 그대로 맞춰 둔다). */
-  .bkvrow{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:14px;line-height:1.35}
-  .bkvrow .ck{width:14px;height:14px;flex:0 0 auto;display:grid;place-items:center;line-height:0;color:transparent}
+  /* ★인원은 본 화면처럼 행 끝으로 밀지 않고 «이름 바로 뒤»에 붙인다. 본 화면은 행 끝에 ⋯ 단추가
+       있어 오른쪽 가장자리가 붙잡혀 있는데 여기엔 그게 없어서, 인원 하나가 건너편에 혼자 떠
+       한 줄 안에 내용 90px · 빈칸 270px 이 됐다 (오너 2026-09-15 「가운데가 엄청 비어 있다」).
+       오른쪽에 남는 자리는 이제 «여백»이지 «구멍»이 아니다.
+     ★메모는 여태 안 그렸다. 백업 스냅샷은 항목을 통째로 담으므로(memo 포함) 가진 정보를
+       안 보여준 것이었다 — 본 화면 .memo 와 같은 꼴(13 · --dim · 앞에 점)로 되살린다. */
+  .bkvrow{display:flex;align-items:flex-start;gap:9px;padding:7px 0;font-size:14px;line-height:1.35}
+  .bkvrow .ck{width:14px;height:14px;flex:0 0 auto;display:grid;place-items:center;line-height:0;color:transparent;margin-top:2px}
   .bkvrow .ck svg{display:block}
   .bkvrow.go .ck{color:var(--goTx)}
   .bkvrow.off .ck{color:var(--warn)}
-  .bkvrow .nm{flex:1;min-width:0;color:var(--text);font-weight:600;
+  .bkvbody{flex:1;min-width:0;display:flex;flex-direction:column}
+  .bkvl1{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .bkvrow .nm{flex:0 1 auto;min-width:0;color:var(--text);font-weight:600;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--text);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .bkvmemo{margin-top:2px;font-size:13px;font-weight:600;line-height:1.35;color:var(--dim);word-break:break-all}
+  .bkvmemo::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;
+    background:var(--off);vertical-align:middle;margin:0 6px 2px 1px}
+  .bkvrow.go .bkvmemo, .bkvrow.off .bkvmemo{color:var(--off)}   /* 본 화면 .row.arrived .memo 와 같게 */
   /* 처리된 행은 이름도 인원도 같이 가라앉는다 — 본 화면 .row.arrived/.cancelled 와 같은 규칙.
      ★취소 이름은 --off 에 취소선이었다. 본 화면은 2026-09-11 에 그 둘을 이미 버렸는데
        (「--off 는 3.7:1 로 읽기 기준 미달」 · 「상태는 원 하나에만, 선을 줄인다」 — 오너)
@@ -4402,8 +4414,12 @@ window.dispatchEvent(new Event('fb-ready'));
         + g.items.map(function(it){
             var cls = it.status === 'arrived' ? ' go' : it.status === 'cancelled' ? ' off' : '';
             var mk  = it.status === 'arrived' ? GO : it.status === 'cancelled' ? OFF : '';
-            return '<div class="bkvrow' + cls + '"><span class="ck">' + mk + '</span><span class="nm">' + esc(it.name)
-              + '</span><span class="px">' + esc(String(it.pax)) + '명</span></div>';
+            return '<div class="bkvrow' + cls + '"><span class="ck">' + mk + '</span>'
+              + '<span class="bkvbody"><span class="bkvl1">'
+              +   '<span class="nm">' + esc(it.name) + '</span>'
+              +   '<span class="px">' + esc(String(it.pax)) + '명</span></span>'
+              + (it.memo ? '<span class="bkvmemo">' + esc(it.memo) + '</span>' : '')
+              + '</span></div>';
           }).join('');
     }).join('');
   }
