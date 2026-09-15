@@ -2064,7 +2064,6 @@ window.dispatchEvent(new Event('fb-ready'));
     } catch(e){ return {}; }
   }
   function wqSave(){
-    try { paintConn(); } catch(e){}      // 대기 건수가 바뀌면 표시도 같이
     try {
       if (Object.keys(wqMap).length) localStorage.setItem(WQ_KEY, JSON.stringify(wqMap));
       else localStorage.removeItem(WQ_KEY);
@@ -2267,9 +2266,10 @@ window.dispatchEvent(new Event('fb-ready'));
        전부 이 한 문장을 쓴다. 예전엔 「연결되면 쓸 수 있습니다」(언제 되나)와 「연결이 끊겨
        지금은 …할 수 없습니다」(왜 안 되나)가 섞여 다섯 가지였다 — 조건이 하나인데 말이
        다섯이면 읽는 쪽이 매번 새로 해석해야 한다(오너 2026-09-15).
-       예외는 둘뿐이다. 「명단을 아직 불러오지 못했습니다」— 온라인인데 명단이 안 온 경우라
-       인터넷 탓이 아니다. 「연결을 확인해 주세요」(잠금화면 비번 시도) — 거긴 사용자가
-       실제로 조치해야 넘어가는 유일한 자리다.
+       예외는 하나뿐이다 — 「명단을 아직 불러오지 못했습니다」. 온라인인데 명단이 안 온
+       경우라 인터넷 탓이 아니다. 잠금화면의 「연결을 확인해 주세요」와 지난 명단의
+       「연결되면 볼 수 있습니다」도 2026-09-15 에 이 한 문장으로 흡수했다 — 조건이 하나인데
+       말이 셋이면 볼 때마다 새로 해석해야 한다(오너).
      사례마다 따로 판단하다 보니 앞뒤가 흔들렸다(오너 2026-09-15). 기준을 둘로 못 박는다.
 
      ① listKnown — «서버 명단을 이 세션에서 한 번이라도 읽었나»
@@ -2282,16 +2282,16 @@ window.dispatchEvent(new Event('fb-ready'));
 
        동작                    A            B           근거
        앱 열기                 열림          —          서비스워커가 껍데기·SDK 를 들고 있다
-       로그인(비번)             금지          —          서버에서만 확인 가능 → 「연결을 확인해 주세요」
+       로그인(비번)             금지          —          서버에서만 확인 가능. 비번을 «치기 전에» 알린다
        명단 보기               «모른다» 안내   그대로 보임   A 는 못 읽은 것이지 빈 게 아니다
        방문·취소·추가·수정·삭제   금지          허용(큐)     A 는 listKnown=false, B 는 합칠 수 있다
                                                     ※B 를 막자는 안은 반려(2026-09-15). 막으면 직원이
                                                       「누가 왔는지」를 머리에 들고 있어야 한다 — 영업
-                                                      중엔 그게 큐보다 위험하다. 대신 «몇 건 대기»를
-                                                      헤더 칩·서랍에 띄워 저장 여부가 보이게 했다.
+                                                      중엔 그게 큐보다 위험하다. 이 셋은 update 라
+                                                      합쳐지고, 막는 건 set 인 것들뿐이다.
        명단 등록·초기화          금지          금지         통째 교체 — 남의 변경을 지운다
        로그아웃                금지          금지         다시 들어올 방법이 없어진다
-       지난 명단               금지          금지         서버에만 있다 → 「연결되면 볼 수 있습니다」
+       지난 명단               금지          금지         서버에만 있다
        최근 변경 내역           로컬만        로컬만       서버 것이 빠진 채로도 쓸모가 있다
        명단 복사               (명단 없음)    허용         화면에 있는 것을 그대로 옮길 뿐
        자동 백업·자동 취소       안 함         큐          connReady 가드가 이미 있다
@@ -2303,19 +2303,21 @@ window.dispatchEvent(new Event('fb-ready'));
      ★새 기능을 붙일 땐 이 표에 줄을 먼저 추가하고 구현할 것. 「그때그때」가 흔들림의 원인이었다. */
   function connReady(){ return online && hasStore(); }
   // 서랍 하단의 연결 표시 한 줄. setSync·openDrawer 가 부른다.
-  // ★끊긴 동안의 변경을 «막지 않는다». 막으면 직원이 「누가 왔는지」를 머리에 들고 있어야
-  //   하는데, 영업 중엔 그게 큐보다 훨씬 위험하다. 쓰기 큐가 바로 이 경우를 위한 물건이다
-  //   (합치기·재시도·localStorage 보존). 「몇 건이 아직 안 올라갔나」는 서랍 한 줄에만 둔다 —
-  //   궁금해서 열어볼 때 답하면 되는 정보지, 화면에 늘 띄울 무게는 아니다. 2026-09-15.
-  function wqCount(){ return Object.keys(wqMap).length; }
+  // ★끊긴 동안의 «체크·추가·수정·삭제»는 막지 않는다. 막으면 직원이 「누가 왔는지」를 머리에
+  //   들고 있어야 하는데, 영업 중엔 그게 큐보다 훨씬 위험하다. 이 셋은 update(한 칸만 고침)라
+  //   다른 폰 것과 합쳐진다 — 쓰기 큐가 바로 이 경우를 위해 만든 물건이다.
+  //   막는 건 «합칠 수 없는 것»뿐: 명단 등록·초기화(set — 통째로 덮어씀), 로그아웃(다시 못 들어옴).
+  // ★「몇 건이 안 올라갔나」를 여기 띄웠다가 뺐다(2026-09-15). 서랍을 열어야 보이니 미리
+  //   알려주지도 못하고, 숫자를 봐도 할 수 있는 게 없고(인터넷 고치는 건 「연결 안 됨」이 이미
+  //   말한다), 무엇보다 이 앱의 「대기」는 «손님이 아직 안 왔다»는 뜻이라 말이 겹쳤다.
+  //   「연결 안 됨」이 떠 있는 동안 한 일은 아직 안 나갔다 — 그것만 알면 된다.
   function paintConn(){
-    var n = wqCount(), ready = connReady();
+    var ready = connReady();
     var cf = document.getElementById('dwConn');
     if (!cf) return;
     cf.className = 'dwfoot' + (ready ? '' : ' off');
     cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-      + (ready ? '연결됨' : '연결 안 됨')
-      + (n ? (ready ? ' · ' + n + '건 올리는 중' : ' · ' + n + '건 대기') : '');
+      + (ready ? '연결됨' : '연결 안 됨');
   }
   function setSync(ok){
     if (ok !== undefined) online = ok;
@@ -2520,14 +2522,11 @@ window.dispatchEvent(new Event('fb-ready'));
       } else if (!listKnown){
         // 아직 한 번도 못 읽었다 — 비어 있다고 말하지 않는다. 붙여넣기 창도 열지 않는다.
         em.classList.remove('hide');
-        // 두 가지를 다 말해야 한다. ①사실 — 가만히 기다려선 안 되고 누가 인터넷을 고쳐야
-        // 한다. ②그 뒤 — 고치면 «저절로» 채워진다(앱을 껐다 켜거나 명단을 다시 등록할 일이
-        // 없다). 잠금화면의 「연결을 확인해 주세요」와 말이 다른 건 일부러다 — 거기선 사용자가
-        // 조치해야 로그인이 되고, 여기선 조치 뒤 기다리기만 하면 된다. (.empty 는 pre-line)
         // 한 줄이면 된다. 「연결되면 불러옵니다」를 덧붙였다가 뺐다(2026-09-15) — 그건 「앱을
         // 껐다 켜거나 명단을 다시 등록하려 들까 봐」 넣은 안전문이었는데, 그 사이 명단 등록을
-        // 코드로 막았으니 일어날 수 없는 일을 말로 막고 있던 셈이다. 연결되면 된다는 건
-        // 굳이 안 적어도 안다. 크기는 그대로 13 — 활자는 키우지 않는다(오너 규칙).
+        // 코드로 막았으니 «일어날 수 없는 일»을 말로 막고 있던 셈이다. 연결되면 된다는 건
+        // 굳이 안 적어도 안다.
+        // 크기는 그대로 13 — 활자는 키우지 않는다(오너 규칙). 색과 굵기로만 세운다.
         if (navigator.onLine === false){
           em.innerHTML = '<b>인터넷이 연결되지 않았습니다</b>';
         } else {
@@ -3419,7 +3418,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function applyPaste(text){
     // 끊긴 동안엔 등록하지 않는다 — 이건 «서버 명단을 이걸로 바꿔라» 라서, 서버에 무엇이
     // 있는지 모르는 상태로 보내면 남의 명단을 지운다. 낱개 변경과 달리 합칠 수가 없다.
-    if (!connReady()){ toast('인터넷이 연결되지 않았습니다'); return false; }
+    if (!connReady()){ toast(MSG_OFF); return false; }
     var fresh = parse(text);
     if (fresh.bad.length){ showBad(fresh.bad); return false; }
     clearBad();
@@ -3547,7 +3546,7 @@ window.dispatchEvent(new Event('fb-ready'));
   //   (명단 등록·초기화는 여기서 한 단계 더 엄하다 — 통째 교체라 연결까지 돼 있어야 한다.)
   function canWrite(){
     if (listKnown) return true;
-    toast(navigator.onLine === false ? '인터넷이 연결되지 않았습니다' : '명단을 아직 불러오지 못했습니다');
+    toast(navigator.onLine === false ? MSG_OFF : '명단을 아직 불러오지 못했습니다');
     return false;
   }
   function openAdd(){
@@ -3805,7 +3804,7 @@ window.dispatchEvent(new Event('fb-ready'));
     hideDrawer();
     if (!state || !state.items.length){ closeDrawer(); toast('명단이 없습니다'); return; }   // backDone 까지 — 유령 뒤로가기 기록 방지
     // 초기화도 «통째 교체»(set)라 끊긴 동안엔 막는다 — applyPaste 와 같은 이유.
-    if (!connReady()){ closeDrawer(); toast('인터넷이 연결되지 않았습니다'); return; }
+    if (!connReady()){ closeDrawer(); toast(MSG_OFF); return; }
     // 안내문은 조작법 하나만 — 앱의 다른 창 보조문(#pasteHint·.rltsub)과 같은 규칙이다.
     // 건수는 묻는 자리(안내문)가 아니라 끝난 자리(토스트)에 둔다: 「명단 초기화」를 누른
     // 사람에게 건수는 결정을 바꾸지 않지만, 끝난 뒤엔 무엇이 사라졌는지 알려 주는 영수증이 된다.
@@ -4435,7 +4434,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // ★끊긴 채로 로그아웃하면 스스로를 가둔다 — 비밀번호는 서버에서만 확인할 수 있어서
     //   연결이 돌아올 때까지 «다시 들어올 방법이 없다». 영업 중이면 그대로 업무 정지다.
     //   signOut 자체는 오프라인에서도 되기 때문에 여기서 막아야 한다. 2026-09-15.
-    if (!connReady()){ closeDrawer(); toast('인터넷이 연결되지 않았습니다'); return; }
+    if (!connReady()){ closeDrawer(); toast(MSG_OFF); return; }
     // 보조문 = 결과 안내. 초기화 창의 조작 안내와 종류는 다르지만(그쪽은 「어떻게」, 이쪽은 「무슨 일이」),
     // 제목만 덜렁 있으면 허전하고 이 앱의 로그아웃이 뭘 하는지(이 기기만·명단 유지)가 안 자명하다.
     confirmDlg('로그아웃할까요?', function(){
@@ -4595,7 +4594,7 @@ window.dispatchEvent(new Event('fb-ready'));
     bkMap = null;
     openSheet('지난 명단', '');
     var show = function(html){ var b = document.getElementById('sheetBody'); if (b && bkTitled()) b.innerHTML = html; };
-    if (!connReady()){ show('<p class="sheetMsg">연결되면 볼 수 있습니다</p>'); return; }
+    if (!connReady()){ show('<p class="sheetMsg">' + MSG_OFF + '</p>'); return; }
     var settled = false;
     // 빠르게 오면(대개 그렇다) 자리표시가 깜빡이지 않게 — 300ms 넘게 걸릴 때만 「불러오는 중…」
     var slow = setTimeout(function(){ if (!settled) show('<p class="sheetMsg">불러오는 중…</p>'); }, 300);
@@ -4756,6 +4755,8 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   var toastTimer;
+  // 끊겼을 때 «말을 거는» 문장은 이것 하나뿐 — 상수로 묶어 흩어지다 갈라지는 길을 막는다.
+  var MSG_OFF = '인터넷이 연결되지 않았습니다';
   /* 말투 — 세 갈래로 쓴다 (2026-09-15 전수 정리).
        ① 상시 라벨(화면에 붙박이는 표시) : 명사형      「연결됨」 「연결 안 됨」
        ② 끝났다는 통보(토스트)          : -됨         「명단 등록됨」 「복사됨」 「업데이트됨」
@@ -5138,22 +5139,26 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     // 응답이 영영 안 오면(매장 와이파이가 끊기는 등) 키패드가 잠긴 채 갇힌다.
     // 앱을 강제 종료하는 것 말고 빠져나갈 길이 없으므로 시한을 둔다.
-    timer = setTimeout(function(){ finish('연결을 확인해 주세요'); }, 12000);
+    timer = setTimeout(function(){ finish(MSG_OFF); }, 12000);
     // 기기가 «인터넷 없음»이라고 말하면 물어볼 것도 없다 — 「검사 중」 맥동을 띄웠다가
     // 실패로 끝내지 말고 바로 알린다. (비밀번호는 서버에서만 확인할 수 있어서, 저장된
     // 로그인이 없는 기기는 오프라인에서 들어올 방법이 없다 — 그게 맞다.) 2026-09-15.
-    if (navigator.onLine === false){ finish('연결을 확인해 주세요'); return; }
+    if (navigator.onLine === false){ finish(MSG_OFF); return; }
     window.__fb.signIn(pin).then(function(){
       finish(null);
     }).catch(function(err){
       var c = (err && err.code) || '';
-      finish(c === 'auth/network-request-failed' ? '연결을 확인해 주세요'
+      finish(c === 'auth/network-request-failed' ? MSG_OFF
            : c === 'auth/too-many-requests'      ? '잠시 뒤 다시 시도해 주세요'
            : '비밀번호가 맞지 않습니다');
     });
   }
   // busy(확인 중) / out(잠금 걷히는 중)에는 입력을 받지 않는다 —
   // 화면 탭은 .lock.out{pointer-events:none} 이 막지만 물리 키보드는 여기서 막는다.
+  // 인터넷이 돌아오면 남은 안내를 지운다 — 안 그러면 연결됐는데도 그대로 떠 있다.
+  window.addEventListener('online', function(){
+    if (lockMsg && lockMsg.textContent === MSG_OFF) lockMsg.textContent = '';
+  });
   function pinLocked(){ return lockEl.classList.contains('busy') || lockEl.classList.contains('out'); }
   function pinPush(d){
     if (pinLocked() || pin.length >= PIN_LEN) return;
@@ -5235,7 +5240,7 @@ window.dispatchEvent(new Event('fb-ready'));
   var staleBoot = false;
   function lockStart(){
     if (!window.__fb || !window.__fb.authWatch){   // Auth 를 못 불러왔을 때
-      lockShow(navigator.onLine === false ? '인터넷이 연결되지 않았습니다' : '앱을 다시 열어 주세요');
+      lockShow(navigator.onLine === false ? MSG_OFF : '앱을 다시 열어 주세요');
       return;
     }
     if (document.documentElement.getAttribute('data-authed') === '1' && !booted){
@@ -5250,7 +5255,8 @@ window.dispatchEvent(new Event('fb-ready'));
         unlock();
       } else {
         if (booted) staleBoot = true;                  // 표식만 믿고 띄웠는데 실제론 로그인 아님
-        lockShow('');
+        // 오프라인이면 «비번을 치기 전에» 알린다 — 네 자리 다 누른 뒤에 알려주면 헛수고다.
+        lockShow(navigator.onLine === false ? MSG_OFF : '');
         // 설치 안내는 「로그인하기 전에」 봐야 한다. 아이폰은 사파리와 홈 화면 앱의 저장소가
         // 완전히 분리돼 있어서, 사파리에서 먼저 로그인하면 앱을 설치한 뒤 비번을 또 넣어야 한다.
         // 여기서 권해야 「설치 → 앱에서 한 번만 로그인」 순서가 된다.
@@ -5264,7 +5270,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 주세요」는 사실도 아니다(다시 열어도 인터넷이 없으면 똑같다). 2026-09-15.
   function fbGaveUp(){
     if (window.__fb) return;
-    lockShow(navigator.onLine === false ? '인터넷이 연결되지 않았습니다' : '앱을 다시 열어 주세요');
+    lockShow(navigator.onLine === false ? MSG_OFF : '앱을 다시 열어 주세요');
   }
   if (window.__fb) lockStart();
   else {
