@@ -19,7 +19,8 @@
  * ★오프라인에서 열면 «앱은 열리되 명단은 비어 있고 연결 끊김 표시가 뜬다».
  *   명단 자체를 저장해 두는 건 데이터 설계라 여기서 하지 않는다 (별건).
  */
-var VER   = 'iksuni-v3';   // 판을 올리면 activate 가 옛 저장본을 통째로 지운다
+var VER   = 'iksuni-v4';   // 판을 올리면 activate 가 옛 저장본을 통째로 지운다
+var NAV_TIMEOUT = 4000;    // 화면 요청이 이 안에 안 오면 저장본으로 띄운다 (아래 설명)
 var SHELL = ['./', './index.html', './manifest.json',
              './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icon-maskable-512.png'];
 // 주소에 버전이 박혀 있어 통째로 «영구 저장»해도 되는 것들. index.html 의 import 문과 같아야 한다.
@@ -78,21 +79,32 @@ self.addEventListener('fetch', function(e){
   // ★req 를 그대로 fetch() 에 넘기지 않는다. mode 가 'navigate' 인 요청을 fetch() 가 거부하는
   //   구현이 있고(WebKit), 거부되면 곧장 catch 로 떨어져 «저장본»이 응답이 된다 — 온라인인데도
   //   옛 화면이 영영 뜬다. 실기기에서 테스트 앱이 새 빌드를 못 받는 걸로 드러났다(2026-09-15).
-  //   주소로 새 요청을 만들고, cache:'reload' 로 HTTP 캐시(GitHub Pages max-age=600)도 건너뛴다.
-  //   화면은 한 장이라 매번 새로 받아도 부담이 없고, 「절대 낡지 않는다」는 이 파일의 원칙에 맞다.
+  //   그래서 주소로 새 요청을 만든다.
   if (req.mode === 'navigate' || /\.html($|\?)/.test(url.pathname)){
+    // cache:'no-cache' — «반드시 서버에 물어보되, 안 바뀌었으면 304 로 끝낸다».
+    //   'reload' 는 검사기(ETag)를 안 보내 매번 330KB 를 통째로 다시 받는다(실측 0.30s vs 0.07s).
+    //   no-cache 도 10분 캐시를 무시하고 늘 확인하므로 «낡지 않는다»는 원칙은 그대로다.
+    var fromCache = function(){
+      return caches.match('./index.html').then(function(hit){
+        return hit || caches.match('./');
+      }).catch(function(){ return fetch(req); });       // 저장본까지 망가졌으면 그냥 네트워크로
+    };
+    // ★시한을 둔다. 끊긴 것(비행기 모드)은 fetch 가 바로 거부하지만, «와이파이는 붙었는데
+    //   인터넷이 죽은» 공유기에서는 응답도 거부도 없이 매달린다 → 앱이 안 열린다.
+    //   NAV_TIMEOUT 안에 안 오면 저장본으로 화면부터 띄우고, 받아 온 것은 뒤에서 저장본을
+    //   갱신한다(다음 실행부터 최신). 영업 중에 앱이 안 열리는 것보다 한 판 늦는 게 낫다.
+    var net = fetch(url.href, { cache: 'no-cache', credentials: 'same-origin' }).then(function(res){
+      if (res && res.ok){
+        var copy = res.clone();
+        caches.open(VER).then(function(c){ c.put('./index.html', copy); }).catch(function(){});
+      }
+      return res;
+    });
     e.respondWith(
-      fetch(url.href, { cache: 'reload', credentials: 'same-origin' }).then(function(res){
-        if (res && res.ok){
-          var copy = res.clone();
-          caches.open(VER).then(function(c){ c.put('./index.html', copy); });
-        }
-        return res;
-      }).catch(function(){
-        return caches.match('./index.html').then(function(hit){
-          return hit || caches.match('./');
-        }).catch(function(){ return fetch(req); });     // 저장본까지 망가졌으면 그냥 네트워크로
-      })
+      Promise.race([
+        net.catch(function(){ return null; }),
+        new Promise(function(res){ setTimeout(function(){ res(null); }, NAV_TIMEOUT); })
+      ]).then(function(res){ return res || fromCache(); })
     );
     return;
   }
