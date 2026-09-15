@@ -5057,6 +5057,10 @@ window.dispatchEvent(new Event('fb-ready'));
     // 응답이 영영 안 오면(매장 와이파이가 끊기는 등) 키패드가 잠긴 채 갇힌다.
     // 앱을 강제 종료하는 것 말고 빠져나갈 길이 없으므로 시한을 둔다.
     timer = setTimeout(function(){ finish('연결을 확인해 주세요'); }, 12000);
+    // 기기가 «인터넷 없음»이라고 말하면 물어볼 것도 없다 — 「검사 중」 맥동을 띄웠다가
+    // 실패로 끝내지 말고 바로 알린다. (비밀번호는 서버에서만 확인할 수 있어서, 저장된
+    // 로그인이 없는 기기는 오프라인에서 들어올 방법이 없다 — 그게 맞다.) 2026-09-15.
+    if (navigator.onLine === false){ finish('연결을 확인해 주세요'); return; }
     window.__fb.signIn(pin).then(function(){
       finish(null);
     }).catch(function(err){
