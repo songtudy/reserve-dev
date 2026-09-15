@@ -309,18 +309,18 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:#e5484d;color:#fff;
     font-size:13px;font-weight:800;letter-spacing:.01em;line-height:1.2;
   }
-  /* 연결 끊김 — 날짜 줄 «밑»의 띠. 예전엔 날짜 줄 오른쪽 칩이었는데, 대기 건수를 붙이자
-     가운데 정렬된 날짜 위로 올라탔다(.toprow 의 날짜는 position 으로 화면 가운데에 둔다).
-     칸을 넓히는 대신 줄을 하나 내줬다 — 이 상태는 «놓치면 안 되는» 것이라 작게 둘 이유가 없다.
-     띠는 셸 안이라 스크롤해도 따라온다. 높이 변화는 --topH 관찰자가 알아서 잡는다. 2026-09-15. */
-  .connbar{
-    display:none;align-items:center;justify-content:center;gap:7px;
-    margin-top:8px;padding:7px 12px;border-radius:10px;
-    background:var(--btnWarn);color:var(--warn);
-    font-size:13px;font-weight:700;letter-spacing:.01em;line-height:1.2;
+  /* 연결 끊김 — 날짜 줄 오른쪽 칩. 글은 늘 「연결 안 됨」 하나다.
+     ★2026-09-15 에 대기 건수를 붙였다가 뺐다. 날짜는 .toprow 에서 화면 한가운데 고정이라
+       칩이 길어지면 날짜 위로 올라탄다(실제로 덮였다). 건수를 담으려고 띠로도 바꿔 봤는데,
+       토스트·서랍까지 합쳐 네 겹이 됐다 — 끊길 일 자체가 드문데 장치가 과했다(오너).
+       상태는 이 칩 하나, 건수가 궁금하면 서랍 한 줄. 그게 이 일의 무게에 맞다. */
+  .offtag{
+    display:none;align-items:center;flex:0 0 auto;
+    padding:6px 10px;border-radius:8px;   /* 칩 = 면만 */
+    background:var(--btnWarn);
+    color:var(--warn);font-size:13px;font-weight:700;white-space:nowrap;line-height:1.2;
   }
-  .connbar .dot{background:var(--warn);opacity:1}
-  html[data-off] .connbar{display:flex}
+  html[data-off] .offtag{display:inline-flex}
   .dot{width:6px;height:6px;border-radius:50%;background:var(--go);opacity:.9}
   .dot.stale{background:var(--warn)}
 
@@ -1371,9 +1371,9 @@ window.addEventListener('pageshow', remeasureSbcut);
       </div>
       <div class="tools">
         <span class="dayprog num hide" id="dayProg"></span>
+        <span class="offtag">연결 안 됨</span>
       </div>
     </div>
-    <div class="connbar" id="connBar"></div>
     <div class="lead hide">
       <div class="leadrow">
         <span class="slottime num" id="slotTime"></span>
@@ -2278,22 +2278,20 @@ window.dispatchEvent(new Event('fb-ready'));
        명단 복사               (명단 없음)    허용         화면에 있는 것을 그대로 옮길 뿐
        자동 백업·자동 취소       안 함         큐          connReady 가드가 이미 있다
        룰렛                   허용          허용         서버와 무관
-       끊김 알림               (안내문)      토스트 1회    B 는 끊긴 줄 모르고 계속 쓰는 게 위험 —
-                                                      2초 넘게 끊겼을 때만, 돌아오면 「n건 올리는 중」
+       끊김 알림               (안내문)      칩 하나       ★토스트·띠까지 넣었다가 전부 뺐다
+                                                      (2026-09-15). 끊길 일 자체가 드문데 네 겹은
+                                                      과했다 — 상태는 칩, 건수는 서랍 한 줄.
 
      ★새 기능을 붙일 땐 이 표에 줄을 먼저 추가하고 구현할 것. 「그때그때」가 흔들림의 원인이었다. */
   function connReady(){ return online && hasStore(); }
   // 서랍 하단의 연결 표시 한 줄. setSync·openDrawer 가 부른다.
-  // ★끊긴 동안의 변경을 «막지 않고 보여준다». 막으면 직원이 「누가 왔는지」를 머리에 들고
-  //   있어야 하는데, 영업 중엔 그게 큐보다 훨씬 위험하다. 쓰기 큐는 바로 이 경우를 위해 만든
-  //   물건이다(합치기·재시도·localStorage 보존). 다만 여태 «몇 건이 아직 안 올라갔는지»가
-  //   어디에도 안 보여서, 「체크가 진짜 저장됐나」를 알 길이 없었다 — 그걸 채운다. 2026-09-15.
+  // ★끊긴 동안의 변경을 «막지 않는다». 막으면 직원이 「누가 왔는지」를 머리에 들고 있어야
+  //   하는데, 영업 중엔 그게 큐보다 훨씬 위험하다. 쓰기 큐가 바로 이 경우를 위한 물건이다
+  //   (합치기·재시도·localStorage 보존). 「몇 건이 아직 안 올라갔나」는 서랍 한 줄에만 둔다 —
+  //   궁금해서 열어볼 때 답하면 되는 정보지, 화면에 늘 띄울 무게는 아니다. 2026-09-15.
   function wqCount(){ return Object.keys(wqMap).length; }
   function paintConn(){
     var n = wqCount(), ready = connReady();
-    var bar = document.getElementById('connBar');    // 날짜 줄 밑 띠 (data-off 일 때만 보인다)
-    if (bar) bar.innerHTML = '<span class="dot"></span>'
-      + (n ? '연결 안 됨 · ' + n + '건이 아직 안 올라갔습니다' : '연결 안 됨');
     var cf = document.getElementById('dwConn');
     if (!cf) return;
     cf.className = 'dwfoot' + (ready ? '' : ' off');
@@ -2301,36 +2299,12 @@ window.dispatchEvent(new Event('fb-ready'));
       + (ready ? '연결됨' : '연결 안 됨')
       + (n ? (ready ? ' · ' + n + '건 올리는 중' : ' · ' + n + '건 대기') : '');
   }
-  // ★끊긴 «순간»에 한 번 알린다. 헤더 칩은 늘 떠 있지만 작아서 바쁠 때 놓친다 — 놓치면
-  //   내 변경이 다른 폰에 아직 안 갔다는 걸 모른 채 일하게 된다(같은 손님을 둘이 맞는 식).
-  //   리드 박스(「16:00 · 7팀」)를 덮지 않는 이유: 거기 있는 건 «지금 뭘 준비하나»라 끊겨도
-  //   유효한 정보다. 상태를 보이려고 일하는 정보를 지우면 손해다. 2026-09-15.
-  //   ★2초 넘게 끊겼을 때만 — 잠깐 깜빡이는 걸로 토스트가 튀면 그게 더 성가시다.
-  var connWas = null, connT = null;
-  function connChanged(){
-    var now = connReady();
-    if (connWas === null){ connWas = now; return; }   // 첫 판정은 알리지 않는다
-    if (now === connWas) return;
-    clearTimeout(connT);
-    if (!now){
-      connT = setTimeout(function(){
-        if (connReady()) return;                       // 그 사이 돌아왔으면 조용히
-        connWas = false;
-        toast('연결이 끊겼습니다 · 변경은 연결되면 올라갑니다');
-      }, 2000);
-    } else {
-      connWas = true;
-      var n = wqCount();
-      if (n) toast('연결됨 · ' + n + '건 올리는 중');   // 올릴 게 없으면 말할 것도 없다
-    }
-  }
   function setSync(ok){
     if (ok !== undefined) online = ok;
     var d = document.documentElement;
     if (connReady()) d.removeAttribute('data-off');
     else d.setAttribute('data-off', '');
     paintConn();
-    connChanged();
   }
 
   /* ---------- 렌더 ---------- */
