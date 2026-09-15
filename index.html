@@ -437,6 +437,13 @@ window.addEventListener('pageshow', remeasureSbcut);
      범위에 포함돼 다음 머리글이 닿는 순간 밀려난다(padding 은 안 됨 — 붙는 범위가 내용 상자까지라 더 일찍 밀려남).
      접힌 시간대는 여백 없이 선으로만 잇는다. 멈춰 있을 때 배치는 margin 방식과 픽셀까지 같다. */
   /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). */
+  /* ★.group 은 상자를 만들지 않는다. 상자가 있으면 sticky 시간바가 «자기 그룹 안»에 갇혀,
+     다음 시간대가 올라올 때 밀려 올라가며 카드 밑에서 잘린다 — 잘린 바와 새 바가 한 화면에
+     둘 다 보였다(오너 영상 2026-09-15, 스크롤 위치의 30%). 상자를 없애면 모든 시간바가 같은
+     자리(.wrap 기준 --topH)에 붙어, 새 바가 옛 바를 «덮는다». 밀림이 없으니 잘림도 없다.
+     ::after(간격 8)·접힘·금색 레일은 그대로 — 선택자로 걸려 있어 상자와 무관하다.
+     ※ display:contents 는 getBoundingClientRect 가 빈 상자를 준다 → roomScroll 이 자식으로 잰다. */
+  .group{display:contents}
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 30 에 선다(.wrap 아래 여백) */
@@ -2642,9 +2649,22 @@ window.dispatchEvent(new Event('fb-ready'));
   // 아주 짧은 이동(SMOOTH_MIN 미만)만 즉시. 예전엔 44 였는데 시간바에 반쯤 가린 행(20~40px)이 전부 «점프»가 돼
   // 「부드럽게 됐다 안 됐다」로 보였다(오너 2026-09-11). ⋯ 메뉴는 통째 render 없이 붙이므로 짧아도 부드럽게 굴려도 된다.
   var SMOOTH_MIN = 6;
+  // 상자가 없는 요소(.group 은 display:contents)는 제 자식들을 합쳐 잰다.
+  function boxOf(el){
+    var r = el.getBoundingClientRect();
+    if (r.width || r.height) return r;
+    var t = Infinity, b = -Infinity, l = Infinity, rt = -Infinity;
+    for (var i = 0; i < el.children.length; i++){
+      var c = el.children[i].getBoundingClientRect();
+      if (!c.width && !c.height) continue;
+      if (c.top < t) t = c.top; if (c.bottom > b) b = c.bottom;
+      if (c.left < l) l = c.left; if (c.right > rt) rt = c.right;
+    }
+    return (t === Infinity) ? r : { top:t, bottom:b, left:l, right:rt, width:rt-l, height:b-t };
+  }
   function roomScroll(el, smooth, bottomOnly){
     if (!el || !wrapEl) return;
-    var er = el.getBoundingClientRect();
+    var er = boxOf(el);
     var erBottom = er.bottom + 1;   // 상자 밑의 구분선(다음 행 top:-1px)까지 — 「딱 맞게」는 선까지 보이는 것(오너 2026-09-11)
     var wr = wrapEl.getBoundingClientRect();
     // 보이는 영역 = 스크롤러에서 «떠 있는 것»을 뺀 부분 — 위엔 상단 셸(날짜 줄+카드)이, 아래엔 알약 바가 명단 위에 떠 있다.
