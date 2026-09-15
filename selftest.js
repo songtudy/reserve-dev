@@ -328,15 +328,16 @@
   })();
 
   /* ==================== 자동취소 — 15분 창 ==================== */
-  group('autoCancelDue — 예약시각 +15분 1분 창에서만');
+  group('autoCancelDue — 예약시각 +15분부터 +20분 전까지만');
   (function(){
     var d = T.autoCancelDue, S = 14 * 60;   // 14:00
     var P = function(){ return { status: 'pending', time: '14:00' }; };
     tru('정확히 +15분 → 취소', d(P(), S + 15) === true);
     tru('+15분 30초 → 취소', d(P(), S + 15.5) === true);
-    tru('+15분 59초 → 취소', d(P(), S + 15 + 0.98) === true);
+    tru('+17분 → 취소', d(P(), S + 17) === true);
+    tru('+19분 59초 (창 끝자락) → 취소', d(P(), S + 19 + 0.98) === true);
     tru('+14분 30초 (아직) → 아님', d(P(), S + 14.5) === false);
-    tru('+16분 30초 (창 지남) → 아님', d(P(), S + 16.5) === false);
+    tru('+20분 (창 지남) → 아님', d(P(), S + 20) === false);
     tru('+25분 (뒤늦게) → 아님', d(P(), S + 25) === false);
     tru('대기 아니면 → 아님', d({ status: 'arrived', time: '14:00' }, S + 15) === false);
   })();
