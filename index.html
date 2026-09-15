@@ -459,12 +459,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 위 선은 긋지 않는다 — 붙은 머리글 아래로 다음 머리글이 올라올 때 두 선 사이에 빈 틈이 생겨 어색(오너 지적, 2026-09-11).
      선 색은 행 사이·상단 경계와 같은 --line — 머리글만 진하면 위쪽 경계가 흐려 첫 시간대가 더 높아 보인다. */
   .ghead:active, .ghead.dn{background:var(--press)}
-  /* 붙어 있을 때 아래로 흘러 들어가는 명단이 머리글에 «탁» 부딪히지 않게 짧게 흐려 준다.
-     top:100% 는 안쪽 상자 기준이라 선(border) 위에 얹힌다 → 1px 내려 선을 가리지 않게. */
-  .ghead::after{
-    content:"";position:absolute;left:0;right:0;top:calc(100% + 1px);height:8px;
-    background:linear-gradient(var(--ink),transparent);pointer-events:none;
-  }
+  /* ★머리글 밑 «흐림 띠»는 두지 않는다. 아래로 흘러 들어가는 명단이 «탁» 부딪히지 않게
+     8px 그라데이션을 깔았었는데(2026-09-11), 그 띠에 걸친 행이 뿌옇게 날아가 «글자가 비친다»로
+     보였다(오너 영상 2026-09-15). 흐림은 «반쯤 지워진 글자»와 구별되지 않는다 — 명단은
+     또렷하거나 없거나 둘 중 하나여야 한다. 머리글 밑선(border-bottom)이 경계를 이미 긋는다. */
   .chev{
     color:var(--dim);flex:0 0 auto;
     display:grid;place-items:center;width:12px;height:12px;line-height:0;
