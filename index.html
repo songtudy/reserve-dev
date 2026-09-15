@@ -2047,6 +2047,7 @@ window.dispatchEvent(new Event('fb-ready'));
     } catch(e){ return {}; }
   }
   function wqSave(){
+    try { paintConn(); } catch(e){}      // 대기 건수가 바뀌면 표시도 같이
     try {
       if (Object.keys(wqMap).length) localStorage.setItem(WQ_KEY, JSON.stringify(wqMap));
       else localStorage.removeItem(WQ_KEY);
@@ -2260,6 +2261,10 @@ window.dispatchEvent(new Event('fb-ready'));
        로그인(비번)             금지          —          서버에서만 확인 가능 → 「연결을 확인해 주세요」
        명단 보기               «모른다» 안내   그대로 보임   A 는 못 읽은 것이지 빈 게 아니다
        방문·취소·추가·수정·삭제   금지          허용(큐)     A 는 listKnown=false, B 는 합칠 수 있다
+                                                    ※B 를 막자는 안은 반려(2026-09-15). 막으면 직원이
+                                                      「누가 왔는지」를 머리에 들고 있어야 한다 — 영업
+                                                      중엔 그게 큐보다 위험하다. 대신 «몇 건 대기»를
+                                                      헤더 칩·서랍에 띄워 저장 여부가 보이게 했다.
        명단 등록·초기화          금지          금지         통째 교체 — 남의 변경을 지운다
        로그아웃                금지          금지         다시 들어올 방법이 없어진다
        지난 명단               금지          금지         서버에만 있다 → 「연결되면 볼 수 있습니다」
@@ -2271,13 +2276,21 @@ window.dispatchEvent(new Event('fb-ready'));
      ★새 기능을 붙일 땐 이 표에 줄을 먼저 추가하고 구현할 것. 「그때그때」가 흔들림의 원인이었다. */
   function connReady(){ return online && hasStore(); }
   // 서랍 하단의 연결 표시 한 줄. setSync·openDrawer 가 부른다.
+  // ★끊긴 동안의 변경을 «막지 않고 보여준다». 막으면 직원이 「누가 왔는지」를 머리에 들고
+  //   있어야 하는데, 영업 중엔 그게 큐보다 훨씬 위험하다. 쓰기 큐는 바로 이 경우를 위해 만든
+  //   물건이다(합치기·재시도·localStorage 보존). 다만 여태 «몇 건이 아직 안 올라갔는지»가
+  //   어디에도 안 보여서, 「체크가 진짜 저장됐나」를 알 길이 없었다 — 그걸 채운다. 2026-09-15.
+  function wqCount(){ return Object.keys(wqMap).length; }
   function paintConn(){
+    var n = wqCount(), ready = connReady();
+    var tag = document.querySelector('.offtag');     // 헤더 칩 (data-off 일 때만 보인다)
+    if (tag) tag.textContent = n ? ('연결 안 됨 · ' + n + '건 대기') : '연결 안 됨';
     var cf = document.getElementById('dwConn');
     if (!cf) return;
-    var ready = connReady();
     cf.className = 'dwfoot' + (ready ? '' : ' off');
     cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-      + (ready ? '연결됨' : '연결 안 됨');
+      + (ready ? '연결됨' : '연결 안 됨')
+      + (n ? (ready ? ' · ' + n + '건 올리는 중' : ' · ' + n + '건 대기') : '');
   }
   function setSync(ok){
     if (ok !== undefined) online = ok;
