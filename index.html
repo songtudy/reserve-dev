@@ -316,15 +316,18 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★자리 문제만이 아니다. 끊긴 동안의 진행도는 «틀릴 수 있는 숫자»다 — 다른 폰에서 체크한
        것이 안 들어오니까. 숨기는 쪽이 더 정확하다(오너 2026-09-15: 「분수가 그렇게 중요한
        정보는 아니니까」). 연결되면 그 자리로 되돌아온다.
-     ★칩(--btnWarn 면)이었는데 맨 글자로 바꿨다. 이 앱에서 --btnWarn 면 + 붉은 글자는
-       «위험 버튼»의 옷이고(삭제·초기화 확인 — 「이 꼴 하나뿐」), 규칙도 «정보는 글자,
-       조작만 알약»이다. 연결 상태는 정보지 누르는 것이 아니다. 점은 서랍 연결 표시(.dot.stale)와
-       같은 부품을 그대로 쓴다 — 한 개념이 두 자리에서 같은 꼴이 된다.
+     ★꼴은 «맨 글자». 후보를 다 그려 보고 앱의 시각 어휘에 비춰 골랐다 —
+       채운 빨강 칩은 테스트 표시(devtag)의 옷이라 테스트 사이트에서 빨간 칩이 둘이 되고,
+       연한 면 칩은 삭제·초기화 «위험 버튼»의 옷이며(「이 꼴 하나뿐」), 테두리는 버튼·입력칸의
+       것이다(「입력칸만 선을 갖는다」). 규칙도 «정보는 글자, 조작만 알약»이다.
+     ★점(.dot.stale)도 붙여 봤다가 뺐다. 이건 진행도 «자리를 물려받는» 것이라, 그 칸에 원래
+       서 있던 꼴(맨 글자, 면도 점도 없음)을 그대로 쓰는 게 맞다 — 바뀌는 건 내용과 색뿐이다.
+       서랍의 점은 거기 남는다. 거긴 초록/빨강 두 상태를 «구분»하는 일이 있고 여긴 없다.
      ★대기 건수를 붙였다가 뺐고(칩이 길어져 가운데 날짜를 덮었다), 띠·토스트까지 갔다가
        전부 되돌렸다 — 끊길 일 자체가 드문데 장치가 과했다. 상태는 이것 하나. */
 
   .offtag{
-    display:none;align-items:center;gap:5px;flex:0 0 auto;
+    display:none;align-items:center;flex:0 0 auto;
     color:var(--warn);font-size:13px;font-weight:700;white-space:nowrap;line-height:1.2;
   }
   html[data-off] .offtag{display:inline-flex}
@@ -1378,7 +1381,7 @@ window.addEventListener('pageshow', remeasureSbcut);
         <span class="date num" id="dateLabel"></span>
       </div>
       <div class="tools">
-        <span class="offtag"><span class="dot stale"></span>연결 안 됨</span><!-- 진행도와 같은 자리 — 끊기면 진행도가 접히고 이것이 선다 (2026-09-15) -->
+        <span class="offtag">연결 안 됨</span><!-- 진행도와 같은 자리 — 끊기면 진행도가 접히고 이것이 선다 (2026-09-15) -->
         <span class="dayprog num hide" id="dayProg"></span>
       </div>
     </div>
