@@ -251,9 +251,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
      크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
   .wrap::before{content:"";display:block;height:var(--topH, 140px)}   /* 쉴 때 카드 밑→첫 시간바 = 8 = 도킹(sticky top) 때와 같은 값. 18 이었을 땐 여백+헤더가 62px 짜리 「높은 칸」으로 보였다(오너 2026-09-11) */
-  /* 도킹된 시간바가 셸 뒤로 숨어 들어가는 깊이. 빠르게 밀 때 iOS 가 sticky 자리를 늦게 잡는
-     만큼(실측 최대 23px)보다 깊어야 틈이 안 생긴다. 앞 시간대 끝 여백(8px)까지만 덮는 24 가 상한. */
-  :root{ --dockLap:24px }
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
@@ -447,18 +444,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 30 에 선다(.wrap 아래 여백) */
 
   .ghead{
-    /* ★셸 뒤로 «깊이 숨어 들어가» 붙는다(--dockLap). 예전엔 0.6px 만 겹쳐 있어서, 빠르게 밀 때
-       iOS 가 sticky 자리를 한 프레임 늦게 잡으면(오너 폰 실측 최대 23px) 그 겹침이 즉시
-       바닥나 셸과 시간바 사이로 명단이 비쳤다. 겹침을 밀림보다 깊게 주면 늦어도 틈이 안 생긴다.
-       ★가리개를 덧대는 게 아니라 «시간바 자신»을 위로 늘리는 것이다. 늘어난 만큼 위 여백을
-         더 주고 같은 만큼 margin 으로 당겨, 글자 자리와 배치는 한 픽셀도 안 변한다.
-       ★늘어난 상자가 앞 시간대의 «끝 여백 8px»(.group::after)을 덮는데, 거기는 바탕뿐이라
-         보이는 변화가 없다. 그보다 깊으면 앞 행의 밑동을 먹으므로 24 를 넘기지 말 것. */
-    position:sticky;top:calc(var(--topH, 140px) - var(--dockLap));z-index:10;
+    position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
-    width:calc(100% + 32px);margin:calc(-1 * var(--dockLap)) -16px 0;
-    padding:calc(12px + var(--dockLap)) 16px 11px;   /* 보이는 높이 44 = 애플 최소 누름 크기. 좌우 16 = 메뉴·진행도와 같은 열 */
+    width:calc(100% + 32px);margin:0 -16px;padding:12px 16px 11px;   /* 높이 44 = 애플 최소 누름 크기. 좌우 16 = 메뉴·진행도와 같은 열 */
     border:0;border-bottom:1px solid var(--line);
     font:inherit;color:inherit;text-align:left;cursor:pointer;
   }
@@ -488,9 +477,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      헤어라인 표 체계와 같은 기하를 쓴다. 붙어 있을 때도 같이 따라간다. */
   .group.now .gtime{color:var(--wait)}
   .group.now .ghead::before{
-    /* top 은 0 이 아니라 --dockLap — 시간바 상자가 셸 뒤로 늘어난 몫만큼은 레일이 없어야 한다.
-       0 이면 도킹 안 된 「지금」 시간바 위로 금색이 24px 삐져나온다. */
-    content:"";position:absolute;left:0;top:var(--dockLap);bottom:0;width:3px;
+    content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
     background:var(--wait);
   }
   .group.done .gtime{color:var(--dim)}
@@ -2419,8 +2406,7 @@ window.dispatchEvent(new Event('fb-ready'));
     cf.className = 'dwfoot' + (ready ? '' : ' off');
     // 여기엔 연결 상태 한 마디만 둔다 — 빌드 도장을 붙여 봤다가 뺐다(오너 2026-09-16).
     cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-      + (ready ? '연결됨' : '연결 안 됨')
-      + (IS_DEV ? ' · ' + BUILD_STAMP : '');   // ※임시 — 확인 끝나면 뺀다
+      + (ready ? '연결됨' : '연결 안 됨');
   }
   function setSync(ok){
     if (ok === false) listFresh = false;   // 끊긴 순간부터 화면의 명단은 «옛 것»이다
@@ -2784,9 +2770,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var group = el.closest && el.closest('.group');
     var gh = group && group.querySelector('.ghead');
     var isGroup = el.classList && el.classList.contains('group');
-    // 시간바 상자는 셸 뒤로 --dockLap 만큼 늘어나 있다 — 가려야 하는 건 «보이는» 높이뿐이다
-    var lap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dockLap')) || 0;
-    var pad = (gh && !isGroup ? gh.offsetHeight - lap : 0);
+    var pad = (gh && !isGroup ? gh.offsetHeight : 0);
     var shell = document.getElementById('topShell');
     var shellB = shell ? shell.getBoundingClientRect().bottom : wr.top;
     var footEl = document.querySelector('.foot'), footIn = footEl && footEl.querySelector('.inner');
@@ -4192,7 +4176,6 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   });
 
-  var BUILD_STAMP = '0916.1320';   // ※임시
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
