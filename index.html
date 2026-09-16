@@ -2182,7 +2182,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // prev(없으면 null)에 새 변경을 얹은 큐 엔트리 (순수 — 저장·전송 안 함).
   // 객체는 항상 복사해 담는다 (state.items 의 항목과 참조를 공유하지 않게).
   function wqEntry(prev, date, id, op, payload){
-    var ts = (payload && payload.ts) || Date.now();
+    var ts = (payload && payload.ts) || serverNow();   // 되돌림 값도 서버 시계 — ts 는 한 자로만 잰다
     var pts = Math.max(ts, (prev && prev.ts) || 0);
     if (op === 'del') return { date: date, id: id, op: 'del', ts: ts };
     if (op === 'put') return { date: date, id: id, op: 'put', item: wqMerge(payload.item, {}), ts: pts };
@@ -4160,7 +4160,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 날짜가 바뀌면(rolloverIfNeeded) 하루 단위 UI 상태를 싹 비운다.
   function resetDateScopedUi(){
     cdStop(); cancelAllLeaves();   // 날짜가 바뀌면 어제 기준 타이머·퇴장 예약은 무의미
-    openMenu = null; collapsed = {}; touched = {};
+    openMenu = null; collapsed = {}; touched = {}; futureSeen = {};   // 시간대 키가 어제와 겹친다
     deferredState = null; backgroundRenderPending = false;
     backupState = { hour: -1, tries: 0, triesHour: -1 };
     stopWatch();
