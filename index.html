@@ -1428,17 +1428,18 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltflash{position:absolute;inset:0;background:var(--wait);opacity:0;pointer-events:none;z-index:64}
   html[data-theme="light"] .rltflash{--flashK:.72}   /* 밝은 바탕에선 같은 값이 더 세게 읽힌다 */
   .rltsky{position:absolute;inset:0;pointer-events:none;z-index:65;opacity:0}
-  .rltsky path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .rltsky path{stroke:none}          /* 선이 아니라 «채운 띠» — 굵기가 변해야 끝이 뾰족해진다 */
   /* 세 겹: 어두운 윤곽 → 색 번짐 → 밝은 심.
      ★윤곽은 «라이트 전용»이다. 번개의 대부분은 어두운 막 위를 지나가지만 마지막 구간이 흰 카드
        위를 지나는데, 거기서 거의 흰 심이 바탕에 묻혀 «어디를 때렸는지»가 사라졌다(실기 확인).
        심을 어둡게 바꾸면 반대로 막 위에서 안 보인다 — 그래서 심은 그대로 두고 윤곽만 깐다.
        다크에서는 어두운 바탕 위 어두운 선이라 있어도 안 보이므로 아예 끈다. */
-  .rltsky .bshade{stroke:#1a1208;opacity:0}
+  .rltsky .bhalo{fill:var(--wait);opacity:.20;filter:blur(13px)}   /* 넓게 퍼지는 후광 — 있고 없고가 «존재감»을 가른다 */
+  .rltsky .bshade{fill:#1a1208;opacity:0}
   html[data-theme="light"] .rltsky .bshade{opacity:.5}
-  .rltsky .bglow{stroke:var(--wait);opacity:.5;filter:blur(6px)}
-  .rltsky .bcore{stroke:#fff6e0}
-  html[data-theme="light"] .rltsky .bcore{stroke:#fffaf2}
+  .rltsky .bglow{fill:var(--wait);opacity:.45;filter:blur(5px)}
+  .rltsky .bcore{fill:#fff6e0}
+  html[data-theme="light"] .rltsky .bcore{fill:#fffaf2}
   /* 맞은 칩: 튀면서 «달궈졌다 식는다».
      ★한때 둘레에 빛을 번지게(box-shadow) 했다가 뺐다(오너 2026-09-16 「촌스럽다」). 두 가지 이유다 —
        ① 보기에 싸구려다 ② .rltnames 가 overflow-y:auto 라 «가로도» auto 가 되어 상자 밖이 잘린다.
@@ -1451,10 +1452,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 카드가 맞고 «내려앉았다» 잦아든다. 번개가 위에서 오므로 세로 — 잠금 흔들림(lockshake)과 같은 감쇠 결.
      .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다. */
-  .rlt.jolt{animation:boltJolt .36s var(--ease)}
+  /* 맞는 «순간» 최대로 내려앉고 잦아든다. 예전엔 최대에 닿는 데 58ms 걸려 타격이 아니라 흔들거림이었다. */
+  .rlt.jolt{animation:boltJolt .42s cubic-bezier(.22,1,.36,1)}
   @keyframes boltJolt{
-    0%{transform:translateY(0)}   16%{transform:translateY(6px)}  36%{transform:translateY(-4px)}
-    58%{transform:translateY(2px)} 78%{transform:translateY(-1px)} 100%{transform:translateY(0)}
+    0%{transform:translateY(7px)}  22%{transform:translateY(-4px)} 44%{transform:translateY(2.5px)}
+    66%{transform:translateY(-1.2px)} 84%{transform:translateY(.5px)} 100%{transform:translateY(0)}
   }
   .dbtn #rltGo{background:var(--wait);color:var(--onWait)}
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
@@ -4376,19 +4378,37 @@ window.dispatchEvent(new Event('fb-ready'));
   //    곡선 초반이 STEP_MS 바닥보다 빨라 감속이 「쭉 빠르다 뚝」이 된다. 아래로 묶으면 곡선이
   //    전 구간을 지배해 인원수와 무관하게 처음부터 끝까지 매끄럽게 감속한다.
   //  - (from + steps) % n === winner 는 두 경우 모두 성립.
-  // 두 점 사이를 꺾인 선으로. 끝으로 갈수록 흔들림을 줄여 목표에 정확히 꽂히게 한다.
+  // 두 점 사이를 꺾인 선으로.
+  // ★마디를 «고르게» 나누면 기계로 그은 지그재그가 된다 — 길이를 제각각으로 뽑아야 번개로 보인다.
+  // ★흔들림은 위가 크고 끝으로 갈수록 준다. 위는 제멋대로 갈라져 내려오고 끝은 목표에 정확히 꽂힌다.
   function boltPts(x0, y0, x1, y1, segs, jit){
-    var p = [[x0, y0]], i, t, taper;
-    for (i = 1; i < segs; i++){
-      t = i / segs; taper = 1 - Math.abs(t - .5) * .7;
+    var ts = [0], acc = 0, i, t, taper, p = [];
+    for (i = 0; i < segs; i++){ acc += .55 + Math.random() * .9; ts.push(acc); }
+    for (i = 0; i < ts.length; i++){
+      t = ts[i] / acc;
+      if (i === ts.length - 1){ p.push([x1, y1]); break; }
+      taper = Math.pow(1 - t, .85);
       p.push([x0 + (x1 - x0) * t + (Math.random() * 2 - 1) * jit * taper,
-              y0 + (y1 - y0) * t + (Math.random() * 2 - 1) * jit * .22]);
+              y0 + (y1 - y0) * t + (Math.random() * 2 - 1) * jit * .3]);
     }
-    p.push([x1, y1]);
     return p;
   }
-  function boltD(p){
-    return 'M' + p.map(function(q){ return q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join('L');
+  // 점을 따라 «폭이 변하는 띠»를 만든다 — 선(stroke)은 굵기가 한 값이라 끝이 뾰족해지지 않는다.
+  // 앞 18%는 굵기를 지키고 뒤에서 좁혀, 위는 굵고 끝만 바늘처럼 꽂힌다.
+  function boltD(p, wTop, wTip){
+    if (wTop === undefined) return 'M' + p.map(function(q){ return q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join('L');
+    var n = p.length, L = [], Rt = [], i, t, k, w, a, b, dx, dy, len;
+    for (i = 0; i < n; i++){
+      t = i / (n - 1);
+      k = Math.pow(Math.max(0, (t - .18) / .82), 1.7);
+      w = (wTop + (wTip - wTop) * k) / 2;
+      a = p[Math.max(0, i - 1)]; b = p[Math.min(n - 1, i + 1)];
+      dx = b[0] - a[0]; dy = b[1] - a[1]; len = Math.sqrt(dx * dx + dy * dy) || 1; dx /= len; dy /= len;
+      L.push([p[i][0] - dy * w, p[i][1] + dx * w]);
+      Rt.push([p[i][0] + dy * w, p[i][1] - dx * w]);
+    }
+    Rt.reverse();
+    return 'M' + L.concat(Rt).map(function(q){ return q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join('L') + 'Z';
   }
 
   // 날벼락이 넘어갈 사람. «자기 자신만 빼고» 균등하게 — n-1 중 하나를 뽑고 자기 번호 이상이면 한 칸 민다.
@@ -4468,7 +4488,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 바뀌는 순간은 «빛 안»에 숨긴다 — 불이 옮겨가는 걸 보여주면 「덜 돌았나」가 되고,
     // 빛이 걷혔을 때 이미 옮겨가 있으면 「맞았다」가 된다.
     var TWIST_P = 1.00;   // ★★★ 한시적 100% — 디테일 확인용(2026-09-16). 원래 값은 0.10. 반드시 되돌릴 것 ★★★
-    var BOLT_SEGS = 12, BOLT_JIT = 26, BOLT_BRANCHES = 3, BOLT_MS = 380;
+    var BOLT_SEGS = 16, BOLT_JIT = 30, BOLT_BRANCHES = 3, BOLT_MS = 340;
     var sky = document.getElementById('rltSky');
     var flash = document.getElementById('rltFlash');
     function calm(){   // 움직임을 줄이라고 한 기기 — 번쩍임·번개를 빼고 결과만 바꾼다
@@ -4481,20 +4501,26 @@ window.dispatchEvent(new Event('fb-ready'));
       sky.setAttribute('viewBox', '0 0 ' + sr.width + ' ' + sr.height);
       // 시작점을 목표 바로 위로 조금만 흩는다 — 멀리서 비스듬히 오면 카드 글자를 길게 가로지른다
       var main = boltPts(tx + (Math.random() * 2 - 1) * 46, -8, tx, ty, BOLT_SEGS, BOLT_JIT);
-      var paths = [boltD(main)], b, i, bx, by, len, dir;
+      var pts = [main], b, i, bx, by, len, dir;
+      // 가지는 «위쪽 3분의 2»에서만 갈라진다. 꽂히는 지점 근처에서 갈라지면 어디를 때렸는지 흐려지고,
+      // 진짜 번개도 아래로 갈수록 한 줄기로 모인다. 길이도 늘렸다 — 짧으면 가시처럼 보인다.
+      var top = Math.max(2, Math.floor(main.length * .66));
       for (b = 0; b < BOLT_BRANCHES; b++){
-        i = 1 + Math.floor(Math.random() * (main.length - 3));
+        i = 1 + Math.floor(Math.random() * (top - 1));
         bx = main[i][0]; by = main[i][1];
-        len = 30 + Math.random() * 40; dir = Math.random() < .5 ? -1 : 1;
-        paths.push(boltD(boltPts(bx, by, bx + dir * len * (.6 + Math.random() * .6),
-                                 by + len * (.5 + Math.random() * .6), 4, BOLT_JIT * .7)));
+        len = 42 + Math.random() * 52; dir = Math.random() < .5 ? -1 : 1;
+        pts.push(boltPts(bx, by, bx + dir * len * (.7 + Math.random() * .7),
+                         by + len * (.45 + Math.random() * .7), 5, BOLT_JIT * .55));
       }
-      var W = { bshade: [5.4, 3.2], bglow: [10, 6], bcore: [2.4, 1.5] };   // [본줄기, 가지]
-      paths.forEach(function(d, k){
-        ['bshade', 'bglow', 'bcore'].forEach(function(cls){     // 그리는 차례 = 쌓이는 차례
+      // 겹마다 [머리 폭, 끝 폭] — 본줄기 / 가지. 심이 두꺼워야 번쩍임 «정점»에도 번개가 보인다.
+      var W = { bhalo: [[15.3, 4.8], [8.5, 2.4]], bshade: [[6.4, 2.6], [3.4, 1.3]],
+                bglow: [[9, 2.8], [5, 1.4]],      bcore: [[3.8, 1.7], [2.2, 1.0]] };
+      pts.forEach(function(q, k){
+        ['bhalo', 'bshade', 'bglow', 'bcore'].forEach(function(cls){   // 그리는 차례 = 쌓이는 차례
+          if (cls === 'bhalo' && k) return;                            // 후광은 본줄기만
+          var w = W[cls][k ? 1 : 0];
           var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          el.setAttribute('d', d); el.setAttribute('class', cls);
-          el.style.strokeWidth = W[cls][k ? 1 : 0];
+          el.setAttribute('d', boltD(q, w[0], w[1])); el.setAttribute('class', cls);
           sky.appendChild(el);
         });
       });
@@ -4502,15 +4528,21 @@ window.dispatchEvent(new Event('fb-ready'));
     function strike(target){
       drawBolt(target);
       // 번쩍임 2회 이하 — 1초에 3회 넘으면 광과민성 발작 위험(WCAG 2.3.1)
-      sky.animate([{opacity:0},{opacity:1,offset:.06},{opacity:.12,offset:.3},{opacity:1,offset:.42},
-                   {opacity:.5,offset:.66},{opacity:0}],
+      // ★번개가 «먼저» 서고 빛이 한 박자 뒤에 퍼진다. 둘이 같은 순간에 정점이면 번개가 빛에 씻긴다.
+      //   깜빡임 간격도 일부러 불규칙하게 — 고르게 끊으면 깜빡이는 게 아니라 «점멸»로 보인다.
+      sky.animate([{opacity:1,offset:0},{opacity:1,offset:.14},{opacity:.15,offset:.22},
+                   {opacity:1,offset:.30},{opacity:.85,offset:.52},{opacity:.28,offset:.60},
+                   {opacity:.7,offset:.68},{opacity:0,offset:1}],
                   { duration: BOLT_MS, easing: 'linear' });
       var fk = parseFloat(getComputedStyle(flash).getPropertyValue('--flashK')) || 1;
-      flash.animate([{opacity:0},{opacity:.78 * fk,offset:.10},{opacity:0}],
-                    { duration: 280, easing: 'ease-out' });
+      flash.animate([{opacity:0,offset:0},{opacity:0,offset:.08},{opacity:.78 * fk,offset:.19},
+                     {opacity:.30 * fk,offset:.46},{opacity:0,offset:1}],
+                    { duration: 300, easing: 'ease-out' });
       var card = rltScrim.querySelector('.rlt');
-      card.classList.remove('jolt'); void card.offsetWidth; card.classList.add('jolt');   // 연속 재생용 리셋
-      buzz([0, 55, 45, 95]);   // 「쾅-쿵」 두 방 — 결과 진동(톡-톡톡)과 확실히 갈리게
+      setTimeout(function(){          // 빛이 퍼지는 순간 = 맞는 순간. 번개가 선 뒤 한 박자 뒤다.
+        card.classList.remove('jolt'); void card.offsetWidth; card.classList.add('jolt');
+        buzz([0, 55, 45, 95]);        // 「쾅-쿵」 두 방 — 결과 진동(톡-톡톡)과 확실히 갈리게
+      }, 45);
     }
 
     var SPIN_MS = 2000;   // 회전이 멎기까지 (실제 정지는 그 ~85% 지점 + HOLD_MS ≈ 총 2초)
@@ -4579,14 +4611,14 @@ window.dispatchEvent(new Event('fb-ready'));
         setTimeout(function(){
           if (myGen2 !== gen) return;              // 그 사이 닫혔으면 아무것도 안 한다
           if (!calm()) strike(chips2[nw]);
-          // 바뀌는 순간을 빛 «안»에 숨긴다 (번쩍임 정점 ≈ 80ms)
+          // 바뀌는 순간을 빛 «안»에 숨긴다 — 번쩍임 정점(300ms × 19% ≈ 57ms)에 맞춘다
           setTimeout(function(){
             if (myGen2 !== gen) return;
             chips2[old].className = 'rltchip';
             chips2[nw].className = 'rltchip win hit';
             result.textContent = '⚡ ' + ns2[nw] + ' 당첨!';
             finish();
-          }, calm() ? 0 : 80);
+          }, calm() ? 0 : 58);
         }, 780);
       }
       requestAnimationFrame(frame);
