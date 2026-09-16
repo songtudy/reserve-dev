@@ -229,6 +229,38 @@
   check('결정적 id 스냅샷 (상태 변경)', T.logKeyId('st:13:00|홍길동|2|1:arrived:14567'), 'ev178qk651k9gz0v');
 
   /* ==================== 룰렛 steps 수식 ==================== */
+  group('twistPick — 날벼락이 넘어갈 사람 (자기 자신 제외·균등)');
+  (function(){
+    var selfHit = 0, oob = 0, n, old, i, v;
+    for (n = 2; n <= 12; n++)
+      for (old = 0; old < n; old++)
+        for (i = 0; i < 200; i++){
+          v = T.twistPick(n, old);
+          if (v === old) selfHit++;
+          if (v < 0 || v >= n) oob++;
+        }
+    tru('자기 자신은 절대 안 나온다 (n 2~12 · 자리마다 200회)', selfHit === 0, selfHit + '회 자기자신');
+    tru('늘 0 이상 n 미만', oob === 0, oob + '회 범위밖');
+
+    var edge = 0;
+    for (n = 2; n <= 12; n++)
+      for (old = 0; old < n; old++)
+        [0, 0.9999999, 1].forEach(function(r){
+          var x = T.twistPick(n, old, r);
+          if (x === old || x < 0 || x >= n) edge++;
+        });
+    tru('rnd 끝값(0 · 1)에서도 안전', edge === 0, edge + '회 어긋남');
+
+    var N = 5, OLD = 2, cnt = [0,0,0,0,0], exp = 20000 / (N - 1), worst = 0;
+    for (i = 0; i < 20000; i++) cnt[T.twistPick(N, OLD)]++;
+    for (i = 0; i < N; i++){
+      if (i === OLD) continue;
+      worst = Math.max(worst, Math.abs(cnt[i] - exp) / exp);
+    }
+    tru('나머지 n-1 명이 고르게 나온다 (n=5 · 20000회)', cnt[OLD] === 0 && worst < 0.05,
+        '최대 편차 ' + (worst * 100).toFixed(1) + '%');
+  })();
+
   group('rltSteps — 룰렛 이동 칸수 (모든 인원에서 일관)');
   (function(){
     var landFail = 0, overCap = 0, tooShort = 0, cap = T.consts.RLT_STEP_CAP;
