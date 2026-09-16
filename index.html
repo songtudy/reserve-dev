@@ -487,6 +487,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
     background:var(--wait);
   }
+  /* 고정 바가 «대신 그려 주고 있는» 시간대의 진짜 머리글은 숨긴다. 안 숨기면 그 머리글이
+     도킹 선을 지나서도 계속 올라가며 고정 바 위에 그려져, 같은 시각이 두 군데 보이고
+     하나는 선 위로 통과한다(오너 2026-09-16 녹화에서 최대 46px 통과). 자리는 남겨야 하므로
+     visibility — display 로 지우면 그만큼 명단이 위로 튄다. */
+  .ghead.dockhid{visibility:hidden}
   .ghead:active, .ghead.dn{background:var(--press)}
   /* ★머리글 밑 «흐림 띠»는 두지 않는다. 아래로 흘러 들어가는 명단이 «탁» 부딪히지 않게
      8px 그라데이션을 깔았었는데(2026-09-11), 그 띠에 걸친 행이 뿌옇게 날아가 «글자가 비친다»로
@@ -2800,11 +2805,11 @@ window.dispatchEvent(new Event('fb-ready'));
      지금은 «스크롤하지 않는 층»(상단 셸) 안의 한 칸이 그 노릇을 한다 — 자리가 고정이라
      뛸 수가 없고, 스크롤에 따라 «내용만» 갈아 끼운다.
      ★자리는 절대 건드리지 않는다. 스크롤에 맞춰 위치를 옮기는 순간 예전 문제가 돌아온다. */
-  var dockRows = [], dockTime = null, dockLineY = 140, dockWrapTop = 0;
+  var dockRows = [], dockTime = null, dockLineY = 140, dockWrapTop = 0, dockHid = null;
   function dockEl(){ return document.getElementById('dockBar'); }
   // 구역 위치는 그릴 때 한 번만 잰다 — 스크롤 때마다 재면 매 프레임 레이아웃을 강제한다.
   function measureDock(){
-    dockRows = []; dockTime = null;
+    dockRows = []; dockTime = null; dockHid = null;   // 다시 그렸으니 옛 머리글 손잡이는 버린다
     var el = dockEl(), listEl = document.getElementById('list');
     if (!el || !wrapEl || !listEl) return;
     var sh = document.getElementById('topShell');
@@ -2823,6 +2828,13 @@ window.dispatchEvent(new Event('fb-ready'));
   // repaintNow(지금/끝남 색·레일). 그때 고정 칸은 옛 내용을 들고 있으므로 다시 베낀다.
   // (자리는 안 건드린다 — 내용만.)
   function syncDock(){ dockTime = null; paintDock(); }
+  // 고정 바가 맡은 시간대의 진짜 머리글만 숨긴다(.ghead.dockhid 주석 참고)
+  function dockHide(src){
+    if (dockHid === src) return;
+    if (dockHid) dockHid.classList.remove('dockhid');
+    if (src) src.classList.add('dockhid');
+    dockHid = src;
+  }
   function paintDock(){
     var el = dockEl();
     if (!el || !wrapEl) return;
@@ -2832,11 +2844,12 @@ window.dispatchEvent(new Event('fb-ready'));
       // sticky 와 같은 조건 — 머리글이 선 위로 올라갔고 그 구역이 아직 선 아래까지 이어진다
       if (dockRows[i].top <= line && dockRows[i].bottom > line){ cur = dockRows[i]; break; }
     }
-    if (!cur){ el.classList.add('hide'); dockTime = null; return; }
+    if (!cur){ el.classList.add('hide'); dockTime = null; dockHide(null); return; }
     el.classList.remove('hide');
-    if (cur.time === dockTime) return;   // 같은 시간대면 손대지 않는다 (매 스크롤마다 다시 그리지 않게)
-    dockTime = cur.time;
     var src = cur.sec.querySelector('.ghead');
+    dockHide(src);                       // 매번 — 다시 그려 요소가 바뀌었을 수 있다
+    if (cur.time === dockTime) return;   // 같은 시간대면 내용은 손대지 않는다
+    dockTime = cur.time;
     el.innerHTML = src ? src.innerHTML : '';
     el.className = 'ghead dock'
       + (cur.sec.classList.contains('now') ? ' now' : '')
@@ -4283,7 +4296,7 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   });
 
-  var BUILD_STAMP = '0916.1235';   // ※임시 — 시간바 작업 끝나면 뺀다(위 paintConn 주석 참고)
+  var BUILD_STAMP = '0916.1248';   // ※임시 — 시간바 작업 끝나면 뺀다(위 paintConn 주석 참고)
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
