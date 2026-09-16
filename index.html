@@ -1856,16 +1856,28 @@ window.dispatchEvent(new Event('fb-ready'));
   // 손으로 접거나 편 것은 그대로 두되, 대기 여부가 바뀌면 기본 규칙으로 돌아간다.
   // collapsed[time] = { v: 접힘여부, done: 그때 대기가 비어 있었나 }
   // 그 시간대가 마지막으로 바뀐 시각 — 내 손(touched)이든, 다른 폰의 체크든, 자동취소든.
-  // (항목 ts 는 상태를 바꾼 폰의 시계라 기기 간 오차가 있지만 5초 유예가 흡수한다)
+  // (항목 ts 와 touched 는 둘 다 서버 시계다 — 같은 자라야 아래 유예 계산이 맞는다. 2026-09-16)
+  var futureSeen = {};   // 시계가 어긋나 «미래»로 찍힌 시간대 → 그걸 처음 본 시각 (slotChangedAt)
   function slotChangedAt(time){
     var t = touched[time] || 0;
     if (state) state.items.forEach(function(x){ if (x.time === time && (x.ts || 0) > t) t = x.ts; });
+    // ★«미래»가 찍혀 있으면 «처음 본 시각»부터 잰다. ts 는 앞 값보다 반드시 커야 해서(stampTs)
+    //   서버 시계가 기기보다 뒤처진 순간에는 지금보다 큰 값이 남을 수 있다. 그대로 빼면 유예가
+    //   5초가 아니라 어긋난 만큼 늘어나고(2분 어긋내면 2분), 매번 «지금»으로 깎으면 차이가 늘
+    //   0 이라 영영 안 접힌다 — 둘 다 실측으로 당했다(2026-09-16). 처음 본 시각을 붙들어야
+    //   거기서부터 5초가 흐른다. 시계가 정상이면(거의 언제나) 이 가지는 안 탄다.
+    var now = serverNow();
+    if (t > now){
+      if (!futureSeen[time]) futureSeen[time] = now;
+      return futureSeen[time];
+    }
+    delete futureSeen[time];
     return t;
   }
   function armSlotCollapse(time){
     if (!time) return;
     if (collapseTimers[time]) clearTimeout(collapseTimers[time]);
-    var wait = Math.max(0, COLLAPSE_DELAY + 100 - (Date.now() - slotChangedAt(time)));
+    var wait = Math.max(0, COLLAPSE_DELAY + 100 - (serverNow() - slotChangedAt(time)));
     collapseTimers[time] = setTimeout(function(){
       delete collapseTimers[time];
       if (!slotHasWork(time)) renderWhenIdle();
@@ -1874,7 +1886,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function keepSlotOpenForId(id){
     var it = id && find(id);
     if (it){
-      touched[it.time] = Date.now();
+      touched[it.time] = serverNow();   // ts 와 같은 자로 잰다(아래 slotChangedAt 이 둘을 비교한다)
       armSlotCollapse(it.time);
     }
   }
@@ -1892,7 +1904,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     if (!done) return false;
     // 마지막 하나를 체크한 직후에는 손가락 밑에서 사라지지 않게 5초 둔다 (어느 폰이든)
-    return Date.now() - slotChangedAt(time) > COLLAPSE_DELAY;
+    return serverNow() - slotChangedAt(time) > COLLAPSE_DELAY;
   }
   function setCollapsed(time, v, done){ collapsed[time] = { v: v, done: done }; }
 
@@ -1907,10 +1919,18 @@ window.dispatchEvent(new Event('fb-ready'));
 
   // "지금" 을 Firebase 서버 시계로 보정한 epoch(ms). 서버 시계를 아직 모르면 기기 시계 그대로.
   //  → 자동취소·자정넘어감·지금시간대·백업시간대·로그시각 이 전부 이걸 쓴다.
-  //  → ts(충돌 해결용)·경과시간 타이머·롱프레스 등은 기기 Date.now() 그대로 (아래 설명).
+  //  → ts(충돌 해결용)·시간대 접힘 유예도 이걸 쓴다(2026-09-16). 경과시간 타이머·롱프레스처럼
+  //    «한 기기 안에서만» 재는 것은 기기 Date.now() 그대로.
   function serverNow(){
     return Date.now() + (typeof fb === 'function' && fb() && fb().serverSkew ? fb().serverSkew() : 0);
   }
+  // 예약 한 줄의 «마지막으로 바뀐 시각». 서버는 이 값이 큰 쪽을 남기고 작은 쪽을 버린다
+  // (itemMerge 의 minTs 규칙) — 그래서 «누가 이기나»가 이 한 값으로 갈린다.
+  // ★기기 시계로 찍으면 시계가 빠른 폰의 «오래된» 조작이 다른 폰의 «나중» 조작을 이긴다.
+  //   특히 끊겼다 연결될 때, 큐에 쌓인 옛 조작이 그 사이의 최신 조작을 덮는다. 그래서 서버 시계다.
+  // ★앞 값보다 반드시 커야 한다. 서버에 있는 ts 가 (이 고침 전에 찍힌) 미래 값이면, 그냥
+  //   serverNow() 로 찍었다가는 «서버가 더 최신»으로 판정돼 내 수정이 조용히 버려진다.
+  function stampTs(it){ return Math.max(serverNow(), ((it && it.ts) || 0) + 1); }
   // epoch(ms) → 한국시간(KST=UTC+9, 서머타임 없음) 벽시계 조각.
   // getUTC* 로 읽으므로 기기의 '시간대' 설정이 틀려 있어도(시각이 아니라 지역) 영향 없음.
   function kstParts(ms){
@@ -2279,7 +2299,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function writeItem(id, patch){ wqPush(id, 'patch', { patch: patch, ts: patch && patch.ts }); }
   // 예약 하나를 통째로 쓴다 (새 예약 추가).
   function putItem(item){ wqPush(item.id, 'put', { item: item, ts: item.ts }); }
-  function delItem(id){ wqPush(id, 'del', { ts: Date.now() }); }
+  function delItem(id){ wqPush(id, 'del', { ts: stampTs(find(id)) }); }
   // 명단을 통째로 새로 쓴다 (붙여넣기·초기화). 개별 대기분은 이 교체가 덮으니 큐에서 버린다.
   // ★끊긴 동안에는 통째 교체를 하지 않는다. 낱개 변경(방문·취소·추가·삭제)은 쓰기 큐가
   //   합쳐 주지만 이건 set 이라 «서버에 뭐가 있든 이걸로 바꿔라» 가 된다. 못 읽은 상태에서
@@ -2702,7 +2722,7 @@ window.dispatchEvent(new Event('fb-ready'));
       // 완료됐는데 아직 5초 유예 중이면, 유예가 끝나는 시점에 접히도록 타이머를 걸어둔다.
       // (직접 체크한 폰은 keepSlotOpenForId 가 이미 걸었고, 다른 폰·자동취소는 여기서 건다)
       if (!q && !pendN && !shut && !collapseTimers[g.time] && !slotHasWork(g.time)
-          && Date.now() - slotChangedAt(g.time) <= COLLAPSE_DELAY){
+          && serverNow() - slotChangedAt(g.time) <= COLLAPSE_DELAY){
         armSlotCollapse(g.time);
       }
 
@@ -3014,12 +3034,12 @@ window.dispatchEvent(new Event('fb-ready'));
     var oldId = it.id;
     it.time = time; it.name = name; it.pax = pax; it.memo = memo;
     it.id = uniqueId(time, name, pax, id);
-    it.ts = Date.now();
+    it.ts = stampTs(it);
     // 시각을 옮겼으면 «지켜본 적 있나»를 다시 판단한다. 지난 시각으로 옮기면 사람 몫이 되고,
     // 미래로 옮기면 다시 앱 몫이다 — 안 지우면 한 번 붙은 면제가 영영 남는다.
     if (timeMoved){ if (lateEntry(time, nowMin())) it.noAuto = 1; else delete it.noAuto; }
-    touched[originalTime] = Date.now();
-    touched[time] = Date.now();
+    touched[originalTime] = serverNow();
+    touched[time] = serverNow();
     armSlotCollapse(originalTime);
     if (timeMoved) armSlotCollapse(time);
     state.items.sort(sortItems);
@@ -3432,7 +3452,7 @@ window.dispatchEvent(new Event('fb-ready'));
       logAdd(kind, it.time + ' ' + it.name,
              'st:' + id + ':' + st + ':' + Math.round(serverNow() / 120000));
     }
-    var ts = Date.now();
+    var ts = stampTs(it);
     it.status = st;
     it.ts = ts;
     keepSlotOpenForId(id);
@@ -3576,7 +3596,7 @@ window.dispatchEvent(new Event('fb-ready'));
     clearBad();
     if (!fresh.length){ toast('등록할 예약이 없습니다'); return false; }
     logAdd('명단 등록', fresh.length + '건');
-    var ts = Date.now(), nm = nowMin();
+    var ts = serverNow(), nm = nowMin();   // 통째 교체 — 앞 값이 없는 새 항목들이다
     fresh.forEach(function(it){
       it.ts = ts;
       if (lateEntry(it.time, nm)) it.noAuto = 1;   // 등록할 때 이미 지나 있던 것 → 사람 몫
@@ -3750,7 +3770,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!state) state = { date: viewDate, items: [] };
     var item = {
       id: uniqueId(time, name, pax), time: time, name: name, pax: pax,
-      memo: memo, status: 'pending', ts: Date.now(), seq: nextSeq()
+      memo: memo, status: 'pending', ts: serverNow(), seq: nextSeq()   // 새 항목 — 앞 값 없음
     };
     if (lateEntry(time, nowMin())) item.noAuto = 1;   // 이미 지난 시각으로 넣은 예약 → 사람 몫
     state.items.push(item);
@@ -5172,7 +5192,7 @@ window.dispatchEvent(new Event('fb-ready'));
       // 한 줄. (예약 id 는 편집·개별추가로 기기마다 달라질 수 있어 이름 기준이 더 안전하다.)
       var label = it.time + ' ' + it.name;
       logAdd('자동 취소', label, 'ac:' + label);
-      var ts = Date.now();
+      var ts = stampTs(it);
       it.status = 'cancelled';
       it.ts = ts;
       writeItem(it.id, { status: 'cancelled', ts: ts });
@@ -5195,7 +5215,7 @@ window.dispatchEvent(new Event('fb-ready'));
       logKeyId: logKeyId, mergeLogRows: mergeLogRows,
       reportText: reportText, uniqueId: uniqueId, nextSeq: nextSeq, isCollapsed: isCollapsed,
       rltSteps: rltSteps, wqEntry: wqEntry, computeDev: computeDev, autoCancelDue: autoCancelDue,
-      stalePurgeDates: stalePurgeDates, kstParts: kstParts, lateEntry: lateEntry,
+      stalePurgeDates: stalePurgeDates, kstParts: kstParts, lateEntry: lateEntry, stampTs: stampTs,
       consts: { COLLAPSE_DELAY: COLLAPSE_DELAY, AUTO_CANCEL_MIN: AUTO_CANCEL_MIN,
                 AUTO_CANCEL_WINDOW: AUTO_CANCEL_WINDOW,
                 GRACE_ON_HOUR: GRACE_ON_HOUR, GRACE_OFF_HOUR: GRACE_OFF_HOUR,
