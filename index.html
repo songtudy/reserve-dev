@@ -3685,6 +3685,11 @@ window.dispatchEvent(new Event('fb-ready'));
     setTimeout(function(){ taEl.focus(); }, 200);
   }
   function closePaste(){
+    // 입력칸을 «보이는 동안» 손으로 푼다. 숨기기(.hide = display:none)만 해도 크롬은 blur·
+    // focusout 을 띄우는 걸 확인했지만(2026-09-16), 이 앱이 실제로 도는 건 iOS 웹킷이고
+    // 여기 걸린 focusout → remeasureViewport 가 못 돌면 --kb 와 .keyboard-open 이 키보드
+    // 높이째 남아 하단 바가 사라진 채 목록 아래가 빈다. 엔진 차이에 기대지 않고 순서를 정해 둔다.
+    if (document.activeElement === taEl) taEl.blur();
     panel.classList.add('hide');
     document.body.classList.remove('paste-open');
     if (wrapEl) wrapEl.scrollTop = 0;
