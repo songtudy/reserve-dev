@@ -2483,7 +2483,8 @@ window.dispatchEvent(new Event('fb-ready'));
   // 초 단위까지만: 소수점은 읽히지 않는 잔상이 되고 iOS 가 백그라운드·저전력에서 타이머를 조이니 의미가 없다.
   function closeLeftSec(){ return Math.max(0, Math.round((slotMin(CLOSE_HM) - nowMin()) * 60)); }
   // 다 처리한 화면에서 곰이 하는 말. 퇴근 전엔 남은 시간, 퇴근 뒤엔 인사.
-  // 시:분:초는 카드가 쓰던 fmtLeft 그대로 — 한 덩어리로 읽히고 매초 글자 폭이 안 출렁인다.
+  // 남은 시간은 「2시간 30분 07초」 꼴. 콜론꼴(2:31:07)이었는데 끝으로 갈수록 죽은 0 이 앞에
+  // 붙어 「0:00:58」 처럼 어색해졌다(오너 2026-09-16) — 빈 단위는 아예 뗀다.
   function doneSay(){
     var left = closeLeftSec();
     if (!left) return '오늘 하루 고생하셨어요!';
@@ -2497,9 +2498,17 @@ window.dispatchEvent(new Event('fb-ready'));
       + '</svg>'
       + '<div class="say">' + doneSay() + '</div></div></div>';
   }
+  // ★앞 단위는 그대로, 뒤 단위만 0 을 채운다(「2시간 30분 07초」).
+  //   안 채우면 초가 10→9 로 떨어질 때마다 글자가 하나 줄어 말풍선이 1분에 두 번 들썩인다.
+  //   앞 단위는 채우지 않는다 — 「09초 남았어요」는 뻣뻣하다. 앞 단위가 자릿수를 잃는 건
+  //   저녁 내내 세 번뿐이고(시간이 빠질 때·분이 빠질 때·10초→9초), 그건 흔들림이 아니라 내용이
+  //   실제로 바뀌는 자리다.
   function fmtLeft(s){
     var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
-    return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x;
+    var p = function(n){ return (n < 10 ? '0' : '') + n; };
+    if (h) return h + '시간 ' + p(m) + '분 ' + p(x) + '초';
+    if (m) return m + '분 ' + p(x) + '초';
+    return x + '초';
   }
   var cdTimer = null;
   function cdTick(){
@@ -4149,7 +4158,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 빌드 도장 — 테스트 사이트의 서랍 아래에만 보인다(MMDD.HHMM). 「고쳤다 / 아직 보인다」가
   // 어긋날 때 «폰이 어느 빌드를 들고 있나»부터 확인할 수 있어야 한다. 배포 스크립트가 찍는다.
   // 상단 배지에 붙이면 가운데 날짜를 밀어내므로(오너 2026-09-15) 거기엔 안 붙인다.
-  var BUILD_STAMP = '0916.0954';
+  var BUILD_STAMP = '0916.1008';
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
