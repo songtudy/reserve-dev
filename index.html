@@ -898,7 +898,12 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:absolute;top:100%;left:50%;transform:translateX(-50%);
     width:max-content;max-width:78vw;
     background:var(--panel2);border-radius:var(--radius);
-    padding:11px 16px;margin-top:12px;
+    /* ★margin 12 → 6.8 (오너 2026-09-16). 곰 그림 밑에서 꼬리 끝까지 17.2px 이었는데, 꼬리가
+       곰에서 떠 있어 말풍선이 «곰 것»이 아니라 그냥 아래 놓인 상자처럼 보였다. 12px 이면 꼬리가
+       곰에서 나온 것으로 읽히면서 두 모양이 서로 안 눌린다(8px 은 앞발·초록 체크와 뭉친다).
+       ※상자 값(6.8) ≠ 보이는 값(12) — 액자 아래 12.2px 이 빈칸이다. 마크 크기를 바꾸면 다시 잴 것.
+       ※스플래시의 곰→이름 18.1px 과는 일부러 다르다. 워드마크는 떨어져야 하고 꼬리는 붙어야 한다. */
+    padding:11px 16px;margin-top:6.8px;
     font-size:14px;font-weight:700;color:var(--text);line-height:1.35;
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
@@ -4169,7 +4174,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 빌드 도장 — 테스트 사이트의 서랍 아래에만 보인다(MMDD.HHMM). 「고쳤다 / 아직 보인다」가
   // 어긋날 때 «폰이 어느 빌드를 들고 있나»부터 확인할 수 있어야 한다. 배포 스크립트가 찍는다.
   // 상단 배지에 붙이면 가운데 날짜를 밀어내므로(오너 2026-09-15) 거기엔 안 붙인다.
-  var BUILD_STAMP = '0916.1025';
+  var BUILD_STAMP = '0916.1030';
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
