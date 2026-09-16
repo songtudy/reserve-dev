@@ -354,6 +354,27 @@
     tru('오전에 저녁 예약 등록 → 아직', L('19:00', 10 * 60) === false);
   })();
 
+  group('stampTs — 누가 최신인가를 가리는 값');
+  (function(){
+    var st = T.stampTs, now = Date.now();
+    // 앞 값이 없으면 지금(서버 시계)
+    tru('새 항목은 지금 시각', Math.abs(st(null) - now) < 3000);
+    tru('ts 없는 항목도 지금 시각', Math.abs(st({}) - now) < 3000);
+    // 앞 값이 과거면 지금 시각 (뒤로 가지 않는다)
+    tru('앞 값이 과거 → 지금 시각', st({ ts: now - 60000 }) >= now - 3000);
+    // ★앞 값이 미래(옛 기기 시계로 찍힌 것)면 반드시 그보다 커야 한다.
+    //   작거나 같으면 itemMerge 가 «서버가 더 최신»으로 보고 내 수정을 버린다.
+    var future = now + 3600000;
+    tru('앞 값이 미래 → 그보다 큼', st({ ts: future }) > future);
+    tru('앞 값이 미래 → 딱 +1', st({ ts: future }) === future + 1);
+    // 같은 항목을 이어 고치면 늘 커진다
+    var it = { ts: now + 600000 };
+    var a = st(it); it.ts = a;
+    var b = st(it); it.ts = b;
+    var c = st(it);
+    tru('이어 고치면 계속 커진다', a < b && b < c);
+  })();
+
   /* ==================== dev/prod 판정 ==================== */
   group('computeDev — 실배포에서만 prod, 그 외 전부 dev');
   (function(){
