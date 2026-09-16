@@ -443,6 +443,22 @@ window.addEventListener('pageshow', remeasureSbcut);
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 30 에 선다(.wrap 아래 여백) */
 
+  /* ── 도킹 틈 메움 띠 ────────────────────────────────────────────────────
+     iOS 는 sticky 위치를 스크롤 스레드에서 붙이는데, 빠르게 밀면 한 프레임 늦어 시간바가
+     셸에서 최대 23px 떨어진다(오너 폰 녹화 349프레임 중 80프레임). 그 틈으로 명단이 비친다.
+     ★내 코드가 그 자리를 고칠 방법은 없다 — 대신 «미리 깔아 둔다». 바가 떨어져도 그 자리에
+       불투명한 것이 있으면 명단이 안 보인다.
+     ★층이 핵심이다: 명단(층 없음)보다 위, 시간바(10)보다 아래(5). 그래서
+       ① 바가 제자리면 바가 이 띠를 덮어 아무 변화가 없고
+       ② 바가 밀리면 벌어진 자리에 명단 대신 이 띠가 보이고
+       ③ 두껍게 해도 바 글자를 절대 안 가린다(바가 위층이라).
+       셸(20)에 붙였을 땐 ③이 안 돼서 8px 밖에 못 썼다 — 그래서 그때는 못 막았다.
+     ★.wrap «안»에 둬야 한다. 밖에 두면 .wrap 이 iOS 에서 자체 쌓임 맥락이라 층 사이에 못 낀다.
+       fixed 라 스크롤과 무관하고, 밑의 명단을 가리지 않도록 클릭도 통과시킨다. */
+  .dockfill{
+    position:fixed;left:0;right:0;top:var(--topH, 140px);height:24px;
+    background:var(--ink);z-index:5;pointer-events:none;
+  }
   .ghead{
     position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
     background:var(--ink);
@@ -1478,6 +1494,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 </div><!-- /shell -->
 
 <div class="wrap">
+  <div class="dockfill" aria-hidden="true"></div>
   <div id="list"></div>
 
   <div class="panel hide" id="pastePanel">
@@ -2406,7 +2423,8 @@ window.dispatchEvent(new Event('fb-ready'));
     cf.className = 'dwfoot' + (ready ? '' : ' off');
     // 여기엔 연결 상태 한 마디만 둔다 — 빌드 도장을 붙여 봤다가 뺐다(오너 2026-09-16).
     cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-      + (ready ? '연결됨' : '연결 안 됨');
+      + (ready ? '연결됨' : '연결 안 됨')
+      + (IS_DEV ? ' · ' + BUILD_STAMP : '');   // ※임시 — 확인 끝나면 뺀다
   }
   function setSync(ok){
     if (ok === false) listFresh = false;   // 끊긴 순간부터 화면의 명단은 «옛 것»이다
@@ -4176,6 +4194,7 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   });
 
+  var BUILD_STAMP = '0916.1330';   // ※임시
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
