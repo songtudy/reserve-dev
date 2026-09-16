@@ -1373,7 +1373,14 @@ window.addEventListener('pageshow', remeasureSbcut);
        글은 이모지를 안 쓰는데, 룰렛만 예외다 — 위 「룰렛은 놀이라 제 곡선」과 같은 갈래의 예외이고
        일부러 둔 것이다. 「이모지가 튄다」고 지우지 말 것(2026-09-16 점검에서 명시). */
   /* 서랍(61) 위 — 롱프레스로 열 때 빠져나가는 서랍이 룰렛 위를 스치지 않게 */
-  #rltScrim{ z-index:62 }
+  /* 룰렛은 확인창과 달리 «위쪽»에 고정한다 — 이름을 입력하는 창이라 거의 매번 키보드가 뜬다.
+     가운데에 두면 키보드를 피해 위로 크게 올라갔다가(시뮬레이터 실측 약 120pt) 닫으면 다시 내려왔다.
+     처음부터 키보드에 안 가리는 높이에 두면 키보드가 뜨든 닫히든 제자리이고, 칩 줄이 생길 때도 아래로만
+     자란다(오너 2026-09-16 「더 올라가 있는 게 낫다」). 88 = 카드 윗변이 화면 위에서 약 150pt(iPhone 17) —
+     4명(카드 277)이 키보드(약 340~370)에 안 가리는 높이. 헤더와 같은 안전영역 식이라 사파리·홈 화면 앱이
+     같은 자리에 뜬다. 키 작은 화면(SE 등)은 40 으로 끌어올려 같은 조건을 지킨다. */
+  #rltScrim{ z-index:62; align-items:start; padding-top:calc(env(safe-area-inset-top) + 88px) }
+  @media (max-height:700px){ #rltScrim{ padding-top:calc(env(safe-area-inset-top) + 40px) } }
   .rlt{
     /* 확인창(.dialog)과 «같은 판»이다 — 같은 막(.scrim) 위에 가운데 뜨는 형제라 값이 달라질 이유가 없다.
        폭 340/패딩 20/제목 아래 3 으로 각자 떠다니던 것을 확인창 값(330·19·4)에 맞췄다(2026-09-16).
@@ -1383,8 +1390,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:330px;
     background:var(--panel);border-radius:var(--radius);
     padding:19px 16px 16px;
-    transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease);
-    transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px));
+    transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease);   /* 키보드 따라 올리던 이동(--kb)은 없앴다 — 위 #rltScrim 참고 */
   }
   .rlt h3{margin:0 0 12px;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.35}   /* 크기·줄높이는 .dialog h3 와 한 값 */
   .rlt input{
@@ -1414,6 +1420,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   .rltchip.win{ transform:scale(1.09) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
+  /* 2~4명(실사용 대부분)은 칩이 한 줄을 «똑같이 나눠» 채운다. 예전엔 왼쪽에 붙은 작은 칩(35pt)이 3명이면 줄의
+     절반만 차 오른쪽이 비었고, 룰렛이 실제로 도는 곳이 창에서 가장 작았다(오너 2026-09-16).
+     높이는 입력칸과 같은 44(16 × 1.4 + 위아래 10 + 테두리 2) — 입력칸·칩 줄·버튼 줄의 좌우 끝도 맞는다.
+     5명부터는 원래 작은 칩으로 줄바꿈한다(한 줄에 다섯은 이름이 잘린다). 넓은 칩은 튈 때(날벼락 1.22) 옆 칩과
+     겹치므로 맞은 칩을 위로 올린다. */
+  .rltnames.few{flex-wrap:nowrap}
+  .rltnames.few .rltchip{flex:1 1 0;min-width:0;padding:10px 6px;font-size:16px;text-align:center;
+                         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rltchip.hit{position:relative;z-index:1}
   /* 상태 줄 — 안내 → 경고 → 「🚽/⚡ ○○ 당첨!」이 «한 자리»에서 바뀐다.
      ★예전엔 안내문이 제목 아래 있고 결과는 당첨 순간 새 줄로 생겨, 카드가 위아래로 21pt 씩 벌어졌다
        (iOS 시뮬레이터 실측, 오너 2026-09-16 「당첨 글자 나타나면서 위아래로 넓어진다」). 결과 자리를 미리
@@ -1479,7 +1494,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     100%{transform:scale(1.09); background:var(--wait); border-color:var(--wait)}
   }
   /* 카드가 맞고 «내려앉았다» 잦아든다. 번개가 위에서 오므로 세로 — 잠금 흔들림(lockshake)과 같은 감쇠 결.
-     .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다. */
+     .rlt 는 평소 transform 이 없어(위쪽 고정) 덮어써도 부딪히는 값이 없다. */
   /* 맞는 «순간» 최대로 내려앉고 잦아든다. 예전엔 최대에 닿는 데 58ms 걸려 타격이 아니라 흔들거림이었다. */
   .rlt.jolt{animation:boltJolt .42s cubic-bezier(.22,1,.36,1)}
   @keyframes boltJolt{
@@ -1510,7 +1525,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheet, .dialog{transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease)}
   .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px)}
   .scrim.hide .dialog{opacity:0;transform:scale(.96)}
-  .scrim.hide .rlt{opacity:0;transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96)}
+  .scrim.hide .rlt{opacity:0;transform:scale(.96)}
   .panel.asSheet.hide{display:flex !important;opacity:0;visibility:hidden;pointer-events:none;
     transform:translateX(-50%) translateY(calc(24px - var(--kb, 0px)));transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease),visibility 0s var(--tMove)}
   @keyframes fadeIn{from{opacity:0}}
@@ -4472,6 +4487,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     function drawChips(list){
       namesBox.innerHTML = '';
+      namesBox.classList.toggle('few', list.length > 0 && list.length <= 4);   // 2~4명은 한 줄을 나눠 채운다(CSS)
       list.forEach(function(nm){
         var c = document.createElement('span');
         c.className = 'rltchip';
