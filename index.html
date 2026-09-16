@@ -1414,7 +1414,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      버튼(면 --btn)과 꼴이 갈려 눌러야 할 것처럼 안 보인다. 모서리 12 = 44 짜리 사각 면(칩 8 은 작은 표식용).
      칸 수(--cols)는 JS 가 정한다 — 한 줄 최대 5, 줄 수 최소, 줄마다 고르게. 이름이 칸보다 길면 칸을 줄인다. */
   .rltnames{
-    display:grid;grid-template-columns:repeat(var(--cols, 5), minmax(0, 1fr));gap:6px;align-content:start;
+    display:grid;grid-template-columns:repeat(var(--cols, 5), minmax(0, 1fr));gap:8px;align-content:start;   /* 8 = 버튼 줄(.dbtn) 간격 — 2명이면 카드 경계와 「닫기|돌리기」 경계가 맞는다 */
     cursor:pointer;
   }
   .rltchip{
@@ -1426,7 +1426,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   /* 튀는 크기는 비율이 아니라 pt 로 맞춘다 — 칸 폭이 이름 수에 따라 55~146 으로 달라, 같은 1.09 면 넓은 칸이 옆 칸에 닿는다.
-     --win = 좌우 3pt씩(간격 6 의 절반), --pop = 좌우 10pt씩. drawChips 가 칸 폭을 재서 넣는다. */
+     --win = 좌우 4pt씩(간격 8 의 절반), --pop = 좌우 10pt씩. drawChips 가 칸 폭을 재서 넣는다. */
   .rltchip.win{ transform:scale(var(--win, 1.09)) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
   .rltchip.hit{position:relative;z-index:1}          /* 튈 때 옆 칸 위로 */
   /* 이름 글자는 카드 안의 한 덩어리(span) — 전환 때 이것이 입력칸 글자 자리에서 미끄러져 온다(JS morph). 길면 … */
@@ -4490,7 +4490,6 @@ window.dispatchEvent(new Event('fb-ready'));
     var result = document.getElementById('rltResult');
     var goBtn = document.getElementById('rltGo');
     var SUB_TEXT = result.textContent;   // 상태 줄의 기본 문구(안내문) — 마크업에 적힌 그대로
-    var BOARD_TEXT = '이름을 누르면 다시 고칠 수 있어요';   // 카드 줄일 때 — 입력칸이 사라져 위 안내는 맞지 않고, 고치는 길을 알려야 한다
     var spinning = false, gen = 0;
 
     function buzz(pattern){ try { navigator.vibrate && navigator.vibrate(pattern); } catch(e){} }
@@ -4527,7 +4526,7 @@ window.dispatchEvent(new Event('fb-ready'));
       do namesBox.style.setProperty('--cols', cols); while (!fits() && --cols >= 1);
       var w = namesBox.firstChild.getBoundingClientRect().width;
       if (w){
-        namesBox.style.setProperty('--win', (1 + 6 / w).toFixed(4));
+        namesBox.style.setProperty('--win', (1 + 8 / w).toFixed(4));
         namesBox.style.setProperty('--pop', (1 + 20 / w).toFixed(4));
       }
     }
@@ -4632,7 +4631,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 상태 줄을 안내/경고로 되돌린다 (토스트는 룰렛 스크림 뒤라 안 보임). 결과(.won)·타격(.hit)도 여기서 뗀다
     // — .hit 이 남으면 다음 날벼락 전에 평범한 결과까지 튀어나온다.
     function say(msg, warn){
-      var t = msg || SUB_TEXT;
+      var t = msg === undefined ? SUB_TEXT : msg;   // '' = 비우기
       result.classList.remove('won', 'hit');
       result.classList.toggle('warn', !!warn);
       if (result.textContent !== t) result.textContent = t;   // 같은 말을 다시 쓰면 낭독기가 타자마다 되읽는다
@@ -4766,7 +4765,10 @@ window.dispatchEvent(new Event('fb-ready'));
       inp.blur();                     // 키보드 내려 칩 안 가리게
       inp.disabled = true;            // 스핀 중 이름·키보드 못 건드리게
       goBtn.disabled = true;
-      say(BOARD_TEXT);                // 상태 줄 (지난 결과·날벼락 타격 표시도 뗀다)
+      // 도는 동안 상태 줄은 비운다 — 결과가 뜰 자리다. 입력 안내는 입력칸이 사라져 맞지 않고,
+      // 「이름을 누르면 고칠 수 있어요」를 둬 봤더니 도는 동안(누를 수 없을 때)만 보이다 결과에 덮여,
+      // 정작 누를 수 있을 땐 안 보였다(2026-09-17 점검). 높이는 28 로 고정이라 비워도 카드가 안 움직인다.
+      say('');
       var fromText = !slot.classList.contains('board') && !calm();
       board(true);                    // 입력칸 → 카드 줄
       drawChips(ns);
