@@ -794,7 +794,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     transition:color var(--tState) var(--ease), opacity var(--tPress) var(--ease);
   }
   .seg button:active, .seg button.dn{opacity:.4;transition:none}
-  .seg button.on, .seg button[aria-pressed="true"]{color:var(--text)}
+  .seg button[aria-pressed="true"]{color:var(--text)}   /* 선택 표시는 «aria-pressed 하나»로 통일(2026-09-16).
+                                                            예전엔 .on 과 둘이 섞여 CSS·썸 스크립트가 매번 갈라졌고,
+                                                            .on 쪽(테마·Wi-Fi)은 화면 낭독기에 선택 상태를 아예 안 알렸다. */
   .seg.wide{display:grid;margin:-2px 0 14px}
   .seg.wide button{height:40px;font-size:14px}   /* 30 높이 세그(13)보다 한 단계 */
   .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 16px 2px}
@@ -1566,8 +1568,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   <div class="dwtheme">
     <span class="dwthlab">테마</span>
     <div class="seg">
-      <button type="button" data-theme-set="dark">다크</button>
-      <button type="button" data-theme-set="light">라이트</button>
+      <button type="button" data-theme-set="dark" aria-pressed="true">다크</button>
+      <button type="button" data-theme-set="light" aria-pressed="false">라이트</button>
     </div>
   </div>
   <div class="dwfoot" id="dwConn"></div>
@@ -4230,7 +4232,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 페인트 전 스크립트와 같은 함수 — data-theme·color-scheme·theme-color 를 한 번에.
     window.setThemeChrome(t);
     [].forEach.call(document.querySelectorAll('[data-theme-set]'), function(btn){
-      btn.classList.toggle('on', btn.getAttribute('data-theme-set') === t);
+      btn.setAttribute('aria-pressed', String(btn.getAttribute('data-theme-set') === t));
     });
   }
   // 서랍 안에서 바로 고른다. 서랍을 열어둔 채라 바뀌는 색이 그 자리에서 보인다.
@@ -4641,7 +4643,7 @@ window.dispatchEvent(new Event('fb-ready'));
     return '<div class="seg wide">'
       + Object.keys(WIFI).map(function(k){
           return '<button type="button" data-wifi="' + k + '"'
-            + (k === wifiPick ? ' class="on"' : '') + '>' + WIFI[k].label + '</button>';
+            + ' aria-pressed="' + (k === wifiPick) + '">' + WIFI[k].label + '</button>';
         }).join('')
       + '</div>'
       + '<div class="qrcard"><svg viewBox="' + n.vb + '" shape-rendering="crispEdges">'
@@ -5507,13 +5509,13 @@ window.dispatchEvent(new Event('fb-ready'));
 })();
 </script>
 <script>
-// 세그먼트 썸: 2번째 칸이 선택(.on 또는 aria-pressed=true)이면 .seg 에 .alt — 썸이 그 칸으로 미끄러진다. 모든 .seg 공용.
+// 세그먼트 썸: 2번째 칸이 aria-pressed=true 면 .seg 에 .alt — 썸이 그 칸으로 미끄러진다. 모든 .seg 공용.
 (function(){
   function sync(seg){ var b = seg.querySelectorAll('button'); if (b.length < 2) return;
-    var on = b[1].classList.contains('on') || b[1].getAttribute('aria-pressed') === 'true';
+    var on = b[1].getAttribute('aria-pressed') === 'true';
     seg.classList.toggle('alt', on); }
   function all(){ document.querySelectorAll('.seg').forEach(sync); }
-  if (window.MutationObserver) new MutationObserver(all).observe(document.body, { subtree:true, childList:true, attributes:true, attributeFilter:['class','aria-pressed'] });
+  if (window.MutationObserver) new MutationObserver(all).observe(document.body, { subtree:true, childList:true, attributes:true, attributeFilter:['aria-pressed'] });
   all();
 })();
 </script>
