@@ -248,16 +248,14 @@ window.addEventListener('pageshow', remeasureSbcut);
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
-  /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서.
-     ※ padding-top 이 아니라 빈 요소인 건 sticky 시절의 이유였다(크롬이 sticky 의 top 을 스크롤 상자의
-       «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙었다). 2026-09-16 에 sticky 를
-       걷어내며 그 제약은 없어졌지만, 배치가 픽셀까지 같고 바꿀 이유가 없어 그대로 둔다. */
-  .wrap::before{content:"";display:block;height:var(--topH, 140px)}   /* 쉴 때 카드 밑→첫 시간바 = 8 = 도킹됐을 때와 같은 값. 18 이었을 땐 여백+헤더가 62px 짜리 「높은 칸」으로 보였다(오너 2026-09-11) */
+  /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
+     크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
+  .wrap::before{content:"";display:block;height:var(--topH, 140px)}   /* 쉴 때 카드 밑→첫 시간바 = 8 = 도킹(sticky top) 때와 같은 값. 18 이었을 땐 여백+헤더가 62px 짜리 「높은 칸」으로 보였다(오너 2026-09-11) */
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
   /* 상단 셸 — 떠 있는 유리 판(하단바와 같은 재질). 명단은 그 밑으로 지나가고(.wrap::before 스페이서),
-     시간대 머리글은 이 판 «밖»의 고정 칸(.ghead.dock)이 셸 밑면에 붙어 대신한다. 높이는 JS 가 재서 --topH 로 넣는다
+     붙는 시간대 머리글은 셸 바로 아래에 붙는다(.ghead top). 높이는 JS 가 재서 --topH 로 넣는다
      (카드 내용·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
@@ -432,27 +430,21 @@ window.addEventListener('pageshow', remeasureSbcut);
      머리글은 «자기 명단»에 붙는다 — 위는 넓게(앞 명단과 떨어짐), 아래는 선 하나.
      가운데 관통선·캡슐·박스는 여섯 안을 실제 앱에서 4가지 상태로 비교한 끝에 모두 탈락 —
      접힌 시간대가 표처럼 촘촘히 쌓이는 이 구조가 «영업 중 가장 오래 보는 화면»에서 제일 정돈됐다. */
-  /* 시간대 사이 여백(8px)은 «앞 시간대 안쪽»의 빈 요소로 둔다. 접힌 시간대는 여백 없이 선으로만 잇는다.
-     ※ margin 이 아닌 이유도 sticky 시절 것이었다(margin 이면 붙은 머리글이 다음 머리글보다 여백만큼 먼저
-       밀려나 두 머리글 사이에 틈이 생겼다 — 오너 지적 2026-09-11). 지금은 밀려나는 머리글이 없다.
-       배치가 margin 방식과 픽셀까지 같아 그대로 둔다. */
+  /* 시간대 사이 여백(8px)은 «앞 시간대 안쪽»의 빈 요소로 둔다 — margin 으로 두면 붙은 머리글이 다음 머리글이
+     닿기 여백만큼 전에 먼저 밀려나 두 머리글 사이에 빈 틈이 생긴다(오너 지적, 2026-09-11). 안쪽 내용이면 붙는
+     범위에 포함돼 다음 머리글이 닿는 순간 밀려난다(padding 은 안 됨 — 붙는 범위가 내용 상자까지라 더 일찍 밀려남).
+     접힌 시간대는 여백 없이 선으로만 잇는다. 멈춰 있을 때 배치는 margin 방식과 픽셀까지 같다. */
   /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). */
-  /* ★.group 에 display:contents 는 쓰지 말 것(2026-09-15 실험 후 반려). 상자가 사라지면 그 요소의
-     getBoundingClientRect 가 빈 상자가 돼 크기를 재는 코드가 조용히 0 을 받는다 — 지금은 도킹 계산이
-     바로 이 상자의 위·아래를 쓰므로(measureDock) 더더욱 안 된다. */
+  /* ★.group 에 display:contents 를 줘 봤다가 되돌렸다(2026-09-15). 상자를 없애면 시간바가
+     밀리지 않고 «덮여» 잘림이 0 이 되지만, 그 요소의 getBoundingClientRect 가 빈 상자가 돼
+     크기를 재는 코드가 조용히 0 을 받는다. 얻는 것(아이폰 연락처·설정도 똑같이 밀린다)보다
+     남길 함정이 크다는 판단(오너). 밀려 올라가는 잘림은 sticky 의 표준 동작으로 둔다. */
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 30 에 선다(.wrap 아래 여백) */
 
-  /* ★2026-09-16: sticky 를 뗐다. iOS 는 명단 스크롤러를 별도 스레드에서 굴리면서 sticky 위치를
-     한 프레임씩 늦게 반영한다 — 오너 녹화 349프레임 중 80프레임에서 시간바가 제자리를 벗어났고
-     (위로 최대 8px · 아래로 최대 23px), 아래로 밀린 프레임에서는 셸과 시간바 사이로 명단이 비쳤다.
-     같은 녹화에서 상단 카드는 «한 프레임도» 안 움직였다 — 셸 높이(--topH)가 아니라 sticky 가 원인이다.
-     덮는 띠로 막아 보려 했으나 밀림(23px)이 시간바 글자 여백(12px)보다 커서 구조적으로 불가능.
-     그래서 도킹은 «스크롤하지 않는 층»(상단 셸) 안의 .ghead.dock 이 대신한다 — 자리를 안 움직이니
-     뛸 수가 없다. 명단 안의 이 머리글은 이제 그냥 같이 스크롤되어 셸 뒤로 사라진다. */
   .ghead{
-    position:relative;z-index:1;
+    position:sticky;top:var(--topH, 140px);z-index:10;   /* 상단 셸에 딱 붙어 도킹 */
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
     width:calc(100% + 32px);margin:0 -16px;padding:12px 16px 11px;   /* 높이 44 = 애플 최소 누름 크기. 좌우 16 = 메뉴·진행도와 같은 열 */
@@ -461,18 +453,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   /* 위 선은 긋지 않는다 — 붙은 머리글 아래로 다음 머리글이 올라올 때 두 선 사이에 빈 틈이 생겨 어색(오너 지적, 2026-09-11).
      선 색은 행 사이·상단 경계와 같은 --line — 머리글만 진하면 위쪽 경계가 흐려 첫 시간대가 더 높아 보인다. */
-  /* 셸 «밑면 바로 아래»에 붙어 사는 고정 시간바. absolute 라 셸 높이(--topH 의 출처)에 안 잡힌다.
-     .ghead 의 꼴을 그대로 쓰고 자리 규칙만 덮어쓴다 — 새 꼴을 만들지 않는다. */
-  .ghead.dock{
-    position:absolute;left:0;right:0;top:var(--topH, 140px);width:auto;margin:0;
-    z-index:20;   /* 셸과 같은 층. DOM 에서 셸 뒤라 그 위에 그려진다 — 명단(층 없음) 위, 하단바(30) 아래 */
-  }
-  .ghead.dock.now .gtime{color:var(--wait)}
-  .ghead.dock.done .gtime{color:var(--dim)}
-  .ghead.dock.now::before{
-    content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
-    background:var(--wait);
-  }
   .ghead:active, .ghead.dn{background:var(--press)}
   /* ★머리글 밑 «흐림 띠»는 두지 않는다. 아래로 흘러 들어가는 명단이 «탁» 부딪히지 않게
      8px 그라데이션을 깔았었는데(2026-09-11), 그 띠에 걸친 행이 뿌옇게 날아가 «글자가 비친다»로
@@ -485,7 +465,6 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .chev svg{display:block;width:12px;height:12px}
   .group.shut .chev{transform:rotate(0)}
-  .ghead.dock.shut .chev{transform:rotate(0)}   /* 고정 시간바는 .group 밖에 살아 따로 적는다 */
   /* 밝기 3단계로 「언제」를 말한다 — 지금 = 금색 / 앞으로 = 흰색 / 다 끝남 = 회색.
      17px 은 «큰 글씨» 대비 기준 밖이라 지금 색은 --wait. */
   .gtime{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
@@ -1498,10 +1477,6 @@ window.addEventListener('pageshow', remeasureSbcut);
 </div>
 </div><!-- /shell -->
 
-<!-- 고정 시간바 — 셸 «밖»에 둔다. 안에 두면 셸 크기를 보는 감시자가 이 칸을 고칠 때마다
-     --topH 를 다시 재고, 그게 다시 이 칸을 고쳐 무한 루프가 된다(실측으로 브라우저가 멈췄다). -->
-<button type="button" class="ghead dock hide" id="dockBar" aria-hidden="true" tabindex="-1"></button>
-
 <div class="wrap">
   <div id="list"></div>
 
@@ -2431,8 +2406,7 @@ window.dispatchEvent(new Event('fb-ready'));
     cf.className = 'dwfoot' + (ready ? '' : ' off');
     // 여기엔 연결 상태 한 마디만 둔다 — 빌드 도장을 붙여 봤다가 뺐다(오너 2026-09-16).
     cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-      + (ready ? '연결됨' : '연결 안 됨')
-      + (IS_DEV ? ' · ' + BUILD_STAMP : '');   // ※임시 — 확인 끝나면 뺀다
+      + (ready ? '연결됨' : '연결 안 됨');
   }
   function setSync(ok){
     if (ok === false) listFresh = false;   // 끊긴 순간부터 화면의 명단은 «옛 것»이다
@@ -2775,70 +2749,7 @@ window.dispatchEvent(new Event('fb-ready'));
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
     document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
-    measureDock();   // 시간대 위치가 바뀌었으니 고정 시간바 기준도 다시 잰다
   }
-
-  /* ── 고정 시간바(도킹) ────────────────────────────────────────────────
-     예전엔 명단 안의 .ghead 가 sticky 로 셸 밑에 붙었는데, iOS 가 그 자리를 한 프레임씩
-     늦게 잡아 빠르게 밀면 시간바가 뛰고 그 틈으로 명단이 비쳤다(.ghead 주석 참고).
-     지금은 «스크롤하지 않는 층»(상단 셸) 안의 한 칸이 그 노릇을 한다 — 자리가 고정이라
-     뛸 수가 없고, 스크롤에 따라 «내용만» 갈아 끼운다.
-     ★자리는 절대 건드리지 않는다. 스크롤에 맞춰 위치를 옮기는 순간 예전 문제가 돌아온다. */
-  var dockRows = [], dockTime = null, dockLineY = 140, dockWrapTop = 0;
-  function dockEl(){ return document.getElementById('dockBar'); }
-  // 구역 위치는 그릴 때 한 번만 잰다 — 스크롤 때마다 재면 매 프레임 레이아웃을 강제한다.
-  function measureDock(){
-    dockRows = []; dockTime = null;
-    var el = dockEl(), listEl = document.getElementById('list');
-    if (!el || !wrapEl || !listEl) return;
-    var sh = document.getElementById('topShell');
-    dockLineY = sh ? sh.getBoundingClientRect().bottom : 140;
-    var wr = wrapEl.getBoundingClientRect(), st = wrapEl.scrollTop;
-    dockWrapTop = wr.top;
-    var secs = listEl.querySelectorAll('.group');
-    for (var i = 0; i < secs.length; i++){
-      var r = secs[i].getBoundingClientRect();
-      dockRows.push({ time: secs[i].getAttribute('data-time'),
-                      top: r.top - wr.top + st, bottom: r.bottom - wr.top + st, sec: secs[i] });
-    }
-    paintDock();
-  }
-  // 원본 머리글이 «전체 다시 그리기 없이» 바뀌는 길이 둘 있다 — patchStatus(머리글 숫자)와
-  // repaintNow(지금/끝남 색·레일). 그때 고정 칸은 옛 내용을 들고 있으므로 다시 베낀다.
-  // (자리는 안 건드린다 — 내용만.)
-  function syncDock(){ dockTime = null; paintDock(); }
-  function paintDock(){
-    var el = dockEl();
-    if (!el || !wrapEl) return;
-    var line = dockLineY - dockWrapTop + wrapEl.scrollTop;   // 도킹 선(명단 좌표)
-    var cur = null;
-    for (var i = 0; i < dockRows.length; i++){
-      // sticky 와 같은 조건 — 머리글이 선 위로 올라갔고 그 구역이 아직 선 아래까지 이어진다
-      if (dockRows[i].top <= line && dockRows[i].bottom > line){ cur = dockRows[i]; break; }
-    }
-    if (!cur){ el.classList.add('hide'); dockTime = null; return; }
-    el.classList.remove('hide');
-    if (cur.time === dockTime) return;   // 같은 시간대면 손대지 않는다 (매 스크롤마다 다시 그리지 않게)
-    dockTime = cur.time;
-    var src = cur.sec.querySelector('.ghead');
-    el.innerHTML = src ? src.innerHTML : '';
-    el.className = 'ghead dock'
-      + (cur.sec.classList.contains('now') ? ' now' : '')
-      + (cur.sec.classList.contains('done') ? ' done' : '')
-      + (cur.sec.classList.contains('shut') ? ' shut' : '');
-    el.setAttribute('data-time', cur.time);
-  }
-  window.__measureDock = measureDock;   // 셸 높이 감시 스크립트(다른 <script>)가 부른다
-  if (wrapEl) wrapEl.addEventListener('scroll', paintDock, { passive: true });
-  (function(){
-    var el = dockEl();
-    if (!el) return;
-    el.addEventListener('click', function(e){
-      if (takeGhostClick(e)) return;
-      var t = el.getAttribute('data-time');
-      if (t) toggleSlot(t);
-    });
-  })();
 
   // 명단은 .wrap 안에서만 스크롤된다. 대상이 스크롤러 밖으로 벗어나 있으면 최소한으로
   // 스크롤해 보이게 한다. (상·하단 바는 스크롤러 밖이라 높이를 손으로 뺄 필요가 없다.)
@@ -2855,7 +2766,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var wr = wrapEl.getBoundingClientRect();
     // 보이는 영역 = 스크롤러에서 «떠 있는 것»을 뺀 부분 — 위엔 상단 셸(날짜 줄+카드)이, 아래엔 알약 바가 명단 위에 떠 있다.
     // 리뉴얼 전엔 둘 다 스크롤러 밖의 고정 띠라 wr.top/bottom 이 곧 경계였는데, 지금은 그 안에 떠 있어 따로 뺀다(2026-09-11).
-    // 셸 밑 한 줄은 고정 시간바(.ghead.dock)가 늘 덮는다 — 높이가 같으므로 그만큼 여유를 둔다
+    // .ghead 는 sticky 라 셸 밑 한 줄을 늘 덮는다. 그만큼 여유를 둔다
     var group = el.closest && el.closest('.group');
     var gh = group && group.querySelector('.ghead');
     var isGroup = el.classList && el.classList.contains('group');
@@ -3472,7 +3383,6 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     repaintNow();
     paintHead();
-    syncDock();   // 머리글 숫자가 바뀌었다 — 고정 칸이 옛 숫자를 들고 있지 않게
     return true;
   }
 
@@ -3503,7 +3413,6 @@ window.dispatchEvent(new Event('fb-ready'));
       var shut = w.classList.contains('shut');
       w.className = 'group' + (g.time === nowTime ? ' now' : (pend ? '' : ' done')) + (shut ? ' shut' : '');
     });
-    syncDock();   // 지금/끝남이 바뀌었으면 고정 칸의 색·금색 레일도 따라간다
   }
 
   function setStatus(id, st){
@@ -4267,7 +4176,6 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   });
 
-  var BUILD_STAMP = '0916.1255';   // ※임시
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
@@ -5554,10 +5462,7 @@ window.dispatchEvent(new Event('fb-ready'));
   //   자리보다 0.33px 아래에 붙는다 → 3배 화면에서 딱 1픽셀이 비어, 그 줄로 행 글자의 밑동이
   //   비쳤다(오너 스크린샷에서 밝은 줄이 y=638 한 줄, 2026-09-15). 내리면 시간바가 셸과
   //   살짝 겹쳐 붙어 틈이 생길 수 없다 — 겹치는 건 시간바 위쪽 여백(12px)이라 안 보인다.
-  function set(){
-    document.documentElement.style.setProperty('--topH', Math.floor(sh.getBoundingClientRect().height) + 'px');
-    if (window.__measureDock) window.__measureDock();   // 도킹 선(셸 밑면)이 움직였다
-  }
+  function set(){ document.documentElement.style.setProperty('--topH', Math.floor(sh.getBoundingClientRect().height) + 'px'); }
   set();
   if (window.ResizeObserver) new ResizeObserver(set).observe(sh);
   // 카드 내용이 나중에 그려지거나 검색창·업데이트 띠가 켜지는 건 DOM 변화 — 크기 관찰이 늦는 환경을 대비해 이것도 본다
