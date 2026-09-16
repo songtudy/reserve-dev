@@ -1392,16 +1392,16 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★예전엔 입력칸 «밑에» 칩 줄이 따로 있어 첫 글자를 치는 순간 카드가 58pt 늘어났다. 칩을 입력칸 안에 넣어도
        봤지만(칩이 되는 입력칸) 알약 안에 알약이 빽빽해 조잡했다 — 둘 다 되돌렸다.
      카드 줄 높이 = 입력칸 높이 44 라, 2~5명이면 치는 동안에도 돌릴 때도 카드 높이가 한 치도 안 바뀐다.
-     둘 다 grid 한 칸(1/1)에 두고 투명도로만 바꾼다 — 안 보이는 쪽도 자리를 지켜 바뀌는 순간 높이가 안 흔들린다. */
-  /* --morph · --morphEase = 글자 ↔ 카드 전환의 시간·곡선. JS(morph)도 여기서 읽는다 — 값은 이 한 곳.
+     둘 다 grid 한 칸(1/1)에 두고 visibility 로만 바꾼다 — 안 보이는 쪽도 자리를 지켜 바뀌는 순간 높이가 안 흔들린다.
+     바뀌는 모습은 JS(morph)가 그린다 — 아래 .rltface 참고. */
+  /* --morph · --morphEase = 입력칸 ↔ 카드 줄 전환의 시간·곡선. JS(morph)도 여기서 읽는다 — 값은 이 한 곳.
      ★--tMove · --ease 의 예외다(룰렛 갈래). --ease 는 첫 프레임에 이미 32% 를 가 버려, 글자가 «미끄러지지» 않고
        «튀었다»(시뮬레이터 영상 프레임). 옮겨 가는 게 보여야 하는 전환이라 천천히 출발하는 표준 곡선에 조금 더 길게. */
   .rltslot{display:grid;position:relative;--morph:.28s;--morphEase:cubic-bezier(.4,0,.2,1)}
-  .rltslot > *{grid-area:1/1;transition:opacity var(--morph) var(--morphEase),visibility 0s}
-  .rltslot.board > input, .rltslot:not(.board) > .rltnames{
-    opacity:0;visibility:hidden;pointer-events:none;
-    transition:opacity var(--morph) var(--morphEase),visibility 0s var(--morph)   /* 사라질 땐 페이드가 끝난 뒤 숨김 */
-  }
+  .rltslot > *{grid-area:1/1}
+  .rltslot > input{align-self:start}                 /* 카드가 드물게 두 줄이 돼도 입력칸은 44 그대로 */
+  .rltslot > .rltnames{position:relative;z-index:1}   /* 전환 때 면(.rltface) 위에 글자 */
+  .rltslot.board > input, .rltslot:not(.board) > .rltnames{visibility:hidden;pointer-events:none}
   .rlt input{
     width:100%;background:var(--field);color:var(--text);
     border:1px solid var(--line);border-radius:999px;
@@ -1420,7 +1420,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltchip{
     height:44px;line-height:22px;padding:10px 6px;border-radius:12px;min-width:0;   /* 10 + 22 + 10 + 선 2 = 44 */
     background:var(--field);border:1px solid var(--line);
-    font-size:16px;font-weight:700;color:var(--text);
+    font-size:16px;font-weight:600;color:var(--text);   /* 입력칸 글자와 같은 16·600 — 전환 때 «같은 글자»가 옮겨 가야 한다 */
     text-align:center;white-space:nowrap;overflow:hidden;
     transition:background .03s linear,color .03s linear,border-color .03s linear,transform .26s cubic-bezier(.34,1.56,.64,1);
   }
@@ -1429,13 +1429,20 @@ window.addEventListener('pageshow', remeasureSbcut);
      --win = 좌우 3pt씩(간격 6 의 절반), --pop = 좌우 10pt씩. drawChips 가 칸 폭을 재서 넣는다. */
   .rltchip.win{ transform:scale(var(--win, 1.09)) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
   .rltchip.hit{position:relative;z-index:1}          /* 튈 때 옆 칸 위로 */
-  /* 이름 글자는 카드 안의 한 덩어리(span) — 전환 때 이것만 입력칸 글자 자리에서 미끄러져 온다(JS morph). 길면 … */
+  /* 이름 글자는 카드 안의 한 덩어리(span) — 전환 때 이것이 입력칸 글자 자리에서 미끄러져 온다(JS morph). 길면 … */
   .rltchip > span{display:inline-block;max-width:100%;vertical-align:top;overflow:hidden;text-overflow:ellipsis}
-  /* 전환 중(.morph): 카드 줄은 투명도 전환 없이 늘 보이고(면·글자는 JS 가 따로 움직인다), 글자가 카드 밖에서
-     출발하므로 안 잘리게 한다. 입력칸 글자는 그 순간 비운다(.ghost) — 같은 글자가 두 번 보이지 않게. 면(바탕·선)만 흐려진다. */
-  .rltslot > .rltnames.morph{opacity:1;visibility:visible;transition:none}
-  .rltnames.morph .rltchip{overflow:visible}
-  .rltslot > input.ghost{color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}   /* 커서도 — 움직이는 글자 사이에 혼자 서 있었다 */
+  /* 전환 중(.morphing) — 이름 글자가 입력칸에서 빠져나와 자기 카드 자리로 미끄러지고, 면은 «입력칸이 먼저 흐려진 뒤
+     카드가 짙어진다»(앞 절반·뒤 절반). 글자는 끊김 없이 움직이므로 눈은 글자를 따라가고, 면은 겹치는 순간이 없다.
+     ★두 번 바꿨다(시뮬레이터 영상 프레임):
+       ① 입력칸과 카드 면을 «동시에» 엇갈려 바꿨더니 중간에 알약 테두리와 카드 테두리가 이중으로 겹쳐 보였다.
+       ② 입력칸 면을 카드 모양으로 «오려» 쪼개 봤더니(clip-path) 웹킷이 오림을 글자보다 늦게 그려 둘이 어긋났다.
+       그래서 움직임은 전부 아이폰이 따로 그리는 위치·투명도로만 한다.
+     카드 면은 JS 가 카드 자리에 따로 깐다(.rltface) — 카드 자체를 흐리면 글자까지 흐려진다.
+     입력칸은 글자만 비우고(.morphing) opacity 로 흐린다 — visibility 로 숨기면 되돌아갈 때 포커스가 안 들어가 키보드가 안 뜬다. */
+  .rltslot.morphing > input{visibility:visible;color:transparent;-webkit-text-fill-color:transparent;caret-color:transparent}
+  .rltslot.morphing:not(.board) > .rltnames, .rltslot.morphing > .rltnames{visibility:visible}   /* 앞 것은 위 :not(.board) 숨김을 이기려고 */
+  .rltslot.morphing .rltchip{background:transparent;border-color:transparent;overflow:visible;transition:none}   /* 카드 점멸용 .03s 전환이 여기 걸리면 첫 프레임에 카드 테두리가 비쳤다 */
+  .rltface{position:absolute;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;background:var(--field);pointer-events:none}
   .rltmirror{position:absolute;top:0;height:44px;line-height:44px;white-space:pre;visibility:hidden;pointer-events:none}   /* 입력칸 글자 위치를 재는 그림자 */
   /* 상태 줄 — 안내 → 경고 → 「🚽/⚡ ○○ 당첨!」이 «한 자리»에서 바뀐다.
      ★예전엔 안내문이 제목 아래 있고 결과는 당첨 순간 새 줄로 생겨, 카드가 위아래로 21pt 씩 벌어졌다
@@ -4532,14 +4539,12 @@ window.dispatchEvent(new Event('fb-ready'));
       slot.classList.toggle('board', on);
       // 전환(morph) 중이면 카드는 morph 가 글자가 닿는 순간 치운다 — 여기서 먼저 치우면 입력칸 글자가 아직 비어 있어
       // 잠깐 빈 칸이 보였다(시뮬레이터 영상 150ms).
-      if (!on && !morphing) clearTimer = setTimeout(function(){ if (!slot.classList.contains('board')) namesBox.innerHTML = ''; }, MORPH_MS);
+      if (!on && !slot.classList.contains('morphing')) clearTimer = setTimeout(function(){ if (!slot.classList.contains('board')) namesBox.innerHTML = ''; }, MORPH_MS);
     }
 
-    // ── 글자 ↔ 카드 전환 ──
-    // 입력칸 속 이름 글자가 «제자리에서» 출발해 자기 카드 자리로 미끄러지고, 그동안 카드 면이 차오르며 입력칸 면은 흐려진다.
-    // 글자가 사라졌다 다시 나타나는 게 아니라 한 덩어리로 옮겨 가므로 눈이 따라간다(오너 2026-09-17 「이름 자체가 카드가
-    // 되는 느낌」). 고치러 갈 땐 같은 길을 거꾸로. 움직이는 건 글자 위치(transform)와 면 색뿐이다.
-    // ★예전엔 입력칸과 카드 줄이 0.2초 «겹쳐» 바뀌어, 사이에 글자와 카드가 포개진 프레임이 보였다(시뮬레이터 영상).
+    // ── 입력칸 ↔ 카드 줄 전환 ──
+    // 이름 글자가 입력칸 제자리에서 출발해 자기 카드 자리로 미끄러진다(오너 2026-09-17 「이름 자체가 카드가 되는 느낌」).
+    // 고치러 갈 땐 같은 길을 거꾸로. 꼴과 이렇게 된 까닭은 CSS .morphing 주석 참고.
     var slotCs = getComputedStyle(slot);
     var MORPH_MS = parseFloat(slotCs.getPropertyValue('--morph')) * 1000 || 280;   // CSS .rltslot 의 --morph
     var MORPH_EASE = slotCs.getPropertyValue('--morphEase').trim() || 'ease-in-out';
@@ -4549,8 +4554,14 @@ window.dispatchEvent(new Event('fb-ready'));
       cancelAnimationFrame(morphing.raf);
       clearTimeout(morphing.timer);
       morphing.anims.forEach(function(a){ a.cancel(); });
-      namesBox.classList.remove('morph');
-      inp.classList.remove('ghost');
+      morphing.faces.forEach(function(f){ if (f.parentNode) f.parentNode.removeChild(f); });
+      morphing.styled.forEach(function(el){ el.style.opacity = ''; el.style.transform = ''; });
+      // 카드 면이 돌아올 때도 .03s 전환 없이 — 깔아 둔 면(.rltface)을 치우는 같은 프레임에 카드 면이 온전히 있어야 한다
+      var tiles = namesBox.children, i;
+      for (i = 0; i < tiles.length; i++) tiles[i].style.transition = 'none';
+      slot.classList.remove('morphing');
+      void namesBox.offsetWidth;
+      for (i = 0; i < tiles.length; i++) tiles[i].style.transition = '';
       morphing = null;
     }
     // 입력칸 속 이름마다 글자 자리(슬롯 기준 왼쪽 x · 세로 가운데 cy). 같은 이름이 또 있으면 처음 것.
@@ -4580,31 +4591,39 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     function morph(toBoard, done){
       endMorph();
+      slot.classList.add('morphing');
       var spots = wordSpots(), sr = slot.getBoundingClientRect();
-      var cs = getComputedStyle(namesBox);   // 카드 면 색은 토큰에서 — 방금 불을 끈 카드는 아직 금색에서 바뀌는 중일 수 있다
-      var FACE = { backgroundColor: cs.getPropertyValue('--field').trim(), borderColor: cs.getPropertyValue('--line').trim() };
-      var anims = [];
-      namesBox.classList.add('morph');
-      inp.classList.add('ghost');
+      var faces = [], styled = [inp], jobs = [];
+      // 앞 절반에 사라지는 쪽 · 뒤 절반에 나타나는 쪽 — 면이 겹치는 프레임이 없다
+      var OUT = [{ opacity: 1 }, { opacity: 0, offset: .5 }, { opacity: 0 }];
+      var IN  = [{ opacity: 0 }, { opacity: 0, offset: .5 }, { opacity: 1 }];
+      jobs.push([inp, toBoard ? OUT : IN, 'linear']);
+      inp.style.opacity = toBoard ? 1 : 0;
       [].forEach.call(namesBox.children, function(tile){
+        var tr = tile.getBoundingClientRect(), f = document.createElement('div');
+        f.className = 'rltface';
+        f.style.left = (tr.left - sr.left) + 'px'; f.style.top = (tr.top - sr.top) + 'px';
+        f.style.width = tr.width + 'px'; f.style.height = tr.height + 'px';
+        f.style.opacity = toBoard ? 0 : 1;
+        faces.push(f); styled.push(f);
+        jobs.push([f, toBoard ? IN : OUT, 'linear']);
         var t = tile.firstChild, at = spots[t.textContent];
-        if (!at) return;
-        var r = t.getBoundingClientRect();
-        var dx = at.x - (r.left - sr.left), dy = at.cy - (r.top + r.height / 2 - sr.top);
-        var face = [{ backgroundColor: 'transparent', borderColor: 'transparent' }, FACE];
-        var move = [{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }];
-        if (!toBoard){ face.reverse(); move.reverse(); }
-        var opt = { duration: MORPH_MS, easing: MORPH_EASE, fill: 'both' };
-        anims.push(tile.animate(face, opt), t.animate(move, opt));
+        if (at){
+          var r = t.getBoundingClientRect();
+          var away = 'translate(' + (at.x - (r.left - sr.left)) + 'px,' + (at.cy - (r.top + r.height / 2 - sr.top)) + 'px)';
+          t.style.transform = toBoard ? away : 'none';
+          styled.push(t);
+          jobs.push([t, toBoard ? [{ transform: away }, { transform: 'none' }] : [{ transform: 'none' }, { transform: away }], MORPH_EASE]);
+        }
       });
-      // 첫 자리에 세워 두고(pause) 두 프레임 뒤에 출발시킨다. 키보드가 오르내리는 순간 아이폰이 잠깐 멈추는데,
-      // 곧바로 출발시키면 그동안의 움직임이 «이미 지나간» 채로 그려져 글자가 미끄러지지 않고 튀었다(시뮬레이터 영상).
-      anims.forEach(function(a){ a.pause(); });
-      var m = morphing = { anims: anims, raf: 0, timer: 0 };
+      faces.forEach(function(f){ slot.insertBefore(f, namesBox); });
+      // 출발 자리는 인라인 스타일로 먼저 그려 두고, 두 프레임 뒤에 움직임을 건다. 키보드가 오르내리는 순간 아이폰이 잠깐
+      // 멈추는데, 곧바로 출발시키면 그동안의 움직임이 «이미 지나간» 채로 그려져 글자가 미끄러지지 않고 튀었다(시뮬레이터 영상).
+      var m = morphing = { anims: [], faces: faces, styled: styled, raf: 0, timer: 0 };
       m.raf = requestAnimationFrame(function(){ m.raf = requestAnimationFrame(function(){
-        anims.forEach(function(a){ a.play(); });
+        jobs.forEach(function(j){ m.anims.push(j[0].animate(j[1], { duration: MORPH_MS, easing: j[2], fill: 'forwards' })); });
         m.timer = setTimeout(function(){
-          if (!toBoard) namesBox.innerHTML = '';   // 글자가 입력칸 자리에 닿는 순간 카드를 치우고 입력칸 글자를 되살린다
+          if (!toBoard) namesBox.innerHTML = '';   // 글자가 입력칸 자리에 닿은 순간 카드를 치우고 진짜 입력칸 글자를 보인다
           endMorph();
           if (done) done();
         }, MORPH_MS);
@@ -4829,10 +4848,12 @@ window.dispatchEvent(new Event('fb-ready'));
       if (spinning) return;
       // 당첨 불을 먼저 끈다 — 금색 면이 흐려지는 동안 남고, 어두운 글자(--onWait)가 바탕에 묻힌 채 움직였다
       [].forEach.call(namesBox.children, function(c){ c.className = 'rltchip'; });
-      if (!calm()) morph(false);      // 카드 글자가 입력칸 자리로 돌아간다 (board 를 끄기 전에 — 카드 줄이 계속 보이게)
+      var anim = !calm();
+      if (anim) slot.classList.add('morphing');   // 카드 줄을 붙잡아 둔다 — board(false) 가 카드를 치우지 않게
       board(false);
       reset();
       inp.focus();                    // 누른 그 순간에 — 타이머 뒤로 미루면 아이폰이 키보드를 안 띄운다
+      if (anim) morph(false);         // 포커스 «뒤에» 잰다 — 포커스가 글자를 끝으로 스크롤하면 돌아갈 자리가 바뀐다
     });
     // ★다시 누르면 커서가 «맨 앞»으로 가던 것 — 웹킷은 글자가 든 칸에 포커스가 들어오는 순간 커서를 0 에
     //   두고, 손을 뗄 때(mouseup) 누른 자리로 옮긴다(iOS 시뮬레이터 로그: focus 0/11 → mouseup 11/11).
