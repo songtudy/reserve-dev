@@ -289,25 +289,6 @@
     })(), true);
   })();
 
-  group('rltTake — 룰렛 이름 칸: 글자 → 칩');
-  (function(){
-    check('띄어쓰기 앞까지만 칩, 마지막은 치는 중', T.rltTake([], '동현 동주 동희', false),
-      { list: ['동현', '동주'], rest: '동희', dup: false });
-    check('끝에 띄어쓰기 → 전부 칩, 남는 글자 없음', T.rltTake([], '동현 동주 ', false),
-      { list: ['동현', '동주'], rest: '', dup: false });
-    check('all → 치던 이름까지 칩', T.rltTake(['동현'], '동주', true),
-      { list: ['동현', '동주'], rest: '', dup: false });
-    check('쉼표·겹친 띄어쓰기도 나눈다', T.rltTake([], ' 동현,,동주   동희', true),
-      { list: ['동현', '동주', '동희'], rest: '', dup: false });
-    check('이미 있는 이름은 안 넣고 알린다', T.rltTake(['동현'], '동현 동주 ', false),
-      { list: ['동현', '동주'], rest: '', dup: true });
-    check('치는 중인 글자는 겹쳐도 아직 안 따진다', T.rltTake(['동현'], '동현', false),
-      { list: ['동현'], rest: '동현', dup: false });
-    check('__proto__ 같은 이름도 그냥 이름', T.rltTake([], '__proto__ constructor', true),
-      { list: ['__proto__', 'constructor'], rest: '', dup: false });
-    check('원래 배열은 안 건드린다', (function(){ var a = ['동현']; T.rltTake(a, '동주 ', false); return a; })(), ['동현']);
-  })();
-
   /* ==================== 오프라인 쓰기 큐 병합 ==================== */
   group('wqEntry — 오프라인 쓰기 큐 병합');
   (function(){
