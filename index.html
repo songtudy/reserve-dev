@@ -2704,9 +2704,17 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     em.classList.add('hide');
 
-    // 다른 기기에서 명단이 들어오면 이쪽 붙여넣기 창은 닫는다.
-    // 단, 내가 직접 입력하던 중이면 건드리지 않는다.
-    if (!panel.classList.contains('hide') && !taEl.value.trim()) closePaste();
+    // 다른 기기에서 명단이 들어오면 이쪽 붙여넣기 창은 «입력 중이어도» 닫는다.
+    // 예전엔 입력 중이면 두었는데(타이핑을 지키려고), 그 창의 「등록」은 itemsReplace = set 이라
+    // 방금 들어온 명단을 통째로 덮는다 — 그 사이 저쪽에서 누른 방문 체크가 사라진다.
+    // 지킬 값어치가 있는 타이핑도 아니다: 둘 다 같은 단톡방 글을 붙여넣는 중이고,
+    // 정말 다른 명단을 올릴 거면 「명단 초기화」(길게 누르기)를 거치는 게 맞는 길이다.
+    // 창이 말없이 사라지면 놀라니 한 줄 알린다 (구조 변경이라 토스트 규칙에도 맞는다).
+    if (!panel.classList.contains('hide')){
+      var wasTyping = !!taEl.value.trim();
+      closePaste();
+      if (wasTyping) toast('다른 기기에서 명단 등록됨 · ' + all.length + '건');   // all = 검색에 안 걸린 «명단 전체»
+    }
 
     var openCount = 0;
     var pendRows = 0;   // 「대기」 보기에서 보여줄 행 수 — 접혀 있어도 센다 (접힘 ≠ 없음)
