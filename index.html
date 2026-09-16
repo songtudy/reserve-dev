@@ -2783,7 +2783,7 @@ window.dispatchEvent(new Event('fb-ready'));
      지금은 «스크롤하지 않는 층»(상단 셸) 안의 한 칸이 그 노릇을 한다 — 자리가 고정이라
      뛸 수가 없고, 스크롤에 따라 «내용만» 갈아 끼운다.
      ★자리는 절대 건드리지 않는다. 스크롤에 맞춰 위치를 옮기는 순간 예전 문제가 돌아온다. */
-  var dockRows = [], dockTime = null, dockLineY = 140, dockWrapTop = 0;
+  var dockRows = [], dockTime = null, dockLineY = 140, dockWrapTop = 0, dockH = 44;
   function dockEl(){ return document.getElementById('dockBar'); }
   // 구역 위치는 그릴 때 한 번만 잰다 — 스크롤 때마다 재면 매 프레임 레이아웃을 강제한다.
   function measureDock(){
@@ -2795,6 +2795,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var wr = wrapEl.getBoundingClientRect(), st = wrapEl.scrollTop;
     dockWrapTop = wr.top;
     var secs = listEl.querySelectorAll('.group');
+    var h0 = secs.length ? secs[0].querySelector('.ghead') : null;
+    if (h0) dockH = h0.offsetHeight;
     for (var i = 0; i < secs.length; i++){
       var r = secs[i].getBoundingClientRect();
       dockRows.push({ time: secs[i].getAttribute('data-time'),
@@ -2812,8 +2814,12 @@ window.dispatchEvent(new Event('fb-ready'));
     var line = dockLineY - dockWrapTop + wrapEl.scrollTop;   // 도킹 선(명단 좌표)
     var cur = null;
     for (var i = 0; i < dockRows.length; i++){
-      // sticky 와 같은 조건 — 머리글이 선 위로 올라갔고 그 구역이 아직 선 아래까지 이어진다
-      if (dockRows[i].top <= line && dockRows[i].bottom > line){ cur = dockRows[i]; break; }
+      // ★조건이 둘이다. ① 머리글이 선 위로 올라갔고 ② 그 구역이 «바 한 칸 아래»까지 이어진다.
+      //   ②가 없으면 다음 시간바가 애매하게 올라온 동안 바는 이전 시각인데 바로 밑 명단은 다음
+      //   시간대인 구간이 한 바 높이만큼 생긴다 — 바가 거짓말을 한다(오너 2026-09-16).
+      //   ②를 걸면 그 구간에는 바를 아예 안 띄우고, 진짜 머리글이 제자리까지 올라오는 게 그대로
+      //   보인다. 올라와 붙는 순간 고정 칸이 같은 자리에서 이어받아 끊긴 데가 없다.
+      if (dockRows[i].top <= line && dockRows[i].bottom > line + dockH){ cur = dockRows[i]; break; }
     }
     if (!cur){ el.classList.add('hide'); dockTime = null; return; }
     el.classList.remove('hide');
