@@ -862,23 +862,27 @@ window.addEventListener('pageshow', remeasureSbcut);
      말풍선은 시트·확인창과 같은 재질(--panel2 · --radius · 글자색 8% 림) — 새 꼴을 안 만든다. */
   .empty.bear{padding:0}   /* .empty 의 위아래 36 을 뺀다 — 이 칸은 제가 높이를 직접 잡는다 */
   .donebear{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    /* 빼는 값은 .wrap 의 아래 여백과 «같은 식»이어야 한다 — 88 로 박아 뒀더니 노치 있는 폰에서
-       env(safe-area-inset-bottom) 만큼(≈18px) 모자라 화면이 스크롤됐다(오너 2026-09-16). */
-    min-height:calc(100svh - var(--topH, 140px)
-                    - (max(10px, env(safe-area-inset-bottom) - 6px) + 78px));
-    /* ★곰이 스플래시 곰과 «같은 자리»에 선다(오너 2026-09-16). 저녁에 앱을 열면 스플래시가
-       걷히면서 곰이 그 자리에 그대로 남아 두 화면이 이어진다. 둘 다 위치가 H/2 + 고정값 꼴이라
-       차이가 화면 높이와 무관하게 20px 로 일정하다(852·714 실측). 가운데 정렬에서 아래 여백을
-       주면 그 절반만큼 올라가므로 40 을 준다. 크기도 곰 그림 94px 로 스플래시와 같다.
-       ★--sbcut 과 안전영역도 같이 받는다. 스플래시는 «기기 화면» 한가운데에 서려고 --sbcut
-       (홈 화면 앱에서 iOS 가 위를 잘라내는 높이, 아이폰 17 에서 62px)만큼 올라가는데, 이 칸은
-       «본문 영역» 한가운데라 그 보정을 안 받아 홈 화면 앱에서만 22.8px 이 벌어졌다(시뮬 실측
-       2026-09-16 — 사파리는 --sbcut 이 0 이라 안 보인다). 아래 여백에 --sbcut 을 더해 같이 올리고,
-       안전영역이 생기면서 본문이 그만큼 짧아진 몫(SB-10)은 도로 빼 준다. */
-    padding-bottom:calc(40px + var(--sbcut, 0px) + 10px
-                        - max(10px, env(safe-area-inset-bottom) - 6px));
+    /* ★스플래시와 «똑같은 규칙»로 자리를 잡는다 — 화면 전체에 깔고 가운데 정렬, 아래 여백은
+       --sbcut. 셸 높이(--topH)·안전영역이 식에서 통째로 빠져, 두 곰이 계산이 아니라 «구조»로
+       같은 자리에 선다. 전에는 본문 영역 한가운데를 잡고 여백으로 끌어올렸는데, 아무리 맞춰도
+       0.8px 이 남아 스플래시가 걷힐 때 곰이 미세하게 움직였다(오너 2026-09-16).
+       ★가운데에 세우는 것은 «곰 상자 하나»다(.dbwrap). 말풍선까지 같이 세우면 글자 줄 높이가
+       기기 배율마다 다르게 떨어져 곰이 0.45px 씩 흔들린다(3배 시뮬 실측). 말풍선은 흐름에서
+       빼서 곰 밑에 매단다 — 이제 곰 자리는 글자와 무관하다.
+       ★위 여백은 스플래시 락업 속이 다른 몫만 메운다(스플래시는 마크 밑에 이름이 붙어 그만큼
+       위로 밀린다). 화면 크기·기기와 무관한 상수다.
+       ★흐름에서 빠지므로 이 칸은 높이가 0 — 스크롤은 애초에 생기지 않는다.
+       ★pointer-events 를 끊는다: 화면을 덮지만 그리기만 하고 아래 조작을 막지 않는다. */
+    position:fixed;left:0;right:0;top:0;bottom:0;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 16px;
+    /* 28.62 = 스플래시에서 마크 밑에 [간격 13 + 이름 25] 가 붙어 마크가 위로 밀리는 몫(그 절반이
+       14.31). 아래 여백을 주면 그 절반만큼 올라가므로 두 배로 적는다. 글자가 아니라 상자 치수에서
+       나온 값이라 기기·배율과 무관한 상수다(393×852·375×667·3배 시뮬 모두 차이 0.00 확인). */
+    padding-bottom:calc(var(--sbcut, 0px) + 28.62px);
+    pointer-events:none;
   }
+  .dbwrap{position:relative;width:125px}   /* 곰 상자 = 가운데 정렬의 유일한 기준 */
   /* ★액자는 «곰 기준»(0 0 100 100) — 잠금·서랍과 같은 틀이다. 스플래시 액자(-3.25 … 111.80)를
      쓰면 하트 자리까지 폭에 들어가 곰이 작아지고(120 지정 → 실제 80) 4px 왼쪽으로 치우친다(실측).
      하트는 상자 오른쪽 밖으로 나가므로 overflow 를 열어 둔다. */
@@ -891,8 +895,10 @@ window.addEventListener('pageshow', remeasureSbcut);
      밑의 말풍선·워드마크는 둘 다 가운데라, 옮겨야 «곰과 글자의 관계»까지 스플래시와 같아진다. */
   .donebear .mk{width:125px;height:auto;display:block;overflow:visible;transform:translateX(-3.33px)}
   .donebear .say{
-    position:relative;background:var(--panel2);border-radius:var(--radius);
-    padding:11px 16px;margin-top:12px;max-width:82%;
+    position:absolute;top:100%;left:50%;transform:translateX(-50%);
+    width:max-content;max-width:78vw;
+    background:var(--panel2);border-radius:var(--radius);
+    padding:11px 16px;margin-top:12px;
     font-size:14px;font-weight:700;color:var(--text);line-height:1.35;
     box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
   }
@@ -2484,11 +2490,11 @@ window.dispatchEvent(new Event('fb-ready'));
     return '퇴근까지 <span id="doneCd">' + fmtLeft(left) + '</span> 남았어요!';
   }
   function doneBearHtml(){
-    return '<div class="donebear">'
+    return '<div class="donebear"><div class="dbwrap">'
       + '<svg class="mk" viewBox="0 0 100 100" aria-hidden="true">'
       +   '<use href="#mkHeart"/><use href="#mkIksuni"/>'
       + '</svg>'
-      + '<div class="say">' + doneSay() + '</div></div>';
+      + '<div class="say">' + doneSay() + '</div></div></div>';
   }
   function fmtLeft(s){
     var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
@@ -2607,6 +2613,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 목록
     list.innerHTML = '';
     var em = document.getElementById('emptyMsg');
+    em.classList.remove('bear');   // 곰 화면을 지나온 뒤의 「검색 결과 없음」이 곰 여백(0)을 물려받지 않게
     if (!items.length){
       if (q){
         em.classList.remove('hide');
@@ -4141,7 +4148,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 빌드 도장 — 테스트 사이트의 서랍 아래에만 보인다(MMDD.HHMM). 「고쳤다 / 아직 보인다」가
   // 어긋날 때 «폰이 어느 빌드를 들고 있나»부터 확인할 수 있어야 한다. 배포 스크립트가 찍는다.
   // 상단 배지에 붙이면 가운데 날짜를 밀어내므로(오너 2026-09-15) 거기엔 안 붙인다.
-  var BUILD_STAMP = '0916.0931';
+  var BUILD_STAMP = '0916.0945';
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
