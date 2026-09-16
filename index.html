@@ -1412,6 +1412,27 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
   .rltchip.win{ transform:scale(1.09) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
   .rltresult{ margin:14px 2px 2px;text-align:center;font-size:20px;font-weight:800;color:var(--wait) }
+  /* ── 날벼락 (10%) ──
+     번쩍임은 «약하게». 세게 하면 명단도 카드 글자도 갈색으로 탁해진다(시안 비교로 확인).
+     번개는 카드 위를 지난다 — 뒤로 보내면 칩에 안 닿아 「누가 맞았나」가 흐려진다.
+     0.3초라 글자를 읽는 데는 지장이 없다. */
+  .rltflash{position:absolute;inset:0;background:var(--wait);opacity:0;pointer-events:none;z-index:64;mix-blend-mode:screen}
+  /* 라이트는 multiply 라 같은 불투명도여도 훨씬 세다 — 절반으로 낮춰 세기를 맞춘다 */
+  html[data-theme="light"] .rltflash{mix-blend-mode:multiply;--flashK:.5}
+  .rltsky{position:absolute;inset:0;pointer-events:none;z-index:65;opacity:0}
+  .rltsky path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+  /* 세 겹: 어두운 윤곽 → 색 번짐 → 밝은 심.
+     ★윤곽은 «라이트 전용»이다. 번개의 대부분은 어두운 막 위를 지나가지만 마지막 구간이 흰 카드
+       위를 지나는데, 거기서 거의 흰 심이 바탕에 묻혀 «어디를 때렸는지»가 사라졌다(실기 확인).
+       심을 어둡게 바꾸면 반대로 막 위에서 안 보인다 — 그래서 심은 그대로 두고 윤곽만 깐다.
+       다크에서는 어두운 바탕 위 어두운 선이라 있어도 안 보이므로 아예 끈다. */
+  .rltsky .bshade{stroke:#1a1208;opacity:0}
+  html[data-theme="light"] .rltsky .bshade{opacity:.5}
+  .rltsky .bglow{stroke:var(--wait);opacity:.5;filter:blur(6px)}
+  .rltsky .bcore{stroke:#fff6e0}
+  html[data-theme="light"] .rltsky .bcore{stroke:#fffaf2}
+  .rltchip.hit{animation:boltHit .38s var(--ease)}
+  @keyframes boltHit{0%{transform:scale(1.26)}50%{transform:scale(.96)}100%{transform:scale(1.09)}}
   .dbtn #rltGo{background:var(--wait);color:var(--onWait)}
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
 
@@ -1610,6 +1631,12 @@ window.addEventListener('pageshow', remeasureSbcut);
 </div>
 
 <div class="scrim hide" id="rltScrim">
+  <!-- 날벼락: 번쩍임 막 + 번개. 카드가 아니라 «막»에 그린다 — 카드(330×280)는 번개를 담기엔 너무
+       작아 가지를 붙일 자리가 없고, 카드 안에서 시작하면 어디서 온 건지 안 읽힌다. 막에 그리면
+       화면 꼭대기에서 400px 넘게 내려온다. 라이트 모드가 되는 이유도 이것이다 — 막은 두 테마 모두
+       어두우므로(--scrim) 번개가 늘 어두운 바탕 위에 놓인다. -->
+  <div class="rltflash" id="rltFlash"></div>
+  <svg class="rltsky" id="rltSky" aria-hidden="true"></svg>
   <div class="rlt">
     <h3>🚽 화장실 청소 룰렛</h3>
     <p class="rltsub">이름을 띄어쓰기로 구분해 입력해 주세요</p>
@@ -4326,6 +4353,29 @@ window.dispatchEvent(new Event('fb-ready'));
   //    곡선 초반이 STEP_MS 바닥보다 빨라 감속이 「쭉 빠르다 뚝」이 된다. 아래로 묶으면 곡선이
   //    전 구간을 지배해 인원수와 무관하게 처음부터 끝까지 매끄럽게 감속한다.
   //  - (from + steps) % n === winner 는 두 경우 모두 성립.
+  // 두 점 사이를 꺾인 선으로. 끝으로 갈수록 흔들림을 줄여 목표에 정확히 꽂히게 한다.
+  function boltPts(x0, y0, x1, y1, segs, jit){
+    var p = [[x0, y0]], i, t, taper;
+    for (i = 1; i < segs; i++){
+      t = i / segs; taper = 1 - Math.abs(t - .5) * .7;
+      p.push([x0 + (x1 - x0) * t + (Math.random() * 2 - 1) * jit * taper,
+              y0 + (y1 - y0) * t + (Math.random() * 2 - 1) * jit * .22]);
+    }
+    p.push([x1, y1]);
+    return p;
+  }
+  function boltD(p){
+    return 'M' + p.map(function(q){ return q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join('L');
+  }
+
+  // 날벼락이 넘어갈 사람. «자기 자신만 빼고» 균등하게 — n-1 중 하나를 뽑고 자기 번호 이상이면 한 칸 민다.
+  // 이 균등성이 공정성의 전부다: P(최종 x) = .9·(1/n) + .1·[(n-1)/n · 1/(n-1)] = 1/n.
+  function twistPick(n, old, rnd){
+    var k = Math.floor((rnd === undefined ? Math.random() : rnd) * (n - 1));
+    if (k >= n - 1) k = n - 2;          // rnd 가 1 이어도 범위를 안 넘게
+    return k >= old ? k + 1 : k;
+  }
+
   var RLT_BASE = 16, RLT_STEP_CAP = 22;
   function rltSteps(n, winner, from){
     var steps = RLT_BASE + (((winner - from - RLT_BASE) % n) + n) % n;
@@ -4367,6 +4417,7 @@ window.dispatchEvent(new Event('fb-ready'));
       sub.style.color = warn ? 'var(--warn)' : '';
     }
     function reset(){
+      sky.innerHTML = '';                  // 이전 번개가 남아 있지 않게
       result.classList.add('hide');
       goBtn.textContent = '돌리기';
       goBtn.disabled = false;
@@ -4387,6 +4438,55 @@ window.dispatchEvent(new Event('fb-ready'));
     // 흐름은 인원수·당첨자와 무관하게 늘 같다:
     //   빠른 회전 → ease-out 감속 → 당첨칸 안착 → HOLD_MS 정지 → 결과·바운스
     // 감속 곡선 p·(2−p) 이 마지막 칸에 닿는 지점이 늘 ~85%p 라, 도는 시간은 인원수와 무관하게 일정하다.
+    // ── 날벼락 ──
+    // 10%로 당첨자가 «다른 사람»에게 넘어간다. 공정성은 안 깨진다 —
+    // 새 당첨자를 나머지 n-1 명 중 균등하게 뽑으므로 최종 확률은 그대로 1/n 이다:
+    //   P(x) = .9·(1/n) + .1·[ (n-1)/n · 1/(n-1) ] = .9/n + .1/n = 1/n
+    // 바뀌는 순간은 «빛 안»에 숨긴다 — 불이 옮겨가는 걸 보여주면 「덜 돌았나」가 되고,
+    // 빛이 걷혔을 때 이미 옮겨가 있으면 「맞았다」가 된다.
+    var TWIST_P = 0.10;
+    var BOLT_SEGS = 12, BOLT_JIT = 26, BOLT_BRANCHES = 3, BOLT_MS = 340;
+    var sky = document.getElementById('rltSky');
+    var flash = document.getElementById('rltFlash');
+    function calm(){   // 움직임을 줄이라고 한 기기 — 번쩍임·번개를 빼고 결과만 바꾼다
+      try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){ return false; }
+    }
+    function drawBolt(target){
+      var sr = rltScrim.getBoundingClientRect(), tr = target.getBoundingClientRect();
+      var tx = tr.left - sr.left + tr.width / 2, ty = tr.top - sr.top + tr.height / 2;
+      sky.innerHTML = '';
+      sky.setAttribute('viewBox', '0 0 ' + sr.width + ' ' + sr.height);
+      // 시작점을 목표 바로 위로 조금만 흩는다 — 멀리서 비스듬히 오면 카드 글자를 길게 가로지른다
+      var main = boltPts(tx + (Math.random() * 2 - 1) * 46, -8, tx, ty, BOLT_SEGS, BOLT_JIT);
+      var paths = [boltD(main)], b, i, bx, by, len, dir;
+      for (b = 0; b < BOLT_BRANCHES; b++){
+        i = 1 + Math.floor(Math.random() * (main.length - 3));
+        bx = main[i][0]; by = main[i][1];
+        len = 30 + Math.random() * 40; dir = Math.random() < .5 ? -1 : 1;
+        paths.push(boltD(boltPts(bx, by, bx + dir * len * (.6 + Math.random() * .6),
+                                 by + len * (.5 + Math.random() * .6), 4, BOLT_JIT * .7)));
+      }
+      var W = { bshade: [5.4, 3.2], bglow: [10, 6], bcore: [2.4, 1.5] };   // [본줄기, 가지]
+      paths.forEach(function(d, k){
+        ['bshade', 'bglow', 'bcore'].forEach(function(cls){     // 그리는 차례 = 쌓이는 차례
+          var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          el.setAttribute('d', d); el.setAttribute('class', cls);
+          el.style.strokeWidth = W[cls][k ? 1 : 0];
+          sky.appendChild(el);
+        });
+      });
+    }
+    function strike(target){
+      drawBolt(target);
+      // 번쩍임 2회 이하 — 1초에 3회 넘으면 광과민성 발작 위험(WCAG 2.3.1)
+      sky.animate([{opacity:0},{opacity:1,offset:.08},{opacity:.3,offset:.4},{opacity:1,offset:.55},{opacity:0}],
+                  { duration: BOLT_MS, easing: 'linear' });
+      var fk = parseFloat(getComputedStyle(flash).getPropertyValue('--flashK')) || 1;
+      flash.animate([{opacity:0},{opacity:.13 * fk,offset:.14},{opacity:0}],
+                    { duration: BOLT_MS + 90, easing: 'ease-out' });
+      buzz(60);   // 결과 진동(톡-톡톡)과 달리 짧고 센 한 방
+    }
+
     var SPIN_MS = 2000;   // 회전이 멎기까지 (실제 정지는 그 ~85% 지점 + HOLD_MS ≈ 총 2초)
     var STEP_MS = 45;     // 가장 빠른 구간의 칸 간격 — CSS 전환(0.03s)보다 커야 두 칸이 겹쳐 안 빛난다
     var HOLD_MS = 300;    // 당첨칸에 멈춰 있는 시간 (결과가 뜨기 전)
@@ -4436,11 +4536,32 @@ window.dispatchEvent(new Event('fb-ready'));
         chips[winner].className = 'rltchip win';
         result.textContent = '🚽 ' + ns[winner] + ' 당첨!';
         result.classList.remove('hide');
+        buzz([25, 45, 25]);
+        if (n > 1 && Math.random() < TWIST_P) twist(myGen, chips, ns, winner);
+        else finish();
+      }
+      function finish(){
         goBtn.disabled = false;
         goBtn.textContent = '다시';
         inp.disabled = false;
         spinning = false;
-        buzz([25, 45, 25]);
+      }
+      // 결과가 뜬 뒤 잠깐 두었다가 번개가 «다른 사람»을 내려친다.
+      // 그 사이에도 spinning 은 true — 닫기·다시 돌리기·이름 고치기를 막는다.
+      function twist(myGen2, chips2, ns2, old){
+        var nw = twistPick(ns2.length, old);
+        setTimeout(function(){
+          if (myGen2 !== gen) return;              // 그 사이 닫혔으면 아무것도 안 한다
+          if (!calm()) strike(chips2[nw]);
+          // 바뀌는 순간을 빛 «안»에 숨긴다 (번쩍임 정점 ≈ 80ms)
+          setTimeout(function(){
+            if (myGen2 !== gen) return;
+            chips2[old].className = 'rltchip';
+            chips2[nw].className = 'rltchip win hit';
+            result.textContent = '⚡ ' + ns2[nw] + ' 당첨!';
+            finish();
+          }, calm() ? 0 : 80);
+        }, 780);
       }
       requestAnimationFrame(frame);
     }
@@ -5254,7 +5375,7 @@ window.dispatchEvent(new Event('fb-ready'));
       validLogDate: validLogDate, cleanLogEntry: cleanLogEntry, logIdentity: logIdentity,
       logKeyId: logKeyId, mergeLogRows: mergeLogRows,
       reportText: reportText, uniqueId: uniqueId, nextSeq: nextSeq, isCollapsed: isCollapsed,
-      rltSteps: rltSteps, wqEntry: wqEntry, computeDev: computeDev, autoCancelDue: autoCancelDue,
+      rltSteps: rltSteps, twistPick: twistPick, wqEntry: wqEntry, computeDev: computeDev, autoCancelDue: autoCancelDue,
       stalePurgeDates: stalePurgeDates, kstParts: kstParts, lateEntry: lateEntry, stampTs: stampTs,
       consts: { COLLAPSE_DELAY: COLLAPSE_DELAY, AUTO_CANCEL_MIN: AUTO_CANCEL_MIN,
                 AUTO_CANCEL_WINDOW: AUTO_CANCEL_WINDOW,
