@@ -1429,9 +1429,13 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★내력(2026-09-16): .13(밋밋) → .78·혼합없음(금색 판) → .62·screen. 중간의 .78 은 두 시안 파일을
        헷갈려 «다른 시안»의 값(.92·혼합없음)을 기준으로 삼은 착각이었다. 다시 바꾸려면 그 파일부터 열 것.
      라이트는 screen 이 흰 바탕에서 아무것도 안 해서 multiply 로 — 대신 훨씬 세게 먹어 절반으로.
+     ★라이트의 번쩍임 색은 강조색이 아니라 «색 없는 어둠»(--text = 막과 같은 가족)이다. 라이트에서 번쩍임이
+       하는 일은 밝히기가 아니라 «흰 번개가 설 하늘을 어둡게» 하는 것인데, 테라코타로 multiply 하면 화면
+       전체가 분홍 필터를 쓴 듯 탁해지고 당첨 칩·결과 글자까지 그 색에 섞여 누가 맞았는지 흐려졌다
+       (iOS 시뮬레이터 사파리로 나란히 비교, 2026-09-16). 어둠만 깔면 강조색이 제 색을 지킨다.
      번쩍임은 «한 번»뿐이다 — 넓은 면이 1초에 3회 넘게 번쩍이면 광과민성 발작 위험(WCAG 2.3.1). */
   .rltflash{position:absolute;inset:0;background:var(--wait);opacity:0;pointer-events:none;z-index:64;mix-blend-mode:screen}
-  html[data-theme="light"] .rltflash{mix-blend-mode:multiply;--flashK:.5}
+  html[data-theme="light"] .rltflash{mix-blend-mode:multiply;--flashK:.5;background:var(--text)}
   .rltsky{position:absolute;inset:0;pointer-events:none;z-index:65;opacity:0}
   .rltsky path{stroke:none}          /* 선이 아니라 «채운 띠» — 굵기가 변해야 끝이 뾰족해진다 */
   /* 세 겹: 어두운 윤곽 → 색 번짐 → 밝은 심.
