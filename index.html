@@ -246,7 +246,14 @@ window.addEventListener('pageshow', remeasureSbcut);
     /* 아래: 끝까지 내리면 마지막 명단이 알약 바 위 30 에 선다(아이폰 설정 앱과 동일). 노치 유무와 무관. */
     padding:0 16px calc(max(10px, env(safe-area-inset-bottom) - 6px) + 78px + var(--kb, 0px));   /* 알약 48 + 30 — 아이폰 설정 앱 실측: 마지막 항목과 검색 알약 사이 30 */
     overflow-y:auto;overflow-x:hidden;
-    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    /* ★-webkit-overflow-scrolling:touch 를 «명단 스크롤러에서만» 뺐다(오너 영상 실측 2026-09-16).
+       이 속성은 WKWebView 에서 스크롤을 레거시 UIScrollView 경로로 태우는데, 그 경로는 sticky 위치를
+       스크롤 스레드에서 따로 계산해 빠르게 밀 때 한 프레임씩 어긋난다 — 오너 녹화 287프레임 중
+       도킹된 시간바가 제자리인 건 207프레임, 나머지에서 «정확히 24기기픽셀(8px)» 위로 튀었다.
+       연속이 아니라 띄엄띄엄 한 프레임씩이라 핸드오프가 아니라 어긋남이다.
+       iOS 13 부터 무시된다고 되어 있지만 WKWebView 는 아직 읽는 경우가 있어 빼 본다. 빼도 관성
+       스크롤은 그대로다(iOS 13+ 는 기본이 관성). 다른 스크롤러(붙여넣기·시트)는 sticky 가 없어 그대로 뒀다. */
+    overscroll-behavior:contain;
   }
   /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
      크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
