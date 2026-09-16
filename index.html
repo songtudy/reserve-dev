@@ -2437,8 +2437,11 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!cf) return;
     cf.className = 'dwfoot' + (ready ? '' : ' off');
     // 여기엔 연결 상태 한 마디만 둔다 — 빌드 도장을 붙여 봤다가 뺐다(오너 2026-09-16).
+    // ※시간바 손보는 동안만 테스트 앱에 도장을 잠깐 되살려 둔다. 「폰이 어느 빌드를 들고 있나」를
+    //   모르면 「고쳤다/그대로다」가 계속 어긋난다. 끝나면 이 두 줄을 지운다.
     cf.innerHTML = '<span class="dot' + (ready ? '' : ' stale') + '"></span>'
-      + (ready ? '연결됨' : '연결 안 됨');
+      + (ready ? '연결됨' : '연결 안 됨')
+      + (IS_DEV ? ' · ' + BUILD_STAMP : '');
   }
   function setSync(ok){
     if (ok === false) listFresh = false;   // 끊긴 순간부터 화면의 명단은 «옛 것»이다
@@ -4273,6 +4276,7 @@ window.dispatchEvent(new Event('fb-ready'));
     render();
   });
 
+  var BUILD_STAMP = '0916.1220';   // ※임시 — 시간바 작업 끝나면 뺀다(위 paintConn 주석 참고)
   // 실사용이 아닌 곳(테스트·로컬·복사본)에서 열렸으면 빨간 「테스트」 배지를 켠다.
   if (IS_DEV){
     var dt = document.getElementById('devTag');
