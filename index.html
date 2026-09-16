@@ -5020,7 +5020,8 @@ window.dispatchEvent(new Event('fb-ready'));
   function errLog(kind, msg, where){
     try {
       var a = JSON.parse(localStorage.getItem(ERR_KEY) || '[]');
-      a.push({ t: new Date().toISOString().slice(5, 19).replace('T', ' '),
+      var ep = kstParts(serverNow());   // 활동 기록(logAdd)과 같은 자 — KST·서버 시계
+      a.push({ t: pad(ep.mon + 1) + '-' + pad(ep.day) + ' ' + pad(ep.h) + ':' + pad(ep.min) + ':' + pad(ep.s),
                k: kind, m: String(msg || '').slice(0, 200), w: String(where || '').slice(0, 120) });
       localStorage.setItem(ERR_KEY, JSON.stringify(a.slice(-5)));
     } catch(e){}
