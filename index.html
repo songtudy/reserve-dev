@@ -1397,8 +1397,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rlt input::placeholder{color:var(--ph);font-weight:400}
   .rlt input:focus{outline:0;border-color:color-mix(in srgb, var(--text) 30%, transparent)}
   .rltnames{
-    display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 2px;
-    max-height:132px;overflow-y:auto;
+    display:flex;flex-wrap:wrap;gap:6px;
+    /* 여백을 «안쪽»으로 옮겨 잘리는 상자만 10px 넓힌다 — 칩이 튈 때(1.22) 상자에 안 닿게.
+       겉보기 자리는 그대로다: 위 2+10=12 · 아래 -8+10=2 · 좌우 -10+10=0. max-height 도 위아래 10씩 더한다.
+       overflow-y:auto 는 «가로도» auto 로 만든다(CSS 규칙) — 그래서 좌우도 같이 넓혀야 한다. */
+    margin:2px -10px -8px;padding:10px;
+    max-height:152px;overflow-y:auto;
     scrollbar-width:none;
   }
   .rltnames::-webkit-scrollbar{display:none}
@@ -1435,12 +1439,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltsky .bglow{stroke:var(--wait);opacity:.5;filter:blur(6px)}
   .rltsky .bcore{stroke:#fff6e0}
   html[data-theme="light"] .rltsky .bcore{stroke:#fffaf2}
-  /* 맞은 칩: 더 크게 튀고, 빛이 «잠깐 남는다». 튀고 끝나면 여파가 없어 밋밋하다(오너 2026-09-16). */
-  .rltchip.hit{animation:boltHit .52s var(--ease)}
+  /* 맞은 칩: 튀면서 «달궈졌다 식는다».
+     ★한때 둘레에 빛을 번지게(box-shadow) 했다가 뺐다(오너 2026-09-16 「촌스럽다」). 두 가지 이유다 —
+       ① 보기에 싸구려다 ② .rltnames 가 overflow-y:auto 라 «가로도» auto 가 되어 상자 밖이 잘린다.
+       끝 칩에서 번진 빛이 38px 잘려 「이름 카드가 잘린 것처럼」 보였다. 색으로만 하면 상자를 안 키운다. */
+  .rltchip.hit{animation:boltHit .5s var(--ease)}
   @keyframes boltHit{
-    0%  {transform:scale(1.45); box-shadow:0 0 0 9px  color-mix(in srgb, var(--wait) 55%, transparent)}
-    45% {transform:scale(.96);  box-shadow:0 0 0 15px color-mix(in srgb, var(--wait) 20%, transparent)}
-    100%{transform:scale(1.09); box-shadow:0 0 0 20px transparent}
+    0%  {transform:scale(1.22); background:#fff6e0; border-color:#fff6e0}
+    38% {transform:scale(.98);  background:var(--wait); border-color:var(--wait)}
+    100%{transform:scale(1.09); background:var(--wait); border-color:var(--wait)}
   }
   /* 카드가 맞고 «내려앉았다» 잦아든다. 번개가 위에서 오므로 세로 — 잠금 흔들림(lockshake)과 같은 감쇠 결.
      .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다. */
