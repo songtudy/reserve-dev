@@ -4695,6 +4695,15 @@ window.dispatchEvent(new Event('fb-ready'));
     }
 
     inp.addEventListener('input', function(){ if (!spinning){ reset(); drawChips(names()); } });
+    // ★다시 누르면 커서가 «맨 앞»으로 가던 것 — 웹킷은 글자가 든 칸에 포커스가 들어오는 순간 커서를 0 에
+    //   두고, 손을 뗄 때(mouseup) 누른 자리로 옮긴다(iOS 시뮬레이터 로그: focus 0/11 → mouseup 11/11).
+    //   키보드가 뜨며 카드가 움직이면 누른 자리와 글자가 어긋나 그 «옮김»이 빠지고 커서가 맨 앞에 남는다
+    //   (오너 2026-09-16). 포커스 순간 끝으로 옮겨 두면, 가운데를 눌러 고칠 때는 뒤따르는 mouseup 이
+    //   그대로 그 자리로 옮기고, 옮김이 빠질 때만 맨 앞이 아니라 끝에 남는다.
+    inp.addEventListener('focus', function(){
+      var n = inp.value.length;
+      if (n) try { inp.setSelectionRange(n, n); } catch(e){}
+    });
     goBtn.addEventListener('click', spin);
     document.getElementById('rltClose').addEventListener('click', close);
     rltScrim.addEventListener('click', function(e){
