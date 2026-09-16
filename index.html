@@ -248,14 +248,16 @@ window.addEventListener('pageshow', remeasureSbcut);
     overflow-y:auto;overflow-x:hidden;
     overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   }
-  /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서. .wrap 의 padding-top 으로 두면 안 된다 —
-     크롬은 sticky 의 top 을 스크롤 상자의 «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙는다(확인함). */
-  .wrap::before{content:"";display:block;height:var(--topH, 140px)}   /* 쉴 때 카드 밑→첫 시간바 = 8 = 도킹(sticky top) 때와 같은 값. 18 이었을 땐 여백+헤더가 62px 짜리 「높은 칸」으로 보였다(오너 2026-09-11) */
+  /* 유리 상단 셸 높이만큼 명단을 내리는 스페이서.
+     ※ padding-top 이 아니라 빈 요소인 건 sticky 시절의 이유였다(크롬이 sticky 의 top 을 스크롤 상자의
+       «패딩을 뺀» 안쪽 기준으로 재서 머리글이 --topH 만큼 더 내려가 붙었다). 2026-09-16 에 sticky 를
+       걷어내며 그 제약은 없어졌지만, 배치가 픽셀까지 같고 바꿀 이유가 없어 그대로 둔다. */
+  .wrap::before{content:"";display:block;height:var(--topH, 140px)}   /* 쉴 때 카드 밑→첫 시간바 = 8 = 도킹됐을 때와 같은 값. 18 이었을 땐 여백+헤더가 62px 짜리 「높은 칸」으로 보였다(오너 2026-09-11) */
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
   /* header */
   /* 상단 셸 — 떠 있는 유리 판(하단바와 같은 재질). 명단은 그 밑으로 지나가고(.wrap::before 스페이서),
-     붙는 시간대 머리글은 셸 바로 아래에 붙는다(.ghead top). 높이는 JS 가 재서 --topH 로 넣는다
+     시간대 머리글은 이 판 «밖»의 고정 칸(.ghead.dock)이 셸 밑면에 붙어 대신한다. 높이는 JS 가 재서 --topH 로 넣는다
      (카드 내용·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
@@ -430,15 +432,14 @@ window.addEventListener('pageshow', remeasureSbcut);
      머리글은 «자기 명단»에 붙는다 — 위는 넓게(앞 명단과 떨어짐), 아래는 선 하나.
      가운데 관통선·캡슐·박스는 여섯 안을 실제 앱에서 4가지 상태로 비교한 끝에 모두 탈락 —
      접힌 시간대가 표처럼 촘촘히 쌓이는 이 구조가 «영업 중 가장 오래 보는 화면»에서 제일 정돈됐다. */
-  /* 시간대 사이 여백(8px)은 «앞 시간대 안쪽»의 빈 요소로 둔다 — margin 으로 두면 붙은 머리글이 다음 머리글이
-     닿기 여백만큼 전에 먼저 밀려나 두 머리글 사이에 빈 틈이 생긴다(오너 지적, 2026-09-11). 안쪽 내용이면 붙는
-     범위에 포함돼 다음 머리글이 닿는 순간 밀려난다(padding 은 안 됨 — 붙는 범위가 내용 상자까지라 더 일찍 밀려남).
-     접힌 시간대는 여백 없이 선으로만 잇는다. 멈춰 있을 때 배치는 margin 방식과 픽셀까지 같다. */
+  /* 시간대 사이 여백(8px)은 «앞 시간대 안쪽»의 빈 요소로 둔다. 접힌 시간대는 여백 없이 선으로만 잇는다.
+     ※ margin 이 아닌 이유도 sticky 시절 것이었다(margin 이면 붙은 머리글이 다음 머리글보다 여백만큼 먼저
+       밀려나 두 머리글 사이에 틈이 생겼다 — 오너 지적 2026-09-11). 지금은 밀려나는 머리글이 없다.
+       배치가 margin 방식과 픽셀까지 같아 그대로 둔다. */
   /* 접기/펼치기는 즉시 — 높이·transform 애니메이션 둘 다 실기기에서 매끄럽지 않았다(오너, 2026-09-11). */
-  /* ★.group 에 display:contents 를 줘 봤다가 되돌렸다(2026-09-15). 상자를 없애면 시간바가
-     밀리지 않고 «덮여» 잘림이 0 이 되지만, 그 요소의 getBoundingClientRect 가 빈 상자가 돼
-     크기를 재는 코드가 조용히 0 을 받는다. 얻는 것(아이폰 연락처·설정도 똑같이 밀린다)보다
-     남길 함정이 크다는 판단(오너). 밀려 올라가는 잘림은 sticky 의 표준 동작으로 둔다. */
+  /* ★.group 에 display:contents 는 쓰지 말 것(2026-09-15 실험 후 반려). 상자가 사라지면 그 요소의
+     getBoundingClientRect 가 빈 상자가 돼 크기를 재는 코드가 조용히 0 을 받는다 — 지금은 도킹 계산이
+     바로 이 상자의 위·아래를 쓰므로(measureDock) 더더욱 안 된다. */
   .group::after{content:"";display:block;height:8px}   /* 끝선→다음 시간바 8 = 카드→첫 시간바와 같은 값(「시간바 앞 여백은 어디서나 8」). 끝선이 생긴 뒤 18 은 죽은 띠로 보였다(2026-09-11) */
   .group.shut::after{height:0}
   .group:last-child::after{height:0}   /* 마지막 시간대 뒤엔 여백 없음 — 끝까지 내리면 마지막 명단이 알약 바 위 30 에 선다(.wrap 아래 여백) */
@@ -2801,6 +2802,10 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     paintDock();
   }
+  // 원본 머리글이 «전체 다시 그리기 없이» 바뀌는 길이 둘 있다 — patchStatus(머리글 숫자)와
+  // repaintNow(지금/끝남 색·레일). 그때 고정 칸은 옛 내용을 들고 있으므로 다시 베낀다.
+  // (자리는 안 건드린다 — 내용만.)
+  function syncDock(){ dockTime = null; paintDock(); }
   function paintDock(){
     var el = dockEl();
     if (!el || !wrapEl) return;
@@ -3466,6 +3471,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     repaintNow();
     paintHead();
+    syncDock();   // 머리글 숫자가 바뀌었다 — 고정 칸이 옛 숫자를 들고 있지 않게
     return true;
   }
 
@@ -3496,6 +3502,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var shut = w.classList.contains('shut');
       w.className = 'group' + (g.time === nowTime ? ' now' : (pend ? '' : ' done')) + (shut ? ' shut' : '');
     });
+    syncDock();   // 지금/끝남이 바뀌었으면 고정 칸의 색·금색 레일도 따라간다
   }
 
   function setStatus(id, st){
