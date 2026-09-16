@@ -452,7 +452,11 @@ window.addEventListener('pageshow', remeasureSbcut);
      그래서 도킹은 «스크롤하지 않는 층»(상단 셸) 안의 .ghead.dock 이 대신한다 — 자리를 안 움직이니
      뛸 수가 없다. 명단 안의 이 머리글은 이제 그냥 같이 스크롤되어 셸 뒤로 사라진다. */
   .ghead{
-    position:relative;z-index:1;
+    /* ★z 15 — 도킹 창(10)보다 «위». 다음 시간대 머리글이 올라오면서 고정 바를 덮고 지나간다.
+       움직이는 건 이 진짜 머리글뿐이고 그건 브라우저가 스크롤로 굴리므로 계산이 0 이다 —
+       고정 바 쪽을 매 프레임 고쳐 밀려남을 흉내 내면 렉이 걸린다(오너 2026-09-16 실기기).
+       셸(20)보다는 아래라, 선 위로 올라간 머리글은 셸 뒤로 사라진다. */
+    position:relative;z-index:15;
     background:var(--ink);
     display:flex;align-items:center;gap:8px;
     width:calc(100% + 32px);margin:0 -16px;padding:12px 16px 11px;   /* 높이 44 = 애플 최소 누름 크기. 좌우 16 = 메뉴·진행도와 같은 열 */
@@ -465,7 +469,10 @@ window.addEventListener('pageshow', remeasureSbcut);
      .ghead 의 꼴을 그대로 쓰고 자리 규칙만 덮어쓴다 — 새 꼴을 만들지 않는다. */
   .ghead.dock{
     position:absolute;left:0;right:0;top:var(--topH, 140px);width:auto;margin:0;
-    z-index:20;   /* 셸과 같은 층. DOM 에서 셸 뒤라 그 위에 그려진다 — 명단(층 없음) 위, 하단바(30) 아래 */
+    /* z 10 — 명단 행(층 없음)보다 위, 명단 속 머리글(15)보다 아래, 셸(20)보다 아래.
+       그래서 «다음 시간대 머리글이 이 바 위로 올라와 덮으며» 지나가고, 선을 넘으면 셸 뒤로
+       사라지면서 그 밑의 이 바가 드러난다. 그때 바의 글자는 이미 새 시간대로 바뀌어 있다. */
+    z-index:10;
   }
   .ghead.dock.now .gtime{color:var(--wait)}
   .ghead.dock.done .gtime{color:var(--dim)}
