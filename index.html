@@ -257,7 +257,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   /* header */
   /* 상단 셸 — 떠 있는 유리 판(하단바와 같은 재질). 명단은 그 밑으로 지나가고(.wrap::before 스페이서),
-     시간대 머리글은 이 판 «밖»의 고정 칸(.ghead.dock)이 셸 밑면에 붙어 대신한다. 높이는 JS 가 재서 --topH 로 넣는다
+     시간대 머리글은 이 판 «밖»의 도킹 창(.dockwin)이 셸 밑면에 붙어 대신한다. 높이는 JS 가 재서 --topH 로 넣는다
      (카드 내용·검색창·업데이트 띠에 따라 변한다). 2026-09-11 오너 위임 후 4안 비교 → 채택. */
   .shell{
     position:absolute;top:0;left:0;right:0;z-index:20;
@@ -449,7 +449,7 @@ window.addEventListener('pageshow', remeasureSbcut);
      (위로 최대 8px · 아래로 최대 23px), 아래로 밀린 프레임에서는 셸과 시간바 사이로 명단이 비쳤다.
      같은 녹화에서 상단 카드는 «한 프레임도» 안 움직였다 — 셸 높이(--topH)가 아니라 sticky 가 원인이다.
      덮는 띠로 막아 보려 했으나 밀림(23px)이 시간바 글자 여백(12px)보다 커서 구조적으로 불가능.
-     그래서 도킹은 «스크롤하지 않는 층»(상단 셸) 안의 .ghead.dock 이 대신한다 — 자리를 안 움직이니
+     그래서 도킹은 «스크롤하지 않는 층»의 도킹 창(.dockwin)이 대신한다 — 자리를 안 움직이니
      뛸 수가 없다. 명단 안의 이 머리글은 이제 그냥 같이 스크롤되어 셸 뒤로 사라진다. */
   .ghead{
     position:relative;z-index:1;
@@ -463,25 +463,31 @@ window.addEventListener('pageshow', remeasureSbcut);
      선 색은 행 사이·상단 경계와 같은 --line — 머리글만 진하면 위쪽 경계가 흐려 첫 시간대가 더 높아 보인다. */
   /* 셸 «밑면 바로 아래»에 붙어 사는 고정 시간바. absolute 라 셸 높이(--topH 의 출처)에 안 잡힌다.
      .ghead 의 꼴을 그대로 쓰고 자리 규칙만 덮어쓴다 — 새 꼴을 만들지 않는다. */
-  /* 바깥 상자는 «창»이다 — 자리(윗변)는 절대 안 움직이고, 다음 시간대가 올라온 만큼만 낮아진다.
-     안쪽(.dockin)이 그 창 안에서 위로 흐르고, 창 윗변(=셸 밑면)에서 잘린다.
-     ★sticky 가 하던 그림 그대로다: 나가는 바가 위로 밀려 셸 뒤로 사라진다. 높이만 줄이면
-       글자가 제자리에 선 채 아래부터 갉혀 «밀려나는» 것으로 안 읽힌다(오너 2026-09-16). */
-  .ghead.dock{
-    position:absolute;left:0;right:0;top:var(--topH, 140px);width:auto;margin:0;
-    z-index:20;   /* 셸과 같은 층. DOM 에서 셸 뒤라 그 위에 그려진다 — 명단(층 없음) 위, 하단바(30) 아래 */
-    overflow:hidden;display:block;padding:0;
+  /* ── 도킹 창 ──────────────────────────────────────────────────────────
+     창(.dockwin)은 셸 밑면에 못 박힌 44px 짜리 «구멍»이다. 자리도 크기도 절대 안 변한다.
+     그 안에서 띠(.dockstrip)가 위로 흐르며 [지금 시간대][다음 시간대]가 갈린다.
+     ★창을 줄이는 방식은 반려됐다(오너 2026-09-16) — 줄어드는 게 한 프레임만 늦어도 그 밑이
+       드러나 명단이 비친다. 창을 고정하면 무엇이 늦든 늘 불투명한 44px 이 덮고 있어 비칠 틈이 없다.
+       늦어서 생기는 최악이 «전환이 한 박자 느림»이지 «비침»이 아니다 — 이 차이가 전부다.
+     ★안쪽 두 줄은 .ghead 를 그대로 입는다 — 꼴을 새로 만들지 않는다. 명단 안에서만 필요한
+       좌우 -16 마진만 여기서 푼다. */
+  .dockwin{
+    position:absolute;left:0;right:0;top:var(--topH, 140px);z-index:20;
+    overflow:hidden;display:block;padding:0;border:0;background:transparent;
+    text-align:left;font:inherit;color:inherit;cursor:pointer;
   }
-  .ghead.dock .dockin{
-    display:flex;align-items:center;gap:8px;padding:12px 16px 11px;
-  }
-  .ghead.dock.now .gtime{color:var(--wait)}
-  .ghead.dock.done .gtime{color:var(--dim)}
-  .ghead.dock.now .dockin::before{
+  /* ★띠는 반드시 블록이어야 한다 — 인라인 요소에는 transform 이 안 먹어서 값만 들어가고
+     그림은 제자리에 선다(실측으로 당함, 2026-09-16). */
+  .dockwin .dockstrip{display:block}
+  .dockwin .ghead{width:100%;margin:0}
+  .dockwin:active .ghead{background:var(--press)}
+  .dockwin .dockin.now .gtime{color:var(--wait)}
+  .dockwin .dockin.done .gtime{color:var(--dim)}
+  .dockwin .dockin.shut .chev{transform:rotate(0)}
+  .dockwin .dockin.now::before{
     content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
     background:var(--wait);
   }
-  .ghead.dock .dockin{position:relative}
   .ghead:active, .ghead.dn{background:var(--press)}
   /* ★머리글 밑 «흐림 띠»는 두지 않는다. 아래로 흘러 들어가는 명단이 «탁» 부딪히지 않게
      8px 그라데이션을 깔았었는데(2026-09-11), 그 띠에 걸친 행이 뿌옇게 날아가 «글자가 비친다»로
@@ -1509,7 +1515,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 
 <!-- 고정 시간바 — 셸 «밖»에 둔다. 안에 두면 셸 크기를 보는 감시자가 이 칸을 고칠 때마다
      --topH 를 다시 재고, 그게 다시 이 칸을 고쳐 무한 루프가 된다(실측으로 브라우저가 멈췄다). -->
-<button type="button" class="ghead dock hide" id="dockBar" aria-hidden="true" tabindex="-1"></button>
+<button type="button" class="dockwin hide" id="dockBar" aria-hidden="true" tabindex="-1"></button>
 
 <div class="wrap">
   <div id="list"></div>
@@ -2792,7 +2798,7 @@ window.dispatchEvent(new Event('fb-ready'));
      지금은 «스크롤하지 않는 층»(상단 셸) 안의 한 칸이 그 노릇을 한다 — 자리가 고정이라
      뛸 수가 없고, 스크롤에 따라 «내용만» 갈아 끼운다.
      ★자리는 절대 건드리지 않는다. 스크롤에 맞춰 위치를 옮기는 순간 예전 문제가 돌아온다. */
-  var dockRows = [], dockTime = null, dockLineY = 140, dockWrapTop = 0, dockH = 44, dockLastH = -1;
+  var dockRows = [], dockTime = null, dockLineY = 140, dockWrapTop = 0, dockH = 44, dockLastT = null;
   function dockEl(){ return document.getElementById('dockBar'); }
   // 구역 위치는 그릴 때 한 번만 잰다 — 스크롤 때마다 재면 매 프레임 레이아웃을 강제한다.
   function measureDock(){
@@ -2817,39 +2823,44 @@ window.dispatchEvent(new Event('fb-ready'));
   // repaintNow(지금/끝남 색·레일). 그때 고정 칸은 옛 내용을 들고 있으므로 다시 베낀다.
   // (자리는 안 건드린다 — 내용만.)
   function syncDock(){ dockTime = null; paintDock(); }
+  // 창 안에 깔 한 줄 — 명단 속 머리글을 그대로 베끼고, 그 시간대의 표시(지금·끝남·접힘)를 입힌다
+  function dockRowHtml(r){
+    if (!r) return '';
+    var src = r.sec.querySelector('.ghead');
+    return '<span class="ghead dockin'
+      + (r.sec.classList.contains('now') ? ' now' : '')
+      + (r.sec.classList.contains('done') ? ' done' : '')
+      + (r.sec.classList.contains('shut') ? ' shut' : '')
+      + '">' + (src ? src.innerHTML : '') + '</span>';
+  }
   function paintDock(){
     var el = dockEl();
     if (!el || !wrapEl) return;
     var line = dockLineY - dockWrapTop + wrapEl.scrollTop;   // 도킹 선(명단 좌표)
-    var cur = null;
+    var at = -1;
     for (var i = 0; i < dockRows.length; i++){
       // sticky 와 같은 조건 — 머리글이 선 위로 올라갔고 그 구역이 아직 선 아래까지 이어진다
-      if (dockRows[i].top <= line && dockRows[i].bottom > line){ cur = dockRows[i]; break; }
+      if (dockRows[i].top <= line && dockRows[i].bottom > line){ at = i; break; }
     }
-    // 다음 시간대가 올라온 만큼(d) 창을 낮추고 안쪽을 그만큼 «위로» 흘린다 — sticky 의 밀려남 그대로.
-    // 높이만 줄이면 글자가 제자리에 선 채 아래부터 갉혀 밀려나는 것으로 안 읽히고,
-    // 다음 바를 먼저 띄우면 들어오는 글자의 아랫동강만 삐져나온다. 바를 숨기면 허전하다.
-    // 셋 다 오너 반려 — 「위로 흘러가야 한다」(2026-09-16).
-    var h = cur ? Math.max(0, Math.min(dockH, cur.bottom - line)) : 0;
-    if (!cur || h <= 0){ el.classList.add('hide'); dockTime = null; dockLastH = -1; return; }
+    if (at < 0){ el.classList.add('hide'); dockTime = null; dockLastT = null; return; }
+    var cur = dockRows[at], nxt = dockRows[at + 1] || null;
 
-    if (cur.time !== dockTime){   // 시간대가 바뀌었을 때만 내용을 갈아 끼운다
+    if (cur.time !== dockTime){
       dockTime = cur.time;
-      var src = cur.sec.querySelector('.ghead');
-      el.innerHTML = '<span class="dockin">' + (src ? src.innerHTML : '') + '</span>';
-      el.className = 'ghead dock'
-        + (cur.sec.classList.contains('now') ? ' now' : '')
-        + (cur.sec.classList.contains('done') ? ' done' : '')
-        + (cur.sec.classList.contains('shut') ? ' shut' : '');
+      el.innerHTML = '<span class="dockstrip">' + dockRowHtml(cur) + dockRowHtml(nxt) + '</span>';
+      el.style.height = dockH + 'px';   // 창 크기는 여기서 한 번만 — 스크롤 중에는 절대 안 건드린다
       el.setAttribute('data-time', cur.time);
-      dockLastH = -1;   // 새 내용에는 높이·흐름을 다시 적어야 한다
+      dockLastT = null;
     }
     el.classList.remove('hide');
-    if (h !== dockLastH){   // 한 시간대 안을 스크롤하는 동안(대부분)은 44 그대로라 아무것도 안 쓴다
-      var d = dockH - h, inr = el.firstElementChild;
-      el.style.height = d ? h + 'px' : '';
-      if (inr) inr.style.transform = d ? 'translateY(-' + d + 'px)' : '';
-      dockLastH = h;
+
+    // 다음 시간대 머리글이 창 밑변에 닿은 만큼 띠를 위로 흘린다 = 밀려 올라가는 그림.
+    // 닿기 전(0)에는 아무것도 안 쓴다 — 한 시간대 안을 굴리는 동안은 계산만 하고 손대지 않는다.
+    var t = nxt ? Math.min(0, (nxt.top - line) - dockH) : 0;
+    if (t !== dockLastT){
+      var strip = el.firstElementChild;
+      if (strip) strip.style.transform = t ? 'translateY(' + t + 'px)' : '';
+      dockLastT = t;
     }
   }
   window.__measureDock = measureDock;   // 셸 높이 감시 스크립트(다른 <script>)가 부른다
