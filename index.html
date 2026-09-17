@@ -4653,7 +4653,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (result.textContent !== t) result.textContent = t;   // 같은 말을 다시 쓰면 낭독기가 타자마다 되읽는다
     }
     function reset(){
-      clearBolt();                         // 이전 번개가 남아 있지 않게
+      clearBolt(true);                     // 이전 번개·탄 자국이 남아 있지 않게 (자국은 흐려지며)
       goBtn.textContent = '돌리기';
       goBtn.disabled = false;
       inp.disabled = false;
@@ -4662,6 +4662,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     function open(){
       endMorph();
+      clearBolt();                         // 다시 열 땐 지난 자국이 흐려지는 모습도 안 보이게 바로
       inp.value = '';
       board(false);
       reset();
@@ -4746,8 +4747,8 @@ window.dispatchEvent(new Event('fb-ready'));
     //   구운 그림은 투명도만 바뀌어 다시 그릴 게 없다. 굽기가 늦으면(느린 기기) SVG 를 그대로 쓴다.
     var skyBmp = document.getElementById('rltSkyBmp');
     var boltLayer = sky;
-    function clearBolt(){
-      clearScar();
+    function clearBolt(fade){
+      clearScar(fade);
       sky.innerHTML = '';
       skyBmp.width = skyBmp.height = 0;   // 화면 크기 그림 메모리를 놓는다
       boltLayer = sky;
@@ -4819,11 +4820,18 @@ window.dispatchEvent(new Event('fb-ready'));
     //   그을음만은 얼룩, 가로지르는 금은 이름을 가렸다. 「리얼하게 패인」 느낌이어야 했다 — 파임 + 불씨 + 연기.
     // 크기는 칸 폭의 약 30%(18~28pt) — 5명이면 칸이 55pt 라 고정 크기는 칸의 절반을 먹었다.
     // 움직임을 줄이라고 한 기기(calm)는 불씨·불꽃·연기 없이 남는 자국만 그린다.
-    var scar = null, scarRaf = 0;
-    function clearScar(){
-      cancelAnimationFrame(scarRaf);
-      if (scar && scar.parentNode) scar.parentNode.removeChild(scar);
+    var scar = null;
+    // fade = 0.2초에 걸쳐 지운다(「다시」·이름 고치기). 한 프레임에 사라지면 새 회전이 시작되는 순간 자국·연기가 «툭» 꺼졌다.
+    // 흐려지는 동안에도 연기는 계속 오른다 — 멈춘 채 흐려지면 얼어붙은 듯 보인다.
+    function clearScar(fade){
+      if (!scar) return;
+      var old = scar;
       scar = null;
+      function drop(){ cancelAnimationFrame(old.raf); if (old.parentNode) old.parentNode.removeChild(old); }
+      if (!fade) return drop();
+      old.style.transition = 'opacity .2s linear';
+      old.style.opacity = '0';
+      setTimeout(drop, 200);
     }
     function scarChip(tile, still){
       clearScar();
@@ -4831,7 +4839,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var sr = slot.getBoundingClientRect(), tr = tile.getBoundingClientRect();
       var PAD = 40, dpr = Math.min(3, window.devicePixelRatio || 1);   // PAD = 불꽃·연기가 칸 밖으로 나갈 자리
       var W = tr.width + PAD * 2, H = tr.height + PAD * 2;
-      scar = document.createElement('canvas');
+      var cv = scar = document.createElement('canvas');
       scar.className = 'rltscar';
       scar.width = W * dpr; scar.height = H * dpr;
       scar.style.left = (tr.left - sr.left - PAD) + 'px'; scar.style.top = (tr.top - sr.top - PAD) + 'px';
@@ -4920,7 +4928,7 @@ window.dispatchEvent(new Event('fb-ready'));
       (function tick(now){
         var t = ((now || t0) - t0) / 1000;
         draw(t);
-        if (t < 1.6) scarRaf = requestAnimationFrame(tick);
+        if (t < 1.6) cv.raf = requestAnimationFrame(tick);
         else draw(9);                                  // 움직임이 다 끝난 자국만 남긴다
       })();
     }
@@ -4934,7 +4942,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var ns = names();
       if (ns.length < 2){ say('2명 이상 입력해 주세요', true); return; }
       spinning = true;
-      clearBolt();                    // 「다시」를 번개 도중에 누르면 옛 번개가 새 회전 위에 겹친다
+      clearBolt(true);                // 지난 판의 번개·탄 자국 (자국은 흐려지며)
       inp.blur();                     // 키보드 내려 칩 안 가리게
       inp.disabled = true;            // 스핀 중 이름·키보드 못 건드리게
       goBtn.disabled = true;
@@ -5000,7 +5008,10 @@ window.dispatchEvent(new Event('fb-ready'));
           scarChip(chips2[nw], calm());
           result.textContent = ns2[nw] + ' 당첨!';   // 이모지 없이 — 날벼락은 탄 자국이 표시한다(CSS 룰렛 머리 주석)
           result.classList.remove('hit'); void result.offsetWidth; result.classList.add('hit');
-          finish();
+          // 「다시」·닫기·이름 고치기는 타격(흔들림·번쩍임·달궈짐, 0.5초)이 끝난 뒤에 풀린다. 바로 풀면 곧장 「다시」를
+          // 눌렀을 때 번개가 중간에 잘리고, 번쩍임·흔들림이 새 회전 위에 겹쳤다. 연기(~1.6초)는 기다리지 않는다 —
+          // 그 사이 누르면 자국과 함께 흐려진다(clearScar).
+          setTimeout(function(){ if (myGen2 === gen) finish(); }, calm() ? 0 : 500);
         }
         // 0.78초 기다리는 동안 번개를 미리 굽는다(prepareBolt 위 주석). 당첨 칩이 튀는 동안(.26s)은 피해 0.3초 뒤에.
         if (!calm()) setTimeout(function(){ if (myGen2 === gen) prepareBolt(chips2[nw]); }, 300);
