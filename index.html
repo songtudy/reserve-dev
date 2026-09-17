@@ -4572,6 +4572,7 @@ window.dispatchEvent(new Event('fb-ready'));
       morphing.anims.forEach(function(a){ a.cancel(); });
       morphing.faces.forEach(function(f){ if (f.parentNode) f.parentNode.removeChild(f); });
       morphing.styled.forEach(function(el){ el.style.opacity = ''; el.style.transform = ''; });
+      slot.style.height = slot.style.overflow = '';
       // 카드 면이 돌아올 때도 .03s 전환 없이 — 깔아 둔 면(.rltface)을 치우는 같은 프레임에 카드 면이 온전히 있어야 한다
       var tiles = namesBox.children, i;
       for (i = 0; i < tiles.length; i++) tiles[i].style.transition = 'none';
@@ -4581,7 +4582,9 @@ window.dispatchEvent(new Event('fb-ready'));
       morphing = null;
     }
     // 입력칸 속 이름마다 글자 자리(슬롯 기준 왼쪽 x · 세로 가운데 cy). 같은 이름이 또 있으면 처음 것.
-    // 입력칸과 같은 글꼴의 그림자 줄을 겹쳐 놓고 잰다. 칸 밖으로 스크롤돼 안 보이는 글자는 칸 끝에서 출발한다.
+    // 입력칸과 같은 글꼴의 그림자 줄을 겹쳐 놓고 잰다. 칸 밖으로 넘쳐 (일부라도) 안 보이던 이름은 hid —
+    // 미끄러지지 않고 제 카드 자리에서 나타난다. ★전엔 칸 끝에서 출발시켜, 이름이 길거나 많으면 넘친 이름들이
+    //   칸 끝 한 점에 포개졌다가 흩어졌다(시뮬레이터 영상, 긴 이름 6명).
     function wordSpots(){
       var cs = getComputedStyle(inp), m = document.createElement('span'), first = Object.create(null), out = Object.create(null);
       m.className = 'rltmirror';
@@ -4598,9 +4601,10 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       slot.appendChild(m);
       var sr = slot.getBoundingClientRect(), ir = inp.getBoundingClientRect();
+      var inL = ir.left + inp.clientLeft + parseFloat(cs.paddingLeft) - 1, inR = ir.right - inp.clientLeft - parseFloat(cs.paddingRight) + 1;
       for (var k in first){
         var r = first[k].getBoundingClientRect();
-        out[k] = { x: Math.max(ir.left, Math.min(r.left, ir.right - r.width)) - sr.left, cy: r.top + r.height / 2 - sr.top };
+        out[k] = { x: r.left - sr.left, cy: r.top + r.height / 2 - sr.top, hid: r.left < inL || r.right > inR };
       }
       slot.removeChild(m);
       return out;
@@ -4624,7 +4628,11 @@ window.dispatchEvent(new Event('fb-ready'));
         faces.push(f); styled.push(f);
         jobs.push([f, toBoard ? IN : OUT, 'linear']);
         var t = tile.firstChild, at = spots[t.textContent];
-        if (at){
+        if (at && at.hid){                        // 입력칸에서 안 보이던 이름 — 제자리에서 뒤 절반에 나타난다(wordSpots 주석)
+          t.style.opacity = toBoard ? 0 : 1;
+          styled.push(t);
+          jobs.push([t, toBoard ? IN : OUT, 'linear']);
+        } else if (at){
           var r = t.getBoundingClientRect();
           var away = 'translate(' + (at.x - (r.left - sr.left)) + 'px,' + (at.cy - (r.top + r.height / 2 - sr.top)) + 'px)';
           t.style.transform = toBoard ? away : 'none';
@@ -4633,6 +4641,14 @@ window.dispatchEvent(new Event('fb-ready'));
         }
       });
       faces.forEach(function(f){ slot.insertBefore(f, namesBox); });
+      // 카드 줄이 여러 줄이면(긴 이름·6명 이상) 이름 자리 높이도 44 ↔ 카드 줄 높이로 «펼치고 접는다». 안 그러면 누르는 순간
+      // 창이 한 번에 늘어 버튼이 툭 내려앉았다. 펼치는 동안은 잘라서 아래 줄 카드가 상태 줄·버튼 위에 비치지 않게.
+      var hIn = inp.offsetHeight, hBoard = namesBox.offsetHeight;
+      if (hBoard > hIn + 1){
+        slot.style.overflow = 'hidden';
+        slot.style.height = (toBoard ? hIn : hBoard) + 'px';
+        jobs.push([slot, [{ height: slot.style.height }, { height: (toBoard ? hBoard : hIn) + 'px' }], MORPH_EASE]);
+      }
       // 출발 자리는 인라인 스타일로 먼저 그려 두고, 두 프레임 뒤에 움직임을 건다. 키보드가 오르내리는 순간 아이폰이 잠깐
       // 멈추는데, 곧바로 출발시키면 그동안의 움직임이 «이미 지나간» 채로 그려져 글자가 미끄러지지 않고 튀었다(시뮬레이터 영상).
       var m = morphing = { anims: [], faces: faces, styled: styled, raf: 0, timer: 0 };
@@ -4829,7 +4845,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var old = scar;
       scar = null;
       function drop(){ cancelAnimationFrame(old.raf); if (old.parentNode) old.parentNode.removeChild(old); }
-      if (!fade) return drop();
+      if (!fade || calm()) return drop();
       // 두 프레임 뒤에 흐리기 시작한다 — 카드 줄을 눌러 고칠 땐 키보드가 뜨며 아이폰이 잠깐 멈추는데, 곧장 흐리면
       // 그 멈춤 동안 0.2초가 «이미 지나가» 자국이 한 프레임에 사라졌다(시뮬레이터 영상). 입력칸 전환(morph)과 같은 이유.
       requestAnimationFrame(function(){ requestAnimationFrame(function(){
@@ -5020,7 +5036,8 @@ window.dispatchEvent(new Event('fb-ready'));
         spinning = false;
       }
       // 결과가 뜬 뒤 잠깐 두었다가 번개가 «다른 사람»을 내려친다.
-      // 그 사이에도 spinning 은 true — 닫기·다시 돌리기·이름 고치기를 막는다.
+      // 그 사이에도 spinning 은 true — 다시 돌리기·이름 고치기·막 탭 닫기를 막는다. 「닫기」 버튼만은 언제나 된다
+      // (hide 가 gen 을 올려 남은 번개·자국 타이머가 모두 멈춘다).
       function twist(myGen2, chips2, ns2, old){
         var nw = twistPick(ns2.length, old);
         function hit(){
