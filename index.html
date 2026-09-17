@@ -1426,10 +1426,9 @@ window.addEventListener('pageshow', remeasureSbcut);
     transition:background .03s linear,color .03s linear,border-color .03s linear,transform .26s cubic-bezier(.34,1.56,.64,1);
   }
   .rltchip.lit,.rltchip.win{ background:var(--wait);border-color:var(--wait);color:var(--onWait) }
-  /* 튀는 크기는 비율이 아니라 pt 로 맞춘다 — 칸 폭이 이름 수에 따라 55~146 으로 달라, 같은 1.09 면 넓은 칸이 옆 칸에 닿는다.
-     --win = 좌우 4pt씩(간격 8 의 절반), --pop = 좌우 10pt씩. drawChips 가 칸 폭을 재서 넣는다. */
+  /* 안착 크기는 비율이 아니라 pt 로 맞춘다 — 칸 폭이 이름 수에 따라 55~146 으로 달라, 같은 1.09 면 넓은 칸이 옆 칸에 닿는다.
+     --win = 좌우 4pt씩(간격 8 의 절반). drawChips 가 칸 폭을 재서 넣는다. */
   .rltchip.win{ transform:scale(var(--win, 1.09)) }   /* 감속 뒤 살짝 튕기며 안착 (back-out) */
-  .rltchip.hit{position:relative;z-index:1}          /* 튈 때 옆 칸 위로 */
   /* 이름 글자는 카드 안의 한 덩어리(span) — 전환 때 이것이 입력칸 글자 자리에서 미끄러져 온다(JS morph). 길면 … */
   .rltchip > span{display:inline-block;max-width:100%;vertical-align:top;overflow:hidden;text-overflow:ellipsis}
   /* 전환 중(.morphing) — 이름 글자가 입력칸에서 빠져나와 자기 카드 자리로 미끄러지고, 면은 «입력칸이 먼저 흐려진 뒤
@@ -1455,10 +1454,11 @@ window.addEventListener('pageshow', remeasureSbcut);
               text-align:center;white-space:nowrap;font-size:13px;font-weight:400;color:var(--dim) }
   .rltresult.warn{ color:var(--warn) }
   .rltresult.won{ font-size:20px;font-weight:800;color:var(--wait) }
-  /* 날벼락 결과 — 빛이 걷히며 글자가 «박혀 들어온다». 사람 눈은 결국 결과 글자로 가는데, 번쩍임
-     한가운데서 조용히 바뀌면 빛이 걷혔을 때 «이미 바뀌어 있을 뿐» 뒤집히는 순간이 없었다. */
-  .rltresult.hit{animation:resultHit .46s var(--ease)}
-  @keyframes resultHit{0%{transform:scale(1.3)}100%{transform:scale(1)}}
+  /* 날벼락 결과 — 맞은 칩과 «같이» 흰빛으로 달궈졌다가 금색으로 식는다(아래 boltHit 과 같은 색·시간·곡선).
+     사람 눈은 결국 결과 글자로 가는데, 번쩍임 한가운데서 조용히 바뀌면 빛이 걷혔을 때 «이미 바뀌어 있을 뿐»
+     뒤집히는 순간이 없었다. 크기는 안 바꾼다 — 아래 ★정리 참고. */
+  .rltresult.hit{animation:resultHit .5s cubic-bezier(.45,0,.55,1)}
+  @keyframes resultHit{0%{color:#fff6e0}100%{color:var(--wait)}}
   /* ── 날벼락 (20%) ── 번개 · 번쩍임 · 맞은 칩 · 카드 흔들림 넷이 한 번에 친다. 시각은 JS strike() 에 모여 있다.
      번개는 카드 위를 지난다 — 뒤로 보내면 칩에 안 닿아 「누가 맞았나」가 흐려진다. 0.5초라 글자를 읽는 데는 지장이 없다. */
   /* 번쩍임: screen · 금색 · «두 번»(정점 .75 → 번개가 다시 켜질 때 .55). screen 은 어두운 화면을 «빛이 비추듯»
@@ -1500,27 +1500,31 @@ window.addEventListener('pageshow', remeasureSbcut);
   html[data-theme="light"] .rltsky .bshade{opacity:.72}
   .rltsky .bcore{fill:#fff6e0}
   html[data-theme="light"] .rltsky .bcore{fill:#fffaf2}
-  /* 맞은 칩: 튀면서 «달궈졌다 식는다».
+  /* 맞은 칩: 흰빛으로 «달궈졌다가 금색으로 식는다». 크기는 안 바꾼다.
+     ★정리(2026-09-17, 오너 「애니메이션이 덕지덕지」): 전엔 칩이 1.2~1.4배로 튀었다 .98 로 줄고 다시 커졌고
+       결과 글자도 1.3배에서 줄었다 — 18px 흔들리는 카드 «안에서» 크기 움직임이 두 겹 더 겹쳤고, 시작·끝도
+       흩어졌다(0.44~0.64초). 5명이면 튄 칩이 옆 칩 절반을 덮었다. 이제 움직임은 카드 흔들림 하나, 칩·글자는
+       색으로만 「맞았다」를 보이고, 셋이 같은 순간(번쩍임 정점)에 시작해 같은 0.5초·같은 곡선으로 끝난다.
      ★한때 둘레에 빛을 번지게(box-shadow) 했다가 뺐다(오너 2026-09-16 「촌스럽다」) — 보기에 싸구려였고,
        그때 이름 상자가 스크롤 상자라 번진 빛이 잘려 「이름 카드가 잘린 것처럼」 보였다.
-     ★곡선은 키프레임 «구간마다» 걸린다. 출발이 급한 곡선(--ease)이면 흰 달궈짐·튄 크기가 첫 한두 프레임에 식어
-       맞은 게 안 보였다(시뮬레이터 영상 흰색 2프레임). 천천히 출발·도착하면 흰 칩이 약 0.1초 머문다(5~6프레임).
+     ★곡선은 출발이 급하면(--ease) 흰 달궈짐이 첫 한두 프레임에 식어 맞은 게 안 보였다(시뮬레이터 영상 흰색 2프레임).
+       천천히 출발·도착하는 곡선이라 흰 칩이 약 0.2초 남는다.
      transition:none — 칩의 글자색 .03s 전환이 남으면 흰 칩 첫 프레임에 밝은 글자가 묻혀 이름이 안 보였다. */
   .rltchip.hit{animation:boltHit .5s cubic-bezier(.45,0,.55,1);transition:none}
   @keyframes boltHit{
-    0%  {transform:scale(var(--pop, 1.22)); background:#fff6e0; border-color:#fff6e0}
-    38% {transform:scale(.98);  background:var(--wait); border-color:var(--wait)}
-    100%{transform:scale(var(--win, 1.09)); background:var(--wait); border-color:var(--wait)}
+    0%  {background:#fff6e0; border-color:#fff6e0}
+    100%{background:var(--wait); border-color:var(--wait)}
   }
-  /* 카드 흔들림: 맞는 «순간» 18px 내려앉았다가(번개가 위에서 온다) 상하좌우로 잦아든다. 0.6초.
+  /* 카드 흔들림: 맞는 «순간» 18px 내려앉았다가(번개가 위에서 온다) 상하좌우로 잦아든다. 0.5초 — 칩·결과 글자가
+     식는 시간과 같다(위 ★정리).
      .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다.
      ★예전엔 최대에 닿는 데 58ms 걸려 타격이 아니라 흔들거림이었다 — 그래서 0% 가 최대다.
-     ★세로 7px·0.42초 → 지금 값(2026-09-17). 흔들림만 키운 시안 · 세로만 12px · 화면 전체 흔들기를 시뮬레이터
+     ★세로 7px·0.42초 → 18px 상하좌우(2026-09-17). 흔들림만 키운 시안 · 세로만 12px · 화면 전체 흔들기를 시뮬레이터
        영상으로 나란히 보고 오너가 골랐다. 좌우 떨림은 잠금화면 «비밀번호 틀림»(lockshake)과 닮았다는 걱정이
        있었지만, 번개·번쩍임과 함께 크게 흔들리니 「틀렸다」가 아니라 「맞았다」로 읽혔다.
      ★곡선은 키프레임 «구간마다» 걸린다. 출발이 급한 곡선이면 매 흔들림이 한 프레임 안에 지나가 내려앉음이 영상에
        안 잡혔다. 끝점에서 잠깐 머무는 곡선이라야 흔들림 하나하나가 보인다. */
-  .rlt.jolt{animation:boltJolt .6s cubic-bezier(.45,0,.55,1)}
+  .rlt.jolt{animation:boltJolt .5s cubic-bezier(.45,0,.55,1)}
   @keyframes boltJolt{
     0%{transform:translate(0,18px)} 14%{transform:translate(-8px,-10px)} 28%{transform:translate(7px,7px)} 42%{transform:translate(-5px,-5px)}
     58%{transform:translate(3px,3px)} 74%{transform:translate(-2px,-1px)} 88%{transform:translate(1px,1px)} 100%{transform:translate(0,0)}
@@ -4538,7 +4542,6 @@ window.dispatchEvent(new Event('fb-ready'));
       var w = namesBox.firstChild.getBoundingClientRect().width;
       if (w){
         namesBox.style.setProperty('--win', (1 + 8 / w).toFixed(4));
-        namesBox.style.setProperty('--pop', (1 + 20 / w).toFixed(4));
       }
     }
     // 입력칸 ↔ 카드 줄. 입력칸으로 돌아가면 카드를 비운다 — 이름이 많아 두 줄이던 카드가 숨은 채 자리를 차지해
@@ -4793,12 +4796,14 @@ window.dispatchEvent(new Event('fb-ready'));
                      {opacity:.20 * fk,offset:330/520},{opacity:0,offset:1}],
                     { duration: 520, easing: 'linear' });
       var card = rltScrim.querySelector('.rlt');
-      setTimeout(function(){          // 빛이 퍼지기 시작하는 순간(40ms) = 맞는 순간. 번개만 보이는 첫 40ms 뒤다.
+      // 맞는 순간 = 번쩍임 정점(62ms). 흔들림·당첨자 바뀜·칩과 글자 달궈짐이 모두 이 한 순간에 시작한다.
+      // (흔들림만 40ms 에 따로 시작하던 것을 합쳤다 — 2026-09-17 정리)
+      setTimeout(function(){
         if (rltScrim.classList.contains('hide')) return;   // 그 사이 닫혔으면 흔들지도 울리지도 않는다
         card.classList.remove('jolt'); void card.offsetWidth; card.classList.add('jolt');
         buzz([0, 55, 45, 95]);        // 「쾅-쿵」 두 방. ※아이폰은 진동 API 가 없어 안 울린다(안드로이드만)
-      }, 40);
-      setTimeout(onHit, 62);          // 바뀌는 순간을 빛 «안»에 숨긴다 — 번쩍임 정점
+        onHit();                      // 바뀌는 순간을 빛 «안»에 숨긴다
+      }, 62);
     }
 
     var SPIN_MS = 2000;   // 회전이 멎기까지 (실제 정지는 그 ~85% 지점 + HOLD_MS ≈ 총 2초)
