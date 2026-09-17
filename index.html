@@ -1516,14 +1516,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 카드가 맞고 «내려앉았다» 잦아든다. 번개가 위에서 오므로 세로 — 잠금 흔들림(lockshake)과 같은 감쇠 결.
      .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다. */
   /* 맞는 «순간» 최대로 내려앉고 잦아든다. 예전엔 최대에 닿는 데 58ms 걸려 타격이 아니라 흔들거림이었다.
-     12px(예전 7) — 2026-09-17 역동성 점검에서 키웠다. «세로만»이다: 좌우로 떨리는 건 잠금화면 «비밀번호 틀림»
-     (lockshake)이라, 섞으면 「틀렸다」로 읽힌다. 번개가 위에서 꽂히니 내려앉는 게 뜻에도 맞다.
+     ★2026-09-17 역동성 점검: 18px 내려앉은 뒤 상하좌우로 잦아든다(0.6초, 예전 세로 7px·0.42초).
+       흔들림만 키운 시안 · 세로만 12px · 화면 전체 흔들기를 시뮬레이터 영상으로 나란히 보고 오너가 이것을 골랐다.
+       좌우 떨림은 잠금화면 «비밀번호 틀림»(lockshake)과 닮았다는 걱정이 있었지만, 번개·번쩍임과 함께 크게
+       흔들리니 「틀렸다」가 아니라 「맞았다」로 읽혔다.
      ★곡선은 키프레임 «구간마다» 걸린다. 출발이 급한 곡선(.22,1,.36,1)이면 매 흔들림이 한 프레임 안에 지나가
        7px 내려앉음이 영상에 안 잡히고 3px 떨림만 보였다. 끝점에서 잠깐 머무는 곡선이면 내려앉음(약 6px)이 보인다. */
-  .rlt.jolt{animation:boltJolt .5s cubic-bezier(.45,0,.55,1)}
+  .rlt.jolt{animation:boltJolt .6s cubic-bezier(.45,0,.55,1)}
   @keyframes boltJolt{
-    0%{transform:translateY(12px)}  22%{transform:translateY(-6px)} 44%{transform:translateY(3.5px)}
-    66%{transform:translateY(-1.8px)} 84%{transform:translateY(.7px)} 100%{transform:translateY(0)}
+    0%{transform:translate(0,18px)} 14%{transform:translate(-8px,-10px)} 28%{transform:translate(7px,7px)} 42%{transform:translate(-5px,-5px)}
+    58%{transform:translate(3px,3px)} 74%{transform:translate(-2px,-1px)} 88%{transform:translate(1px,1px)} 100%{transform:translate(0,0)}
   }
   .dbtn #rltGo{background:var(--wait);color:var(--onWait)}
   .dbtn #rltGo:disabled{opacity:.55;cursor:default}
