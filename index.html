@@ -4818,7 +4818,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 자국(파인 곳·그을음·금)은 「다시」나 이름 고치기까지 남는다 — 날벼락이었다는 표시를 결과 글자 대신 «맞은 자리»에.
     // ★반려된 시안(2026-09-17, 오너 「다 별로」): 칸 윗부분 그을음만 · 이름을 가로지르는 금 · 4° 삐뚤어진 칸 · 그 조합.
     //   그을음만은 얼룩, 가로지르는 금은 이름을 가렸다. 「리얼하게 패인」 느낌이어야 했다 — 파임 + 불씨 + 연기.
-    // 크기는 칸 폭의 약 30%(18~28pt) — 5명이면 칸이 55pt 라 고정 크기는 칸의 절반을 먹었다.
+    // 크기는 칸 폭의 약 34%(18~30pt) — 5명이면 칸이 55pt 라 고정 크기는 칸의 절반을 먹었다. 30% 는 폰 크기에서 작았다.
     // 움직임을 줄이라고 한 기기(calm)는 불씨·불꽃·연기 없이 남는 자국만 그린다.
     var scar = null;
     // fade = 0.2초에 걸쳐 지운다(「다시」·이름 고치기). 한 프레임에 사라지면 새 회전이 시작되는 순간 자국·연기가 «툭» 꺼졌다.
@@ -4829,15 +4829,17 @@ window.dispatchEvent(new Event('fb-ready'));
       scar = null;
       function drop(){ cancelAnimationFrame(old.raf); if (old.parentNode) old.parentNode.removeChild(old); }
       if (!fade) return drop();
-      old.style.transition = 'opacity .2s linear';
-      old.style.opacity = '0';
-      setTimeout(drop, 200);
+      // 두 프레임 뒤에 흐리기 시작한다 — 카드 줄을 눌러 고칠 땐 키보드가 뜨며 아이폰이 잠깐 멈추는데, 곧장 흐리면
+      // 그 멈춤 동안 0.2초가 «이미 지나가» 자국이 한 프레임에 사라졌다(시뮬레이터 영상). 입력칸 전환(morph)과 같은 이유.
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'linear', fill: 'forwards' }).onfinish = drop;
+      }); });
     }
     function scarChip(tile, still){
       clearScar();
       function rnd(a, b){ return a + Math.random() * (b - a); }
       var sr = slot.getBoundingClientRect(), tr = tile.getBoundingClientRect();
-      var PAD = 40, dpr = Math.min(3, window.devicePixelRatio || 1);   // PAD = 불꽃·연기가 칸 밖으로 나갈 자리
+      var PAD = 64, dpr = Math.min(3, window.devicePixelRatio || 1);   // PAD = 불꽃·연기가 칸 밖으로 나갈 자리
       var W = tr.width + PAD * 2, H = tr.height + PAD * 2;
       var cv = scar = document.createElement('canvas');
       scar.className = 'rltscar';
@@ -4851,7 +4853,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var radius = parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 12;
       var top = PAD, cx = PAD + tr.width / 2 + rnd(-1, 1) * Math.min(6, tr.width * .06);
       // 파인 모양 — 윗변에서 들쭉날쭉한 반타원으로 한 입
-      var bw = Math.max(18, Math.min(28, tr.width * .3)) * rnd(.9, 1.08), bd = bw * rnd(.38, .46), bite = [], i, j;
+      var bw = Math.max(18, Math.min(30, tr.width * .34)) * rnd(.9, 1.08), bd = bw * rnd(.38, .46), bite = [], i, j;
       for (i = 0; i <= 14; i++){
         var a = Math.PI * i / 14, r = 1 + rnd(-.22, .22);
         bite.push([cx - Math.cos(a) * bw / 2 * r, top - 1 + Math.sin(a) * bd * r]);
@@ -4869,9 +4871,10 @@ window.dispatchEvent(new Event('fb-ready'));
         cracks.push(line);
       }
       var sparks = [], puffs = [];
-      for (i = 0; i < 7; i++) sparks.push({ vx: rnd(-90, 90), vy: rnd(-140, -40), life: rnd(.18, .34) });
-      for (i = 0; i < 6; i++) puffs.push({ t0: rnd(.02, .45), x: cx + rnd(-6, 6), dx: rnd(-10, 10), rise: rnd(22, 34),
-                                           r0: rnd(2.5, 4), r1: rnd(9, 14), a: rnd(.22, .34) });
+      // 연기는 칸 위로 한 번 «피어오르는» 만큼 — 옅고 짧으면 폰 크기에서 안 보였고, 더 짙으면 카드 제목을 덮는다
+      for (i = 0; i < 9; i++) sparks.push({ vx: rnd(-100, 100), vy: rnd(-160, -50), life: rnd(.2, .38) });
+      for (i = 0; i < 8; i++) puffs.push({ t0: rnd(.03, .55), x: cx + rnd(-7, 7), dx: rnd(-12, 12), rise: rnd(30, 42),
+                                           r0: rnd(3, 4.5), r1: rnd(11, 16), a: rnd(.3, .42) });
       function path(pts, close){
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
         for (var k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
@@ -4912,10 +4915,10 @@ window.dispatchEvent(new Event('fb-ready'));
           if (t >= sp.life) return;
           var k = t / sp.life;
           ctx.fillStyle = 'rgba(255,' + Math.round(200 - 80 * k) + ',80,' + (1 - k) + ')';
-          ctx.beginPath(); ctx.arc(cx + sp.vx * t, top + 2 + sp.vy * t + 160 * t * t, 1.3 * (1 - k) + .4, 0, 6.3); ctx.fill();
+          ctx.beginPath(); ctx.arc(cx + sp.vx * t, top + 2 + sp.vy * t + 160 * t * t, 1.6 * (1 - k) + .5, 0, 6.3); ctx.fill();
         });
-        puffs.forEach(function(pf){                    // 연기: 피어오르며 퍼지고 옅어진다 (1.1초)
-          var u = (t - pf.t0) / 1.1;
+        puffs.forEach(function(pf){                    // 연기: 피어오르며 퍼지고 옅어진다 (1.3초)
+          var u = (t - pf.t0) / 1.3;
           if (u <= 0 || u >= 1) return;
           var x = pf.x + pf.dx * u, y = top - 2 - pf.rise * u, rr = pf.r0 + (pf.r1 - pf.r0) * u;
           var g = ctx.createRadialGradient(x, y, 0, x, y, rr);
@@ -4928,7 +4931,7 @@ window.dispatchEvent(new Event('fb-ready'));
       (function tick(now){
         var t = ((now || t0) - t0) / 1000;
         draw(t);
-        if (t < 1.6) cv.raf = requestAnimationFrame(tick);
+        if (t < 1.9) cv.raf = requestAnimationFrame(tick);
         else draw(9);                                  // 움직임이 다 끝난 자국만 남긴다
       })();
     }
@@ -5009,7 +5012,7 @@ window.dispatchEvent(new Event('fb-ready'));
           result.textContent = ns2[nw] + ' 당첨!';   // 이모지 없이 — 날벼락은 탄 자국이 표시한다(CSS 룰렛 머리 주석)
           result.classList.remove('hit'); void result.offsetWidth; result.classList.add('hit');
           // 「다시」·닫기·이름 고치기는 타격(흔들림·번쩍임·달궈짐, 0.5초)이 끝난 뒤에 풀린다. 바로 풀면 곧장 「다시」를
-          // 눌렀을 때 번개가 중간에 잘리고, 번쩍임·흔들림이 새 회전 위에 겹쳤다. 연기(~1.6초)는 기다리지 않는다 —
+          // 눌렀을 때 번개가 중간에 잘리고, 번쩍임·흔들림이 새 회전 위에 겹쳤다. 연기(~1.9초)는 기다리지 않는다 —
           // 그 사이 누르면 자국과 함께 흐려진다(clearScar).
           setTimeout(function(){ if (myGen2 === gen) finish(); }, calm() ? 0 : 500);
         }
