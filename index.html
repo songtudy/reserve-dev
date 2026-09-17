@@ -5050,8 +5050,12 @@ window.dispatchEvent(new Event('fb-ready'));
       // 결과가 뜬 뒤 잠깐 두었다가 번개가 «다른 사람»을 내려친다.
       // 그 사이에도 spinning 은 true — 다시 돌리기·이름 고치기·막 탭 닫기를 막는다. 「닫기」 버튼만은 언제나 된다
       // (hide 가 gen 을 올려 남은 번개·자국 타이머가 모두 멈춘다).
+      // ★기다리는 동안 버튼은 평범한 당첨과 «똑같이» 보인다(「다시」·밝게) — 누르면 아무 일도 없을 뿐이다.
+      //   전엔 흐린 「돌리기」로 남아, 평범한 당첨(곧장 밝은 「다시」)과 달라 번개가 올 걸 미리 알려 버렸다(2026-09-17).
       function twist(myGen2, chips2, ns2, old){
         var nw = twistPick(ns2.length, old);
+        goBtn.disabled = false;
+        goBtn.textContent = '다시';
         function hit(){
           if (myGen2 !== gen) return;
           chips2[old].className = 'rltchip';
@@ -5064,13 +5068,15 @@ window.dispatchEvent(new Event('fb-ready'));
           // 그 사이 누르면 자국과 함께 흐려진다(clearScar).
           setTimeout(function(){ if (myGen2 === gen) finish(); }, calm() ? 0 : 500);
         }
-        // 0.78초 기다리는 동안 번개를 미리 굽는다(prepareBolt 위 주석). 당첨 칩이 튀는 동안(.26s)은 피해 0.3초 뒤에.
+        // 1초 기다리는 동안 번개를 미리 굽는다(prepareBolt 위 주석). 당첨 칩이 튀는 동안(.26s)은 피해 0.3초 뒤에.
         if (!calm()) setTimeout(function(){ if (myGen2 === gen) prepareBolt(chips2[nw]); }, 300);
         setTimeout(function(){
           if (myGen2 !== gen) return;              // 그 사이 닫혔으면 아무것도 안 한다
           if (calm()) hit();
           else strike(hit);
-        }, 780);
+        }, 1000);
+        // 1초 = 결과를 «읽고 받아들일» 한 박자. 칩이 튀는 0.26초 뒤 눈이 결과 줄로 옮겨 읽는 데 0.5초 남짓 — 0.78초였을 땐
+        //   다 읽는 순간 번개가 쳐서 「정해졌다」는 틈이 없었다. 뒤집힘은 그 틈이 있어야 웃긴다(2026-09-17).
       }
       function go(){
         if (myGen !== gen) return;
