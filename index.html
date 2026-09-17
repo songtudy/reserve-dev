@@ -1517,11 +1517,17 @@ window.addEventListener('pageshow', remeasureSbcut);
        천천히 출발·도착하는 곡선이라 흰 칩이 약 0.2초 남는다.
      transition:none — 칩의 글자색 .03s 전환이 남으면 흰 칩 첫 프레임에 밝은 글자가 묻혀 이름이 안 보였다. */
   .rltchip.hit{animation:boltHit .5s cubic-bezier(.45,0,.55,1);transition:none}
-  /* 처음 당첨자 칸: 번개가 친 순간부터 금색이 «눈에 보이게» 빠져나간다 — 맞은 칩·흔들림과 같은 0.5초·같은 곡선.
+  /* 처음 당첨자 칸: 번개가 친 순간부터 금색이 «눈에 보이게» 빠져나간다(0.3초).
      ★전엔 번쩍임 정점에 0.08초 만에 꺼져(빛 속에 숨김) 빛이 걷히면 새 당첨자만 보였다 — 「동희가 맞았다」는 읽혀도
        「동현에게서 동희로 뒤집혔다」가 약했다(2026-09-17 오너 「결과가 정해졌는데 뒤바뀌는 느낌인가」). 불이 옆 칸으로
-       «옮겨 가면» 룰렛이 덜 돈 것처럼 보이지만, 제자리에서 «꺼지는» 건 그렇게 안 읽힌다. */
-  .rltchip.lose{animation:boltLose .5s cubic-bezier(.45,0,.55,1);transition:none}
+       «옮겨 가면» 룰렛이 덜 돈 것처럼 보이지만, 제자리에서 «꺼지는» 건 그렇게 안 읽힌다.
+     ★곡선은 맞은 칩과 달리 «급히 빠지고 천천히 꺼지는» --ease. 맞은 칩과 같은 곡선(천천히 출발)이었을 땐 첫 번쩍임이 걷힌
+       순간(0.13초) 처음 당첨자가 아직 «완전한 금색»이었고, 0.27초에 두 칸의 금색이 똑같아져(영상 픽셀 실측 100 대 95)
+       당첨이 어느 쪽인지 흐려지는 순간이 생겼다. 급히 빠지면 두 칸이 같아지는 순간이 첫 번쩍임 «속»으로 들어간다.
+     ★0.5초 → 0.3초: 라이트는 맞은 칩이 «밝은 테라코타»(--rltHeat)에서 식는데, 빠지는 칸도 테라코타 → 흰색 사이에서 같은 색을
+       지나, 첫 번쩍임이 걷힌 0.13초에 두 칸이 똑같은 연분홍이었다(시뮬레이터 영상). 0.3초면 그때 이미 거의 빠져 있다.
+       빠지는 게 보이는 시간은 번쩍임 사이(0.07~0.15초)로 충분하다. */
+  .rltchip.lose{animation:boltLose .3s var(--ease);transition:none}
   @keyframes boltLose{
     0%  {background:var(--wait); border-color:var(--wait); color:var(--onWait); transform:scale(var(--win, 1.09))}
     100%{background:var(--field); border-color:var(--line); color:var(--text); transform:none}
