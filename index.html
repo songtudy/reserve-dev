@@ -1513,7 +1513,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     38% {transform:scale(.98);  background:var(--wait); border-color:var(--wait)}
     100%{transform:scale(var(--win, 1.09)); background:var(--wait); border-color:var(--wait)}
   }
-  /* 카드가 맞고 «내려앉았다» 잦아든다. 번개가 위에서 오므로 세로 — 잠금 흔들림(lockshake)과 같은 감쇠 결.
+  /* 카드가 맞고 «내려앉았다가» 흔들리며 잦아든다. 첫 움직임은 세로(번개가 위에서 온다) — 잠금 흔들림(lockshake)과 같은 감쇠 결.
      .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다. */
   /* 맞는 «순간» 최대로 내려앉고 잦아든다. 예전엔 최대에 닿는 데 58ms 걸려 타격이 아니라 흔들거림이었다.
      ★2026-09-17 역동성 점검: 18px 내려앉은 뒤 상하좌우로 잦아든다(0.6초, 예전 세로 7px·0.42초).
