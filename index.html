@@ -1369,7 +1369,8 @@ window.addEventListener('pageshow', remeasureSbcut);
      전역의 !important 에 밀려 죽는다. 왜 예외인지는 그 자리 주석 참고. */
 
   /* ---------- 화장실 청소 룰렛 (이스터에그) ----------
-     ★이모지는 «룰렛 안에만» 있다 — 🚽(제목·결과)와 ⚡(날벼락 결과) 둘. 본 화면의 온기는 곰이 지고
+     ★이모지는 «룰렛 안에만» 있다 — 🚽(제목)와 ⚡(날벼락 결과) 둘. 평범한 결과엔 🚽 를 안 붙인다 — 제목에
+       이미 있어 같은 그림이 두 번 보였다(오너 2026-09-17). ⚡ 는 «뒤집혔다»는 표시라 남긴다. 본 화면의 온기는 곰이 지고
        글은 이모지를 안 쓰는데, 룰렛만 예외다 — 위 「룰렛은 놀이라 제 곡선」과 같은 갈래의 예외이고
        일부러 둔 것이다. 「이모지가 튄다」고 지우지 말 것(2026-09-16 점검에서 명시). */
   /* 서랍(61) 위 — 롱프레스로 열 때 빠져나가는 서랍이 룰렛 위를 스치지 않게 */
@@ -1444,7 +1445,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltslot.morphing .rltchip{background:transparent;border-color:transparent;overflow:visible;transition:none}   /* 카드 점멸용 .03s 전환이 여기 걸리면 첫 프레임에 카드 테두리가 비쳤다 */
   .rltface{position:absolute;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;background:var(--field);pointer-events:none}
   .rltmirror{position:absolute;top:0;height:44px;line-height:44px;white-space:pre;visibility:hidden;pointer-events:none}   /* 입력칸 글자 위치를 재는 그림자 */
-  /* 상태 줄 — 안내 → 경고 → 「🚽/⚡ ○○ 당첨!」이 «한 자리»에서 바뀐다.
+  /* 상태 줄 — 안내 → 경고 → 「돌리는 중…」 → 「○○ 당첨!」(날벼락이면 「⚡ ○○ 당첨!」)이 «한 자리»에서 바뀐다.
      ★예전엔 안내문이 제목 아래 있고 결과는 당첨 순간 새 줄로 생겨, 카드가 위아래로 21pt 씩 벌어졌다
        (iOS 시뮬레이터 실측, 오너 2026-09-16 「당첨 글자 나타나면서 위아래로 넓어진다」). 결과 자리를 미리
        잡되 «빈칸»으로 보이지 않게 안내문이 그 자리를 채운다(오너가 고른 안 — 원래 배치는 그대로).
@@ -1458,22 +1459,20 @@ window.addEventListener('pageshow', remeasureSbcut);
      한가운데서 조용히 바뀌면 빛이 걷혔을 때 «이미 바뀌어 있을 뿐» 뒤집히는 순간이 없었다. */
   .rltresult.hit{animation:resultHit .46s var(--ease)}
   @keyframes resultHit{0%{transform:scale(1.3)}100%{transform:scale(1)}}
-  /* ── 날벼락 (20%) ──
-     번쩍임은 «약하게». 세게 하면 명단도 카드 글자도 갈색으로 탁해진다(시안 비교로 확인).
-     번개는 카드 위를 지난다 — 뒤로 보내면 칩에 안 닿아 「누가 맞았나」가 흐려진다.
-     0.3초라 글자를 읽는 데는 지장이 없다. */
+  /* ── 날벼락 (20%) ── 번개 · 번쩍임 · 맞은 칩 · 카드 흔들림 넷이 한 번에 친다. 시각은 JS strike() 에 모여 있다.
+     번개는 카드 위를 지난다 — 뒤로 보내면 칩에 안 닿아 「누가 맞았나」가 흐려진다. 0.5초라 글자를 읽는 데는 지장이 없다. */
   /* 번쩍임: screen · 금색 · «두 번»(정점 .75 → 번개가 다시 켜질 때 .55). screen 은 어두운 화면을 «빛이 비추듯»
-     밝히고 뒤의 윤곽을 살려 둔다.
-     ★2026-09-17 한 번(.62) → 두 번으로 — 오너 「역동성이 부족하다」. 흔들림·번쩍임·번개를 하나씩만 키운 시안을
-       시뮬레이터 영상으로 비교해, 번쩍임이 «한 번 밝아졌다 식는 조명»으로 읽히는 게 가장 컸다. 진짜 번개처럼
-       번개가 다시 켜질 때 빛도 한 번 더 번쩍이게 했다. 흰빛(.85)도 다시 찍어 봤는데 아래 ★색 이유 그대로 안개였다.
-     섞지 않고 덮으면 금색 판이 된다.
+     밝히고 뒤의 윤곽을 살려 둔다. 섞지 않고 덮으면 금색 판이 된다.
+     ★한 번(.62) → 두 번(2026-09-17, 오너 「역동성이 부족하다」). 흔들림·번쩍임·번개를 하나씩만 키운 시안을
+       시뮬레이터 영상으로 비교하니, 한 번은 «밝아졌다 식는 조명»으로 읽혔다. 진짜 번개처럼 줄기가 다시 켜질 때
+       빛도 한 번 더 번쩍인다 — 줄기와 «같이» 깜빡여야 번개 하나로 읽힌다(따로 놀면 상관없는 깜빡임).
+       흰빛(.85)도 다시 찍어 봤는데 아래 ★색 이유 그대로 안개였다.
      ★색이 금색인 이유 — 따뜻한 흰빛(.62 · .46)과 iOS 시뮬레이터 사파리에서 정점 순간을 나란히 찍었다
        (2026-09-16). 흰빛은 «빛»이 아니라 «안개»로 읽혔고, 바탕이 흰 번개 심 쪽으로 밝아져 번개가 묻혔다.
      ★원칙(라이트 쪽 주석과 같은 한 줄): 번쩍임은 바탕을 «번개 심의 색 쪽으로» 옮기면 안 된다.
        다크 = 흰 쪽이 아닌 금색으로 밝힌다 · 라이트 = 밝히지 않고 색 없이 어둡게 한다. 흰빛으로 바꾸고
        싶어지면 이 줄부터 볼 것.
-     ★내력(2026-09-16): .13(밋밋) → .78·혼합없음(금색 판) → .62·screen. 중간의 .78 은 두 시안 파일을
+     ★내력: .13(밋밋) → .78·혼합없음(금색 판) → .62·screen(2026-09-16) → .75·.55 두 번(09-17). 중간의 .78 은 두 시안 파일을
        헷갈려 «다른 시안»의 값(.92·혼합없음)을 기준으로 삼은 착각이었다. 다시 바꾸려면 그 파일부터 열 것.
      라이트는 screen 이 흰 바탕에서 아무것도 안 해서 multiply 로 — 대신 훨씬 세게 먹어 절반으로.
      ★라이트의 번쩍임 색은 강조색이 아니라 «색 없는 어둠»(--text = 막과 같은 가족)이다. 라이트에서 번쩍임이
@@ -1502,26 +1501,25 @@ window.addEventListener('pageshow', remeasureSbcut);
   .rltsky .bcore{fill:#fff6e0}
   html[data-theme="light"] .rltsky .bcore{fill:#fffaf2}
   /* 맞은 칩: 튀면서 «달궈졌다 식는다».
-     ★한때 둘레에 빛을 번지게(box-shadow) 했다가 뺐다(오너 2026-09-16 「촌스럽다」). 두 가지 이유다 —
-       ① 보기에 싸구려다 ② 그때 이름 상자가 스크롤 상자라 번진 빛이 잘려 「이름 카드가 잘린 것처럼」 보였다. */
-  /* 곡선은 «구간마다» 걸린다(CSS 키프레임). --ease 처럼 출발이 급한 곡선이면 흰 달궈짐·튄 크기가 첫 한두 프레임에
-     식어 버려 맞은 게 안 보였다 — 시뮬레이터 영상에서 흰색 2프레임. 천천히 출발·도착하는 곡선이면 흰 칩이
-     약 0.1초 머물다 금색으로 식는다(같은 영상 5~6프레임). 시간(0.5초)은 그대로. 2026-09-17 */
-  .rltchip.hit{animation:boltHit .5s cubic-bezier(.45,0,.55,1);transition:none}   /* 글자색 .03s 전환이 남으면 흰 칩 위 첫 프레임에 밝은 글자가 묻혀 이름이 안 보였다 */
+     ★한때 둘레에 빛을 번지게(box-shadow) 했다가 뺐다(오너 2026-09-16 「촌스럽다」) — 보기에 싸구려였고,
+       그때 이름 상자가 스크롤 상자라 번진 빛이 잘려 「이름 카드가 잘린 것처럼」 보였다.
+     ★곡선은 키프레임 «구간마다» 걸린다. 출발이 급한 곡선(--ease)이면 흰 달궈짐·튄 크기가 첫 한두 프레임에 식어
+       맞은 게 안 보였다(시뮬레이터 영상 흰색 2프레임). 천천히 출발·도착하면 흰 칩이 약 0.1초 머문다(5~6프레임).
+     transition:none — 칩의 글자색 .03s 전환이 남으면 흰 칩 첫 프레임에 밝은 글자가 묻혀 이름이 안 보였다. */
+  .rltchip.hit{animation:boltHit .5s cubic-bezier(.45,0,.55,1);transition:none}
   @keyframes boltHit{
     0%  {transform:scale(var(--pop, 1.22)); background:#fff6e0; border-color:#fff6e0}
     38% {transform:scale(.98);  background:var(--wait); border-color:var(--wait)}
     100%{transform:scale(var(--win, 1.09)); background:var(--wait); border-color:var(--wait)}
   }
-  /* 카드가 맞고 «내려앉았다가» 흔들리며 잦아든다. 첫 움직임은 세로(번개가 위에서 온다) — 잠금 흔들림(lockshake)과 같은 감쇠 결.
-     .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다. */
-  /* 맞는 «순간» 최대로 내려앉고 잦아든다. 예전엔 최대에 닿는 데 58ms 걸려 타격이 아니라 흔들거림이었다.
-     ★2026-09-17 역동성 점검: 18px 내려앉은 뒤 상하좌우로 잦아든다(0.6초, 예전 세로 7px·0.42초).
-       흔들림만 키운 시안 · 세로만 12px · 화면 전체 흔들기를 시뮬레이터 영상으로 나란히 보고 오너가 이것을 골랐다.
-       좌우 떨림은 잠금화면 «비밀번호 틀림»(lockshake)과 닮았다는 걱정이 있었지만, 번개·번쩍임과 함께 크게
-       흔들리니 「틀렸다」가 아니라 「맞았다」로 읽혔다.
-     ★곡선은 키프레임 «구간마다» 걸린다. 출발이 급한 곡선(.22,1,.36,1)이면 매 흔들림이 한 프레임 안에 지나가
-       7px 내려앉음이 영상에 안 잡히고 3px 떨림만 보였다. 끝점에서 잠깐 머무는 곡선이면 내려앉음(약 6px)이 보인다. */
+  /* 카드 흔들림: 맞는 «순간» 18px 내려앉았다가(번개가 위에서 온다) 상하좌우로 잦아든다. 0.6초.
+     .rlt 의 평소 transform(키보드 올림)을 덮지만, 돌리기 시작에 입력칸을 blur 하므로 이 순간 --kb 는 0 이다.
+     ★예전엔 최대에 닿는 데 58ms 걸려 타격이 아니라 흔들거림이었다 — 그래서 0% 가 최대다.
+     ★세로 7px·0.42초 → 지금 값(2026-09-17). 흔들림만 키운 시안 · 세로만 12px · 화면 전체 흔들기를 시뮬레이터
+       영상으로 나란히 보고 오너가 골랐다. 좌우 떨림은 잠금화면 «비밀번호 틀림»(lockshake)과 닮았다는 걱정이
+       있었지만, 번개·번쩍임과 함께 크게 흔들리니 「틀렸다」가 아니라 「맞았다」로 읽혔다.
+     ★곡선은 키프레임 «구간마다» 걸린다. 출발이 급한 곡선이면 매 흔들림이 한 프레임 안에 지나가 내려앉음이 영상에
+       안 잡혔다. 끝점에서 잠깐 머무는 곡선이라야 흔들림 하나하나가 보인다. */
   .rlt.jolt{animation:boltJolt .6s cubic-bezier(.45,0,.55,1)}
   @keyframes boltJolt{
     0%{transform:translate(0,18px)} 14%{transform:translate(-8px,-10px)} 28%{transform:translate(7px,7px)} 42%{transform:translate(-5px,-5px)}
@@ -1725,7 +1723,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 </div>
 
 <div class="scrim hide" id="rltScrim">
-  <!-- 날벼락: 번쩍임 막 + 번개. 카드가 아니라 «막»에 그린다 — 카드(330×280)는 번개를 담기엔 너무
+  <!-- 날벼락: 번쩍임 막 + 번개. 카드가 아니라 «막»에 그린다 — 카드(330×217)는 번개를 담기엔 너무
        작아 가지를 붙일 자리가 없고, 카드 안에서 시작하면 어디서 온 건지 안 읽힌다. 막에 그리면
        화면 꼭대기에서 400px 넘게 내려온다. 라이트 모드가 되는 이유도 이것이다 — 막은 두 테마 모두
        어두우므로(--scrim) 번개가 늘 어두운 바탕 위에 놓인다. -->
@@ -4543,15 +4541,12 @@ window.dispatchEvent(new Event('fb-ready'));
         namesBox.style.setProperty('--pop', (1 + 20 / w).toFixed(4));
       }
     }
-    // 입력칸 ↔ 카드 줄. 카드 줄에서 입력칸으로 갈 땐 페이드가 끝난 뒤 카드를 비운다
-    // — 이름이 많아 두 줄이던 카드가 숨은 채 자리를 차지해 입력칸 밑이 비지 않게.
-    var clearTimer = 0;
+    // 입력칸 ↔ 카드 줄. 입력칸으로 돌아가면 카드를 비운다 — 이름이 많아 두 줄이던 카드가 숨은 채 자리를 차지해
+    // 입력칸 밑이 비지 않게. 전환(morph) 중이면 비우지 않는다 — 글자가 입력칸 자리에 닿는 순간 morph 가 치운다
+    // (먼저 치우면 입력칸 글자가 아직 비어 있어 잠깐 빈 칸이 보였다, 시뮬레이터 영상 150ms).
     function board(on){
-      clearTimeout(clearTimer);
       slot.classList.toggle('board', on);
-      // 전환(morph) 중이면 카드는 morph 가 글자가 닿는 순간 치운다 — 여기서 먼저 치우면 입력칸 글자가 아직 비어 있어
-      // 잠깐 빈 칸이 보였다(시뮬레이터 영상 150ms).
-      if (!on && !slot.classList.contains('morphing')) clearTimer = setTimeout(function(){ if (!slot.classList.contains('board')) namesBox.innerHTML = ''; }, MORPH_MS);
+      if (!on && !slot.classList.contains('morphing')) namesBox.innerHTML = '';
     }
 
     // ── 입력칸 ↔ 카드 줄 전환 ──
@@ -4644,7 +4639,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 상태 줄을 안내/경고로 되돌린다 (토스트는 룰렛 스크림 뒤라 안 보임). 결과(.won)·타격(.hit)도 여기서 뗀다
     // — .hit 이 남으면 다음 날벼락 전에 평범한 결과까지 튀어나온다.
     function say(msg, warn){
-      var t = msg === undefined ? SUB_TEXT : msg;   // '' = 비우기
+      var t = msg || SUB_TEXT;
       result.classList.remove('won', 'hit');
       result.classList.toggle('warn', !!warn);
       if (result.textContent !== t) result.textContent = t;   // 같은 말을 다시 쓰면 낭독기가 타자마다 되읽는다
@@ -4661,7 +4656,6 @@ window.dispatchEvent(new Event('fb-ready'));
       endMorph();
       inp.value = '';
       board(false);
-      namesBox.innerHTML = '';
       reset();
       rltScrim.classList.remove('hide');
       backOpen('roulette', hide);
@@ -4745,13 +4739,12 @@ window.dispatchEvent(new Event('fb-ready'));
     var boltLayer = sky;
     function clearBolt(){
       sky.innerHTML = '';
-      sky.style.opacity = skyBmp.style.opacity = '';
       skyBmp.width = skyBmp.height = 0;   // 화면 크기 그림 메모리를 놓는다
       boltLayer = sky;
     }
     function prepareBolt(target){
       drawBolt(target);
-      boltLayer = sky;
+      boltLayer = sky;                           // 구워지기 전에 치게 되면 SVG 그대로
       var myGen = gen, sr = rltScrim.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
       // 그림 속 SVG 에는 스타일시트가 안 따라간다 — 계산된 칠·불투명도를 속성으로 박아 넣는다
       var copy = sky.cloneNode(true), live = sky.querySelectorAll('g, path'), dup = copy.querySelectorAll('g, path'), i, cs;
@@ -4776,10 +4769,10 @@ window.dispatchEvent(new Event('fb-ready'));
     }
     // onHit = 번쩍임 정점(62ms)에 부를 일 — 당첨자 바꾸기. 번개와 «같은 시계»(여기서 건 타이머)로 잰다.
     function strike(onHit){
-      // 깜빡임 = 오너가 좋다고 한 시안의 리듬 «켜짐 → .25 로 흐려짐 → 켜짐 → 꺼짐». 0.34 → 0.44초(2026-09-17) —
-      // 다시 켜진 번개를 50ms 붙잡아 두 번째 번쩍임(240ms)과 겹치게 했다.
-      // 그 시안과 다른 점은 딱 하나 — 번개가 0 에서 올라오지 않고 «바로 켜진다». 번개가 먼저 서고
-      // 빛이 한 박자 뒤(62ms)에 퍼져야 번개가 빛에 안 씻긴다(프레임을 멈춰 재서 확인).
+      // 깜빡임 = 오너가 좋다고 한 시안의 리듬 «켜짐 → .25 로 흐려짐 → 켜짐 → 꺼짐». 시안과 다른 점 둘 —
+      // ① 번개가 0 에서 올라오지 않고 «바로 켜진다». 번개가 먼저 서고 빛이 한 박자 뒤(62ms)에 퍼져야 번개가
+      //    빛에 안 씻긴다(프레임을 멈춰 재서 확인).
+      // ② 다시 켜진 번개를 50ms 붙잡아 두 번째 번쩍임(240ms)과 겹친다 — 0.34 → 0.44초(2026-09-17).
       // ★잔상(심만 남아 1초 가까이 식는 것)을 한때 넣었다가 뺐다(2026-09-16) — 길이가 세 배가 되며
       //   「쾅」이 「웅~」이 됐다. 좋다고 한 시안에도 없었다. 번개는 짧아야 번개답다.
       // ★easing 은 반드시 'linear'. 타이밍 쪽에 'ease-out' 을 주면 «타임라인 전체»가 앞으로 당겨져
@@ -4861,7 +4854,7 @@ window.dispatchEvent(new Event('fb-ready'));
         chips[winner].className = 'rltchip win';
         result.classList.remove('warn');
         result.classList.add('won');
-        result.textContent = '🚽 ' + ns[winner] + ' 당첨!';
+        result.textContent = ns[winner] + ' 당첨!';   // 🚽 는 제목에만 (CSS 룰렛 머리 주석)
         buzz([25, 45, 25]);
         if (n > 1 && Math.random() < TWIST_P) twist(myGen, chips, ns, winner);
         else finish();
