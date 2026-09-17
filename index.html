@@ -4838,6 +4838,8 @@ window.dispatchEvent(new Event('fb-ready'));
     // 크기 규칙 — «보이는» 크기가 인원수와 상관없이 같게. 눈은 자국을 칸에 «비해» 본다.
     //   깊이 = 12 고정 — 칸 높이는 늘 44 라 고정이 곧 같은 비율이다. 12 는 이름 글자 윗선(칸 위 11pt)에 겨우 닿는 깊이.
     //   폭   = 28 × √(칸 폭 / 53) — 5명 28 · 4명 32 · 3명 37 · 2명 46. 칸 폭의 «제곱근»에 비례한다.
+    //   칸 폭은 53~146 으로 묶는다 — 이름이 아주 길어 한 줄에 한 칸(298pt)이 되면 66 까지 커져 혼자 튀었다. 2명 칸(46)이 상한.
+    //   자리는 윗변 «곧은 부분» 안으로만 흔든다 — 5명 칸은 곧은 부분(29)이 폭(28)과 거의 같아, 좌우로 흔들면 모서리 곡선이 파였다.
     //   28 = 가장 좁은 칸(5명 53pt)의 윗변 곧은 부분(53 − 모서리 12×2 = 29)에 드는 가장 큰 폭.
     // ★세 규칙을 2~5명에 입혀 나란히 찍어 골랐다(2026-09-17, 오너 「카드 수랑 파인 정도 일관성」):
     //   모두 28 고정 — 5명은 칸의 절반, 2명은 흠집(절대 크기는 같아도 느낌이 다르다)
@@ -4878,7 +4880,9 @@ window.dispatchEvent(new Event('fb-ready'));
       var radius = parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 12;
       var top = PAD, cx = PAD + tr.width / 2 + rnd(-1, 1) * Math.min(6, tr.width * .06);
       // 파인 모양 — 윗변에서 들쭉날쭉한 반타원으로 한 입
-      var bw = 28 * Math.sqrt(tr.width / 53) * rnd(.94, 1.04), bd = 12 * rnd(.94, 1.06), bite = [], i, j;
+      var bw = 28 * Math.sqrt(Math.min(146, Math.max(53, tr.width)) / 53) * rnd(.94, 1.04), bd = 12 * rnd(.94, 1.06), bite = [], i, j;
+      var flatL = PAD + radius + bw / 2, flatR = PAD + tr.width - radius - bw / 2;   // 윗변 곧은 부분 안에서 자국 가운데가 갈 수 있는 범위
+      cx = flatR > flatL ? Math.min(flatR, Math.max(flatL, cx)) : PAD + tr.width / 2;
       // ★점마다 반지름을 제멋대로 흔들면 톱니(만화 «쾅» 테두리)가 됐다 — 큰 굴곡(사인) 위에 잔 떨림만 얹고, 마디 간격도 흩는다.
       var ph = rnd(0, 6.3), wob = rnd(.1, .16);
       for (i = 0; i <= 14; i++){
