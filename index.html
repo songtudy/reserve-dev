@@ -1504,7 +1504,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 곡선은 «구간마다» 걸린다(CSS 키프레임). --ease 처럼 출발이 급한 곡선이면 흰 달궈짐·튄 크기가 첫 한두 프레임에
      식어 버려 맞은 게 안 보였다 — 시뮬레이터 영상에서 흰색 2프레임. 천천히 출발·도착하는 곡선이면 흰 칩이
      약 0.1초 머물다 금색으로 식는다(같은 영상 5~6프레임). 시간(0.5초)은 그대로. 2026-09-17 */
-  .rltchip.hit{animation:boltHit .5s cubic-bezier(.45,0,.55,1)}
+  .rltchip.hit{animation:boltHit .5s cubic-bezier(.45,0,.55,1);transition:none}   /* 글자색 .03s 전환이 남으면 흰 칩 위 첫 프레임에 밝은 글자가 묻혀 이름이 안 보였다 */
   @keyframes boltHit{
     0%  {transform:scale(var(--pop, 1.22)); background:#fff6e0; border-color:#fff6e0}
     38% {transform:scale(.98);  background:var(--wait); border-color:var(--wait)}
