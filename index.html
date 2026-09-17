@@ -4665,7 +4665,7 @@ window.dispatchEvent(new Event('fb-ready'));
     //   P(x) = .9·(1/n) + .1·[ (n-1)/n · 1/(n-1) ] = .9/n + .1/n = 1/n
     // 바뀌는 순간은 «빛 안»에 숨긴다 — 불이 옮겨가는 걸 보여주면 「덜 돌았나」가 되고,
     // 빛이 걷혔을 때 이미 옮겨가 있으면 「맞았다」가 된다.
-    var TWIST_P = 1.00;   // ★★★ 한시적 100% — 디테일 확인용(2026-09-16). 원래 값은 0.10. 반드시 되돌릴 것 ★★★
+    var TWIST_P = 0.10;
     var BOLT_SEGS = 16, BOLT_JIT = 30, BOLT_BRANCHES = 3, BOLT_MS = 340;
     var sky = document.getElementById('rltSky');
     var flash = document.getElementById('rltFlash');
