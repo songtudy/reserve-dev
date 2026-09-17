@@ -1725,7 +1725,7 @@ window.addEventListener('pageshow', remeasureSbcut);
       <input type="text" id="rltInput" placeholder="예: 동현 동주 동희 동욱" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
       <div class="rltnames" id="rltNames" role="button" aria-label="이름 고치기"></div>
     </div>
-    <p class="rltresult" id="rltResult" aria-live="polite">이름을 띄어쓰기로 구분해 입력해 주세요</p>
+    <p class="rltresult" id="rltResult" aria-live="polite">이름 사이를 한 칸씩 띄어 주세요</p>
     <div class="dbtn">
       <button type="button" id="rltClose">닫기</button>
       <button type="button" id="rltGo">돌리기</button>
@@ -4759,16 +4759,16 @@ window.dispatchEvent(new Event('fb-ready'));
     function spin(){
       if (spinning) return;
       var ns = names();
-      if (ns.length < 2){ say('이름을 2명 이상 입력해 주세요', true); return; }
+      if (ns.length < 2){ say('2명 이상 입력해 주세요', true); return; }
       spinning = true;
       sky.innerHTML = '';             // 「다시」를 번개 도중에 누르면 옛 번개가 새 회전 위에 겹친다
       inp.blur();                     // 키보드 내려 칩 안 가리게
       inp.disabled = true;            // 스핀 중 이름·키보드 못 건드리게
       goBtn.disabled = true;
-      // 도는 동안 상태 줄은 비운다 — 결과가 뜰 자리다. 입력 안내는 입력칸이 사라져 맞지 않고,
-      // 「이름을 누르면 고칠 수 있어요」를 둬 봤더니 도는 동안(누를 수 없을 때)만 보이다 결과에 덮여,
-      // 정작 누를 수 있을 땐 안 보였다(2026-09-17 점검). 높이는 28 로 고정이라 비워도 카드가 안 움직인다.
-      say('');
+      // 도는 동안 상태 줄 = 「돌리는 중…」(말투 ① 명사형 — 버튼 「돌리기」와 같은 말). 멎으면 그 자리에 결과가 뜬다.
+      // ★비워 뒀더니 2초간 구멍처럼 보였다. 「이름을 누르면 고칠 수 있어요」도 둬 봤는데 도는 동안(누를 수 없을 때)만
+      //   보이다 결과에 덮여, 정작 누를 수 있을 땐 안 보였다(2026-09-17 점검).
+      say('돌리는 중…');
       var fromText = !slot.classList.contains('board') && !calm();
       board(true);                    // 입력칸 → 카드 줄
       drawChips(ns);
