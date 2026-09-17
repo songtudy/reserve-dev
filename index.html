@@ -4835,7 +4835,9 @@ window.dispatchEvent(new Event('fb-ready'));
     // 자국(파인 곳·그을음·금)은 「다시」나 이름 고치기까지 남는다 — 날벼락이었다는 표시를 결과 글자 대신 «맞은 자리»에.
     // ★반려된 시안(2026-09-17, 오너 「다 별로」): 칸 윗부분 그을음만 · 이름을 가로지르는 금 · 4° 삐뚤어진 칸 · 그 조합.
     //   그을음만은 얼룩, 가로지르는 금은 이름을 가렸다. 「리얼하게 패인」 느낌이어야 했다 — 파임 + 불씨 + 연기.
-    // 크기는 칸 폭의 약 34%(18~30pt) — 5명이면 칸이 55pt 라 고정 크기는 칸의 절반을 먹었다. 30% 는 폰 크기에서 작았다.
+    // 크기는 칸 폭의 약 34%(18~36pt) — 5명이면 칸이 55pt 라 고정 크기는 칸의 절반을 먹었다. 30% 는 폰 크기에서 작았다.
+    // 넓은 칸(2~3명, 94~146pt)은 폭만 36 까지 키우고 «깊이»(13)와 그을음 반경(27)은 묶는다 — 이름 글자가 칸 위에서 11pt
+    // 아래부터라, 깊이·그을음이 따라 커지면 이름 윗부분을 덮었다. 30 에 묶였을 땐 2명 칸에서 «흠집»처럼 작았다(2026-09-17).
     // 움직임을 줄이라고 한 기기(calm)는 불씨·불꽃·연기 없이 남는 자국만 그린다.
     var scar = null;
     // fade = 0.2초에 걸쳐 지운다(「다시」·이름 고치기). 한 프레임에 사라지면 새 회전이 시작되는 순간 자국·연기가 «툭» 꺼졌다.
@@ -4870,7 +4872,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var radius = parseFloat(getComputedStyle(tile).borderTopLeftRadius) || 12;
       var top = PAD, cx = PAD + tr.width / 2 + rnd(-1, 1) * Math.min(6, tr.width * .06);
       // 파인 모양 — 윗변에서 들쭉날쭉한 반타원으로 한 입
-      var bw = Math.max(18, Math.min(30, tr.width * .34)) * rnd(.9, 1.08), bd = bw * rnd(.38, .46), bite = [], i, j;
+      var bw = Math.max(18, Math.min(36, tr.width * .34)) * rnd(.9, 1.08), bd = Math.min(13, bw * rnd(.38, .46)), bite = [], i, j;
       // ★점마다 반지름을 제멋대로 흔들면 톱니(만화 «쾅» 테두리)가 됐다 — 큰 굴곡(사인) 위에 잔 떨림만 얹고, 마디 간격도 흩는다.
       var ph = rnd(0, 6.3), wob = rnd(.1, .16);
       for (i = 0; i <= 14; i++){
@@ -4915,7 +4917,7 @@ window.dispatchEvent(new Event('fb-ready'));
         ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, radius); ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, radius);
         ctx.arcTo(x0, y0 + h, x0, y0, radius);         ctx.arcTo(x0, y0, x0 + w, y0, radius);
         ctx.closePath(); ctx.clip();
-        var soot = ctx.createRadialGradient(cx, top, 2, cx, top, bw * .85);
+        var soot = ctx.createRadialGradient(cx, top, 2, cx, top, Math.min(27, bw * .85));
         soot.addColorStop(0, 'rgba(30,16,4,.85)'); soot.addColorStop(.45, 'rgba(45,24,6,.45)'); soot.addColorStop(1, 'rgba(45,24,6,0)');
         ctx.fillStyle = soot; ctx.fillRect(cx - bw * 1.2, top - 4, bw * 2.4, bw * 1.3);
         ctx.strokeStyle = 'rgba(28,14,3,.85)'; ctx.lineWidth = 1.1; ctx.lineJoin = 'round';
