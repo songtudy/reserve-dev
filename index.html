@@ -4921,11 +4921,12 @@ window.dispatchEvent(new Event('fb-ready'));
         cracks.push(line);
       }
       var sparks = [], puffs = [], glow = [];
-      for (i = 0; i < 14; i++) glow.push(rnd(.15, 1));   // 불씨는 테두리 마디마다 세기가 다르다 — 고르면 «노란 테두리선»이 된다
-      // 연기는 칸 위로 한 번 «피어오르는» 만큼 — 옅고 짧으면 폰 크기에서 안 보였고, 더 짙으면 카드 제목을 덮는다
+      // 불씨는 마디마다 세기가 다르고(고르면 «노란 테두리선»이 된다), 저마다 다른 박자로 «이글거린다».
+      for (i = 0; i < 14; i++) glow.push({ v: rnd(.15, 1), w: rnd(7, 15), p: rnd(0, 6.3) });
+      // 연기는 칸 위로 한 번 «피어오르는» 만큼 — 옅고 짧으면 폰 크기에서 안 보였고(밝기 변화 2%), 더 짙으면 카드 제목을 덮는다
       for (i = 0; i < 9; i++) sparks.push({ vx: rnd(-100, 100), vy: rnd(-160, -50), life: rnd(.2, .38) });
       for (i = 0; i < 8; i++) puffs.push({ t0: rnd(.03, .55), x: cx + rnd(-7, 7), dx: rnd(-12, 12), rise: rnd(30, 42),
-                                           r0: rnd(3, 4.5), r1: rnd(11, 16), a: rnd(.3, .42) });
+                                           r0: rnd(3, 4.5), r1: rnd(12, 18), a: rnd(.5, .68) });
       function path(pts, close){
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
         for (var k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
@@ -4960,13 +4961,13 @@ window.dispatchEvent(new Event('fb-ready'));
         // 불씨 — 가장자리 «마디마다» 세기가 달라 군데군데 붉게 타다 꺼진다(0.7초). 흰빛 → 주황 → 짙은 빨강으로 식는다.
         // ★처음엔 테두리 전체를 굵은 노란 선(1.8px + 번짐 10)으로 한 번에 칠했다 — 오너 「촌스럽다」(2026-09-17).
         //   고른 선은 «빛나는 테두리»지 «타는 가장자리»가 아니었다.
-        var heat = Math.max(0, 1 - t / .7);
+        var heat = Math.max(0, 1 - t / .95);
         if (heat > 0){
           ctx.save();
           ctx.lineCap = 'round'; ctx.lineWidth = 1.1;
           ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(255,90,20,' + (.8 * heat) + ')';
           for (i = 0; i < 14; i++){
-            var e = heat * glow[i];
+            var e = heat * glow[i].v * (.55 + .45 * Math.sin(t * glow[i].w + glow[i].p));   // 마디마다 다른 박자로 일렁인다
             if (e < .05) continue;
             ctx.strokeStyle = t < .05 ? 'rgba(255,246,224,' + glow[i] + ')'
                                       : 'rgba(255,' + Math.round(60 + 150 * e) + ',' + Math.round(20 + 40 * e) + ',' + Math.min(1, e * 1.3) + ')';
