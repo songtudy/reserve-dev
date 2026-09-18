@@ -137,6 +137,8 @@ window.addEventListener('pageshow', remeasureSbcut);
        ③ 가운데에서 오는 것      : scale(.96)→1 + 페이드 (확인창 .dialog · 룰렛 .rlt — 올라올 바닥이 없다)
        ④ 가장자리에서 오는 것    : 제 폭만큼 밀려 들어옴  (서랍 .drawer, translateX -101%→0)
        붙어 있는 것(행 ⋯ 메뉴)은 이동 없이 페이드만(fadeIn) — 이미 그 자리에 속한 것이라 움직일 이유가 없다.
+       ★겹쳐 뜨는 것은 «무엇이든» --tFade 에 불투명해진다(시트·확인창·룰렛창·예약추가·토스트·업데이트 알약·행 메뉴).
+         반투명한 동안엔 뒤가 비치기 때문이다. 자리 잡는 움직임과 어둠만 --tMove 로 천천히 간다.
        시간은 전부 --tMove. 곡선은 «방향»을 탄다 — 들어올 때 --ease, 나갈 때 --easeExit(위 주석). 거리는 요소 크기에 맞춘다.
        ★예외 둘(둘 다 일부러) — 행 ⋯ 메뉴: 행 안에 끼어 있어 사라질 때 DOM 에서 빠진다(자리가 같이 줄어든다).
          퇴장을 페이드로 하려면 높이까지 접어야 하는데, 접기 애니메이션은 2026-09-12 에 버렸다. 그래서 등장만 있다(0.15초).
@@ -596,7 +598,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
   /* 「대기」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
-  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--ease)}   /* 흐려지기만 — 높이까지 접으면 매 프레임 목록 전체가 다시 배치돼 «렉 걸린 듯» 보인다(오너 2026-09-12). 접기/펼치기를 즉시로 둔 것과 같은 이유 */
+  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--easeExit)}   /* 나가는 것 = 퇴장 곡선. --ease 로는 27ms 만에 반이 사라져 «툭» 꺼졌다(2026-09-19) */   /* 흐려지기만 — 높이까지 접으면 매 프레임 목록 전체가 다시 배치돼 «렉 걸린 듯» 보인다(오너 2026-09-12). 접기/펼치기를 즉시로 둔 것과 같은 이유 */
 
 
   .erow{display:flex;gap:6px}
@@ -1585,7 +1587,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;
     opacity:0;pointer-events:none;transition:opacity var(--tMove) var(--easeExit),transform var(--tMove) var(--easeExit);z-index:200;white-space:nowrap;
   }
-  .toast.on{opacity:1;transform:translateX(-50%) translateY(0);transition:opacity var(--tMove) var(--ease),transform var(--tMove) var(--ease)}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0);transition:opacity var(--tFade) var(--ease),transform var(--tMove) var(--ease)}   /* 겹쳐 뜨는 것은 먼저 불투명해진다 — 아래 명단이 알약을 뚫고 비치지 않게 */
   .hide{display:none !important}
   /* 겹창(막·시트·대화상자·예약 추가) 등장과 퇴장 — 같은 길·같은 시간(--tMove). 곡선만 방향을 탄다: 들어올 때 --ease, 나갈 때 --easeExit.
      서랍·토스트·잠금·스플래시는 이미 transition 으로 오갔는데 시트·대화상자만 등장은 animation, 퇴장은 즉시였다(2026-09-12 통일).
@@ -1616,8 +1618,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 하단 알약(토스트·업데이트 알약) 등장 — 8px. 이름이 sheetIn 이었는데 정작 시트는 안 쓰고
      업데이트 알약 하나만 썼고, 값도 시트와 같은 24px 이라 «같은 크기·같은 자리»인 토스트(8px)와 어긋났다.
      둘은 한 식구다(바 위 40 높이 알약) → 8px 로 맞추고 이름도 사실대로 고쳤다. 2026-09-14. */
-  @keyframes pillIn{from{opacity:0;transform:translateY(8px)}}
-  .menu{animation:fadeIn var(--tState) var(--ease)}
+  @keyframes pillIn{from{opacity:0;transform:translateY(8px)} 50%{opacity:1}}   /* 절반(=--tFade)에 불투명해진다 — 토스트·시트와 같은 규칙 */
+  .menu{animation:fadeIn var(--tFade) var(--ease)}   /* 겹쳐 뜨는 것은 --tFade 에 불투명 — 토스트·시트와 같은 규칙 */
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important;transition:none !important}
     /* 단 하나의 예외 — 「길게 눌러 초기화」의 차오르는 면.
