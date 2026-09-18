@@ -4908,15 +4908,14 @@ window.dispatchEvent(new Event('fb-ready'));
         var r = 1 + wob * Math.sin(a * 3 + ph) + rnd(-.07, .07);
         bite.push([cx - Math.cos(a) * bw / 2 * r, top - 1 + Math.sin(a) * bd * r]);
       }
-      // 금 — 파인 곳 양옆에서 «비스듬히 아래»로 두 가닥. 길이는 이름 글자(칸 위에서 11pt 아래)에 안 닿게 짧게.
-      // ★수평으로 뻗었을 땐 검은 자국 양옆의 수염처럼 보였다 — 넓은 칸(2명)에서 콧수염 같은 실루엣이 됐다(오너 2026-09-18).
+      // 금 — 파인 곳 양옆에서 «옆으로» 짧게(아래로 뻗으면 이름에 닿는다)
+      // ★2026-09-18 「아래로 비스듬히 2가닥」으로 바꿔 봤다가 오너 반려(「이상해졌어」) — 되돌림. 재시도 금지.
       var cracks = [];
-      for (i = 0; i < 2; i++){
+      for (i = 0; i < 3; i++){
         var left = i % 2 === 0, from = bite[left ? 2 + Math.floor(rnd(0, 3)) : 10 + Math.floor(rnd(0, 3))];
-        var down = rnd(.45, .95);                                   // 수평에서 아래로 25~55°
-        var ang = left ? Math.PI - down : down, seg = bw * rnd(.26, .4) / 3, line = [from];
+        var ang = left ? rnd(2.6, 3.0) : rnd(.15, .55), seg = bw * rnd(.28, .45) / 3, line = [from];
         for (j = 0; j < 3; j++){
-          ang += rnd(-.3, .3);
+          ang += rnd(-.5, .5);
           var last = line[line.length - 1];
           line.push([last[0] + Math.cos(ang) * seg, last[1] + Math.sin(ang) * seg]);
         }
@@ -4953,7 +4952,7 @@ window.dispatchEvent(new Event('fb-ready'));
         var soot = ctx.createRadialGradient(cx, top, 2, cx, top, Math.min(27, bw * .85));
         soot.addColorStop(0, 'rgba(30,16,4,.85)'); soot.addColorStop(.45, 'rgba(45,24,6,.45)'); soot.addColorStop(1, 'rgba(45,24,6,0)');
         ctx.fillStyle = soot; ctx.fillRect(cx - bw * 1.2, top - 4, bw * 2.4, bw * 1.3);
-        ctx.strokeStyle = 'rgba(28,14,3,.85)'; ctx.lineWidth = .9; ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(28,14,3,.85)'; ctx.lineWidth = 1.1; ctx.lineJoin = 'round';
         cracks.forEach(function(line){ path(line, false); ctx.stroke(); });
         ctx.restore();
         path(bite, true); ctx.fillStyle = hole; ctx.fill();
