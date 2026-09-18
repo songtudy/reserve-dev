@@ -1537,7 +1537,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        금색만 늦게 빠지고, 크기는 번쩍임 속에서 빠진다.
      ★끝나는 시각을 번쩍임(520ms)에 맞췄다 — 240 + 280 = 520. 예전엔 580ms 라 혼자 늦게 정리됐다.
        곡선도 타격 곡선 하나로 통일했다(번개 순간에 도는 것 전부: 흔들림·달아오름·결과 글자·크기·금색). */
-  .rltchip.lose{animation:boltDeflate .22s cubic-bezier(.45,0,.55,1), boltLose .28s cubic-bezier(.45,0,.55,1) .24s both;transition:none}
+  .rltchip.lose{animation:boltDeflate .22s cubic-bezier(.45,0,.55,1), boltLose .22s cubic-bezier(.45,0,.55,1) .30s both;transition:none}
   @keyframes boltDeflate{ 0%{transform:scale(var(--win, 1.09))} 100%{transform:none} }
   @keyframes boltLose{
     0%  {background:var(--wait); border-color:var(--wait); color:var(--onWait)}
