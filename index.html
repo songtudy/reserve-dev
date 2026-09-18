@@ -1527,7 +1527,9 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★0.5초 → 0.3초: 라이트는 맞은 칩이 «밝은 테라코타»(--rltHeat)에서 식는데, 빠지는 칸도 테라코타 → 흰색 사이에서 같은 색을
        지나, 첫 번쩍임이 걷힌 0.13초에 두 칸이 똑같은 연분홍이었다(시뮬레이터 영상). 0.3초면 그때 이미 거의 빠져 있다.
        빠지는 게 보이는 시간은 번쩍임 사이(0.07~0.15초)로 충분하다. */
-  .rltchip.lose{animation:boltLose .3s var(--ease);transition:none}
+  /* 시안: 처음 당첨칸의 불을 «번쩍임이 걷힌 뒤에» 끈다 — 0.22초 기다렸다 0.3초에 걸쳐 빠진다(both = 기다리는 동안 금색 유지).
+     지금(지연 없음)은 0.1초 만에 꺼지는데 그 0.1초는 번쩍임이 제일 셀 때라, 넘겨주는 장면이 통째로 안 보였다. */
+  .rltchip.lose{animation:boltLose .3s var(--ease) .22s both;transition:none}
   @keyframes boltLose{
     0%  {background:var(--wait); border-color:var(--wait); color:var(--onWait); transform:scale(var(--win, 1.09))}
     100%{background:var(--field); border-color:var(--line); color:var(--text); transform:none}
