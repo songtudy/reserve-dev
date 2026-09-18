@@ -4908,12 +4908,12 @@ window.dispatchEvent(new Event('fb-ready'));
         var r = 1 + wob * Math.sin(a * 3 + ph) + rnd(-.07, .07);
         bite.push([cx - Math.cos(a) * bw / 2 * r, top - 1 + Math.sin(a) * bd * r]);
       }
-      // 금 — 파인 곳 양옆에서 «비스듬히 아래»로 두 가닥. 이름 글자(칸 위에서 11pt 아래)에 안 닿게 짧게.
-      // ★거의 수평으로 뻗었을 땐 검은 자국 양옆의 «수염»이었다 — 넓은 칸(2명)에서 콧수염 실루엣(오너 2026-09-18).
+      // 금 — 파인 곳 양옆에서 «비스듬히 아래»로 두 가닥. 길이는 이름 글자(칸 위에서 11pt 아래)에 안 닿게 짧게.
+      // ★수평으로 뻗었을 땐 검은 자국 양옆의 수염처럼 보였다 — 넓은 칸(2명)에서 콧수염 같은 실루엣이 됐다(오너 2026-09-18).
       var cracks = [];
       for (i = 0; i < 2; i++){
         var left = i % 2 === 0, from = bite[left ? 2 + Math.floor(rnd(0, 3)) : 10 + Math.floor(rnd(0, 3))];
-        var down = rnd(.45, .95);                                     // 수평에서 아래로 25~55°
+        var down = rnd(.45, .95);                                   // 수평에서 아래로 25~55°
         var ang = left ? Math.PI - down : down, seg = bw * rnd(.26, .4) / 3, line = [from];
         for (j = 0; j < 3; j++){
           ang += rnd(-.3, .3);
@@ -4922,66 +4922,23 @@ window.dispatchEvent(new Event('fb-ready'));
         }
         cracks.push(line);
       }
-      var sparks = [], glow = [];
+      var sparks = [], puffs = [], glow = [];
       // 불씨는 마디마다 세기·박자·시작점이 다르다 — 고르면 «노란 테두리선»이 되고, 어긋나야 군데군데 타는 걸로 보인다.
       // ★박자를 둘(느린 파형 + 빠른 파형) 겹쳐 «반복되지 않게» 해 봤지만, 선이 1pt 라 프레임으로도 차이가 안 보였다.
       //   더 단순한 한 박자로 되돌렸다(오너 2026-09-18 「차이를 모르겠으면 깔끔한 쪽으로」).
       for (i = 0; i < 14; i++) glow.push({ v: rnd(.15, 1), w: rnd(7, 15), p: rnd(0, 6.3) });
       // 연기는 칸 위로 한 번 «피어오르는» 만큼 — 옅고 짧으면 폰 크기에서 안 보였고(밝기 변화 2%), 더 짙으면 카드 제목을 덮는다
       for (i = 0; i < 9; i++) sparks.push({ vx: rnd(-100, 100), vy: rnd(-160, -50), life: rnd(.2, .38) });
-      // ★연기는 뺐다(2026-09-18). 번개가 친 뒤 0.4초부터는 화면에서 «움직이는 것»이 연기뿐인데,
-      //   1.3초 동안 위로 흘러가니 「불 꺼지면서 전체적으로 뭔가가 위로 올라가는 느낌」으로 읽혔다(오너, 세 차례).
-      //   덩어리가 끊겨 오르는 것도, 자국에 붙여 사그라들게 한 것도 같은 인상이었다 — 원인은 «떠오르는 움직임» 자체다.
-      //   프레임 측정: 0.45초 뒤 칸·팝업의 세로 이동 0~1px(즉 연기 말고는 정지). 다시 넣지 말 것.
+      for (i = 0; i < 8; i++) puffs.push({ t0: rnd(.03, .55), x: cx + rnd(-7, 7), dx: rnd(-12, 12), rise: rnd(30, 42),
+                                           r0: rnd(3, 4.5), r1: rnd(12, 18), a: rnd(.5, .68) });
       function path(pts, close){
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
         for (var k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
         if (close) ctx.closePath();
       }
-      // 불씨가 놓일 자리 — 자국 테두리에서 «바깥»으로 1.3pt 민 선(안 탄 쪽). 방향은 자국 한가운데에서 바깥으로.
-      var out0 = bite.map(function(p){
-        var dx = p[0] - cx, dy = p[1] - top, m = Math.sqrt(dx * dx + dy * dy) || 1;
-        return [p[0] + dx / m * 2.4, p[1] + dy / m * 2.4];   // 탄 띠(바깥 2pt) 밖 — 띠에 가려 흐려지지 않게
-      });
       function rim(){   // 파인 곳 테두리 — 윗변을 따라 닫는 선은 긋지 않는다(칸 위에 떠 보였다)
         var edge = [[bite[0][0], bite[0][1] + 2]].concat(bite, [[bite[14][0], bite[14][1] + 2]]);
         path(edge, false);
-      }
-      function embers(t){
-          // 불씨 — 가장자리 «마디마다» 세기가 달라 군데군데 붉게 타다 꺼진다(0.7초). 흰빛 → 주황 → 짙은 빨강으로 식는다.
-          // ★처음엔 테두리 전체를 굵은 노란 선(1.8px + 번짐 10)으로 한 번에 칠했다 — 오너 「촌스럽다」(2026-09-17).
-          //   고른 선은 «빛나는 테두리»지 «타는 가장자리»가 아니었다.
-          // 열기 — ★직선으로 0 이 되면 «확» 꺼진다: 끝까지 초당 1.05씩 줄다 0 에서 뚝 끊겨,
-          //   꺼지는 게 아니라 «그림이 갈아끼워진 것»처럼 보였다(오너 2026-09-18 「불이 확 꺼지는 느낌·이미지가 움직이는 느낌」).
-          //   식는 건 지수곡선(뉴턴 냉각)이라 처음 빨리, 끝은 길게 남는다 — 끝 기울기 1.05 → 0.22/초.
-          //   바닥 .06 을 빼서 1.34초에 0 이 된다(연기는 1.85초까지 오르니 불씨가 연기에 덮여 사라진다).
-          var heat = Math.max(0, (Math.exp(-t / .7) - .06) / .94);
-          // 일렁임의 «위상» — 박자가 느려지는 걸 시간에 곱해서 흉내내면 위상이 뒤로 가 버린다(불꽃이 거꾸로 일렁인다).
-          // 박자를 시간으로 적분한 값을 쓴다: ∫(.45+.55·heat)dt = t − .29t².
-          var ph2 = t - .29 * t * t;
-          if (heat > 0){
-            ctx.save();
-            ctx.lineCap = 'round'; ctx.lineWidth = 1.1;
-            // ★불씨는 자국 «바깥»(아직 안 탄 쪽)에 그린다. 테두리 «위에» 겹쳐 그리면 타는 동안 자국이 그만큼 작아 보이다가,
-            //   꺼지면서 자국이 부풀고 무게중심이 움직인다 — 넓이 92% → 100%, 중심 0.5px(프레임 측정 2026-09-18).
-            //   오너 「불 꺼지면서 밑에 어두운 부분도 움직이는 것 같다」. 이제 자국은 처음부터 끝까지 한 모양이다.
-            ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(255,90,20,' + (.8 * heat) + ')';
-            for (i = 0; i < 14; i++){
-              // 식어갈수록 «일렁임 폭도 작아지고 박자도 느려진다» — 사그라드는 불이 하는 짓.
-              // ★전에는 폭·박자가 끝까지 그대로라, 식는 중인데도 마디가 다시 밝아지고(마디의 88%) 꺼지는 문턱(.05)을
-              //   들락거리며 깜빡였다 — 「불 나고 꺼지는 과정이 부자연스럽다」(오너 2026-09-18).
-              //   폭을 열기²로, 박자를 열기에 따라 늦추니 재상승 88% → 24%, 깜빡임 667 → 93회(같은 수식 40회 시뮬레이션).
-              //   평균 밝기는 그대로다 — .55 를 중심으로 폭만 줄였다(위아래로 흔드는 폭이지 밝기가 아니다).
-              var e = heat * glow[i].v * (.55 + .45 * heat * heat * Math.sin(ph2 * glow[i].w + glow[i].p));
-              if (e < .05) continue;
-              // 붙는 순간 흰빛 → 주황으로 «건너뛰지 않고» 0.12초에 걸쳐 넘어간다.
-              // ★원래는 t<.05 에서 흰빛이었는데 알파 자리에 객체를 넣어(`glow[i]`) 색이 통째로 무시됐다 — 직전 색(탄 자국 갈색)으로 그려졌다.
-              var k = Math.min(1, t / .12), g2 = 60 + 150 * e, b2 = 20 + 40 * e;
-              ctx.strokeStyle = 'rgba(255,' + Math.round(246 + (g2 - 246) * k) + ',' + Math.round(224 + (b2 - 224) * k) + ',' + Math.min(1, e * 1.3) + ')';
-              ctx.beginPath(); ctx.moveTo(out0[i][0], out0[i][1]); ctx.lineTo(out0[i + 1][0], out0[i + 1][1]); ctx.stroke();
-            }
-            ctx.restore();
-          }
       }
       function draw(t){
         ctx.clearRect(0, 0, W, H);
@@ -5000,15 +4957,28 @@ window.dispatchEvent(new Event('fb-ready'));
         cracks.forEach(function(line){ path(line, false); ctx.stroke(); });
         ctx.restore();
         path(bite, true); ctx.fillStyle = hole; ctx.fill();
-        // ★불씨를 «먼저» 그리고 자국(탄 띠·탄 선)을 그 «위에» 덮는다 — 순서를 뒤집기 전에는 불씨가 자국을 밝게 덮어,
-        //   불이 꺼질 때 자국이 부풀며 움직이는 것처럼 보였다(넓이 89% → 100%, 프레임 측정 2026-09-18).
-        //   이제 자국은 타든 꺼지든 늘 같은 모양이고, 불은 그 «가장자리 바깥»에서만 빛난다.
-        if (!still) embers(t);
         // 파인 가장자리 = 부드러운 탄 띠(넓고 옅게) 위에 가는 탄 선. ★굵고 짙은 한 줄(2.6px)은 만화 스티커 테두리였다.
         ctx.lineJoin = 'round';
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(30,15,4,.35)'; rim(); ctx.stroke();
         ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(22,11,2,.85)'; rim(); ctx.stroke();
         if (still) return;
+        // 불씨 — 가장자리 «마디마다» 세기가 달라 군데군데 붉게 타다 꺼진다(0.7초). 흰빛 → 주황 → 짙은 빨강으로 식는다.
+        // ★처음엔 테두리 전체를 굵은 노란 선(1.8px + 번짐 10)으로 한 번에 칠했다 — 오너 「촌스럽다」(2026-09-17).
+        //   고른 선은 «빛나는 테두리»지 «타는 가장자리»가 아니었다.
+        var heat = Math.max(0, 1 - t / .95);
+        if (heat > 0){
+          ctx.save();
+          ctx.lineCap = 'round'; ctx.lineWidth = 1.1;
+          ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(255,90,20,' + (.8 * heat) + ')';
+          for (i = 0; i < 14; i++){
+            var e = heat * glow[i].v * (.55 + .45 * Math.sin(t * glow[i].w + glow[i].p));
+            if (e < .05) continue;
+            ctx.strokeStyle = t < .05 ? 'rgba(255,246,224,' + glow[i] + ')'
+                                      : 'rgba(255,' + Math.round(60 + 150 * e) + ',' + Math.round(20 + 40 * e) + ',' + Math.min(1, e * 1.3) + ')';
+            ctx.beginPath(); ctx.moveTo(bite[i][0], bite[i][1]); ctx.lineTo(bite[i + 1][0], bite[i + 1][1]); ctx.stroke();
+          }
+          ctx.restore();
+        }
         sparks.forEach(function(sp){                   // 불꽃: 작은 점이 짧은 꼬리를 끌며 튀었다 떨어진다
           if (t >= sp.life) return;
           var k = t / sp.life, x = cx + sp.vx * t, y = top + 2 + sp.vy * t + 160 * t * t;
@@ -5017,13 +4987,21 @@ window.dispatchEvent(new Event('fb-ready'));
           ctx.lineWidth = .9 * (1 - k) + .4; ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(t > .025 ? px : cx, t > .025 ? py : top + 2); ctx.lineTo(x, y); ctx.stroke();
         });
+        puffs.forEach(function(pf){                    // 연기: 피어오르며 퍼지고 옅어진다 (1.3초)
+          var u = (t - pf.t0) / 1.3;
+          if (u <= 0 || u >= 1) return;
+          var x = pf.x + pf.dx * u, y = top - 2 - pf.rise * u, rr = pf.r0 + (pf.r1 - pf.r0) * u;
+          var g = ctx.createRadialGradient(x, y, 0, x, y, rr);
+          g.addColorStop(0, 'rgba(150,145,140,' + (pf.a * (1 - u)) + ')'); g.addColorStop(1, 'rgba(150,145,140,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rr, 0, 6.3); ctx.fill();
+        });
       }
       if (still){ draw(0); return; }
       var t0 = performance.now();
       (function tick(now){
         var t = ((now || t0) - t0) / 1000;
         draw(t);
-        if (t < 1.4) cv.raf = requestAnimationFrame(tick);    // 불씨가 다 식을 때까지(1.34초)
+        if (t < 1.9) cv.raf = requestAnimationFrame(tick);
         else draw(9);                                  // 움직임이 다 끝난 자국만 남긴다
       })();
     }
