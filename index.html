@@ -1531,11 +1531,15 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★지연이 없을 땐 0.1초 만에 꺼졌는데 그 0.1초는 번쩍임이 제일 셀 때라, 넘겨주는 장면이 통째로 안 보였다.
        화면이 읽히는 0.3초엔 이미 다른 칸들과 구분이 안 됐고, 뒤바뀜은 «기억으로만» 알 수 있었다(2026-09-18).
      ★곡선도 --ease(cubic-bezier(.2,.8,.2,1))에서 바꿨다 — 앞에 몰린 곡선이라 지연을 줘도 보이기 시작할 땐 이미
-       대부분 빠진 뒤였다. 타격 곡선(boltHit·resultHit 과 같은 값)이라 오르는 쪽과 빠지는 쪽이 한 박자로 움직인다. */
-  .rltchip.lose{animation:boltLose .34s cubic-bezier(.45,0,.55,1) .24s both;transition:none}
+       대부분 빠진 뒤였다. 타격 곡선(boltHit·resultHit 과 같은 값)이라 오르는 쪽과 빠지는 쪽이 한 박자로 움직인다.
+     ★크기는 «바로» 되돌린다(boltDeflate). --win 은 좌우 4pt씩 키우는 값이고 칸 간격은 8pt라, 이웃한 두 칸이 동시에
+       커지면 간격이 정확히 0 이 되어 «두 칸이 붙어» 보인다(오너 2026-09-18).
+       금색만 늦게 빠지고, 크기는 번쩍임 속에서 빠진다. */
+  .rltchip.lose{animation:boltDeflate .22s var(--ease), boltLose .34s cubic-bezier(.45,0,.55,1) .24s both;transition:none}
+  @keyframes boltDeflate{ 0%{transform:scale(var(--win, 1.09))} 100%{transform:none} }
   @keyframes boltLose{
-    0%  {background:var(--wait); border-color:var(--wait); color:var(--onWait); transform:scale(var(--win, 1.09))}
-    100%{background:var(--field); border-color:var(--line); color:var(--text); transform:none}
+    0%  {background:var(--wait); border-color:var(--wait); color:var(--onWait)}
+    100%{background:var(--field); border-color:var(--line); color:var(--text)}
   }
   @keyframes boltHit{
     0%  {background:var(--rltHeat); border-color:var(--rltHeat)}
