@@ -125,6 +125,11 @@ window.addEventListener('pageshow', remeasureSbcut);
        ★잠금·스플래시는 «창»이 아니라 화면 덮개라 여기서 뺐다. 걷히는 건 빠를수록 좋다. */
     --easeExit:cubic-bezier(.45,0,.55,1);
     --tPress:.12s;  --tState:.15s;  --tMove:.2s;
+    /* 판이 «불투명해지는» 시간 — 들어올 때만 쓴다(나갈 때는 --tMove).
+       판이 반투명한 동안엔 뒤 내용이 판을 뚫고 보인다(오너 「잔상」, 2026-09-19).
+       어둠막은 --tMove 로 천천히 깔리고, 판만 먼저 불투명해진다. 자리 잡는 움직임도 --tMove 그대로.
+       ★나갈 때도 이 값을 쓰면 판이 100ms 만에 사라져 예전의 「툭 꺼짐」이 되살아난다 — 넣지 말 것. */
+    --tFade:.1s;
     /* ── 「등장」 규칙 — 무엇이 어디서 오는가로 정한다. 새 오버레이를 만들면 이 넷 중 하나를 고를 것 ──
        ① 바닥에서 오는 «큰 판»  : 24px 올라오며 페이드   (시트 .sheet · 추가/수정 패널 .panel.asSheet)
        ② 바닥에서 오는 «작은 알약»: 8px 올라오며 페이드   (토스트 .toast · 업데이트 알약 @keyframes pillIn)
@@ -631,7 +636,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .panel.asSheet{
     position:fixed;left:50%;bottom:0;
     transform:translateX(-50%) translateY(calc(-1 * var(--kb, 0px)));
-    transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease),visibility 0s;
+    transition:transform var(--tMove) var(--ease),opacity var(--tFade) var(--ease),visibility 0s;
     z-index:71;width:100%;max-width:520px;margin:0;
     border-radius:var(--radius) var(--radius) 0 0;
     display:flex;flex-direction:column;
@@ -639,7 +644,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
   }
   .panel.asSheet.kb{ padding-bottom:14px }
-  .panelScrim{position:fixed;inset:0;z-index:70;background:var(--scrim)}
+  .panelScrim{position:fixed;inset:0;z-index:70}
   .panel{scroll-margin-top:var(--topH, 140px);}
   .panel{
     background:var(--panel);border-radius:var(--radius);
@@ -824,7 +829,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   /* ---------- 안내 시트 ---------- */
   .sheetScrim{
-    position:fixed;inset:0;z-index:70;background:var(--scrim);
+    position:fixed;inset:0;z-index:70;
     display:flex;align-items:flex-end;justify-content:center;
   }
   /* 잠금화면(300) 위로 올린다 — 설치 안내는 로그인 전에 보여야 하는 것이라 잠금보다 앞이다.
@@ -1329,7 +1334,6 @@ window.addEventListener('pageshow', remeasureSbcut);
 
   .scrim{
     position:fixed;inset:0;z-index:63;    /* 서랍(61)·룰렛막(62) 위 — 로그아웃 확인창이 서랍에서 바로 뜬다 */
-    background:var(--scrim);
     display:grid;place-items:center;
     padding:22px;
   }
@@ -1392,7 +1396,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:330px;
     background:var(--panel);border-radius:var(--radius);
     padding:19px 16px 16px;
-    transition:transform var(--tMove) var(--ease);
+    transition:transform var(--tMove) var(--ease),opacity var(--tFade) var(--ease);
     transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px));
   }
   .rlt h3{margin:0 0 12px;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.35}   /* 크기·줄높이는 .dialog h3 와 한 값 */
@@ -1587,20 +1591,24 @@ window.addEventListener('pageshow', remeasureSbcut);
      .hide 는 전역이 display:none 이라 여기선 opacity+visibility 로 바꿔 둔다 — JS 는 여전히 .hide 만 켜고 끈다.
      visibility 는 숨길 때만 --tMove 뒤에 걸려 페이드가 끝난 뒤 사라지고, 보일 땐 즉시 켜진다.
      시트 = 아래서 24px, 대화상자 = .96 에서, 막 = 페이드, 행 메뉴 = 짧은 페이드(DOM 에서 빠지므로 등장만). */
-  .scrim, .sheetScrim, .panelScrim{transition:opacity var(--tMove) var(--ease),visibility 0s}
+  /* ★어둠은 «배경색»으로 깔았다 뺀다(opacity 가 아니라). 막의 opacity 를 움직이면 그 안의 판까지
+     같이 흐려져(그룹 투명도) 판이 늦게 불투명해지고, 그동안 뒤 내용이 판을 뚫고 보인다 — 오너 「잔상」(2026-09-19).
+     배경색만 바꾸면 판은 제 속도(--tFade)로 혼자 불투명해진다.
+     ★::before 에 어둠을 얹는 방법도 해 봤지만 크롬·웹킷 둘 다 «클래스가 빠져도 가상요소 투명도가 0 에 머물러» 못 썼다. */
+  .scrim, .sheetScrim, .panelScrim{background:var(--scrim);transition:background-color var(--tMove) var(--ease),visibility 0s}
   .scrim.hide{display:grid !important}
   .sheetScrim.hide{display:flex !important}
   .panelScrim.hide{display:block !important}
-  .scrim.hide, .sheetScrim.hide, .panelScrim.hide{opacity:0;visibility:hidden;pointer-events:none;transition:opacity var(--tMove) var(--easeExit),visibility 0s var(--tMove)}
+  .scrim.hide, .sheetScrim.hide, .panelScrim.hide{background:transparent;visibility:hidden;pointer-events:none;transition:background-color var(--tMove) var(--easeExit),visibility 0s var(--tMove)}
   /* ★판은 «자기 투명도»를 쓰지 않는다 — 막이 그룹 전체를 페이드하므로 중복이고, 둘이 곱해져
      판이 늦게 불투명해진다: 40ms 에 46%(막 68% × 판 68%)라 그동안 뒤 내용이 판을 뚫고 비친다.
      뒤에 금색 버튼이 있을 때 «잔상»으로 읽혔다(오너 영상 2026-09-19, 서랍→시트 갈아타기).
      페이드를 막 하나로 모으면 같은 시각에 판 68%·뒤비침 22% — 이 구조에서 가능한 최소다.
      (더 줄이려면 어둠막을 그룹 바깥으로 빼야 한다 — 구조 변경이라 보류.) 움직임(미끄러짐·축소)만 판이 맡는다. */
-  .sheet, .dialog{transition:transform var(--tMove) var(--ease)}
-  .sheetScrim.hide .sheet{transform:translateY(24px);transition:transform var(--tMove) var(--easeExit)}
-  .scrim.hide .dialog{transform:scale(.96);transition:transform var(--tMove) var(--easeExit)}
-  .scrim.hide .rlt{transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96);transition:transform var(--tMove) var(--easeExit)}
+  .sheet, .dialog{transition:transform var(--tMove) var(--ease),opacity var(--tFade) var(--ease)}
+  .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
+  .scrim.hide .dialog{opacity:0;transform:scale(.96);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
+  .scrim.hide .rlt{opacity:0;transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
   .panel.asSheet.hide{display:flex !important;opacity:0;visibility:hidden;pointer-events:none;
     transform:translateX(-50%) translateY(calc(24px - var(--kb, 0px)));transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit),visibility 0s var(--tMove)}
   @keyframes fadeIn{from{opacity:0}}
