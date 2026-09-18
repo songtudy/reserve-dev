@@ -538,15 +538,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* stretch 로 두어야 이름이 칸 폭에 맞춰 «...» 로 줄어든다.
      flex-start 면 글자 길이만큼 늘어나 인원칸이 화면 밖으로 밀려난다 */
   .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch}
-  /* 메모는 이름 아래 보조 정보 — 금색(경보처럼 보임)에서 낮춰 조용하게. 앞에 작은 점. */
+  /* 메모는 이름 아래 보조 정보 — 금색(경보처럼 보임)에서 낮춰 조용하게.
+     ★앞에 작은 점을 뒀었는데 뺐다(2026-09-18). 메모는 이미 이름과 세 단계 떨어져 있다 — 크기 17→13, 굵기 700→600,
+       색 --text→--dim. 점은 같은 일을 하는 네 번째 표시였고, 정작 «줄이 안 맞는» 원인이었다: 첫 줄만 점만큼 들여써지고
+       둘째 줄부터는 맨 왼쪽에서 시작해 왼쪽 모서리가 들쭉날쭉했다. 점을 빼니 이름과 한 기준선으로 맞는다.
+     ★줄바꿈은 어절 단위로. break-all 은 「알레르/기(땅콩)」처럼 낱말 가운데를 잘랐다.
+       긴 낱말 하나가 칸보다 넓을 때만 overflow-wrap 이 강제로 끊는다. */
   .memo{
     margin-top:2px;font-size:13px;font-weight:600;line-height:1.35;
     color:var(--dim);text-align:left;
-    word-break:break-all;
-  }
-  .memo::before{
-    content:"";display:inline-block;width:3px;height:3px;border-radius:50%;
-    background:var(--off);vertical-align:middle;margin:0 6px 2px 1px;
+    word-break:keep-all;overflow-wrap:anywhere;
   }
   .row.arrived .memo, .row.cancelled .memo{color:var(--off)}
   .erow.memorow{margin-top:6px}
@@ -1024,7 +1025,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        한 줄 안에 내용 90px · 빈칸 270px 이 됐다 (오너 2026-09-15 「가운데가 엄청 비어 있다」).
        오른쪽에 남는 자리는 이제 «여백»이지 «구멍»이 아니다.
      ★메모는 여태 안 그렸다. 백업 스냅샷은 항목을 통째로 담으므로(memo 포함) 가진 정보를
-       안 보여준 것이었다 — 본 화면 .memo 와 같은 꼴(13 · --dim · 앞에 점)로 되살린다. */
+       안 보여준 것이었다 — 본 화면 .memo 와 같은 꼴(13 · --dim)로 되살린다. */
   .bkvrow{display:flex;align-items:flex-start;gap:9px;padding:7px 0;font-size:14px;line-height:1.35}
   .bkvrow .ck{width:14px;height:14px;flex:0 0 auto;display:grid;place-items:center;line-height:0;color:transparent;margin-top:2px}
   .bkvrow .ck svg{display:block}
@@ -1035,14 +1036,12 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkvrow .nm{flex:0 1 auto;min-width:0;color:var(--text);font-weight:700;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkvrow .px{flex:0 0 auto;color:var(--text);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-  /* 메모 — 본 화면 .memo 와 같은 꼴(13 · --dim · 앞에 점). 백업 스냅샷은 항목을 통째로 담아
+  /* 메모 — 본 화면 .memo 와 같은 꼴(13 · --dim · 앞의 점은 2026-09-18 에 둘 다 뺐다). 백업 스냅샷은 항목을 통째로 담아
      메모까지 들어 있는데 여태 안 그렸다. 복사 양식에도 메모를 실으면서(reportText) 같이 되살렸다.
      ★화면과 붙여넣기가 이제 같은 것을 담는다 — 한쪽에만 있으면 「보이는데 못 가져가는」 게 된다. */
   .bkvbody{flex:1;min-width:0;display:flex;flex-direction:column}
   .bkvl1{display:flex;align-items:baseline;gap:8px;min-width:0}
-  .bkvmemo{margin-top:2px;font-size:13px;font-weight:600;line-height:1.35;color:var(--dim);word-break:break-all}
-  .bkvmemo::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;
-    background:var(--off);vertical-align:middle;margin:0 6px 2px 1px}
+  .bkvmemo{margin-top:2px;font-size:13px;font-weight:600;line-height:1.35;color:var(--dim);word-break:keep-all;overflow-wrap:anywhere}
   .bkvrow.go .bkvmemo, .bkvrow.off .bkvmemo{color:var(--off)}   /* 본 화면 .row.arrived .memo 와 같게 */
   /* 처리된 행은 이름도 인원도 같이 가라앉는다 — 본 화면 .row.arrived/.cancelled 와 같은 규칙.
      ★취소 이름은 --off 에 취소선이었다. 본 화면은 2026-09-11 에 그 둘을 이미 버렸는데
