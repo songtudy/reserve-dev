@@ -125,12 +125,14 @@ window.addEventListener('pageshow', remeasureSbcut);
        ★잠금·스플래시는 «창»이 아니라 화면 덮개라 여기서 뺐다. 걷히는 건 빠를수록 좋다. */
     --easeExit:cubic-bezier(.45,0,.55,1);
     --tPress:.12s;  --tState:.15s;  --tMove:.2s;
-    /* 판이 «불투명해지는» 시간 = 이동 시간의 절반. 독립된 네 번째 단계가 아니라 --tMove 에서 나온 값이다
+    /* 판이 «불투명해지는» 시간 = 이동 시간의 1/4(50ms). 독립된 네 번째 단계가 아니라 --tMove 에서 나온 값이다
        (세 단계 사다리는 그대로 셋). 들어올 때만 쓴다 — 나갈 때는 --tMove.
+       ★절반(100ms)으로 뒀더니 «첫 프레임»이 40% 밖에 안 차서, 서랍 위에 룰렛창이 뜰 때 서랍 글자가 창을 뚫고 보였다
+         (오너 2026-09-19 「잔상」). 1/4 로 줄이니 첫 프레임부터 깨끗하다 — 페이드를 아주 없앤 것과 눈으로 구분이 안 된다.
        판이 반투명한 동안엔 뒤 내용이 판을 뚫고 보인다(오너 「잔상」, 2026-09-19).
        어둠막은 --tMove 로 천천히 깔리고, 판만 먼저 불투명해진다. 자리 잡는 움직임도 --tMove 그대로.
        ★나갈 때도 이 값을 쓰면 판이 100ms 만에 사라져 예전의 「툭 꺼짐」이 되살아난다 — 넣지 말 것. */
-    --tFade:calc(var(--tMove) / 2);
+    --tFade:calc(var(--tMove) / 4);
     /* ── 「등장」 규칙 — 무엇이 어디서 오는가로 정한다. 새 오버레이를 만들면 이 넷 중 하나를 고를 것 ──
        ① 바닥에서 오는 «큰 판»  : 24px 올라오며 페이드   (시트 .sheet · 추가/수정 패널 .panel.asSheet)
        ② 바닥에서 오는 «작은 알약»: 8px 올라오며 페이드   (토스트 .toast · 업데이트 알약 @keyframes pillIn)
@@ -1607,7 +1609,8 @@ window.addEventListener('pageshow', remeasureSbcut);
      나갈 때는 --tMove — 여기서 --tFade 를 쓰면 판이 100ms 만에 사라져 「툭 꺼짐」이 되살아난다(재 봤다).
      자리를 잡는 움직임(미끄러짐 24px · 축소 .96)은 양쪽 다 --tMove.
      측정(시트 열림, 뒤비침): 고치기 전 40ms 37% · 73ms 14% · 106ms 5% · 173ms 0
-                              고친 뒤   10ms 50% · 53ms  2% · 85ms  0%  — 60ms 면 끝난다. */
+                              고친 뒤   10ms 50% · 53ms  2% · 85ms  0%  (--tFade 100ms 일 때)
+                              1/4(50ms)로 줄인 뒤엔 첫 프레임부터 거의 0. */
   .sheet, .dialog{transition:transform var(--tMove) var(--ease),opacity var(--tFade) var(--ease)}
   .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
   .scrim.hide .dialog{opacity:0;transform:scale(.96);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
