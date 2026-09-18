@@ -4922,22 +4922,17 @@ window.dispatchEvent(new Event('fb-ready'));
         }
         cracks.push(line);
       }
-      var sparks = [], puffs = [], glow = [];
+      var sparks = [], glow = [];
       // 불씨는 마디마다 세기·박자·시작점이 다르다 — 고르면 «노란 테두리선»이 되고, 어긋나야 군데군데 타는 걸로 보인다.
       // ★박자를 둘(느린 파형 + 빠른 파형) 겹쳐 «반복되지 않게» 해 봤지만, 선이 1pt 라 프레임으로도 차이가 안 보였다.
       //   더 단순한 한 박자로 되돌렸다(오너 2026-09-18 「차이를 모르겠으면 깔끔한 쪽으로」).
       for (i = 0; i < 14; i++) glow.push({ v: rnd(.15, 1), w: rnd(7, 15), p: rnd(0, 6.3) });
       // 연기는 칸 위로 한 번 «피어오르는» 만큼 — 옅고 짧으면 폰 크기에서 안 보였고(밝기 변화 2%), 더 짙으면 카드 제목을 덮는다
       for (i = 0; i < 9; i++) sparks.push({ vx: rnd(-100, 100), vy: rnd(-160, -50), life: rnd(.2, .38) });
-      // ★연기는 «불이 붙어 있는 동안 내내» 난다. 앞 0.55초에만 몰아 내면 0.55초 뒤로 새 연기가 없어,
-      //   마지막 뭉치들이 자국에서 «끊겨 나와» 통째로 떠올랐다 — 굴뚝이 잦아드는 게 아니라 덩어리가 분리돼 올라가는 그림
-      //   (오너 2026-09-18 「불 꺼지면서 뚝 끊기며 위로 올라가는 느낌」). 불 꺼짐과 겹쳐 더 도드라졌다.
-      //   뒤에 난 연기일수록 그때의 열기만큼 옅고 낮게 — 그래야 사그라든다.
-      for (i = 0; i < 11; i++){
-        var pt = .03 + .95 * (i / 10) + rnd(-.04, .04), ph = Math.max(0, (Math.exp(-pt / .7) - .06) / .94);
-        puffs.push({ t0: pt, x: cx + rnd(-7, 7), dx: rnd(-12, 12), rise: (22 + 20 * ph) * rnd(.85, 1.15),
-                     r0: rnd(3, 4.5), r1: rnd(12, 18) * (.6 + .4 * ph), a: rnd(.5, .68) * (.35 + .65 * ph) });
-      }
+      // ★연기는 뺐다(2026-09-18). 번개가 친 뒤 0.4초부터는 화면에서 «움직이는 것»이 연기뿐인데,
+      //   1.3초 동안 위로 흘러가니 「불 꺼지면서 전체적으로 뭔가가 위로 올라가는 느낌」으로 읽혔다(오너, 세 차례).
+      //   덩어리가 끊겨 오르는 것도, 자국에 붙여 사그라들게 한 것도 같은 인상이었다 — 원인은 «떠오르는 움직임» 자체다.
+      //   프레임 측정: 0.45초 뒤 칸·팝업의 세로 이동 0~1px(즉 연기 말고는 정지). 다시 넣지 말 것.
       function path(pts, close){
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
         for (var k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
@@ -5022,21 +5017,13 @@ window.dispatchEvent(new Event('fb-ready'));
           ctx.lineWidth = .9 * (1 - k) + .4; ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(t > .025 ? px : cx, t > .025 ? py : top + 2); ctx.lineTo(x, y); ctx.stroke();
         });
-        puffs.forEach(function(pf){                    // 연기: 피어오르며 퍼지고 옅어진다 (1.3초)
-          var u = (t - pf.t0) / 1.3;
-          if (u <= 0 || u >= 1) return;
-          var x = pf.x + pf.dx * u, y = top - 2 - pf.rise * u, rr = pf.r0 + (pf.r1 - pf.r0) * u;
-          var g = ctx.createRadialGradient(x, y, 0, x, y, rr);
-          g.addColorStop(0, 'rgba(150,145,140,' + (pf.a * (1 - u)) + ')'); g.addColorStop(1, 'rgba(150,145,140,0)');
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rr, 0, 6.3); ctx.fill();
-        });
       }
       if (still){ draw(0); return; }
       var t0 = performance.now();
       (function tick(now){
         var t = ((now || t0) - t0) / 1000;
         draw(t);
-        if (t < 2.35) cv.raf = requestAnimationFrame(tick);   // 마지막 연기(0.98초에 나 1.3초 산다)까지
+        if (t < 1.4) cv.raf = requestAnimationFrame(tick);    // 불씨가 다 식을 때까지(1.34초)
         else draw(9);                                  // 움직임이 다 끝난 자국만 남긴다
       })();
     }
