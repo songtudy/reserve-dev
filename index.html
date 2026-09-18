@@ -1527,9 +1527,12 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★0.5초 → 0.3초: 라이트는 맞은 칩이 «밝은 테라코타»(--rltHeat)에서 식는데, 빠지는 칸도 테라코타 → 흰색 사이에서 같은 색을
        지나, 첫 번쩍임이 걷힌 0.13초에 두 칸이 똑같은 연분홍이었다(시뮬레이터 영상). 0.3초면 그때 이미 거의 빠져 있다.
        빠지는 게 보이는 시간은 번쩍임 사이(0.07~0.15초)로 충분하다. */
-  /* 시안: 처음 당첨칸의 불을 «번쩍임이 걷힌 뒤에» 끈다 — 0.22초 기다렸다 0.3초에 걸쳐 빠진다(both = 기다리는 동안 금색 유지).
-     지금(지연 없음)은 0.1초 만에 꺼지는데 그 0.1초는 번쩍임이 제일 셀 때라, 넘겨주는 장면이 통째로 안 보였다. */
-  .rltchip.lose{animation:boltLose .3s var(--ease) .22s both;transition:none}
+  /* 처음 당첨칸의 불은 «번쩍임이 걷힌 뒤에» 빠진다 — 0.24초 기다렸다 0.34초에 걸쳐(both = 기다리는 동안 금색 유지).
+     ★지연이 없을 땐 0.1초 만에 꺼졌는데 그 0.1초는 번쩍임이 제일 셀 때라, 넘겨주는 장면이 통째로 안 보였다.
+       화면이 읽히는 0.3초엔 이미 다른 칸들과 구분이 안 됐고, 뒤바뀜은 «기억으로만» 알 수 있었다(2026-09-18).
+     ★곡선도 --ease(cubic-bezier(.2,.8,.2,1))에서 바꿨다 — 앞에 몰린 곡선이라 지연을 줘도 보이기 시작할 땐 이미
+       대부분 빠진 뒤였다. 타격 곡선(boltHit·resultHit 과 같은 값)이라 오르는 쪽과 빠지는 쪽이 한 박자로 움직인다. */
+  .rltchip.lose{animation:boltLose .34s cubic-bezier(.45,0,.55,1) .24s both;transition:none}
   @keyframes boltLose{
     0%  {background:var(--wait); border-color:var(--wait); color:var(--onWait); transform:scale(var(--win, 1.09))}
     100%{background:var(--field); border-color:var(--line); color:var(--text); transform:none}
