@@ -4921,11 +4921,10 @@ window.dispatchEvent(new Event('fb-ready'));
         cracks.push(line);
       }
       var sparks = [], puffs = [], glow = [];
-      // 불씨는 마디마다 세기가 다르고(고르면 «노란 테두리선»이 된다), 저마다 «두 박자»로 이글거린다.
-      // 주기가 어긋나는 두 파형(느린 3~6Hz + 빠른 11~20Hz)을 겹쳐 같은 마디도 매번 다른 리듬으로 탄다 — 하나면
-      // 규칙적으로 오르내려 기계처럼 보였다(2026-09-18).
-      for (i = 0; i < 14; i++) glow.push({ v: rnd(.15, 1), w: rnd(3, 6) * 6.3, p: rnd(0, 6.3),
-                                           w2: rnd(11, 20) * 6.3, p2: rnd(0, 6.3) });
+      // 불씨는 마디마다 세기·박자·시작점이 다르다 — 고르면 «노란 테두리선»이 되고, 어긋나야 군데군데 타는 걸로 보인다.
+      // ★박자를 둘(느린 파형 + 빠른 파형) 겹쳐 «반복되지 않게» 해 봤지만, 선이 1pt 라 프레임으로도 차이가 안 보였다.
+      //   더 단순한 한 박자로 되돌렸다(오너 2026-09-18 「차이를 모르겠으면 깔끔한 쪽으로」).
+      for (i = 0; i < 14; i++) glow.push({ v: rnd(.15, 1), w: rnd(7, 15), p: rnd(0, 6.3) });
       // 연기는 칸 위로 한 번 «피어오르는» 만큼 — 옅고 짧으면 폰 크기에서 안 보였고(밝기 변화 2%), 더 짙으면 카드 제목을 덮는다
       for (i = 0; i < 9; i++) sparks.push({ vx: rnd(-100, 100), vy: rnd(-160, -50), life: rnd(.2, .38) });
       for (i = 0; i < 8; i++) puffs.push({ t0: rnd(.03, .55), x: cx + rnd(-7, 7), dx: rnd(-12, 12), rise: rnd(30, 42),
@@ -4970,8 +4969,7 @@ window.dispatchEvent(new Event('fb-ready'));
           ctx.lineCap = 'round'; ctx.lineWidth = 1.1;
           ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(255,90,20,' + (.8 * heat) + ')';
           for (i = 0; i < 14; i++){
-            var gl = glow[i];
-            var e = heat * gl.v * (.7 + .2 * Math.sin(t * gl.w + gl.p) + .12 * Math.sin(t * gl.w2 + gl.p2));
+            var e = heat * glow[i].v * (.55 + .45 * Math.sin(t * glow[i].w + glow[i].p));
             if (e < .05) continue;
             ctx.strokeStyle = t < .05 ? 'rgba(255,246,224,' + glow[i] + ')'
                                       : 'rgba(255,' + Math.round(60 + 150 * e) + ',' + Math.round(20 + 40 * e) + ',' + Math.min(1, e * 1.3) + ')';
