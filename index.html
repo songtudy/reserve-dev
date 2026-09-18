@@ -4472,6 +4472,7 @@ window.dispatchEvent(new Event('fb-ready'));
       x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
       dx = 0; axis = null; dragging = true; w = drawer.offsetWidth || 1;
       drawer.style.transition = 'none';
+      drawerScrim.style.transition = 'none';   // 막도 같이 꺼야 «손가락을 그대로» 따라온다 — 패널만 끄고 막은 안 껐었다(2026-09-19)
     }, { passive: true });
     drawer.addEventListener('touchmove', function(e){
       if (!dragging) return;
@@ -4488,6 +4489,7 @@ window.dispatchEvent(new Event('fb-ready'));
     function endDrag(commit){
       dragging = false; axis = null;
       drawer.style.transition = '';
+      drawerScrim.style.transition = '';
       if (commit) closeDrawer();
       drawer.style.transform = '';
       drawerScrim.style.opacity = '';
