@@ -4929,8 +4929,15 @@ window.dispatchEvent(new Event('fb-ready'));
       for (i = 0; i < 14; i++) glow.push({ v: rnd(.15, 1), w: rnd(7, 15), p: rnd(0, 6.3) });
       // 연기는 칸 위로 한 번 «피어오르는» 만큼 — 옅고 짧으면 폰 크기에서 안 보였고(밝기 변화 2%), 더 짙으면 카드 제목을 덮는다
       for (i = 0; i < 9; i++) sparks.push({ vx: rnd(-100, 100), vy: rnd(-160, -50), life: rnd(.2, .38) });
-      for (i = 0; i < 8; i++) puffs.push({ t0: rnd(.03, .55), x: cx + rnd(-7, 7), dx: rnd(-12, 12), rise: rnd(30, 42),
-                                           r0: rnd(3, 4.5), r1: rnd(12, 18), a: rnd(.5, .68) });
+      // ★연기는 «불이 붙어 있는 동안 내내» 난다. 앞 0.55초에만 몰아 내면 0.55초 뒤로 새 연기가 없어,
+      //   마지막 뭉치들이 자국에서 «끊겨 나와» 통째로 떠올랐다 — 굴뚝이 잦아드는 게 아니라 덩어리가 분리돼 올라가는 그림
+      //   (오너 2026-09-18 「불 꺼지면서 뚝 끊기며 위로 올라가는 느낌」). 불 꺼짐과 겹쳐 더 도드라졌다.
+      //   뒤에 난 연기일수록 그때의 열기만큼 옅고 낮게 — 그래야 사그라든다.
+      for (i = 0; i < 11; i++){
+        var pt = .03 + .95 * (i / 10) + rnd(-.04, .04), ph = Math.max(0, (Math.exp(-pt / .7) - .06) / .94);
+        puffs.push({ t0: pt, x: cx + rnd(-7, 7), dx: rnd(-12, 12), rise: (22 + 20 * ph) * rnd(.85, 1.15),
+                     r0: rnd(3, 4.5), r1: rnd(12, 18) * (.6 + .4 * ph), a: rnd(.5, .68) * (.35 + .65 * ph) });
+      }
       function path(pts, close){
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
         for (var k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
@@ -5015,7 +5022,7 @@ window.dispatchEvent(new Event('fb-ready'));
       (function tick(now){
         var t = ((now || t0) - t0) / 1000;
         draw(t);
-        if (t < 1.9) cv.raf = requestAnimationFrame(tick);
+        if (t < 2.35) cv.raf = requestAnimationFrame(tick);   // 마지막 연기(0.98초에 나 1.3초 산다)까지
         else draw(9);                                  // 움직임이 다 끝난 자국만 남긴다
       })();
     }
