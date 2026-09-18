@@ -1392,7 +1392,7 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:100%;max-width:330px;
     background:var(--panel);border-radius:var(--radius);
     padding:19px 16px 16px;
-    transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease);
+    transition:transform var(--tMove) var(--ease);
     transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px));
   }
   .rlt h3{margin:0 0 12px;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.35}   /* 크기·줄높이는 .dialog h3 와 한 값 */
@@ -1592,10 +1592,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   .sheetScrim.hide{display:flex !important}
   .panelScrim.hide{display:block !important}
   .scrim.hide, .sheetScrim.hide, .panelScrim.hide{opacity:0;visibility:hidden;pointer-events:none;transition:opacity var(--tMove) var(--easeExit),visibility 0s var(--tMove)}
-  .sheet, .dialog{transition:transform var(--tMove) var(--ease),opacity var(--tMove) var(--ease)}
-  .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
-  .scrim.hide .dialog{opacity:0;transform:scale(.96);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
-  .scrim.hide .rlt{opacity:0;transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
+  /* ★판은 «자기 투명도»를 쓰지 않는다 — 막이 그룹 전체를 페이드하므로 중복이고, 둘이 곱해져
+     판이 늦게 불투명해진다: 40ms 에 46%(막 68% × 판 68%)라 그동안 뒤 내용이 판을 뚫고 비친다.
+     뒤에 금색 버튼이 있을 때 «잔상»으로 읽혔다(오너 영상 2026-09-19, 서랍→시트 갈아타기).
+     페이드를 막 하나로 모으면 같은 시각에 판 68%·뒤비침 22% — 이 구조에서 가능한 최소다.
+     (더 줄이려면 어둠막을 그룹 바깥으로 빼야 한다 — 구조 변경이라 보류.) 움직임(미끄러짐·축소)만 판이 맡는다. */
+  .sheet, .dialog{transition:transform var(--tMove) var(--ease)}
+  .sheetScrim.hide .sheet{transform:translateY(24px);transition:transform var(--tMove) var(--easeExit)}
+  .scrim.hide .dialog{transform:scale(.96);transition:transform var(--tMove) var(--easeExit)}
+  .scrim.hide .rlt{transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96);transition:transform var(--tMove) var(--easeExit)}
   .panel.asSheet.hide{display:flex !important;opacity:0;visibility:hidden;pointer-events:none;
     transform:translateX(-50%) translateY(calc(24px - var(--kb, 0px)));transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit),visibility 0s var(--tMove)}
   @keyframes fadeIn{from{opacity:0}}
