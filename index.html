@@ -125,11 +125,12 @@ window.addEventListener('pageshow', remeasureSbcut);
        ★잠금·스플래시는 «창»이 아니라 화면 덮개라 여기서 뺐다. 걷히는 건 빠를수록 좋다. */
     --easeExit:cubic-bezier(.45,0,.55,1);
     --tPress:.12s;  --tState:.15s;  --tMove:.2s;
-    /* 판이 «불투명해지는» 시간 — 들어올 때만 쓴다(나갈 때는 --tMove).
+    /* 판이 «불투명해지는» 시간 = 이동 시간의 절반. 독립된 네 번째 단계가 아니라 --tMove 에서 나온 값이다
+       (세 단계 사다리는 그대로 셋). 들어올 때만 쓴다 — 나갈 때는 --tMove.
        판이 반투명한 동안엔 뒤 내용이 판을 뚫고 보인다(오너 「잔상」, 2026-09-19).
        어둠막은 --tMove 로 천천히 깔리고, 판만 먼저 불투명해진다. 자리 잡는 움직임도 --tMove 그대로.
        ★나갈 때도 이 값을 쓰면 판이 100ms 만에 사라져 예전의 「툭 꺼짐」이 되살아난다 — 넣지 말 것. */
-    --tFade:.1s;
+    --tFade:calc(var(--tMove) / 2);
     /* ── 「등장」 규칙 — 무엇이 어디서 오는가로 정한다. 새 오버레이를 만들면 이 넷 중 하나를 고를 것 ──
        ① 바닥에서 오는 «큰 판»  : 24px 올라오며 페이드   (시트 .sheet · 추가/수정 패널 .panel.asSheet)
        ② 바닥에서 오는 «작은 알약»: 8px 올라오며 페이드   (토스트 .toast · 업데이트 알약 @keyframes pillIn)
@@ -1588,8 +1589,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   .hide{display:none !important}
   /* 겹창(막·시트·대화상자·예약 추가) 등장과 퇴장 — 같은 길·같은 시간(--tMove). 곡선만 방향을 탄다: 들어올 때 --ease, 나갈 때 --easeExit.
      서랍·토스트·잠금·스플래시는 이미 transition 으로 오갔는데 시트·대화상자만 등장은 animation, 퇴장은 즉시였다(2026-09-12 통일).
-     .hide 는 전역이 display:none 이라 여기선 opacity+visibility 로 바꿔 둔다 — JS 는 여전히 .hide 만 켜고 끈다.
-     visibility 는 숨길 때만 --tMove 뒤에 걸려 페이드가 끝난 뒤 사라지고, 보일 땐 즉시 켜진다.
+     .hide 는 전역이 display:none 이라 여기선 «보이는 값 + visibility» 로 바꿔 둔다(막은 배경색, 판은 투명도·위치) — JS 는 여전히 .hide 만 켜고 끈다.
+     visibility 는 숨길 때만 --tMove 뒤에 걸려 다 사라진 뒤 꺼지고, 보일 땐 즉시 켜진다.
      시트 = 아래서 24px, 대화상자 = .96 에서, 막 = 배경색이 깔렸다 빠짐, 행 메뉴 = 짧은 페이드(DOM 에서 빠지므로 등장만). */
   /* ★어둠은 «배경색»으로 깔았다 뺀다(opacity 가 아니라). 막의 opacity 를 움직이면 그 안의 판까지
      같이 흐려져(그룹 투명도) 판이 늦게 불투명해지고, 그동안 뒤 내용이 판을 뚫고 보인다 — 오너 「잔상」(2026-09-19).
