@@ -1389,7 +1389,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* reduced-motion 예외는 스타일시트 맨 아래(전역 차단 규칙 바로 뒤)에 둔다 — 여기 두면
      전역의 !important 에 밀려 죽는다. 왜 예외인지는 그 자리 주석 참고. */
 
-  /* ---------- 화장실 청소 룰렛 (이스터에그) ----------
+  /* ---------- 룰렛 ----------
      ★이모지는 «룰렛 안에만», 제목의 🚽 하나다. 결과 글자엔 안 붙인다(오너 2026-09-17) — 🚽 는 제목과 같은 그림이
        두 번 보였고, 날벼락 결과의 ⚡ 는 한쪽에만 붙어 좌우가 안 맞았다. 날벼락은 맞은 칸의 «탄 자국»이 표시한다. 본 화면의 온기는 곰이 지고
        글은 이모지를 안 쓰는데, 룰렛만 예외다 — 위 「룰렛은 놀이라 제 곡선」과 같은 갈래의 예외이고
@@ -1749,6 +1749,8 @@ window.addEventListener('pageshow', remeasureSbcut);
   <button type="button" class="dwitem" id="logBtn">최근 변경 내역</button>
   <button type="button" class="dwitem" id="backupBtn">지난 명단</button>
   <div class="dwsep"></div>
+  <button type="button" class="dwitem" id="rltBtn">룰렛</button>
+  <div class="dwsep"></div>
   <button type="button" class="dwitem" id="wifiBtn">Wi-Fi 안내</button>
   <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
   <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
@@ -1800,7 +1802,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <svg class="rltsky" id="rltSky" aria-hidden="true"></svg>
   <canvas class="rltsky" id="rltSkyBmp" aria-hidden="true"></canvas>
   <div class="rlt">
-    <h3>🚽 화장실 청소 룰렛</h3>
+    <h3>룰렛</h3>
     <div class="rltslot" id="rltSlot">
       <input type="text" id="rltInput" placeholder="예: 동현 동주 동희 동욱" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
       <div class="rltnames" id="rltNames" role="button" aria-label="이름 고치기"></div>
@@ -4511,7 +4513,7 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('menuBtn').addEventListener('click', openDrawer);
   drawerScrim.addEventListener('click', closeDrawer);
 
-  /* ---------- 화장실 청소 룰렛 (이스터에그) — 서랍 아이콘 꾹 누르기 ---------- */
+  /* ---------- 룰렛 — 서랍 「룰렛」 ---------- */
   // 시작칸(from)에서 당첨칸(winner)까지 갈 칸수.
   //  - RLT_BASE 근처로 잡아 도는 시간이 인원수와 무관하게 일정하다 (from 은 무작위 = 스포일러 방지).
   //  - 22칸을 넘으면 한 바퀴 덜 돌아 당첨칸에 선다. 22 = SPIN_MS/(2·STEP_MS) — 이 위로는 ease-out
@@ -5196,27 +5198,12 @@ window.dispatchEvent(new Event('fb-ready'));
       e.preventDefault();
     }, { passive: false });
 
-    // 진입: 서랍 맨 위 아이콘 롱프레스 (0.65초).
-    // 길게 누를 때 뜨는 컨텍스트 메뉴가 롱프레스를 가로채지 않도록 막는다(옛 <img> 시절의 「이미지 저장」 메뉴 대비로 넣었고, SVG 로 바뀐 뒤에도 데스크톱 우클릭 메뉴를 막아 준다).
-    var ico = document.querySelector('.dwico');
-    ico.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-    var timer = null, sx = 0, sy = 0;
-    function cancel(){ if (timer){ clearTimeout(timer); timer = null; } }
-    ico.addEventListener('pointerdown', function(e){
-      sx = e.clientX; sy = e.clientY;
-      cancel();
-      timer = setTimeout(function(){
-        timer = null;
-        buzz(15);
-        hideDrawer();
-        open();
-      }, 650);
-    });
-    ico.addEventListener('pointermove', function(e){
-      if (timer && (Math.abs(e.clientX - sx) > 12 || Math.abs(e.clientY - sy) > 12)) cancel();
-    });
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(ev){
-      ico.addEventListener(ev, cancel);
+    // 진입: 서랍 「룰렛」. 예전엔 서랍 맨 위 곰을 0.65초 꾹 누르는 이스터에그였는데,
+    // 아무도 못 찾는 게 문제였고 이름을 「화장실 청소 룰렛」에서 「룰렛」으로 넓히면서 정식 메뉴로 올렸다
+    // (오너 2026-09-19). 곰 꾹 누르기는 일단 뺐다 — 자리는 비워 두고 나중에 다른 걸 넣는다.
+    document.getElementById('rltBtn').addEventListener('click', function(){
+      hideDrawer();
+      open();
     });
   })();
 
