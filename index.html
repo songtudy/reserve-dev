@@ -1481,10 +1481,15 @@ window.addEventListener('pageshow', remeasureSbcut);
      뒤집히는 순간이 없었다. 크기는 안 바꾼다 — 아래 ★정리 참고. */
   .rltresult.hit{animation:resultHit .5s cubic-bezier(.45,0,.55,1)}
   /* 날벼락 때 이름이 «바뀌는 순간»을 보이게 — 번쩍임(0.52초) 한가운데서 바꾸면 빛이 걷혔을 때
-     이미 바뀌어 있을 뿐이라 뒤집힌 순간이 없다. 번쩍임이 걷히고 흔들림이 잦아든 0.3초에 흐려졌다 떠오른다.
-     시간은 --tState(0.15초)보다 짧게 — 글자 한 줄이 사라졌다 오는 것이라 창이 움직이는 것과 같은 박자면 느리다. */
-  .rltresult{transition:opacity .12s linear}
-  .rltresult.swap{opacity:0}
+     이미 바뀌어 있을 뿐이라 뒤집힌 순간이 없다. 번쩍임이 걷히고 흔들림이 잦아든 0.3초에 바뀐다.
+     ★한 줄을 흐렸다 되살리면(opacity 1→0→1) «깜빡임»이 된다 — 글자가 아주 사라지는 구간이 생기기 때문(오너 2026-09-19).
+       그래서 두 겹으로 겹친다: 옛 이름은 위로 빠지며 흐려지고, 새 이름은 아래서 떠오르며 진해진다. 동시에 일어나
+       비는 순간이 없다. 9px 은 줄 높이(28)의 1/3 — 넘치면 잘리므로 줄에 overflow:hidden 을 준다. */
+  .rltresult{position:relative;overflow:hidden}
+  .rltmove{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+           transition:opacity .18s linear,transform .18s cubic-bezier(.45,0,.55,1)}
+  .rltmove.down{opacity:0;transform:translateY(9px)}    /* 새 이름이 올라오기 전 */
+  .rltmove.up  {opacity:0;transform:translateY(-9px)}   /* 옛 이름이 빠져나간 뒤 */
   @keyframes resultHit{0%{color:var(--rltHeat)}100%{color:var(--wait)}}
   /* 달궈진 색 — 다크는 번개 심 색(흰빛). 라이트는 흰 카드 위라 흰빛이면 결과 글자가 통째로 사라졌다(시뮬레이터 영상) —
      강조색을 흰색 쪽으로 반쯤 옮긴 «밝은 테라코타»에서 식게 한다. */
@@ -5139,17 +5144,21 @@ window.dispatchEvent(new Event('fb-ready'));
           chips2[old].className = 'rltchip lose';   // 금색이 보이게 빠져나간다 (CSS .rltchip.lose)
           chips2[nw].className = 'rltchip win hit';
           scarChip(chips2[nw], calm());
-          // 이름은 «번쩍임이 걷힌 뒤» 흐려졌다 떠오른다(위 .rltresult.swap). 이모지는 없다 — 날벼락은 탄 자국이 표시한다.
+          // 이름은 «번쩍임이 걷힌 뒤» 두 겹으로 갈아탄다(위 .rltmove). 이모지는 없다 — 날벼락은 탄 자국이 표시한다.
           var newTxt = ns2[nw] + ' 당첨!';
           if (calm()) result.textContent = newTxt;
           else setTimeout(function(){
             if (myGen2 !== gen) return;
-            result.classList.add('swap');
-            setTimeout(function(){
-              if (myGen2 !== gen) return;
-              result.textContent = newTxt;
-              result.classList.remove('swap');
-            }, 120);
+            var oldEl = document.createElement('span'), newEl = document.createElement('span');
+            oldEl.className = 'rltmove';        oldEl.textContent = result.textContent;
+            newEl.className = 'rltmove down';   newEl.textContent = newTxt;
+            result.textContent = '';
+            result.appendChild(oldEl); result.appendChild(newEl);
+            // 시작 모양을 한 번 그린 뒤에 움직인다 — 바로 바꾸면 웹킷이 전환을 건너뛴다(morph 와 같은 이유)
+            requestAnimationFrame(function(){ requestAnimationFrame(function(){
+              oldEl.classList.add('up'); newEl.classList.remove('down');
+            }); });
+            setTimeout(function(){ if (myGen2 === gen) result.textContent = newTxt; }, 240);
           }, 300);
           result.classList.remove('hit'); void result.offsetWidth; result.classList.add('hit');
           // 「다시」·닫기·이름 고치기는 타격(흔들림·번쩍임·달궈짐, 0.5초)이 끝난 뒤에 풀린다. 바로 풀면 곧장 「다시」를
@@ -5286,12 +5295,7 @@ window.dispatchEvent(new Event('fb-ready'));
       '메뉴 → <em>지난 명단</em>에서 원하는 시점의 명단을 복사해 다시 등록하면 됩니다.'],
     ['업데이트 알림이 뜨면?',
       '아래 <em>새 버전으로 업데이트</em> 버튼을 누르거나, 앱을 완전히 종료했다가 다시 열면 적용됩니다.\n'
-      + '당장 하지 않아도 괜찮습니다.'],
-    // 룰렛을 정식 메뉴로 올리면서 넣었다(2026-09-19). 결과가 뒤집히는 걸 본 사람이
-    // 「앱이 잘못됐나」 하지 않도록 — 번개는 «보이게» 치므로 속이는 건 아니지만, 한 줄은 있어야 한다.
-    ['룰렛에 번개가 치던데요?',
-      '다섯 번에 한 번쯤 <em>날벼락</em>이 떨어져 당첨자가 바뀝니다.\n'
-      + '재미로 넣은 것이라, 번개가 치면 바뀐 것이 맞습니다.']
+      + '당장 하지 않아도 괜찮습니다.']
   ];
   var CHEV = '<span class="qchev">' + CHEV_SVG + '</span>';
 
