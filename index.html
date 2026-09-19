@@ -1490,10 +1490,15 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 옛 이름은 «전구 꺼지듯» 깜빡이며 나가고, 새 이름은 장식 없이 딱 들어온다.
      ★글자를 한 자씩 360° 로 흩뜨리는 안도 만들어 봤지만 반려(오너 2026-09-19) — 요란하기만 했다. 재시도 금지.
        (그때 알아낸 것: 키프레임 안 transform 에 var(--dx) 를 쓰면 크롬·웹킷이 그 변환을 통째로 버린다.
-        방향을 글자마다 달리하려면 WAAPI 로 돌려야 한다.) */
-  @keyframes nmFlick{0%{opacity:1}10%{opacity:.2}17%{opacity:1}33%{opacity:.12}41%{opacity:.85}
-                     58%{opacity:.08}66%{opacity:.55}82%{opacity:.05}90%{opacity:.3}100%{opacity:0}}
-  .rltnmin.gone{animation:nmFlick .8s linear forwards;opacity:0}
+        방향을 글자마다 달리하려면 WAAPI 로 돌려야 한다.)
+     ★길이는 «정점 밝기»로 정했다(2026-09-19 실기기 실측). 0.8초 판은 정점이 193→161→117→83 으로
+       무너져 뒤쪽 280ms 가 깜빡임이 아니라 흐릿한 웅얼거림이었고, 정점 간격도 194→201ms 로 «느려졌다»
+       — 꺼져가는 전구는 반대로 빨라져야 한다. 그래서 0.62초로 꼬리를 자르고, 정점은 높게 끌고 가다가
+       마지막 10%(62ms)에 딱 떨어뜨린다. 간격도 99→137→124→111→87ms 로 조여진다. */
+  @keyframes nmFlick{0%{opacity:1}9%{opacity:.15}16%{opacity:1}30%{opacity:.1}38%{opacity:.95}
+                     50%{opacity:.08}58%{opacity:.85}68%{opacity:.06}76%{opacity:.6}
+                     84%{opacity:.05}90%{opacity:.35}100%{opacity:0}}
+  .rltnmin.gone{animation:nmFlick .62s linear forwards;opacity:0}
   /* 이름 자리는 «처음 뜬 이름»의 폭으로 잡고, 이름은 그 자리의 오른쪽 끝에 붙는다 —
      뒤에 더 긴 이름이 와도 왼쪽으로 넘칠 뿐 「당첨!」은 안 밀린다. 가장 긴 이름에 맞추면 처음 결과부터
      이름이 왼쪽으로 치우쳐 보인다(오너 2026-09-19). 글자는 흩어질 때 자리 밖으로 나가야 하므로 안 자른다. */
@@ -5174,12 +5179,12 @@ window.dispatchEvent(new Event('fb-ready'));
             if (myGen2 !== gen) return;
             var nm = result.querySelector('.rltnmin');
             if (!nm){ setResult(ns2[nw]); return; }
-            nm.classList.add('gone');                  // 전구 꺼지듯 0.8초 깜빡이다 사라진다 (아래 시간과 같아야 한다)
+            nm.classList.add('gone');                  // 전구 꺼지듯 0.62초 깜빡이다 사라진다 (아래 시간과 같아야 한다)
             setTimeout(function(){
               if (myGen2 !== gen) return;
               nm.textContent = ns2[nw];
               nm.classList.remove('gone');             // 애니메이션이 걷히면 그 자리에서 바로 또렷해진다
-            }, 800);
+            }, 620);
           }, 220);
           // ★날벼락 때 결과 글자의 흰빛 달굼(.hit)은 안 쓴다 — 색을 0.5초 동안 잡고 있어 「어두워지며 사그라듦」과 싸운다.
           //   뒤집힘을 보여 주는 일은 이제 사그라듦 → 딱 나타남이 맡는다(오너 2026-09-19).
