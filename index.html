@@ -5089,7 +5089,7 @@ window.dispatchEvent(new Event('fb-ready'));
       inner.textContent = name;
       sp.appendChild(inner);
       result.appendChild(sp);
-      result.appendChild(document.createTextNode(' 당첨!'));
+      result.appendChild(document.createTextNode('\u00A0당첨!'));   // 줄바꿈 없는 공백 — 결과 줄이 flex 라 보통 공백은 조각 앞에서 지워진다
       sp.style.width = inner.offsetWidth + 'px';   // 자리 폭 = «이 이름»의 폭
     }
 
