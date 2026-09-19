@@ -1487,12 +1487,16 @@ window.addEventListener('pageshow', remeasureSbcut);
        비는 순간이 없다. 9px 은 줄 높이(28)의 1/3 — 넘치면 잘리므로 줄에 overflow:hidden 을 준다. */
   /* 결과 줄은 «이름» 조각과 「 당첨!」로 나뉜다 — 날벼락 때 이름만 사그라들고 「당첨!」은 남아
      빈 자리가 보인다(오너 2026-09-19 「감질맛」). 줄 전체를 지우면 기다릴 자리가 없어진다. */
-  /* 옛 이름은 «전구 꺼지듯» 깜빡이며 나간다 — 번개 맞은 뒤라는 맥락과 맞고, 그냥 옅어지는 것보다
-     기다려진다(오너 2026-09-19 「감질맛」). 새 이름은 장식 없이 딱 들어온다 — 칸이 이미 흰빛으로
-     달아오르므로 글자까지 번쩍이면 같은 표현이 두 번이 된다. */
-  @keyframes nmFlick{0%{opacity:1}10%{opacity:.2}17%{opacity:1}33%{opacity:.12}41%{opacity:.85}
-                     58%{opacity:.08}66%{opacity:.55}82%{opacity:.05}90%{opacity:.3}100%{opacity:0}}
-  .rltnm.gone{animation:nmFlick .5s linear forwards;opacity:0}
+  /* 이름이 바뀔 때는 «글자 한 자씩» 움직인다 — 줄 통째로 깜빡이면 밋밋하다(오너 2026-09-19).
+     나가는 글자는 재처럼 살짝 커졌다 위로 흩어지고(탄 자국·연기와 같은 결), 들어오는 글자는 아래서 솟는다.
+     45ms 씩 엇갈려 시작해 «차례로» 날아가고 «차례로» 박힌다. 나가는 결과 들어오는 결이 달라야 바뀐 게 보인다. */
+  .rltch{display:inline-block}
+  .rltnm.out .rltch{animation:chAshOut .42s cubic-bezier(.4,0,1,1) forwards;animation-delay:calc(var(--i)*45ms)}
+  @keyframes chAshOut{0%{opacity:1;transform:translateY(0) scale(1)}
+                      30%{opacity:.9;transform:translateY(-2px) scale(1.06)}
+                      100%{opacity:0;transform:translateY(-16px) scale(.86)}}
+  .rltnm.in .rltch{animation:chRise .3s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*50ms)}
+  @keyframes chRise{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:none}}
   /* 이름 자리는 «가장 긴 이름»에 맞춰 폭을 고정하고 오른쪽 맞춤 — 이름이 짧아지든 길어지든
      「당첨!」이 제자리에 있어야 «이름만 바뀌었다»로 읽힌다. 줄이 다시 짜이면 그 인상이 깨진다(오너 2026-09-19). */
   .rltnm{display:inline-block;text-align:right}
@@ -5178,13 +5182,28 @@ window.dispatchEvent(new Event('fb-ready'));
           else setTimeout(function(){
             if (myGen2 !== gen) return;
             var nm = result.querySelector('.rltnm');
-            if (!nm){ setResult(ns2[nw]); return; }
-            nm.classList.add('gone');
-            setTimeout(function(){
+            if (!nm){ setResult(ns2[nw], ns2); return; }
+            // 글자를 한 자씩 감싼다. Array.from 으로 쪼개야 이모지 같은 «두 칸짜리» 글자가 안 깨진다.
+            function chars(el, str){
+              var a = Array.from(str);
+              el.textContent = '';
+              a.forEach(function(ch, i){
+                var c = document.createElement('span');
+                c.className = 'rltch'; c.textContent = ch;
+                c.style.setProperty('--i', i);
+                el.appendChild(c);
+              });
+              return a.length;
+            }
+            var nOld = chars(nm, nm.textContent);
+            nm.classList.add('out');
+            setTimeout(function(){                       // 마지막 글자가 다 날아간 뒤에 새 이름을 올린다
               if (myGen2 !== gen) return;
-              nm.textContent = ns2[nw];
-              nm.classList.remove('gone');      // 애니메이션이 걷히면 그 자리에서 바로 또렷해진다(전환 없음)
-            }, 500);
+              nm.classList.remove('out');
+              chars(nm, ns2[nw]);
+              void nm.offsetWidth;                       // 시작 모양을 한 번 그리고 나서 올린다
+              nm.classList.add('in');
+            }, 420 + (nOld - 1) * 45);
           }, 220);
           // ★날벼락 때 결과 글자의 흰빛 달굼(.hit)은 안 쓴다 — 색을 0.5초 동안 잡고 있어 「어두워지며 사그라듦」과 싸운다.
           //   뒤집힘을 보여 주는 일은 이제 사그라듦 → 딱 나타남이 맡는다(오너 2026-09-19).
