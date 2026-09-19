@@ -1485,8 +1485,14 @@ window.addEventListener('pageshow', remeasureSbcut);
      ★한 줄을 흐렸다 되살리면(opacity 1→0→1) «깜빡임»이 된다 — 글자가 아주 사라지는 구간이 생기기 때문(오너 2026-09-19).
        그래서 두 겹으로 겹친다: 옛 이름은 위로 빠지며 흐려지고, 새 이름은 아래서 떠오르며 진해진다. 동시에 일어나
        비는 순간이 없다. 9px 은 줄 높이(28)의 1/3 — 넘치면 잘리므로 줄에 overflow:hidden 을 준다. */
-  .rltresult{transition:opacity .28s linear,color .28s linear}
-  .rltresult.gone{opacity:0;color:var(--off)}           /* 옛 이름이 어두워지며 사그라든다 */
+  /* 결과 줄은 «이름» 조각과 「 당첨!」로 나뉜다 — 날벼락 때 이름만 사그라들고 「당첨!」은 남아
+     빈 자리가 보인다(오너 2026-09-19 「감질맛」). 줄 전체를 지우면 기다릴 자리가 없어진다. */
+  /* 옛 이름은 «전구 꺼지듯» 깜빡이며 나간다 — 번개 맞은 뒤라는 맥락과 맞고, 그냥 옅어지는 것보다
+     기다려진다(오너 2026-09-19 「감질맛」). 새 이름은 장식 없이 딱 들어온다 — 칸이 이미 흰빛으로
+     달아오르므로 글자까지 번쩍이면 같은 표현이 두 번이 된다. */
+  @keyframes nmFlick{0%{opacity:1}10%{opacity:.2}17%{opacity:1}33%{opacity:.12}41%{opacity:.85}
+                     58%{opacity:.08}66%{opacity:.55}82%{opacity:.05}90%{opacity:.3}100%{opacity:0}}
+  .rltnm.gone{animation:nmFlick .5s linear forwards;opacity:0}
   @keyframes resultHit{0%{color:var(--rltHeat)}100%{color:var(--wait)}}
   /* 달궈진 색 — 다크는 번개 심 색(흰빛). 라이트는 흰 카드 위라 흰빛이면 결과 글자가 통째로 사라졌다(시뮬레이터 영상) —
      강조색을 흰색 쪽으로 반쯤 옮긴 «밝은 테라코타»에서 식게 한다. */
@@ -5067,6 +5073,16 @@ window.dispatchEvent(new Event('fb-ready'));
     var STEP_MS = 45;     // 가장 빠른 구간의 칸 간격 — CSS 전환(0.03s)보다 커야 두 칸이 겹쳐 안 빛난다
     var HOLD_MS = 300;    // 당첨칸에 멈춰 있는 시간 (결과가 뜨기 전)
 
+    // 결과 줄 — 이름 조각을 따로 둔다(위 .rltnm). 이름은 손님이 친 글자라 innerHTML 을 쓰지 않는다.
+    function setResult(name){
+      result.textContent = '';
+      var sp = document.createElement('span');
+      sp.className = 'rltnm';
+      sp.textContent = name;
+      result.appendChild(sp);
+      result.appendChild(document.createTextNode(' 당첨!'));
+    }
+
     function spin(){
       if (spinning) return;
       var ns = names();
@@ -5116,7 +5132,7 @@ window.dispatchEvent(new Event('fb-ready'));
         chips[winner].className = 'rltchip win';
         result.classList.remove('warn');
         result.classList.add('won');
-        result.textContent = ns[winner] + ' 당첨!';   // 🚽 는 제목에만 (CSS 룰렛 머리 주석)
+        setResult(ns[winner]);   // 🚽 는 제목에만 (CSS 룰렛 머리 주석)
         buzz([25, 45, 25]);
         if (n > 1 && Math.random() < TWIST_P) twist(myGen, chips, ns, winner);
         else finish();
@@ -5141,21 +5157,19 @@ window.dispatchEvent(new Event('fb-ready'));
           chips2[old].className = 'rltchip lose';   // 금색이 보이게 빠져나간다 (CSS .rltchip.lose)
           chips2[nw].className = 'rltchip win hit';
           scarChip(chips2[nw], calm());
-          // 옛 이름이 어두워지며 사그라든 «뒤에» 새 이름이 딱 나타난다(위 .rltresult.gone).
-          // 이모지는 없다 — 날벼락은 탄 자국이 표시한다.
-          var newTxt = ns2[nw] + ' 당첨!';
-          if (calm()) result.textContent = newTxt;
+          // 옛 «이름»만 어두워지며 사그라들고 「당첨!」은 남는다 — 빈 자리가 보여야 기다려진다.
+          // 다 사라지면 새 이름이 딱 들어온다. 이모지는 없다 — 날벼락은 탄 자국이 표시한다.
+          if (calm()) setResult(ns2[nw]);
           else setTimeout(function(){
             if (myGen2 !== gen) return;
-            result.classList.add('gone');
+            var nm = result.querySelector('.rltnm');
+            if (!nm){ setResult(ns2[nw]); return; }
+            nm.classList.add('gone');
             setTimeout(function(){
               if (myGen2 !== gen) return;
-              result.style.transition = 'none';     // 돌아올 땐 전환 없이 — 흐려졌다 «다시 진해지면» 깜빡임이 된다
-              result.textContent = newTxt;
-              result.classList.remove('gone');
-              void result.offsetWidth;
-              result.style.transition = '';
-            }, 280);
+              nm.textContent = ns2[nw];
+              nm.classList.remove('gone');      // 애니메이션이 걷히면 그 자리에서 바로 또렷해진다(전환 없음)
+            }, 500);
           }, 220);
           // ★날벼락 때 결과 글자의 흰빛 달굼(.hit)은 안 쓴다 — 색을 0.5초 동안 잡고 있어 「어두워지며 사그라듦」과 싸운다.
           //   뒤집힘을 보여 주는 일은 이제 사그라듦 → 딱 나타남이 맡는다(오너 2026-09-19).
