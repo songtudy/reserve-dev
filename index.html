@@ -1487,14 +1487,13 @@ window.addEventListener('pageshow', remeasureSbcut);
        비는 순간이 없다. 9px 은 줄 높이(28)의 1/3 — 넘치면 잘리므로 줄에 overflow:hidden 을 준다. */
   /* 결과 줄은 «이름» 조각과 「 당첨!」로 나뉜다 — 날벼락 때 이름만 사그라들고 「당첨!」은 남아
      빈 자리가 보인다(오너 2026-09-19 「감질맛」). 줄 전체를 지우면 기다릴 자리가 없어진다. */
-  /* 이름이 바뀔 때는 «글자 한 자씩» 움직인다. 나가는 글자는 제각각 방향(360°)으로 흩어지며 전구 꺼지듯
-     깜빡이고, 들어오는 글자는 아래서 차례로 솟는다. 나가는 결과 들어오는 결이 달라야 «바뀐 것»이 보인다.
-     ★흩어지는 방향은 JS 가 글자마다 무작위로 정해 WAAPI 로 돌린다 — 키프레임 안에서 var(--dx) 를 transform 에
-       쓰면 크롬·웹킷이 그 변환을 통째로 버린다(getComputedStyle 로 확인: transform:none). 깜빡이기만 하고
-       흩어지지 않았던 원인이다(2026-09-19). */
-  .rltch{display:inline-block}
-  .rltnm.in .rltch{animation:chRise .3s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*50ms)}
-  @keyframes chRise{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:none}}
+  /* 옛 이름은 «전구 꺼지듯» 깜빡이며 나가고, 새 이름은 장식 없이 딱 들어온다.
+     ★글자를 한 자씩 360° 로 흩뜨리는 안도 만들어 봤지만 반려(오너 2026-09-19) — 요란하기만 했다. 재시도 금지.
+       (그때 알아낸 것: 키프레임 안 transform 에 var(--dx) 를 쓰면 크롬·웹킷이 그 변환을 통째로 버린다.
+        방향을 글자마다 달리하려면 WAAPI 로 돌려야 한다.) */
+  @keyframes nmFlick{0%{opacity:1}10%{opacity:.2}17%{opacity:1}33%{opacity:.12}41%{opacity:.85}
+                     58%{opacity:.08}66%{opacity:.55}82%{opacity:.05}90%{opacity:.3}100%{opacity:0}}
+  .rltnmin.gone{animation:nmFlick .5s linear forwards;opacity:0}
   /* 이름 자리는 «처음 뜬 이름»의 폭으로 잡고, 이름은 그 자리의 오른쪽 끝에 붙는다 —
      뒤에 더 긴 이름이 와도 왼쪽으로 넘칠 뿐 「당첨!」은 안 밀린다. 가장 긴 이름에 맞추면 처음 결과부터
      이름이 왼쪽으로 치우쳐 보인다(오너 2026-09-19). 글자는 흩어질 때 자리 밖으로 나가야 하므로 안 자른다. */
@@ -5083,23 +5082,15 @@ window.dispatchEvent(new Event('fb-ready'));
     // 결과 줄 — 이름 조각을 따로 둔다(위 .rltnm). 이름은 손님이 친 글자라 innerHTML 을 쓰지 않는다.
     // list 를 주면 그중 가장 긴 이름에 맞춰 자리 폭을 잡는다(「당첨!」 고정용). 재는 건 결과 줄 «안»에서 —
     // 그래야 당첨 상태(.won, 20px·800)의 글꼴로 재진다.
-    function setResult(name, list){
+    function setResult(name){
       result.textContent = '';
-      var sp = document.createElement('span');
-      sp.className = 'rltnm';
-      if (list && list.length > 1){
-        var m = document.createElement('span');
-        m.className = 'rltnm';
-        m.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
-        result.appendChild(m);
-        var w = 0;
-        list.forEach(function(x){ m.textContent = x; w = Math.max(w, m.offsetWidth); });
-        result.removeChild(m);
-        sp.style.minWidth = w + 'px';
-      }
-      sp.textContent = name;
+      var sp = document.createElement('span'), inner = document.createElement('span');
+      sp.className = 'rltnm'; inner.className = 'rltnmin';
+      inner.textContent = name;
+      sp.appendChild(inner);
       result.appendChild(sp);
       result.appendChild(document.createTextNode(' 당첨!'));
+      sp.style.width = inner.offsetWidth + 'px';   // 자리 폭 = «이 이름»의 폭
     }
 
     function spin(){
@@ -5151,7 +5142,7 @@ window.dispatchEvent(new Event('fb-ready'));
         chips[winner].className = 'rltchip win';
         result.classList.remove('warn');
         result.classList.add('won');
-        setResult(ns[winner], ns);   // 🚽 는 제목에만 (CSS 룰렛 머리 주석)
+        setResult(ns[winner]);   // 🚽 는 제목에만 (CSS 룰렛 머리 주석)
         buzz([25, 45, 25]);
         if (n > 1 && Math.random() < TWIST_P) twist(myGen, chips, ns, winner);
         else finish();
@@ -5178,51 +5169,17 @@ window.dispatchEvent(new Event('fb-ready'));
           scarChip(chips2[nw], calm());
           // 옛 «이름»만 어두워지며 사그라들고 「당첨!」은 남는다 — 빈 자리가 보여야 기다려진다.
           // 다 사라지면 새 이름이 딱 들어온다. 이모지는 없다 — 날벼락은 탄 자국이 표시한다.
-          if (calm()) setResult(ns2[nw], ns2);
+          if (calm()) setResult(ns2[nw]);
           else setTimeout(function(){
             if (myGen2 !== gen) return;
-            var nm = result.querySelector('.rltnm');
-            if (!nm){ setResult(ns2[nw], ns2); return; }
-            // 글자를 한 자씩 감싼다. Array.from 으로 쪼개야 이모지 같은 «두 칸짜리» 글자가 안 깨진다.
-            function chars(el, str){
-              var a = Array.from(str);
-              el.textContent = '';
-              a.forEach(function(ch, i){
-                var c = document.createElement('span');
-                c.className = 'rltch'; c.textContent = ch;
-                c.style.setProperty('--i', i);
-                el.appendChild(c);
-              });
-              return a.length;
-            }
-            var nOld = chars(nm, nm.textContent), OUT = 500, STAG = 40;
-            // 흩어짐은 여기서 돌린다 — 방향이 글자마다 달라 CSS 키프레임으로는 못 적는다(var() 를 transform 에
-            // 쓰면 그 변환이 통째로 버려진다 — 위 주석). 각도는 360° 중 아무 쪽, 거리 16~28px, 회전 ±28°.
-            [].forEach.call(nm.children, function(c, i){
-              var ang = Math.random() * Math.PI * 2,
-                  dist = 16 + Math.random() * 12,
-                  rot  = (Math.random() * 2 - 1) * 28,
-                  at = function(k){
-                    return 'translate(' + (Math.cos(ang) * dist * k).toFixed(1) + 'px,'
-                         + (Math.sin(ang) * dist * k).toFixed(1) + 'px) rotate(' + (rot * k).toFixed(0) + 'deg)';
-                  };
-              c.animate([                                  // 흩어지며 «전구 꺼지듯» 깜빡인다
-                { opacity: 1,   transform: at(0)   + ' scale(1)',    offset: 0   },
-                { opacity: .18,                                      offset: .09 },
-                { opacity: 1,                                        offset: .16 },
-                { opacity: .12, transform: at(.28) + ' scale(1.03)', offset: .34 },
-                { opacity: .85,                                      offset: .48 },
-                { opacity: .08,                                      offset: .66 },
-                { opacity: .45,                                      offset: .78 },
-                { opacity: 0,   transform: at(1)   + ' scale(.82)',  offset: 1   }
-              ], { duration: OUT, delay: i * STAG, easing: 'linear', fill: 'forwards' });
-            });
-            setTimeout(function(){                       // 마지막 글자가 다 흩어진 뒤에 새 이름을 올린다
+            var nm = result.querySelector('.rltnmin');
+            if (!nm){ setResult(ns2[nw]); return; }
+            nm.classList.add('gone');                  // 전구 꺼지듯 0.5초 깜빡이다 사라진다
+            setTimeout(function(){
               if (myGen2 !== gen) return;
-              chars(nm, ns2[nw]);                        // 새 글자들은 애니메이션이 안 붙은 새 요소다
-              void nm.offsetWidth;                       // 시작 모양을 한 번 그리고 나서 올린다
-              nm.classList.add('in');
-            }, OUT + (nOld - 1) * STAG);
+              nm.textContent = ns2[nw];
+              nm.classList.remove('gone');             // 애니메이션이 걷히면 그 자리에서 바로 또렷해진다
+            }, 500);
           }, 220);
           // ★날벼락 때 결과 글자의 흰빛 달굼(.hit)은 안 쓴다 — 색을 0.5초 동안 잡고 있어 「어두워지며 사그라듦」과 싸운다.
           //   뒤집힘을 보여 주는 일은 이제 사그라듦 → 딱 나타남이 맡는다(오너 2026-09-19).
