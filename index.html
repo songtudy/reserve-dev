@@ -1779,6 +1779,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
   <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
   <button type="button" class="dwitem" id="installBtn">앱으로 설치하기</button>
+  <button type="button" class="dwitem" id="donateBtn">후원</button>
   <div class="dwsep"></div>
   <button type="button" class="dwitem danger" id="resetBtn">명단 초기화</button>
   <button type="button" class="dwitem" id="logoutBtn">로그아웃</button>
@@ -5409,6 +5410,22 @@ window.dispatchEvent(new Event('fb-ready'));
     var cp = document.querySelector('#sheetBody .urlcopy');
     if (cp) cp.onclick = function(){ copyText(appUrl(), '링크 복사됨'); };
   }
+
+  // 후원 계좌 — 여기 한 군데서만 고친다.
+  // ★보이는 글자 = 복사되는 글자. 하이픈을 떼고 복사하면 「왜 다르지」가 되고, 대조할 수도 없다.
+  //   은행 앱은 하이픈이 있어도 알아서 떼고 받는다.
+  var DONATE = { name: '송주민', bank: '국민은행', acc: '410102-01-450720' };
+  document.getElementById('donateBtn').addEventListener('click', function(){
+    hideDrawer();
+    // 예금주를 «먼저» 둔다 — 송금 화면에서 마지막에 대조하는 게 이름이라, 못 보고 보내면 돌이킬 수 없다.
+    openSheet('후원',
+      '<p class="about">익순이는 익선취향에서 쓰려고 혼자 만든 앱입니다.<br>만든 사람에게 보태고 싶으시다면.</p>'
+      + '<div class="wnet"><span class="k">예금주</span><span class="v">' + DONATE.name + '</span></div>'
+      + '<div class="wnet"><span class="k">' + DONATE.bank + '</span><span class="v">' + DONATE.acc + '</span>'
+      +   '<button type="button" class="urlcopy" aria-label="계좌번호 복사">' + ICON_COPY + '</button></div>');
+    var cp = document.querySelector('#sheetBody .urlcopy');
+    if (cp) cp.onclick = function(){ copyText(DONATE.acc, '계좌번호 복사됨'); };
+  });
   document.getElementById('installBtn').addEventListener('click', function(){
     hideDrawer();
     openInstallSheet();
