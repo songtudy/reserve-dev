@@ -501,6 +501,33 @@
     tru('문자열을 돌려준다', typeof a === 'string' && a.length > 0, a);
   })();
 
+  /* ==================== 스타일시트 온전성 ==================== */
+  /* ★이 묶음은 «순수 함수»가 아니라 브라우저가 실제로 파싱한 CSS 를 본다.
+     2026-09-19 주석을 닫는 기호를 잘못 넣어 설명글이 규칙 자리로 샌 적이 있는데,
+     그때 이 셀프테스트는 144/144 로 통과했다 — 화면은 망가졌는데도. 그래서 넣는다.
+     (설명글에 «주석 닫는 기호» 자체를 적지 말 것. 이 주석도 그것 때문에 한 번 깨졌다.) */
+  group('스타일시트 — 주석·규칙 온전성');
+  (function(){
+    var sheets = [].slice.call(document.styleSheets), rules = [], kf = {};
+    sheets.forEach(function(sh){
+      var rs; try { rs = sh.cssRules; } catch(e){ return; }   // 남의 도메인 시트는 못 읽는다
+      for (var i = 0; i < rs.length; i++){
+        rules.push(rs[i]);
+        if (rs[i].type === 7) kf[rs[i].name] = true;          // 7 = CSSKeyframesRule
+      }
+    });
+    tru('규칙이 실제로 파싱됐다', rules.length > 200, rules.length + '개');
+    // 주석이 새면 한글 설명글이 «선택자»가 된다. 선택자에 한글이 있을 일은 없다.
+    var leaked = rules.filter(function(r){
+      return r.selectorText && /[\uAC00-\uD7A3]/.test(r.selectorText);
+    }).map(function(r){ return r.selectorText.slice(0, 40); });
+    tru('주석이 규칙 자리로 안 샜다', leaked.length === 0, leaked.join(' | ') || '없음');
+    // 애니메이션은 이름이 사라져도 조용히 «안 움직일» 뿐이라 눈으로만 찾기 어렵다 — 이름을 직접 센다.
+    ['nmFlick', 'boltLose', 'boltDeflate', 'pillIn'].forEach(function(n){
+      tru('@keyframes ' + n, kf[n] === true);
+    });
+  })();
+
   /* ==================== 렌더 ==================== */
   render();
 
