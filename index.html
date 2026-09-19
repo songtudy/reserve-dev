@@ -5085,8 +5085,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var HOLD_MS = 300;    // 당첨칸에 멈춰 있는 시간 (결과가 뜨기 전)
 
     // 결과 줄 — 이름 조각을 따로 둔다(위 .rltnm). 이름은 손님이 친 글자라 innerHTML 을 쓰지 않는다.
-    // list 를 주면 그중 가장 긴 이름에 맞춰 자리 폭을 잡는다(「당첨!」 고정용). 재는 건 결과 줄 «안»에서 —
-    // 그래야 당첨 상태(.won, 20px·800)의 글꼴로 재진다.
+    // 자리 폭은 «처음 뜬 이름»의 폭으로 잡는다 — 날벼락으로 이름이 바뀌어도 「당첨!」이 안 밀린다.
+    // 재는 건 결과 줄 «안»에 넣은 뒤라, 당첨 상태(.won, 20px·800)의 글꼴로 재진다.
     function setResult(name){
       result.textContent = '';
       var sp = document.createElement('span'), inner = document.createElement('span');
