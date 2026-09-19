@@ -1493,6 +1493,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   @keyframes nmFlick{0%{opacity:1}10%{opacity:.2}17%{opacity:1}33%{opacity:.12}41%{opacity:.85}
                      58%{opacity:.08}66%{opacity:.55}82%{opacity:.05}90%{opacity:.3}100%{opacity:0}}
   .rltnm.gone{animation:nmFlick .5s linear forwards;opacity:0}
+  /* 이름 자리는 «가장 긴 이름»에 맞춰 폭을 고정하고 오른쪽 맞춤 — 이름이 짧아지든 길어지든
+     「당첨!」이 제자리에 있어야 «이름만 바뀌었다»로 읽힌다. 줄이 다시 짜이면 그 인상이 깨진다(오너 2026-09-19). */
+  .rltnm{display:inline-block;text-align:right}
   @keyframes resultHit{0%{color:var(--rltHeat)}100%{color:var(--wait)}}
   /* 달궈진 색 — 다크는 번개 심 색(흰빛). 라이트는 흰 카드 위라 흰빛이면 결과 글자가 통째로 사라졌다(시뮬레이터 영상) —
      강조색을 흰색 쪽으로 반쯤 옮긴 «밝은 테라코타»에서 식게 한다. */
@@ -5074,10 +5077,22 @@ window.dispatchEvent(new Event('fb-ready'));
     var HOLD_MS = 300;    // 당첨칸에 멈춰 있는 시간 (결과가 뜨기 전)
 
     // 결과 줄 — 이름 조각을 따로 둔다(위 .rltnm). 이름은 손님이 친 글자라 innerHTML 을 쓰지 않는다.
-    function setResult(name){
+    // list 를 주면 그중 가장 긴 이름에 맞춰 자리 폭을 잡는다(「당첨!」 고정용). 재는 건 결과 줄 «안»에서 —
+    // 그래야 당첨 상태(.won, 20px·800)의 글꼴로 재진다.
+    function setResult(name, list){
       result.textContent = '';
       var sp = document.createElement('span');
       sp.className = 'rltnm';
+      if (list && list.length > 1){
+        var m = document.createElement('span');
+        m.className = 'rltnm';
+        m.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+        result.appendChild(m);
+        var w = 0;
+        list.forEach(function(x){ m.textContent = x; w = Math.max(w, m.offsetWidth); });
+        result.removeChild(m);
+        sp.style.minWidth = w + 'px';
+      }
       sp.textContent = name;
       result.appendChild(sp);
       result.appendChild(document.createTextNode(' 당첨!'));
@@ -5132,7 +5147,7 @@ window.dispatchEvent(new Event('fb-ready'));
         chips[winner].className = 'rltchip win';
         result.classList.remove('warn');
         result.classList.add('won');
-        setResult(ns[winner]);   // 🚽 는 제목에만 (CSS 룰렛 머리 주석)
+        setResult(ns[winner], ns);   // 🚽 는 제목에만 (CSS 룰렛 머리 주석)
         buzz([25, 45, 25]);
         if (n > 1 && Math.random() < TWIST_P) twist(myGen, chips, ns, winner);
         else finish();
@@ -5159,7 +5174,7 @@ window.dispatchEvent(new Event('fb-ready'));
           scarChip(chips2[nw], calm());
           // 옛 «이름»만 어두워지며 사그라들고 「당첨!」은 남는다 — 빈 자리가 보여야 기다려진다.
           // 다 사라지면 새 이름이 딱 들어온다. 이모지는 없다 — 날벼락은 탄 자국이 표시한다.
-          if (calm()) setResult(ns2[nw]);
+          if (calm()) setResult(ns2[nw], ns2);
           else setTimeout(function(){
             if (myGen2 !== gen) return;
             var nm = result.querySelector('.rltnm');
