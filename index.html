@@ -118,12 +118,16 @@ window.addEventListener('pageshow', remeasureSbcut);
        예외 셋: 잠금 흔들림(.32s, 피드백)·확인 중 맥동(.9s 반복)·스플래시 하트(.45s, easeOutQuad —
        --ease 로는 «보이는 성장»이 40ms 뿐이라 번쩍인다). 룰렛은 놀이라 제 곡선. */
     --ease:cubic-bezier(.2,.8,.2,1);
-    /* 겹쳐 뜬 창이 «나갈» 때 쓰는 곡선. --ease 는 앞쪽에 몰려 있어 닫을 때 쓰면
+    /* «고른» 곡선 — 처음과 끝이 느리고 가운데가 빠르다. 두 군데에 쓴다: 창이 «나갈» 때, 그리고 «어둠막» 양쪽 방향.
+       --ease 는 앞쪽에 몰려 있어 닫을 때 쓰면
        27ms 에 반이 사라지고 79ms 에 거의 다 사라진다 — 200ms 중 120ms 가 «안 보이는 시간»이라 툭 꺼져 보였다.
        대칭 곡선이면 100ms 에 반, 155ms 에 거의 — 사라지는 과정이 고르게 보인다(2026-09-18).
        값은 번개 타격에 쓰던 것과 같다 — 곡선 종류를 늘리지 않으려고 그대로 썼다.
+       ★어둠막에도 이 곡선을 쓴다(깔릴 때·걷힐 때 둘 다). --ease 로 깔면 첫 프레임에 30%·둘째에 60% 가 차서
+         화면 «전체»가 두 프레임 만에 어두워진다 — 오너 「화면 전체가 휙 바뀌는 느낌」(2026-09-19).
+         고른 곡선이면 한 프레임 최대 낙폭이 8.2 → 2.2 로 줄고 190ms 에 걸쳐 깔린다(밝기 실측).
        ★잠금·스플래시는 «창»이 아니라 화면 덮개라 여기서 뺐다. 걷히는 건 빠를수록 좋다. */
-    --easeExit:cubic-bezier(.45,0,.55,1);
+    --easeEven:cubic-bezier(.45,0,.55,1);
     --tPress:.12s;  --tState:.15s;  --tMove:.2s;
     /* 판이 «불투명해지는» 시간 = 이동 시간의 1/4(50ms). 독립된 네 번째 단계가 아니라 --tMove 에서 나온 값이다
        (세 단계 사다리는 그대로 셋). 들어올 때만 쓴다 — 나갈 때는 --tMove.
@@ -141,7 +145,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        붙어 있는 것(행 ⋯ 메뉴)은 이동 없이 페이드만(fadeIn) — 이미 그 자리에 속한 것이라 움직일 이유가 없다.
        ★겹쳐 뜨는 것은 «무엇이든» --tFade 에 불투명해진다(시트·확인창·룰렛창·예약추가·토스트·업데이트 알약·행 메뉴).
          반투명한 동안엔 뒤가 비치기 때문이다. 자리 잡는 움직임과 어둠만 --tMove 로 천천히 간다.
-       시간은 전부 --tMove. 곡선은 «방향»을 탄다 — 들어올 때 --ease, 나갈 때 --easeExit(위 주석). 거리는 요소 크기에 맞춘다.
+       시간은 전부 --tMove. 곡선은 «방향»을 탄다 — 들어올 때 --ease, 나갈 때 --easeEven(위 주석). 거리는 요소 크기에 맞춘다.
        ★예외 둘(둘 다 일부러) — 행 ⋯ 메뉴: 행 안에 끼어 있어 사라질 때 DOM 에서 빠진다(자리가 같이 줄어든다).
          퇴장을 페이드로 하려면 높이까지 접어야 하는데, 접기 애니메이션은 2026-09-12 에 버렸다. 그래서 등장만 있다(0.15초).
          업데이트 알약: 한 번 뜨면 새로고침할 때까지 안 내려간다 — 퇴장 경로 자체가 없다. */
@@ -600,7 +604,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
   /* 「대기」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
-  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--easeExit)}   /* 나가는 것 = 퇴장 곡선. --ease 로는 27ms 만에 반이 사라져 «툭» 꺼졌다(2026-09-19) */   /* 흐려지기만 — 높이까지 접으면 매 프레임 목록 전체가 다시 배치돼 «렉 걸린 듯» 보인다(오너 2026-09-12). 접기/펼치기를 즉시로 둔 것과 같은 이유 */
+  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--easeEven)}   /* 나가는 것 = 퇴장 곡선. --ease 로는 27ms 만에 반이 사라져 «툭» 꺼졌다(2026-09-19) */   /* 흐려지기만 — 높이까지 접으면 매 프레임 목록 전체가 다시 배치돼 «렉 걸린 듯» 보인다(오너 2026-09-12). 접기/펼치기를 즉시로 둔 것과 같은 이유 */
 
 
   .erow{display:flex;gap:6px}
@@ -756,16 +760,16 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* ---------- 메뉴 서랍 ---------- */
   .drawerScrim{
     position:fixed;inset:0;z-index:60;background:var(--scrimLite);
-    opacity:1;transition:opacity var(--tMove) var(--ease);
+    opacity:1;transition:opacity var(--tMove) var(--easeEven);   /* 어둠은 깔릴 때도 고르게 */
   }
   /* 전역 .hide는 display:none이라 페이드가 안 된다 — 서랍 막은 따로 둔다 */
-  .drawerScrim.off{opacity:0;pointer-events:none;transition:opacity var(--tMove) var(--easeExit)}   /* 닫히는 쪽 곡선 */
+  .drawerScrim.off{opacity:0;pointer-events:none;transition:opacity var(--tMove) var(--easeEven)}   /* 닫히는 쪽 곡선 */
   .drawer{
     position:fixed;top:0;left:0;bottom:0;z-index:61;
     width:min(68vw, 258px);
     background:var(--panel);
     padding:calc(env(safe-area-inset-top) + 18px) 0 calc(env(safe-area-inset-bottom) + 14px);
-    transform:translateX(-101%);transition:transform var(--tMove) var(--easeExit);   /* 기본이 «닫힌» 상태 = 퇴장 곡선 */
+    transform:translateX(-101%);transition:transform var(--tMove) var(--easeEven);   /* 기본이 «닫힌» 상태 = 퇴장 곡선 */
     display:flex;flex-direction:column;overflow-y:auto;
   }
   .drawer.open{transform:translateX(0);transition:transform var(--tMove) var(--ease)}   /* 들어올 때는 감속 */
@@ -1587,11 +1591,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     position:fixed;left:50%;bottom:calc(max(10px, env(safe-area-inset-bottom) - 6px) + 48px + 12px + var(--kb, 0px));transform:translateX(-50%) translateY(8px);   /* 알약 바(48) 위 12 */
     background:var(--btnPress);box-shadow:0 4px 14px rgba(0,0,0,.35);
     padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;
-    opacity:0;pointer-events:none;transition:opacity var(--tMove) var(--easeExit),transform var(--tMove) var(--easeExit);z-index:200;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity var(--tMove) var(--easeEven),transform var(--tMove) var(--easeEven);z-index:200;white-space:nowrap;
   }
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0);transition:opacity var(--tFade) var(--ease),transform var(--tMove) var(--ease)}   /* 겹쳐 뜨는 것은 먼저 불투명해진다 — 아래 명단이 알약을 뚫고 비치지 않게 */
   .hide{display:none !important}
-  /* 겹창(막·시트·대화상자·예약 추가) 등장과 퇴장 — 같은 길·같은 시간(--tMove). 곡선만 방향을 탄다: 들어올 때 --ease, 나갈 때 --easeExit.
+  /* 겹창(막·시트·대화상자·예약 추가) 등장과 퇴장 — 같은 길·같은 시간(--tMove). 곡선만 방향을 탄다: 들어올 때 --ease, 나갈 때 --easeEven.
      서랍·토스트·잠금·스플래시는 이미 transition 으로 오갔는데 시트·대화상자만 등장은 animation, 퇴장은 즉시였다(2026-09-12 통일).
      .hide 는 전역이 display:none 이라 여기선 «보이는 값 + visibility» 로 바꿔 둔다(막은 배경색, 판은 투명도·위치) — JS 는 여전히 .hide 만 켜고 끈다.
      visibility 는 숨길 때만 --tMove 뒤에 걸려 다 사라진 뒤 꺼지고, 보일 땐 즉시 켜진다.
@@ -1600,11 +1604,11 @@ window.addEventListener('pageshow', remeasureSbcut);
      같이 흐려져(그룹 투명도) 판이 늦게 불투명해지고, 그동안 뒤 내용이 판을 뚫고 보인다 — 오너 「잔상」(2026-09-19).
      배경색만 바꾸면 판은 제 속도(--tFade)로 혼자 불투명해진다.
      ★::before 에 어둠을 얹는 방법도 해 봤지만 크롬·웹킷 둘 다 «클래스가 빠져도 가상요소 투명도가 0 에 머물러» 못 썼다. */
-  .scrim, .sheetScrim, .panelScrim{background:var(--scrim);transition:background-color var(--tMove) var(--ease),visibility 0s}
+  .scrim, .sheetScrim, .panelScrim{background:var(--scrim);transition:background-color var(--tMove) var(--easeEven),visibility 0s}
   .scrim.hide{display:grid !important}
   .sheetScrim.hide{display:flex !important}
   .panelScrim.hide{display:block !important}
-  .scrim.hide, .sheetScrim.hide, .panelScrim.hide{background:transparent;visibility:hidden;pointer-events:none;transition:background-color var(--tMove) var(--easeExit),visibility 0s var(--tMove)}
+  .scrim.hide, .sheetScrim.hide, .panelScrim.hide{background:transparent;visibility:hidden;pointer-events:none;transition:background-color var(--tMove) var(--easeEven),visibility 0s var(--tMove)}
   /* 판의 투명도는 «들어올 때만» 빠르다(--tFade .1s) — 반투명한 동안 뒤가 비치기 때문.
      나갈 때는 --tMove — 여기서 --tFade 를 쓰면 판이 100ms 만에 사라져 「툭 꺼짐」이 되살아난다(재 봤다).
      자리를 잡는 움직임(미끄러짐 24px · 축소 .96)은 양쪽 다 --tMove.
@@ -1612,11 +1616,11 @@ window.addEventListener('pageshow', remeasureSbcut);
                               고친 뒤   10ms 50% · 53ms  2% · 85ms  0%  (--tFade 100ms 일 때)
                               1/4(50ms)로 줄인 뒤엔 첫 프레임부터 거의 0. */
   .sheet, .dialog{transition:transform var(--tMove) var(--ease),opacity var(--tFade) var(--ease)}
-  .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
-  .scrim.hide .dialog{opacity:0;transform:scale(.96);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
-  .scrim.hide .rlt{opacity:0;transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96);transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit)}
+  .sheetScrim.hide .sheet{opacity:0;transform:translateY(24px);transition:transform var(--tMove) var(--easeEven),opacity var(--tMove) var(--easeEven)}
+  .scrim.hide .dialog{opacity:0;transform:scale(.96);transition:transform var(--tMove) var(--easeEven),opacity var(--tMove) var(--easeEven)}
+  .scrim.hide .rlt{opacity:0;transform:translateY(clamp(calc(120px - 50vh), calc(50vh - var(--kb, 0px) - 150px), 0px)) scale(.96);transition:transform var(--tMove) var(--easeEven),opacity var(--tMove) var(--easeEven)}
   .panel.asSheet.hide{display:flex !important;opacity:0;visibility:hidden;pointer-events:none;
-    transform:translateX(-50%) translateY(calc(24px - var(--kb, 0px)));transition:transform var(--tMove) var(--easeExit),opacity var(--tMove) var(--easeExit),visibility 0s var(--tMove)}
+    transform:translateX(-50%) translateY(calc(24px - var(--kb, 0px)));transition:transform var(--tMove) var(--easeEven),opacity var(--tMove) var(--easeEven),visibility 0s var(--tMove)}
   @keyframes fadeIn{from{opacity:0}}
   /* 하단 알약(토스트·업데이트 알약) 등장 — 8px. 이름이 sheetIn 이었는데 정작 시트는 안 쓰고
      업데이트 알약 하나만 썼고, 값도 시트와 같은 24px 이라 «같은 크기·같은 자리»인 토스트(8px)와 어긋났다.
