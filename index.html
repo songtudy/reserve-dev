@@ -5134,7 +5134,9 @@ window.dispatchEvent(new Event('fb-ready'));
           chips2[old].className = 'rltchip lose';   // 금색이 보이게 빠져나간다 (CSS .rltchip.lose)
           chips2[nw].className = 'rltchip win hit';
           scarChip(chips2[nw], calm());
-          result.textContent = ns2[nw] + ' 당첨!';   // 이모지 없이 — 날벼락은 탄 자국이 표시한다(CSS 룰렛 머리 주석)
+          // 「벼락 당첨」 — 평범한 당첨(「X 당첨!」)과 글자로도 구분된다. 번개·흔들림·탄 자국을 놓친 사람에게
+          // 남는 유일한 증거가 이 줄이다. 「번개에 의해…」 같은 설명조 대신 한국어에 이미 있는 말로(오너 2026-09-19).
+          result.textContent = ns2[nw] + ' 벼락 당첨!';
           result.classList.remove('hit'); void result.offsetWidth; result.classList.add('hit');
           // 「다시」·닫기·이름 고치기는 타격(흔들림·번쩍임·달궈짐, 0.5초)이 끝난 뒤에 풀린다. 바로 풀면 곧장 「다시」를
           // 눌렀을 때 번개가 중간에 잘리고, 번쩍임·흔들림이 새 회전 위에 겹쳤다. 연기(~1.9초)는 기다리지 않는다 —
@@ -5270,7 +5272,12 @@ window.dispatchEvent(new Event('fb-ready'));
       '메뉴 → <em>지난 명단</em>에서 원하는 시점의 명단을 복사해 다시 등록하면 됩니다.'],
     ['업데이트 알림이 뜨면?',
       '아래 <em>새 버전으로 업데이트</em> 버튼을 누르거나, 앱을 완전히 종료했다가 다시 열면 적용됩니다.\n'
-      + '당장 하지 않아도 괜찮습니다.']
+      + '당장 하지 않아도 괜찮습니다.'],
+    // 룰렛을 정식 메뉴로 올리면서 넣었다(2026-09-19). 결과가 뒤집히는 걸 본 사람이
+    // 「앱이 잘못됐나」 하지 않도록 — 번개는 «보이게» 치므로 속이는 건 아니지만, 한 줄은 있어야 한다.
+    ['룰렛에 번개가 치던데요?',
+      '다섯 번에 한 번쯤 <em>날벼락</em>이 떨어져 당첨자가 바뀝니다.\n'
+      + '재미로 넣은 것이라, 번개가 치면 바뀐 것이 맞습니다.']
   ];
   var CHEV = '<span class="qchev">' + CHEV_SVG + '</span>';
 
