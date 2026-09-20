@@ -1022,10 +1022,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkrow::after{content:"";position:absolute;inset:0 -16px;background:transparent}
   .bkrow > span{position:relative;z-index:1}   /* 글자가 칠 위로 */
   .bkrow:active::after, .bkrow.dn::after{background:var(--press)}
-  /* 폭 고정 — 「어제」 줄의 라벨(9/19)은 「19:00」보다 좁아, 자동 폭이면 그 줄만 요약이 9px 왼쪽으로
-     당겨져 섰다(실측 67 / 57.7). 42 는 「19:00」(41)이 들어가는 최소값이자 변경 내역의 시각 열과 같은 값 —
-     탭을 건너뛰어도 둘째 열이 같은 자리(68)에서 시작한다. */
-  .bkt{flex:0 0 42px;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  /* ★폭은 «자동»이다. 고정(42)으로 바꿔 봤다가 되돌렸다(2026-09-21) —
+     「요약 시작점을 한 줄로 세운다」는 이득은 «오늘 줄과 어제 줄 사이»에만 생기는데 그 둘은 머리글과
+     구분선으로 이미 갈라져 있어 세로줄을 맞출 이유가 없다. 대신 짧은 라벨(9/20, 31.7px)은 남는 자리만큼
+     틈이 벌어져 «그 줄만 성글게» 보였다(실측 틈 11.0 → 20.3px, 오너가 실기기에서 잡아냄).
+     자동 폭이면 틈이 늘 11px 이고, 줄이 여럿인 「오늘」 안에서는 라벨이 다 「HH:MM」이라 어차피 가지런하다.
+     (「어제」는 한 줄뿐이다 — 아래 KEEP_DAYS 주석 참고.) */
+  .bkt{flex:0 0 auto;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   /* 요약은 시각 «바로 뒤»에 붙는다 — 오른쪽 끝으로 밀면 문구 길이가 행마다 달라(「17명 · 방문 14」
      vs 「9명」) 시작점이 들쭉날쭉해진다. 왼쪽에 뭉치면 늘 같은 자리에서 읽기 시작한다.
      상세(.bkvrow)에서 인원을 이름 뒤에 붙인 것과 같은 규칙이다. */
