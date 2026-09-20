@@ -838,7 +838,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 기록의 갈래 고르개 — Wi-Fi(40)보다 한 단 낮춘 34. 밑에 오는 것이 «조용한 목록»이라
      40 이면 고르개가 내용보다 커 보인다(Wi-Fi 는 밑에 QR 카드가 와서 40 이 맞는다).
      아래 여백도 6 — 첫 머리글(.bkgroup)이 제 여백 15 를 이미 갖고 있다. */
-  .recseg.wide{margin:2px 0 6px}
+  .recseg.wide{margin:-2px 0 6px}   /* 위 여백은 .seg.wide(-2)와 같은 값 — 같은 부품이 시트마다 제목에서 다른 거리에 서면 안 된다(기록 10 / Wi-Fi 6 이었다) */
   .recseg.wide button{height:34px;font-size:13px}
   .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 16px 2px}
   .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
@@ -991,11 +991,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .key svg{display:block}
   .sheetNote{font-size:13px;line-height:1.6;color:var(--dim);margin:0 0 14px}
   /* 변경 내역 */
+  /* 여백 12 — 옆 탭(지난 명단 .bkrow)과 같은 값. 원래는 9 였는데 그땐 둘이 «다른 시트»에 있어
+     나란히 볼 일이 없었다. 한 시트에서 고르개로 오가니 6px 차이가 «한쪽만 빽빽하게» 보인다. */
   .lgrow{
-    display:flex;align-items:baseline;gap:10px;padding:9px 0;
+    display:flex;align-items:baseline;gap:10px;padding:12px 0;
     border-top:1px solid var(--line);font-size:14px;
   }
-  .lgrow:first-child{border-top:0;padding-top:2px}
+  .lgrow:first-child{border-top:0}   /* 맨 윗줄엔 선을 겹치지 않는다. ★위 여백은 줄이고 아래는 그대로 두지 말 것 — 그 줄만 리듬이 깨진다 */
   /* 폭 자동 — 로그 시각은 늘 «HH:MM»(logAdd 가 pad 해서 넣는다)이라 자동이어도 줄줄이 가지런하다.
      42 고정이었을 땐 41 짜리 글자 뒤에 1px 이 남아 시각↔글 틈이 11px 이 됐고, 지난 명단 탭(10px)과
      한 픽셀 어긋났다. 두 탭 모두 gap 10 만으로 틈을 만든다. */
