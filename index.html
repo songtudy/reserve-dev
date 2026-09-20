@@ -604,7 +604,17 @@ window.addEventListener('pageshow', remeasureSbcut);
   .row.cancelled .name{color:var(--dim);-webkit-text-fill-color:var(--dim);font-weight:600}
   .row.cancelled .check{border-color:var(--warn);color:var(--warn)}
   /* 「대기」 보기에서 방금 처리한 행 — 결과(채워진 원)를 잠깐 보여준 뒤 스르륵 빠진다 */
-  .row.leaving{opacity:0;transition:opacity var(--tMove) var(--easeEven)}   /* 나가는 것 = 퇴장 곡선. --ease 로는 27ms 만에 반이 사라져 «툭» 꺼졌다(2026-09-19) */   /* 흐려지기만 — 높이까지 접으면 매 프레임 목록 전체가 다시 배치돼 «렉 걸린 듯» 보인다(오너 2026-09-12). 접기/펼치기를 즉시로 둔 것과 같은 이유 */
+  /* 나가는 것 = 퇴장 곡선. --ease 로는 27ms 만에 반이 사라져 «툭» 꺼졌다(2026-09-19).
+     ★높이도 «같이» 줄인다. 2026-09-12 엔 「흐려지기만」으로 뒀었는데 — 높이를 접으면 목록이 매 프레임
+       다시 배치돼 렉처럼 보인다는 이유였다 — 그 대가가 실기기에서 드러났다: 다 흐려진 뒤 빈 칸이 90ms
+       남아 있다가 툭 닫혀, 한 동작이 아니라 «두 동작»으로 보였다(오너 2026-09-20 「사라지고 딜레이가
+       있으면서 칸이 사라지는 느낌」). 한 줄만 접는 것이라 재배치는 그 시간대 안에서 끝난다 —
+       오히려 더 매끄럽다 — 실기기 실측 최장 프레임 간격이 51ms(툭 닫히던 판) → 34ms 로 줄었다.
+       높이 값은 JS 가 픽셀로 박아 준다(auto 는 전환이 안 된다). */
+  .row.leaving{
+    opacity:0;overflow:hidden;
+    transition:opacity var(--tMove) var(--easeEven), height var(--tMove) var(--easeEven);
+  }
 
 
   .erow{display:flex;gap:6px}
@@ -3162,6 +3172,7 @@ window.dispatchEvent(new Event('fb-ready'));
     var row = document.createElement('div');
     row.setAttribute('data-id', it.id);
     row.className = 'row ' + it.status + (leavingNow[it.id] ? ' leaving' : '');   // 흐려지던 중이었으면 흐린 채로 다시 난다
+    if (leavingNow[it.id]) row.style.height = '0px';   // 접히던 중이었으면 접힌 채로 (전환 없이 — 이미 거의 닫혀 있었다)
 
     var body = document.createElement('div');
     body.className = 'rbody';
@@ -3634,6 +3645,8 @@ window.dispatchEvent(new Event('fb-ready'));
   function cancelLeave(id){
     if (leaveTimers[id]){ clearTimeout(leaveTimers[id]); delete leaveTimers[id]; }
     delete leavingNow[id];
+    var row = rowForId(id);
+    if (row && row.style.height) row.style.height = '';   // 접다 말고 되살아난 행 (체크 해제)
   }
   function cancelAllLeaves(){ Object.keys(leaveTimers).forEach(cancelLeave); }
   function scheduleLeave(id){
@@ -3642,13 +3655,20 @@ window.dispatchEvent(new Event('fb-ready'));
       if (viewMode !== 'pending'){ cancelLeave(id); return; }   // 그새 「전체」로 갔으면 남는다
       leavingNow[id] = true;
       var row = rowForId(id);
-      if (row) row.classList.add('leaving');   // 흐려지는 것만 — 자리는 아래 render 가 한 번에 거둔다
+      if (row){
+        // 지금 높이를 «픽셀로» 박아 둔 뒤에야 0 으로 가는 것이 전환이 된다 (auto → 0 은 전환이 안 걸린다).
+        row.style.height = row.getBoundingClientRect().height + 'px';
+        void row.offsetHeight;                 // 박은 값을 한 번 확정시킨다
+        row.classList.add('leaving');
+        row.style.height = '0px';              // 흐려짐과 «같은» 0.2초 동안 칸이 닫힌다
+      }
       leaveTimers[id] = setTimeout(function(){
         delete leaveTimers[id]; delete leavingNow[id];
         if (viewMode !== 'pending') return;
+        // 이미 높이 0 · 투명이라 이 시점의 다시 그리기는 눈에 안 보인다 — 자리만 정리한다.
         if (interactionActive()) backgroundRenderPending = true;
         else render();
-      }, 230);
+      }, 210);
     }, LEAVE_MS);
   }
 
