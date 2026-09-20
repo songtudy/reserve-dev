@@ -3611,13 +3611,39 @@ window.dispatchEvent(new Event('fb-ready'));
     wakeLogOutbox();
   });
 
-  // 변경 한 건 = 기록 한 줄. 「기록」이 명단 스냅샷 줄과 섞어 쓰므로 줄 단위로 돌려준다.
-  function logRowHtml(r){
-    var cls = r.k === '방문' ? ' go'
-            : (r.k === '취소' || r.k === '자동 취소' || r.k === '삭제' || r.k === '명단 초기화') ? ' off' : '';
-    return '<div class="lgrow"><span class="lgt">' + esc(r.t) + '</span>'
-      + '<span class="lgk' + cls + '">' + esc(r.k) + '</span>'
-      + '<span class="lgs">' + esc(r.s || '') + '</span></div>';
+  // 「16:00 정약용」처럼 변경 내용 앞엔 예약 시각이 붙는다. 그 시각만 떼어 본다(없으면 null).
+  function logSlotOf(r){
+    var m = /^(\d{1,2}:\d{2})\s+(.+)$/.exec(r && r.s || '');
+    return m ? { slot: m[1], rest: m[2] } : null;
+  }
+  /* 한 순간에 무더기로 일어난 일은 «한 줄»로 접는다.
+     시간대가 지나면 남은 팀이 전부 «동시에» 자동 취소되는데, 그게 열 줄로 펴지면
+     기록 화면이 통째로 그 한 사건으로 덮인다 — 실제로 10줄 중 7줄이 16:15 자동 취소였다
+     (오너 2026-09-20 「정보가 너무 많다」). 한 사건은 한 줄이라야 옆의 방문·추가가 보인다.
+     접는 조건은 «셋이 모두 같을 때»뿐이다: 일어난 시각 · 종류 · 대상 예약의 시간대.
+     하나라도 다르면 각자 선다 — 접느라 사실을 뭉개지 않는다. */
+  function foldLogRows(rows){
+    var out = [];
+    (rows || []).forEach(function(r){
+      var p = logSlotOf(r), last = out[out.length - 1];
+      if (last && p && last.slot && last.k === r.k && last.t === r.t && last.slot === p.slot){
+        last.names.push(p.rest);
+        return;
+      }
+      out.push({ at: r.at || 0, t: r.t, k: r.k, slot: p ? p.slot : '', names: [p ? p.rest : (r.s || '')] });
+    });
+    return out;
+  }
+  // 접힌 무더기 한 줄. 이름은 둘까지만 쓰고 나머지는 수로 — 줄이 길어지면 접은 뜻이 없다.
+  function logRowHtml(g){
+    var cls = g.k === '방문' ? ' go'
+            : (g.k === '취소' || g.k === '자동 취소' || g.k === '삭제' || g.k === '명단 초기화') ? ' off' : '';
+    var rest = g.names.length - 2;
+    var body = (g.slot ? g.slot + ' ' : '') + g.names.slice(0, 2).join(' · ')
+             + (rest > 0 ? ' 외 ' + rest + '팀' : '');
+    return '<div class="lgrow"><span class="lgt">' + esc(g.t) + '</span>'
+      + '<span class="lgk' + cls + '">' + esc(g.k) + '</span>'
+      + '<span class="lgs">' + esc(body) + '</span></div>';
   }
 
   function toggle(id){
@@ -5562,7 +5588,7 @@ window.dispatchEvent(new Event('fb-ready'));
     });
     // ★변경 10건 제한은 스냅샷과 «따로» 센다. 섞은 뒤에 자르면 스냅샷이 끼어든 만큼
     //   변경이 뒤로 밀려 사라진다 — 열 건을 보여주겠다는 약속이 조용히 깨진다.
-    var today = rows.map(function(r){ return { at: r.at || 0, html: logRowHtml(r) }; })
+    var today = foldLogRows(rows).map(function(g){ return { at: g.at, html: logRowHtml(g) }; })
       .concat(snaps.map(function(x){
         return { at: x.e.at || 0, html: recRowSnap(x.key, backupWhen(x.e.at), x.e) };
       }));
