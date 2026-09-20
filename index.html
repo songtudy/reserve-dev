@@ -1012,11 +1012,20 @@ window.addEventListener('pageshow', remeasureSbcut);
        아니었다(오너: 「너무 난잡하다」). 색(방문 초록·취소 빨강)도 그때 같이 뺐다 — 숫자가
        하나뿐이면 구분할 것이 없다. */
   .bkrow{
-    display:flex;align-items:center;gap:10px;
+    display:flex;align-items:center;gap:10px;position:relative;
     padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
   }
-  .bkrow:active, .bkrow.dn{background:var(--press)}
-  .bkt{flex:0 0 auto;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  /* ★눌림 칠은 시트 «끝에서 끝까지» 간다. 이 줄만 본문 여백(16) 안에 갇혀 네모가 가운데 떠 보였다 —
+     앱의 다른 누르는 줄(.ghead·.dwitem·.qa .q)은 전부 제 여백을 안에 품고 있어 끝까지 칠해진다.
+     칠은 ::after 로 내보내고 구분선은 글자에 맞춰 안쪽(16)에 남긴다 — iOS 목록이 하는 그대로다.
+     ★-16px 은 #sheetBody 의 좌우 여백과 같은 값. 그 여백을 고치면 여기도 같이 고쳐야 한다. */
+  .bkrow::after{content:"";position:absolute;inset:0 -16px;background:transparent}
+  .bkrow > span{position:relative;z-index:1}   /* 글자가 칠 위로 */
+  .bkrow:active::after, .bkrow.dn::after{background:var(--press)}
+  /* 폭 고정 — 「어제」 줄의 라벨(9/19)은 「19:00」보다 좁아, 자동 폭이면 그 줄만 요약이 9px 왼쪽으로
+     당겨져 섰다(실측 67 / 57.7). 42 는 「19:00」(41)이 들어가는 최소값이자 변경 내역의 시각 열과 같은 값 —
+     탭을 건너뛰어도 둘째 열이 같은 자리(68)에서 시작한다. */
+  .bkt{flex:0 0 42px;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   /* 요약은 시각 «바로 뒤»에 붙는다 — 오른쪽 끝으로 밀면 문구 길이가 행마다 달라(「17명 · 방문 14」
      vs 「9명」) 시작점이 들쭉날쭉해진다. 왼쪽에 뭉치면 늘 같은 자리에서 읽기 시작한다.
      상세(.bkvrow)에서 인원을 이름 뒤에 붙인 것과 같은 규칙이다. */
