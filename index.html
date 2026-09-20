@@ -989,11 +989,22 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .lgrow:first-child{border-top:0;padding-top:2px}
   .lgt{flex:0 0 42px;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
-  .lgk{flex:0 0 auto;min-width:62px;font-weight:700;color:var(--text)}   /* 폭 고정 — 「자동 취소」가 있어도 내용 열이 한 줄로 선다 */
-  .lgk.go{color:var(--goTx)}
-  .lgk.off{color:var(--warn)}
-  .lgs{flex:1;min-width:0;color:var(--dim);font-size:13px;
-       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* ★위계를 뒤집었다(2026-09-20). 전엔 종류가 700·상태색이고 이름이 흐린 13px 이었다 —
+     제일 덜 중요한 것이 제일 시끄러웠고, 붉은 「자동 취소」가 줄마다 반복돼 화면이 덕지덕지했다.
+     앱의 다른 화면은 전부 «이름»이 주인공이다(명단 행 17·700, 인원은 흐림). 기록만 거꾸로였다.
+     이제 종류는 흐린 보통 글씨, 상태는 6px 점 하나로만 낸다 — 「상태 색은 원에만, 글자 태그는
+     안 붙인다」는 본 명단·지난 명단의 규칙과 같아졌다. */
+  .lgk{flex:0 0 auto;min-width:62px;color:var(--dim);font-size:13px;font-weight:400;
+       display:flex;align-items:center;gap:5px}
+  .lgdot{width:6px;height:6px;border-radius:50%;flex:0 0 auto;background:var(--off)}
+  .lgdot.go{background:var(--go)}
+  .lgdot.off{background:var(--warn)}
+  /* 줄어드는 건 «이름»이고 뒤의 예약 시각은 안 줄어든다 — 이름이 길 때 시각이 먼저 잘려 나가면
+     어느 예약 얘긴지를 잃는다(「… 외 4팀 2…」). 이름은 몇 자 잘려도 누군지 알아본다. */
+  .lgs{flex:1;min-width:0;display:flex;align-items:baseline;gap:6px}
+  .lgs b{min-width:0;color:var(--text);font-size:14px;font-weight:600;
+         overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lgs em{flex:0 0 auto;font-style:normal;font-size:12px;font-weight:400;color:var(--off);white-space:nowrap}
   .sheetMsg{font-size:14px;color:var(--dim);padding:6px 0 14px}
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
@@ -3639,11 +3650,12 @@ window.dispatchEvent(new Event('fb-ready'));
     var cls = g.k === '방문' ? ' go'
             : (g.k === '취소' || g.k === '자동 취소' || g.k === '삭제' || g.k === '명단 초기화') ? ' off' : '';
     var rest = g.names.length - 2;
-    var body = (g.slot ? g.slot + ' ' : '') + g.names.slice(0, 2).join(' · ')
-             + (rest > 0 ? ' 외 ' + rest + '팀' : '');
+    // 이름이 앞·굵게, 그 예약이 몇 시 건지는 뒤에 작게. 한 줄에 시각이 둘(일어난 시각·예약 시각)이라
+    // 나란히 같은 크기로 두면 어느 쪽이 무엇인지 읽어야 알았다.
+    var who = g.names.slice(0, 2).join(' · ') + (rest > 0 ? ' 외 ' + rest + '팀' : '');
     return '<div class="lgrow"><span class="lgt">' + esc(g.t) + '</span>'
-      + '<span class="lgk' + cls + '">' + esc(g.k) + '</span>'
-      + '<span class="lgs">' + esc(body) + '</span></div>';
+      + '<span class="lgk"><i class="lgdot' + cls + '"></i>' + esc(g.k) + '</span>'
+      + '<span class="lgs"><b>' + esc(who) + '</b>' + (g.slot ? '<em>' + esc(g.slot) + '</em>' : '') + '</span></div>';
   }
 
   function toggle(id){
@@ -5566,8 +5578,8 @@ window.dispatchEvent(new Event('fb-ready'));
     var n = (e && e.n != null) ? e.n : t.total;
     return '<div class="lgrow tap" data-key="' + esc(key) + '">'
       + '<span class="lgt">' + esc(label) + '</span>'
-      + '<span class="lgk">명단</span>'
-      + '<span class="lgs">' + n + '팀' + bkTally(t) + '</span>'
+      + '<span class="lgk"><i class="lgdot"></i>명단</span>'
+      + '<span class="lgs"><b>' + n + '팀</b>' + (bkTally(t) ? '<em>' + esc(bkTally(t).replace(/^ · /, '')) + '</em>' : '') + '</span>'
       + '<span class="bkchev">' + CHEV_SVG + '</span></div>';
   }
   /* 「기록」 — 오늘 일어난 일을 시간 역순 한 줄기로 담는다.
