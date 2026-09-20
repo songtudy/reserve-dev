@@ -1071,7 +1071,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkback:active, .bkback.dn{opacity:.4}
   /* 하단 버튼 위 공백은 margin 이 아니라 padding — 스크롤 컨테이너(#sheetBody) 안에서
      마지막 자식의 margin-bottom 은 iOS 에서 스크롤 끝까지 안 보인다. */
-  .bkvlist{padding:0 0 8px}
+  .bkvlist{padding:0 0 7px}
   /* 시간대 머리글 — 본 명단 시간바의 축소판: 굵은 시각 + 오른쪽 방문·취소 수 + «아래» 전폭 선.
      머리글은 자기 명단에 붙는다(위 넓게, 아래 선). */
   .bkvt{
@@ -1079,7 +1079,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-size:17px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--text);   /* 시간바(.gtime)와 같은 단계 */
     padding:16px 0 7px;border-bottom:1px solid var(--line);margin-bottom:3px;
   }
-  .bkvt:first-child{padding-top:6px}   /* 첫 머리글만 제목에 붙인다. 6 을 «여기 한 군데»가 갖는다 — 예전엔 .bkvlist 가 2, 이 줄이 4 를 나눠 가져 한 가지 일에 값이 둘이었다 */
+  /* 첫 머리글만 제목에 붙인다. ★값은 7 — 이 화면이 쓰는 유일한 작은 여백이다(머리글 아래 7 · 행 7 · 목록 끝 7).
+     예전엔 .bkvlist 가 2, 이 줄이 4 를 나눠 가져 한 가지 일에 값이 둘이었고, 6 으로 합쳤더니 이번엔 7 과 1px 갈렸다.
+     하나로 모으면 이 화면의 여백은 «7 과 머리글 위 16» 둘뿐이다. */
+  .bkvt:first-child{padding-top:7px}
   .bkvm{margin-left:auto;font-size:13px;font-weight:600;color:var(--dim)}
   /* 읽기 전용 행 — 상태 표시 · 이름 · 오른쪽 인원.
      원(체크박스)은 안 그린다 — 읽기 전용인데 빈 원이 있으면 「눌러야 하나」로 보인다.
