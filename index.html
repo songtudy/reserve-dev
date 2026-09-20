@@ -2061,6 +2061,10 @@ window.dispatchEvent(new Event('fb-ready'));
   //   화면을 정하면 열 때마다 무엇이 나올지 모르게 된다. 토글은 늘 보이니 한 번에 바꿀 수 있다.
   //   ※'ix-view' 저장값은 이제 읽지도 쓰지도 않는다 — 옛 폰에 남아 있어도 아무 일도 안 한다.
   var viewMode = 'pending';
+  // 「대기」에서 방금 처리한 행이 잠깐 남아 있는 동안을 담는다. 선언이 render() 보다 위에 있어야 한다 —
+  // 아래쪽(scheduleLeave 옆)에 두면 호이스팅에 기대게 되고, 무엇보다 render 가 이걸 본다는 게 안 보인다.
+  var leaveTimers = {};   // id → 타이머. 있으면 «아직 나가는 중»
+  var leavingNow  = {};   // id → true. 그중에서도 «지금 흐려지고 있는» 것 (다시 그려도 흐림을 잇는다)
 
   // 목록 안에서 손대는 중인 것 = 열린 ⋯ 메뉴뿐 (수정은 바텀시트라 목록과 무관 — 그 사이 통째 render 돼도 된다)
   // 체크 직후 300ms 는 «팝이 뛰는 중» — 이 사이 서버 에코(내 쓰기)가 통째 render 로 돌아오면 팝이 끊긴다(오너: 「체크가 매끄럽지 않다」).
@@ -2974,8 +2978,11 @@ window.dispatchEvent(new Event('fb-ready'));
       var slotAll = fullAt[g.time] || g.items;
       var pendN = tallyStatus(slotAll).pend;
       // 대기 모드 — 방문·취소 행은 숨긴다. 그 시간대가 통째로 처리됐으면 헤더째 건너뛴다.
+      // ★나가는 중인 행은 남긴다. 상태만 보고 거르면, 먼저 체크한 행의 타이머가 목록을 다시 그리는 순간
+      //   아직 제 시간이 안 된 «다른» 행들까지 같이 쓸려 나간다 — 연달아 체크하면 바로 사라졌다(오너 2026-09-20).
+      //   서버에서 온 갱신·시간대 접힘 등 다른 이유로 다시 그릴 때도 마찬가지였다.
       var rows = (viewMode === 'pending')
-        ? g.items.filter(function(it){ return it.status === 'pending'; })
+        ? g.items.filter(function(it){ return it.status === 'pending' || leaveTimers[it.id]; })
         : g.items;
       if (viewMode === 'pending' && !rows.length) return;
       // ★지난 시간대의 남은 대기는 대기 보기에 안 띄운다(오너 2026-09-16).
@@ -3154,7 +3161,7 @@ window.dispatchEvent(new Event('fb-ready'));
   function rowEl(it){
     var row = document.createElement('div');
     row.setAttribute('data-id', it.id);
-    row.className = 'row ' + it.status;
+    row.className = 'row ' + it.status + (leavingNow[it.id] ? ' leaving' : '');   // 흐려지던 중이었으면 흐린 채로 다시 난다
 
     var body = document.createElement('div');
     body.className = 'rbody';
@@ -3623,19 +3630,21 @@ window.dispatchEvent(new Event('fb-ready'));
   // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
   // 「대기」 보기에서 방금 처리한 행 — 바로 지우면 「내가 뭘 눌렀지」가 된다.
   // 채워진 원을 LEAVE_MS 동안 보여준 뒤 흐려지며 빠진다. 그 사이 다시 누르면(체크 해제) 그대로 남는다.
-  var LEAVE_MS = 3000, leaveTimers = {};   // 900 → 1300 → 3000 (오너 2026-09-20). 흐려지는 0.2초를 더해 눈에서 사라지기까지 3.2초
+  var LEAVE_MS = 2500;   // 900 → 1300 → 3000 → 2500 (오너 2026-09-20). 흐려지는 0.2초를 더해 눈에서 사라지기까지 2.7초
   function cancelLeave(id){
     if (leaveTimers[id]){ clearTimeout(leaveTimers[id]); delete leaveTimers[id]; }
+    delete leavingNow[id];
   }
   function cancelAllLeaves(){ Object.keys(leaveTimers).forEach(cancelLeave); }
   function scheduleLeave(id){
     cancelLeave(id);
     leaveTimers[id] = setTimeout(function(){
-      if (viewMode !== 'pending'){ delete leaveTimers[id]; return; }   // 그새 「전체」로 갔으면 남는다
+      if (viewMode !== 'pending'){ cancelLeave(id); return; }   // 그새 「전체」로 갔으면 남는다
+      leavingNow[id] = true;
       var row = rowForId(id);
       if (row) row.classList.add('leaving');   // 흐려지는 것만 — 자리는 아래 render 가 한 번에 거둔다
       leaveTimers[id] = setTimeout(function(){
-        delete leaveTimers[id];
+        delete leaveTimers[id]; delete leavingNow[id];
         if (viewMode !== 'pending') return;
         if (interactionActive()) backgroundRenderPending = true;
         else render();
