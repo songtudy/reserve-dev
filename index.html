@@ -1090,8 +1090,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     background:var(--panel2);border-radius:12px;
   }
   .wnet + .wnet{margin-top:8px}   /* 카드 사이만 — 마지막 카드 밑엔 여백 안 쌓임 */
+  /* 둥근 복사 버튼이 붙는 줄 — 오른쪽 여백만 13 → 8px. 둥근 버튼은 제 여백을 가진 것처럼 보여
+     다른 줄과 같은 13px 을 주면 가장자리에서 멀어 보인다. 설치 안내에만 있던 값을 규칙으로 뽑았다. */
+  .wnet.cpy{padding-right:8px}
   /* 설치 안내의 주소 칸 — Wi-Fi 칸과 같은 모양. 값은 읽는 게 아니라 복사하는 것이라 조금 작게 */
-  .wnet.urlrow{margin-bottom:14px;padding-right:8px}
+  .wnet.urlrow{margin-bottom:14px}
   .wnet.urlrow .k{flex:0 0 auto}   /* 한 줄뿐이라 Wi-Fi 처럼 라벨 폭을 맞출 대상이 없다 */
   .wnet .v.url{font-size:13px;font-weight:600;letter-spacing:.01em}
   .urlcopy{
@@ -5401,7 +5404,7 @@ window.dispatchEvent(new Event('fb-ready'));
     + '<rect x="9" y="9" width="12" height="12" rx="3"/>'
     + '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
   function urlRowHtml(){
-    return '<div class="wnet urlrow"><span class="k">링크</span>'
+    return '<div class="wnet urlrow cpy"><span class="k">링크</span>'
       + '<span class="v url">' + esc(appUrl().replace(/^https?:\/\//, '')) + '</span>'
       + '<button type="button" class="urlcopy" aria-label="링크 복사">' + ICON_COPY + '</button></div>';
   }
@@ -5421,7 +5424,7 @@ window.dispatchEvent(new Event('fb-ready'));
     openSheet('후원',
       '<p class="about">커피 한 잔 값이면 충분합니다.</p>'
       + '<div class="wnet"><span class="k">예금주</span><span class="v">' + DONATE.name + '</span></div>'
-      + '<div class="wnet"><span class="k">' + DONATE.bank + '</span><span class="v">' + DONATE.acc + '</span>'
+      + '<div class="wnet cpy"><span class="k">' + DONATE.bank + '</span><span class="v">' + DONATE.acc + '</span>'
       +   '<button type="button" class="urlcopy" aria-label="계좌번호 복사">' + ICON_COPY + '</button></div>');
     var cp = document.querySelector('#sheetBody .urlcopy');
     if (cp) cp.onclick = function(){ copyText(DONATE.acc, '계좌번호 복사됨'); };
