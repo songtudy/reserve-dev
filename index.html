@@ -834,6 +834,7 @@ window.addEventListener('pageshow', remeasureSbcut);
                                                             예전엔 .on 과 둘이 섞여 CSS·썸 스크립트가 매번 갈라졌고,
                                                             .on 쪽(테마·Wi-Fi)은 화면 낭독기에 선택 상태를 아예 안 알렸다. */
   .seg.wide{display:grid;margin:-2px 0 14px}
+  .recseg{margin:2px 0 6px}   /* 기록: 아래가 목록이라 Wi-Fi(14)만큼 안 띄운다 — 첫 머리글이 제 여백을 갖고 있다 */
   .seg.wide button{height:40px;font-size:14px}   /* 30 높이 세그(13)보다 한 단계 */
   .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 16px 2px}
   .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
@@ -5590,26 +5591,42 @@ window.dispatchEvent(new Event('fb-ready'));
      둘 다 같은 at(시각)을 들고 있어서, 나뉘어 있던 건 화면뿐이고 실제로는 «한 시간축 위의
      두 종류 사건»이었다(오너 2026-09-20). 변경은 무엇이 바뀌었는지만, 명단은 결과만 알던 반쪽이
      서로 메워진다 — 「이 취소 언제였지 → 그때 몇 팀이었지」가 위아래 두 줄에서 끝난다. */
+  /* 두 갈래를 세그먼트로 나눈다 — 한 줄기로 섞어 봤더니 «내용이 길다»(오너 2026-09-21).
+     ★「기록 누르면 두 항목짜리 메뉴」 안은 반려했다: 문 뒤에 또 문이라 변경 내역까지 세 번을 눌러야 한다.
+       세그먼트는 열자마자 한쪽이 보이고 반대쪽도 한 번이면 간다. 앱에 이미 있는 부품(전체/대기·Wi-Fi)이다.
+     기본은 늘 「변경 내역」 — 기억해 뒀다 복원하지 않는다(대기 보기와 같은 규칙). 이 폰이 아는 것이라
+     끊겨 있어도 바로 서고, 열자마자 빈 화면을 보여줄 일이 없다. */
+  var recMode = 'log';   // 'log' 변경 내역 / 'snap' 지난 명단
+  var recNote = '';      // 지난 명단을 못 가져왔을 때 한 줄. 변경 내역 쪽엔 안 보인다
+  function recSegHtml(){
+    return '<div class="seg wide recseg">'
+      + '<button type="button" data-rec="log" aria-pressed="' + (recMode === 'log') + '">변경 내역</button>'
+      + '<button type="button" data-rec="snap" aria-pressed="' + (recMode === 'snap') + '">지난 명단</button>'
+      + '</div>';
+  }
   function recListHtml(){
-    var rows = logRows(null);   // 최근 LOG_SHOW 건. 연결이 끊겨도 이 폰이 한 것은 나온다
+    var html = recSegHtml();
+    if (recMode === 'log'){
+      // 변경은 오늘 것뿐이라 「오늘」 머리글을 달지 않는다 — 한 덩이에 이름표는 군더더기다.
+      var rows = foldLogRows(logRows(null));   // 최근 LOG_SHOW 건. 끊겨도 이 폰이 한 것은 나온다
+      if (!rows.length) return html + '<p class="sheetMsg">변경 내역이 없습니다</p>';
+      return html + '<div class="bklist">' + rows.map(logRowHtml).join('') + '</div>';
+    }
     var snaps = [], days = [];
     Object.keys(bkMap || {}).forEach(function(k){
       var e = bkMap[k];
       if (!e || !e.items || !e.items.length) return;
       (e.kind === 'day' ? days : snaps).push({ key: k, e: e });
     });
-    // ★변경 10건 제한은 스냅샷과 «따로» 센다. 섞은 뒤에 자르면 스냅샷이 끼어든 만큼
-    //   변경이 뒤로 밀려 사라진다 — 열 건을 보여주겠다는 약속이 조용히 깨진다.
-    var today = foldLogRows(rows).map(function(g){ return { at: g.at, html: logRowHtml(g) }; })
-      .concat(snaps.map(function(x){
-        return { at: x.e.at || 0, html: recRowSnap(x.key, backupWhen(x.e.at), x.e) };
-      }));
-    today.sort(function(a, b){ return b.at - a.at; });
+    snaps.sort(function(a, b){ return (b.e.at || 0) - (a.e.at || 0); });
     days.sort(function(a, b){ return a.key < b.key ? 1 : -1; });   // 최근 날짜 먼저
-    if (!today.length && !days.length) return '<p class="sheetMsg">아직 기록이 없습니다</p>';
-    var html = '<div class="bklist">';
-    if (today.length){
-      html += '<div class="bkgroup">오늘</div>' + today.map(function(x){ return x.html; }).join('');
+    var tail = recNote ? '<p class="sheetMsg recnote">' + esc(recNote) + '</p>' : '';
+    if (!snaps.length && !days.length)
+      return html + (tail || '<p class="sheetMsg">지난 명단이 없습니다</p>');
+    html += '<div class="bklist">';
+    if (snaps.length){
+      html += '<div class="bkgroup">오늘</div>';
+      snaps.forEach(function(r){ html += recRowSnap(r.key, backupWhen(r.e.at), r.e); });
     }
     if (days.length){
       html += '<div class="bkgroup">어제</div>';
@@ -5618,7 +5635,7 @@ window.dispatchEvent(new Event('fb-ready'));
         html += recRowSnap(r.key, (+d[1]) + '/' + (+d[2]), r.e);   // 라벨이 '어제' 니 줄엔 날짜만
       });
     }
-    return html + '</div>';
+    return html + '</div>' + tail;
   }
   function recRenderList(){
     document.getElementById('sheetTitle').textContent = '기록';
@@ -5626,6 +5643,9 @@ window.dispatchEvent(new Event('fb-ready'));
     body.innerHTML = recListHtml();
     [].forEach.call(body.querySelectorAll('.lgrow.tap'), function(row){
       row.onclick = function(){ bkRenderDetail(row.getAttribute('data-key')); };
+    });
+    [].forEach.call(body.querySelectorAll('.recseg button'), function(b){
+      b.onclick = function(){ recMode = b.getAttribute('data-rec'); recRenderList(); };
     });
   }
   // 상세: 그 시점 명단을 읽기 전용 목록으로 (본 화면처럼 시간대로 묶고 방문·취소 색). 복사는 단톡방 양식 그대로.
@@ -5654,6 +5674,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function bkRenderDetail(key){
     var e = bkMap && bkMap[key];
+    recMode = 'snap';   // 명단 줄은 「지난 명단」 쪽에만 있다 — 돌아올 자리도 그쪽
     if (!e || !e.items){ recRenderList(); return; }
     var p = e.kind === 'day' ? e.date.split('-') : null;
     var title = document.getElementById('sheetTitle');
@@ -5685,20 +5706,17 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function openRecordSheet(){
     bkMap = null;
+    recMode = 'log';   // 늘 「변경 내역」으로 연다 — 이 폰이 아는 것이라 끊겨도 바로 선다
+    recNote = '';
     openSheet('기록', '');
-    // 이 폰이 아는 변경부터 «바로» 세운다. 명단 스냅샷은 서버에서 오는 대로 끼워 넣는다 —
-    // 빈 화면을 보여주고 기다릴 이유가 없다(변경 기록은 오프라인에서도 있다).
     recRenderList();
     startLogWatch(viewDate);
-    // 스냅샷을 못 가져왔을 때만 한 줄 덧붙인다. 이미 서 있는 변경 줄을 지우지 않는다.
+    // 지난 명단을 못 가져왔을 때 한 줄. 「지난 명단」 쪽에만 붙는다(recListHtml).
     function note(msg){
-      var b = document.getElementById('sheetBody');
-      if (!b || !recTitled()) return;
-      var old = b.querySelector('.recnote');
-      if (old) old.parentNode.removeChild(old);
-      b.insertAdjacentHTML('beforeend', '<p class="sheetMsg recnote">' + msg + '</p>');
+      recNote = msg;
+      if (recTitled()) recRenderList();
     }
-    if (!connReady()){ note(MSG_OFF + ' — 지난 명단은 연결된 뒤에 보입니다'); return; }
+    if (!connReady()){ note(MSG_OFF + ' — 연결된 뒤에 보입니다'); return; }
     var settled = false;
     var slow = setTimeout(function(){ if (!settled) note('지난 명단을 불러오는 중…'); }, 300);
     var fail = function(){ if (!settled){ settled = true; clearTimeout(slow); note('지난 명단을 불러오지 못했습니다'); } };
@@ -5719,6 +5737,7 @@ window.dispatchEvent(new Event('fb-ready'));
       });
       var dm = res[1] || {};
       Object.keys(dm).forEach(function(k){ bkMap[k] = dm[k]; });
+      recNote = '';
       recRenderList();
     }, fail);
   }
