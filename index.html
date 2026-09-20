@@ -888,7 +888,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     font-family:inherit;font-size:14px;font-weight:700;color:var(--text);
     text-align:left;letter-spacing:-.02em;line-height:1.35;
   }
-  .qa:first-child .q{padding-top:6px}   /* 첫 질문은 제목에 붙인다 (다른 시트 제목↔내용 간격에 맞춤) */
+  /* 첫 질문을 제목에 붙이는 건 «묶음을 통째로 끌어올려서» 한다. 질문 자체의 위 여백을 6 으로 줄이면
+     그 질문만 위 6 · 아래 14 가 되어, 누를 때 칠이 글자 위로 바짝 붙는다(2026-09-21 전면 점검).
+     기록의 머리글 밑 줄에서 고친 것과 같은 패턴 — 여백은 «줄»이 온전히 갖고, 위치는 바깥이 옮긴다. */
+  .qa:first-child{margin-top:-8px}
   .qa .q:active, .qa .q.dn{background:var(--press)}   /* 시간대 헤더(.ghead)와 같은 접기 토글 눌림 */
   .qa .qchev{margin-left:auto;flex:0 0 auto;color:var(--off);transition:transform var(--tState) var(--ease)}
   .qa.open .qchev{transform:rotate(90deg);color:var(--text)}   /* 열림 표시는 회전으로 충분 — 금색은 「지금·주동작」에만 */
