@@ -3623,7 +3623,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
   // 「대기」 보기에서 방금 처리한 행 — 바로 지우면 「내가 뭘 눌렀지」가 된다.
   // 채워진 원을 LEAVE_MS 동안 보여준 뒤 흐려지며 빠진다. 그 사이 다시 누르면(체크 해제) 그대로 남는다.
-  var LEAVE_MS = 1300, leaveTimers = {};   // 900 → 1300 (오너 2026-09-20 「조금 빠르다」). 흐려지는 0.2초를 더해 눈에서 사라지기까지 1.5초
+  var LEAVE_MS = 3000, leaveTimers = {};   // 900 → 1300 → 3000 (오너 2026-09-20). 흐려지는 0.2초를 더해 눈에서 사라지기까지 3.2초
   function cancelLeave(id){
     if (leaveTimers[id]){ clearTimeout(leaveTimers[id]); delete leaveTimers[id]; }
   }
