@@ -1115,6 +1115,21 @@ window.addEventListener('pageshow', remeasureSbcut);
     border-top:1px solid var(--line);padding-top:12px;margin:16px 0 2px;
     font-size:13px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
+  /* 만든 곳 — 크레딧 안의 한 줄. 「작은 글자엔 강조색을 안 쓴다」를 지키려고 색이 아니라
+     «밑줄»로 누를 수 있음을 낸다(글자만 --dim → --text 로 한 단 밝힌다).
+     ★target=_blank 가 필수다. 홈 화면 앱에서 그냥 열면 «앱 창 자체»가 홈페이지로 바뀌어
+     돌아오려면 뒤로 가기를 찾아야 한다. _blank 면 사파리로 넘어가고 앱은 뒤에 그대로 남는다.
+     누르는 영역은 ::after 로 넓힌다 (.urlcopy 와 같은 방식) — 글자 줄은 21px 뿐이다.
+     ★위로만 늘어난다. 아래는 다음 형제인 .sheetBtns 가 위에 그려져 2px 부터 안 잡힌다(실측).
+       억지로 더 내리면 「닫기」 버튼 자리를 빼앗으니 그대로 둔다 — 결과 33px.
+       (같은 자리의 기존 .errline 은 늘린 영역이 아예 없어 21px 이다. 그보다는 낫다.) */
+  .site{
+    display:inline-block;position:relative;color:var(--text);
+    text-decoration:underline;text-decoration-color:var(--off);text-underline-offset:3px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .site::after{content:"";position:absolute;inset:-11px -8px}   /* 보이는 건 그대로, 누르는 곳만 33px */
+  .site:active{opacity:.5}   /* 같은 「밑줄 글자 줄」인 .errline 과 같은 눌림 반응 */
   .sheetClose, .sheetNever{   /* 닫기 · 다시 보지 않기 — 같은 보조 버튼 */
     height:48px;padding:0;margin-top:2px;border-radius:999px;
     border:0;background:var(--btn);
@@ -5641,6 +5656,7 @@ window.dispatchEvent(new Event('fb-ready'));
     if (t){ wifiPick = t.getAttribute('data-wifi'); this.innerHTML = wifiHtml(); return; }
   });
 
+  var SITE = 'https://juminlabs.pikaju.workers.dev';   // 만든 곳. 화면엔 https:// 를 떼고 보여준다
   // 문제 기록이 있을 때만 한 줄. 눌러 복사 → 나한테 그대로 붙여넣으면 된다.
   function errHtml(){
     var a = errList();
@@ -5653,7 +5669,9 @@ window.dispatchEvent(new Event('fb-ready'));
       '<p class="about"><b>익선취향 예약 명단을 실시간으로 확인하고 관리하는 앱입니다.</b></p>'
       + '<p class="about">바뀐 내용은 <b>1초 안에 모든 기기에 반영</b>됩니다.</p>'
       + '<p class="about">명단을 복사하면 <b>단톡방 양식 그대로</b> 나옵니다.</p>'
-      + '<p class="credit">익순이 v2.1.1<br>© 2026 Jumin Labs</p>'
+      + '<p class="credit">익순이 v2.1.1<br>© 2026 Jumin Labs<br>'
+      +   '<a class="site" href="' + SITE + '" target="_blank" rel="noopener noreferrer">'
+      +     SITE.replace(/^https?:\/\//, '') + '</a></p>'
       + errHtml());
     var eb = document.getElementById('errCopy');
     if (eb) eb.onclick = function(){
