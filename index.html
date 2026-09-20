@@ -994,22 +994,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .lgrow:first-child{border-top:0;padding-top:2px}
   .lgt{flex:0 0 42px;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
-  /* ★위계를 뒤집었다(2026-09-20). 전엔 종류가 700·상태색이고 이름이 흐린 13px 이었다 —
-     제일 덜 중요한 것이 제일 시끄러웠고, 붉은 「자동 취소」가 줄마다 반복돼 화면이 덕지덕지했다.
-     앱의 다른 화면은 전부 «이름»이 주인공이다(명단 행 17·700, 인원은 흐림). 기록만 거꾸로였다.
-     이제 종류는 흐린 보통 글씨, 상태는 6px 점 하나로만 낸다 — 「상태 색은 원에만, 글자 태그는
-     안 붙인다」는 본 명단·지난 명단의 규칙과 같아졌다. */
-  .lgk{flex:0 0 auto;min-width:62px;color:var(--dim);font-size:13px;font-weight:400;
-       display:flex;align-items:center;gap:5px}
-  .lgdot{width:6px;height:6px;border-radius:50%;flex:0 0 auto;background:var(--off)}
-  .lgdot.go{background:var(--go)}
-  .lgdot.off{background:var(--warn)}
-  /* 줄어드는 건 «이름»이고 뒤의 예약 시각은 안 줄어든다 — 이름이 길 때 시각이 먼저 잘려 나가면
-     어느 예약 얘긴지를 잃는다(「… 외 4팀 2…」). 이름은 몇 자 잘려도 누군지 알아본다. */
-  .lgs{flex:1;min-width:0;display:flex;align-items:baseline;gap:6px}
-  .lgs b{min-width:0;color:var(--text);font-size:14px;font-weight:600;
-         overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .lgs em{flex:0 0 auto;font-style:normal;font-size:12px;font-weight:400;color:var(--off);white-space:nowrap}
+  .lgk{flex:0 0 auto;min-width:62px;font-weight:700;color:var(--text)}   /* 폭 고정 — 「자동 취소」가 있어도 내용 열이 한 줄로 선다 */
+  .lgk.go{color:var(--goTx)}
+  .lgk.off{color:var(--warn)}
+  .lgs{flex:1;min-width:0;color:var(--dim);font-size:13px;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sheetMsg{font-size:14px;color:var(--dim);padding:6px 0 14px}
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
@@ -1022,17 +1011,26 @@ window.addEventListener('pageshow', remeasureSbcut);
        까지 붙어 한 줄에 여섯 덩어리가 됐고, 「저녁이 어떻게 찼는가」는 이 화면이 맡을 일이
        아니었다(오너: 「너무 난잡하다」). 색(방문 초록·취소 빨강)도 그때 같이 뺐다 — 숫자가
        하나뿐이면 구분할 것이 없다. */
-  /* 「기록」의 누를 수 있는 줄 — 그때 명단으로 들어간다. 생김새는 변경 줄(.lgrow)과 «똑같이» 두고
-     오른쪽 셰브론 하나로만 구분한다. 시각 열이 한 자리에 서야 한 줄기 시간축으로 읽힌다. */
-  .lgrow.tap{cursor:pointer}
-  .lgrow.tap:active, .lgrow.tap.dn{background:var(--press)}
+  .bkrow{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
+  }
+  .bkrow:active, .bkrow.dn{background:var(--press)}
+  .bkt{flex:0 0 auto;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  /* 요약은 시각 «바로 뒤»에 붙는다 — 오른쪽 끝으로 밀면 문구 길이가 행마다 달라(「17명 · 방문 14」
+     vs 「9명」) 시작점이 들쭉날쭉해진다. 왼쪽에 뭉치면 늘 같은 자리에서 읽기 시작한다.
+     상세(.bkvrow)에서 인원을 이름 뒤에 붙인 것과 같은 규칙이다. */
+  /* 굵기 600 — 시각(700)과 색만 다르면 위계가 약하다. 형제 화면 「변경 내역」도
+     종류(.lgk 700)와 요약(.lgs 400·13)을 굵기로 갈라 놓는다. */
+  .bkn{font-size:14px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums;
+       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bkchev{flex:0 0 auto;margin-left:auto;color:var(--off);display:flex;align-items:center}  /* FAQ 화살표와 같은 아이콘 */
   /* 구역 라벨(오늘/어제) */
   .bkgroup{
     font-size:13px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--dim);
     padding:15px 0 7px;border-top:1px solid var(--line);margin-top:4px;
   }
-  .bkgroup + .lgrow{border-top:0;padding-top:4px}  /* 라벨 바로 밑 행은 라벨에 붙인다 (상세 .bkvt→.bkvrow 간격과 맞춤) */
+  .bkgroup + .bkrow{border-top:0;padding-top:4px}  /* 라벨 바로 밑 행은 라벨에 붙인다 (상세 .bkvt→.bkvrow 간격과 맞춤) */
   .bklist > .bkgroup:first-child{border-top:0;margin-top:0;padding-top:6px}  /* 첫 라벨: 제목과 숨 쉴 틈 */
   /* 상세: 그 시점 명단을 읽기 전용으로 (본 화면처럼 시간대로 묶고 방문·취소 색 구분) */
   .bkback{  /* 목록으로 — 화살표만. 제목 글자와 어울리게 (같은 색, 제목 높이에 맞춘 크기) */
@@ -3651,16 +3649,17 @@ window.dispatchEvent(new Event('fb-ready'));
     return out;
   }
   // 접힌 무더기 한 줄. 이름은 둘까지만 쓰고 나머지는 수로 — 줄이 길어지면 접은 뜻이 없다.
+  // 줄 모양은 원래 「최근 변경 내역」 그대로다 — 시각 · 종류(굵게·상태색) · 내용(흐리게).
+  // 달라진 건 «무더기를 한 줄로 접는다»는 것뿐(foldLogRows).
   function logRowHtml(g){
     var cls = g.k === '방문' ? ' go'
             : (g.k === '취소' || g.k === '자동 취소' || g.k === '삭제' || g.k === '명단 초기화') ? ' off' : '';
     var rest = g.names.length - 2;
-    // 이름이 앞·굵게, 그 예약이 몇 시 건지는 뒤에 작게. 한 줄에 시각이 둘(일어난 시각·예약 시각)이라
-    // 나란히 같은 크기로 두면 어느 쪽이 무엇인지 읽어야 알았다.
-    var who = g.names.slice(0, 2).join(' · ') + (rest > 0 ? ' 외 ' + rest + '팀' : '');
+    var body = (g.slot ? g.slot + ' ' : '') + g.names.slice(0, 2).join(' · ')
+             + (rest > 0 ? ' 외 ' + rest + '팀' : '');
     return '<div class="lgrow"><span class="lgt">' + esc(g.t) + '</span>'
-      + '<span class="lgk"><i class="lgdot' + cls + '"></i>' + esc(g.k) + '</span>'
-      + '<span class="lgs"><b>' + esc(who) + '</b>' + (g.slot ? '<em>' + esc(g.slot) + '</em>' : '') + '</span></div>';
+      + '<span class="lgk' + cls + '">' + esc(g.k) + '</span>'
+      + '<span class="lgs">' + esc(body) + '</span></div>';
   }
 
   function toggle(id){
@@ -5578,15 +5577,13 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   // 명단 스냅샷 한 개 = 기록 한 줄. 변경 줄과 열을 «똑같이» 맞춘다(시각 · 종류 · 요약) —
   // 그래야 둘이 한 시간축 위에 선다. 다른 점은 오른쪽 셰브론과, 눌러서 그때 명단으로 들어간다는 것뿐.
-  /* ★「명단」이라는 종류 글자를 안 쓴다. 이 탭의 줄은 전부 명단이라 줄마다 적으면 100% 중복이고,
-     그 열이 비면 팀 수가 시각 바로 옆에 붙어 «언제 몇 팀»이 한눈에 읽힌다.
-     시각 열의 폭(42)은 변경 내역 쪽과 같게 둔다 — 탭을 건너뛰어도 왼쪽 줄이 안 흔들린다. */
-  function recRowSnap(key, label, e){
+  // 줄 모양은 원래 「지난 명단」 그대로다 — 시각(굵게) · 요약 · 셰브론.
+  function bkRowHtml(key, label, e){
     var t = tallyStatus(e && e.items);
     var n = (e && e.n != null) ? e.n : t.total;
-    return '<div class="lgrow tap" data-key="' + esc(key) + '">'
-      + '<span class="lgt">' + esc(label) + '</span>'
-      + '<span class="lgs"><b>' + n + '팀</b>' + (bkTally(t) ? '<em>' + esc(bkTally(t).replace(/^ · /, '')) + '</em>' : '') + '</span>'
+    return '<div class="bkrow" data-key="' + esc(key) + '">'
+      + '<span class="bkt">' + esc(label) + '</span>'
+      + '<span class="bkn">' + n + '팀' + bkTally(t) + '</span>'
       + '<span class="bkchev">' + CHEV_SVG + '</span></div>';
   }
   /* 「기록」 — 오늘 일어난 일을 시간 역순 한 줄기로 담는다.
@@ -5632,13 +5629,13 @@ window.dispatchEvent(new Event('fb-ready'));
     html += '<div class="bklist">';
     if (snaps.length){
       html += '<div class="bkgroup">오늘</div>';
-      snaps.forEach(function(r){ html += recRowSnap(r.key, backupWhen(r.e.at), r.e); });
+      snaps.forEach(function(r){ html += bkRowHtml(r.key, backupWhen(r.e.at), r.e); });
     }
     if (days.length){
       html += '<div class="bkgroup">어제</div>';
       days.forEach(function(r){
         var d = r.key.split('-');
-        html += recRowSnap(r.key, (+d[1]) + '/' + (+d[2]), r.e);   // 라벨이 '어제' 니 줄엔 날짜만
+        html += bkRowHtml(r.key, (+d[1]) + '/' + (+d[2]), r.e);   // 라벨이 '어제' 니 줄엔 날짜만
       });
     }
     return html + '</div>' + tail;
@@ -5647,7 +5644,7 @@ window.dispatchEvent(new Event('fb-ready'));
     document.getElementById('sheetTitle').textContent = '기록';
     var body = document.getElementById('sheetBody');
     body.innerHTML = recListHtml();
-    [].forEach.call(body.querySelectorAll('.lgrow.tap'), function(row){
+    [].forEach.call(body.querySelectorAll('.bkrow'), function(row){
       row.onclick = function(){ bkRenderDetail(row.getAttribute('data-key')); };
     });
     [].forEach.call(body.querySelectorAll('.recseg button'), function(b){
@@ -6326,7 +6323,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // pointerdown 에 .dn 을 붙이고, 손을 떼도 최소 130ms 는 유지한다. CSS 의 모든 :active 규칙엔 .dn 짝이 있다.
   // (키패드는 아래 자기 보정을 쓴다 — 여기서 제외)
   (function(){
-    var SEL = 'button:not(.lockkey), .lgrow.tap, .bkback';   // 나머지 누르는 것들은 전부 <button>. 기록 줄·.bkback 만 div/span
+    var SEL = 'button:not(.lockkey), .bkrow, .bkback';   // 나머지 누르는 것들은 전부 <button>. .bkrow·.bkback 만 div/span
     var cur = null, since = 0, timer = null;
     function release(){
       if (!cur) return;
