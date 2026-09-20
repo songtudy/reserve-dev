@@ -1088,7 +1088,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        오른쪽에 남는 자리는 이제 «여백»이지 «구멍»이 아니다.
      ★메모는 여태 안 그렸다. 백업 스냅샷은 항목을 통째로 담으므로(memo 포함) 가진 정보를
        안 보여준 것이었다 — 본 화면 .memo 와 같은 꼴(13 · --dim)로 되살린다. */
-  .bkvrow{display:flex;align-items:flex-start;gap:9px;padding:7px 0;font-size:14px;line-height:1.35}
+  .bkvrow{display:flex;align-items:flex-start;gap:8px;padding:7px 0;font-size:14px;line-height:1.35}   /* 8 — 이 화면의 다른 사이 간격(.bkvt·.bkvl1)과 같은 값. 9 는 여기서만 쓰이던 어중간한 값이었다(2026-09-21 전수 조사) */
   .bkvrow .ck{width:14px;height:14px;flex:0 0 auto;display:grid;place-items:center;line-height:0;color:transparent;margin-top:2px}
   .bkvrow .ck svg{display:block}
   .bkvrow.go .ck{color:var(--goTx)}
