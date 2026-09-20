@@ -1110,11 +1110,23 @@ window.addEventListener('pageshow', remeasureSbcut);
   .wnet .k{font-size:13px;font-weight:700;color:var(--dim);flex:0 0 52px}
   .wnet .v{font-size:17px;font-weight:700;color:var(--text);flex:1;min-width:0;word-break:break-all}
   .about{font-size:14px;line-height:1.6;color:var(--dim);margin:0 0 12px}
+  .about.sec{margin-top:18px}   /* 한 시트 안에서 다음 덩이를 여는 줄 — 위로 한 칸 띄운다 */
   .about b{color:var(--text);font-weight:700}
   .credit{
     border-top:1px solid var(--line);padding-top:12px;margin:16px 0 2px;
     font-size:13px;line-height:1.6;color:var(--dim);letter-spacing:.01em;
   }
+  /* .wnet 줄 안의 «누를 수 있는 값». 색이 아니라 밑줄로 낸다 —
+     「작은 글자엔 강조색을 안 쓴다」를 지키면서, 같은 시트의 .errline 과 같은 언어다(눌림도 같다).
+     ★target=_blank 가 필수다. 홈 화면 앱에서 같은 창에 열면 «앱 창 자체»가 홈페이지로 바뀌어
+       돌아오려면 뒤로 가기를 찾아야 한다. _blank 면 사파리로 넘어가고 앱은 뒤에 그대로 남는다.
+     음수 margin 으로 줄 전체(46px)를 누르게 한다 — 글자 줄만이면 24px 뿐이다. */
+  .site{
+    display:block;padding:11px 0;margin:-11px 0;   /* .wnet 의 위아래 여백과 같은 값 — 줄을 꽉 채우되 넘치지는 않는다 */
+    color:var(--text);text-decoration:underline;text-decoration-color:var(--off);
+    text-underline-offset:3px;-webkit-tap-highlight-color:transparent;
+  }
+  .site:active{opacity:.5}   /* .errline 과 같은 눌림 반응 */
   .sheetClose, .sheetNever{   /* 닫기 · 다시 보지 않기 — 같은 보조 버튼 */
     height:48px;padding:0;margin-top:2px;border-radius:999px;
     border:0;background:var(--btn);
@@ -1783,8 +1795,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
   <button type="button" class="dwitem" id="installBtn">앱으로 설치하기</button>
   <div class="dwsep"></div>
-  <button type="button" class="dwitem" id="siteBtn">만든 곳</button>
-  <button type="button" class="dwitem" id="donateBtn">후원</button>
+  <button type="button" class="dwitem" id="makerBtn">만든 곳 · 후원</button>
   <div class="dwsep"></div>
   <button type="button" class="dwitem danger" id="resetBtn">명단 초기화</button>
   <button type="button" class="dwitem" id="logoutBtn">로그아웃</button>
@@ -5424,16 +5435,15 @@ window.dispatchEvent(new Event('fb-ready'));
   var DONATE = { name: '송주민', bank: '국민은행', acc: '410102-01-450720' };
   // 누르면 바로 연다 — 시트 한 겹을 더 두고 「열기」를 또 누르게 할 이유가 없다.
   // ★_blank 가 필수. 홈 화면 앱에서 같은 창에 열면 «앱 창 자체»가 홈페이지로 바뀐다.
-  document.getElementById('siteBtn').addEventListener('click', function(){
+  document.getElementById('makerBtn').addEventListener('click', function(){
     hideDrawer();
-    window.open(SITE, '_blank', 'noopener');
-  });
-
-  document.getElementById('donateBtn').addEventListener('click', function(){
-    hideDrawer();
-    // 예금주를 «먼저» 둔다 — 송금 화면에서 마지막에 대조하는 게 이름이라, 못 보고 보내면 돌이킬 수 없다.
-    openSheet('후원',
-      '<p class="about">커피 한 잔 값이면 충분합니다.</p>'
+    // 홈페이지가 먼저, 후원이 뒤 — 「누가 만들었나」를 보고 나서 보탤지 정한다.
+    // 예금주는 계좌보다 «위»에 둔다. 송금 화면에서 마지막에 대조하는 게 이름이라, 못 보고 보내면 돌이킬 수 없다.
+    openSheet('만든 곳 · 후원',
+      '<div class="wnet"><span class="k">홈페이지</span>'
+      +   '<a class="v site" href="' + SITE + '" target="_blank" rel="noopener noreferrer">'   // .url(13px) 을 안 붙인다 — 설치 안내의 주소는 «복사할 것»이라 작지만 여기 주소는 «누를 것»이고, 줄 높이도 옆 줄들과 같아야 한다
+      +     SITE.replace(/^https?:\/\//, '') + '</a></div>'
+      + '<p class="about sec">후원은 커피 한 잔 값이면 충분합니다.</p>'
       + '<div class="wnet"><span class="k">예금주</span><span class="v">' + DONATE.name + '</span></div>'
       + '<div class="wnet cpy"><span class="k">' + DONATE.bank + '</span><span class="v">' + DONATE.acc + '</span>'
       +   '<button type="button" class="urlcopy" aria-label="계좌번호 복사">' + ICON_COPY + '</button></div>');
