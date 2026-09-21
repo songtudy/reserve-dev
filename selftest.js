@@ -579,6 +579,12 @@
     tru('초 단위를 ms 로 읽는다', T.MS.move > 50 && T.MS.move < 2000, T.MS.move);
     tru('--tPress < --tState < --tMove', T.MS.press < T.MS.state && T.MS.state < T.MS.move,
         T.MS.press + '/' + T.MS.state + '/' + T.MS.move);
+    // 기록 칸 바꾸기: 판 높이는 «딱», 움직이는 건 썸뿐 (오너 2026-09-21). 높이 애니메이션을 되살리면 잡는다.
+    var src = [].map.call(document.querySelectorAll('script:not([src])'), function(x){ return x.textContent; }).join('\n');
+    var at = src.indexOf('function recSetBody');
+    var body = at < 0 ? '' : src.slice(at, src.indexOf('\n  }\n', at) + 4);
+    tru('기록 목록 갈기(recSetBody)를 찾았다', at >= 0, at);
+    tru('★기록 판 높이는 즉시 바뀐다 — animate·transition 없음', body && !/\.animate\s*\(|transition/.test(body));
   })();
 
   // 「만든 곳」 홈페이지 → 아이폰 홈 화면 앱에서 진짜 사파리로.
