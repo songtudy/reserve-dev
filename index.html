@@ -3704,7 +3704,10 @@ window.dispatchEvent(new Event('fb-ready'));
     (rows || []).forEach(function(r){
       var p = logSlotOf(r), last = out[out.length - 1];
       if (last && p && last.slot && last.k === r.k && last.t === r.t && last.slot === p.slot){
-        last.names.push(p.rest);
+        // ★같은 이름은 두 번 담지 않는다. 같은 분(t 는 HH:MM)에 같은 사람·같은 종류가 두 번 찍히면
+        //   「임동현 · 임동현」이 됐다. 지금은 앞단 dedupeLogRows 가 걸러 내지만, 그 창을 줄이거나
+        //   끄면 바로 드러나는 자리라 여기서도 막아 둔다.
+        if (last.names.indexOf(p.rest) < 0) last.names.push(p.rest);
         return;
       }
       out.push({ at: r.at || 0, t: r.t, k: r.k, slot: p ? p.slot : '', names: [p ? p.rest : (r.s || '')] });
