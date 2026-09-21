@@ -5813,7 +5813,10 @@ window.dispatchEvent(new Event('fb-ready'));
     list.style.overflow = 'hidden';
     list.style.height = h0 + 'px';
     void list.offsetHeight;                   // 출발 높이를 «한 번 굳힌다» — 없으면 전환이 안 걸린다
-    list.style.transition = 'height var(--tMove) var(--ease)';
+    // 곡선은 --easeEven — 명단 행이 빠질 때(.row.leaving)와 같다. 높이 바뀜은 «들어오는 것»이 아니라
+    // «상태가 변하는 것»이라 앞뒤가 고른 곡선이 맞다. --ease(.2,.8,.2,1) 로 재 봤더니 223px 중 77%가
+    // 앞 3프레임에 몰리고(첫 프레임만 76px) 뒤 5프레임은 1~9px 씩 기었다(2026-09-21 실측).
+    list.style.transition = 'height var(--tMove) var(--easeEven)';
     list.style.height = h1 + 'px';
     recHeightTimer = setTimeout(function(){   // 끝나면 풀어 준다 — 목록이 늘어도 다시 auto 로 따라간다
       list.style.height = ''; list.style.overflow = ''; list.style.transition = '';
