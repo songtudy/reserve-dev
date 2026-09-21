@@ -1027,9 +1027,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 시트 안의 «없습니다 / 못 불러왔습니다» 줄 — 13/400 으로 .sheetNote 와 같은 활자를 쓴다.
      14 였는데, 같은 시트 안에서 안내는 13(.sheetNote) 인데 빈 상태만 14 라 한 시트에 설명 활자가 둘이었다.
      (본문 .about 14 는 그대로 — 그건 «안내»가 아니라 「익순이란?」의 내용 자체다. 2026-09-21) */
-  /* margin:0 은 «있어야 한다» — 제 여백은 padding 으로 다 갖고 있고, 브라우저 기본 margin(13×2=26px)은
-     평소엔 부모 밖으로 접혀 안 보이다가 부모에 overflow 가 붙는 순간 높이에 더해진다.
-     기록에서 높이를 0.2s 로 움직일 때 그 26px 이 끝에서 «되튐»으로 보였다(2026-09-21). */
+  /* margin:0 — 제 여백은 padding 으로 다 갖고 있다. 브라우저 기본 margin(13×2=26px)은 의도한 값이 아니었고,
+     부모에 overflow 가 붙는 순간 높이에 더해지는 함정이 있다(기록 높이를 움직이던 때 끝에서 «되튐»으로
+     드러났다, 2026-09-21). 그 움직임은 뺐지만 이 값은 그대로 맞다 — 시뮬레이터로 여백 확인함. */
   .sheetMsg{margin:0;font-size:13px;line-height:1.6;color:var(--dim);padding:6px 0 14px}
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
@@ -5808,7 +5808,6 @@ window.dispatchEvent(new Event('fb-ready'));
     });
   }
   function recRenderList(){
-    if (recAnim) recAnim.cancel();   // 전환 중에 통째로 다시 그리면 그 움직임은 버린다
     document.getElementById('sheetTitle').textContent = '기록';
     var body = document.getElementById('sheetBody');
     recLastHtml = recBodyHtml();
@@ -5818,47 +5817,19 @@ window.dispatchEvent(new Event('fb-ready'));
       b.onclick = function(){ recSwap(b.getAttribute('data-rec')); };
     });
   }
-  // 칸 바꾸기 — 세그먼트는 그대로 두고 aria-pressed 만 옮긴다(썸이 미끄러진다) + 아래 목록만 다시 그린다.
-  // ★높이도 같이 움직인다. 두 칸은 줄 수가 달라 시트 높이가 «툭» 달라진다 — 바닥에서 오는 시트라
-  //   그 변화가 제목줄을 위아래로 튕긴다. 썸과 «같은 시간·같은 곡선»(--tMove/--ease)으로 묶어야
-  //   「썸이 미끄러지고 판이 따라 자란다」는 한 동작으로 읽힌다. 명단 행이 빠질 때와 같은 수법
-  //   (auto 는 전환이 안 되니 픽셀로 박았다 풀어 준다. .row.leaving 참고).
-  var recAnim = null;
-  // 목록만 갈아 끼운다 — 세그먼트는 건드리지 않고, 판 높이는 0.2s 로 따라간다.
+  // 목록만 갈아 끼운다 — 세그먼트는 건드리지 않는다(그래야 썸이 미끄러진다).
   // 칸 바꾸기·서버 응답·기록 감시가 전부 이 하나를 쓴다(예전엔 셋 다 recRenderList 로 시트를 통째 다시 그렸다).
   //
-  // ★움직이는 건 «시트»지 안쪽 목록이 아니다. 목록 높이를 움직여 봤더니(2026-09-21), 두 칸이 다 길어
-  //   시트가 82vh 에 닿아 있을 땐 목록이 한참 줄어드는 동안 시트는 가만히 있다가 «중간부터» 따라와
-  //   남은 시간에 몰아서 움직였다 — 곡선이 뭉개지고 더 빨라 보인다. 시트를 직접 움직이면
-  //   ① 보이는 이동 그대로가 곡선을 탄다 ② 두 칸 높이가 같으면(둘 다 82vh) 아예 안 움직인다 — 그땐 그냥 바뀌는 게 맞다
-  //   ③ .sheet 는 이미 overflow:hidden 이라 잘라내려고 overflow 를 건드릴 일이 없다(마진 접힘 함정도 안 만난다).
-  //
-  // ★CSS transition 이 아니라 animate() 로 움직인다. .sheet 에는 «열고 닫는» transition 이 이미 걸려 있어
-  //   (transform/opacity) 인라인 transition 으로 덮으면 그게 죽는다 — 기록은 열고 300ms 뒤에 안내 한 줄이
-  //   붙어서 실제로 겹친다. animate() 는 인라인 스타일을 안 건드리고 끝나면 스스로 사라져,
-  //   중간에 닫아도 남는 게 없다. 시간·곡선은 CSS 토큰에서 읽어 온다 — 값을 두 군데 적지 않는다.
+  // ★판 높이는 «딱» 바뀐다 — 움직이는 건 썸 하나뿐 (오너 2026-09-21 「높이는 딱 변하고 버튼만 흘러가게」).
+  //   한때 시트 높이를 0.2s 로 따라 늘고 줄게 했었다(animate · --easeEven, 60fps 실측으로 고른 종 모양까지 맞췄다).
+  //   써 보니 오너는 판이 자라는 동안 기다리는 것보다 즉시 바뀌는 쪽을 골랐다. 되살리지 말 것.
   function recSetBody(){
     var list = document.getElementById('recBody');
     if (!list) return false;
     var html = recBodyHtml();
     if (html === recLastHtml) return true;    // 바뀐 게 없으면 손대지 않는다 — 기록 감시는 몇 초마다 들어온다
-    var sheet = document.querySelector('.sheet');
-    var motion = !!(sheet && sheet.animate) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var h0 = motion ? sheet.offsetHeight : 0;
     list.innerHTML = html; recLastHtml = html;
     recBindRows(list);
-    if (!motion) return true;                 // 움직임 줄이기·옛 브라우저 — 그냥 바뀐다
-    var h1 = sheet.offsetHeight;
-    if (h0 === h1) return true;               // 시트가 안 움직이면 건드리지 않는다
-    if (recAnim) recAnim.cancel();
-    // 곡선은 --easeEven — 명단 행이 빠질 때(.row.leaving)와 같다. 높이 바뀜은 «들어오는 것»이 아니라
-    // «상태가 변하는 것»이라 앞뒤가 고른 곡선이 맞다. --ease(.2,.8,.2,1) 로 재 봤더니 223px 중 77%가
-    // 앞 3프레임에 몰리고(첫 프레임만 76px) 뒤 5프레임은 1~9px 씩 기었다(2026-09-21 실측).
-    var cs = getComputedStyle(document.documentElement);
-    recAnim = sheet.animate(
-      [{ height: h0 + 'px' }, { height: h1 + 'px' }],
-      { duration: (parseFloat(cs.getPropertyValue('--tMove')) || 0.2) * 1000,
-        easing: cs.getPropertyValue('--easeEven').trim() || 'ease-in-out' });
     return true;
   }
   // 칸 바꾸기 — 세그먼트는 그대로 두고 aria-pressed 만 옮긴다(썸이 미끄러진다) + 아래 목록만 다시 그린다
