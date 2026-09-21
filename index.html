@@ -5549,6 +5549,26 @@ window.dispatchEvent(new Event('fb-ready'));
       +   '<button type="button" class="urlcopy" aria-label="계좌번호 복사">' + ICON_COPY + '</button></div>');
     var cp = document.querySelector('#sheetBody .urlcopy');
     if (cp) cp.onclick = function(){ copyText(DONATE.acc, '계좌번호 복사됨'); };
+    /* 홈 화면 앱에서는 «진짜 사파리»로 넘긴다.
+       그냥 두면 iOS 가 앱 위에 덮이는 인앱 브라우저로 연다 — 앱은 뒤에 남지만 사파리가 아니다.
+       x-safari-https:// 는 애플이 문서로 밝힌 주소가 아니라서 언젠가 안 먹을 수 있다. 그래서
+       «떠났는지»를 보고(visibilitychange/pagehide) 아무 일도 없었으면 원래 방식으로 되돌린다 —
+       안 먹는 날에도 링크가 죽지는 않는다. 사파리에서 연 경우엔 손대지 않는다(새 탭이 정상 동작). */
+    var lk = document.querySelector('#sheetBody .site');
+    if (lk) lk.addEventListener('click', function(e){
+      if (!isStandalone()) return;
+      e.preventDefault();
+      var gone = false;
+      var mark = function(){ gone = true; };
+      document.addEventListener('visibilitychange', mark);
+      window.addEventListener('pagehide', mark);
+      try { location.href = 'x-safari-' + SITE; } catch(err){ gone = false; }
+      setTimeout(function(){
+        document.removeEventListener('visibilitychange', mark);
+        window.removeEventListener('pagehide', mark);
+        if (!gone && !document.hidden) window.open(SITE, '_blank', 'noopener');
+      }, 700);
+    });
   });
   document.getElementById('installBtn').addEventListener('click', function(){
     hideDrawer();
