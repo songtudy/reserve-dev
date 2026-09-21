@@ -5783,7 +5783,12 @@ window.dispatchEvent(new Event('fb-ready'));
       b.onclick = function(){ recSwap(b.getAttribute('data-rec')); };
     });
   }
-  // 칸 바꾸기 — 세그먼트는 그대로 두고 aria-pressed 만 옮긴다(썸이 미끄러진다) + 아래 목록만 다시 그린다
+  // 칸 바꾸기 — 세그먼트는 그대로 두고 aria-pressed 만 옮긴다(썸이 미끄러진다) + 아래 목록만 다시 그린다.
+  // ★높이도 같이 움직인다. 두 칸은 줄 수가 달라 시트 높이가 «툭» 달라진다 — 바닥에서 오는 시트라
+  //   그 변화가 제목줄을 위아래로 튕긴다. 썸과 «같은 시간·같은 곡선»(--tMove/--ease)으로 묶어야
+  //   「썸이 미끄러지고 판이 따라 자란다」는 한 동작으로 읽힌다. 명단 행이 빠질 때와 같은 수법
+  //   (auto 는 전환이 안 되니 픽셀로 박았다 풀어 준다. .row.leaving 참고).
+  var recHeightTimer = null;
   function recSwap(mode){
     if (recMode === mode) return;
     recMode = mode;
@@ -5793,8 +5798,25 @@ window.dispatchEvent(new Event('fb-ready'));
     });
     var list = document.getElementById('recBody');
     if (!list){ recRenderList(); return; }
+
+    var motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var h0 = list.offsetHeight;
     list.innerHTML = recBodyHtml();
     recBindRows(list);
+    if (!motion) return;                      // 움직임 줄이기 — 그냥 바뀐다
+    var h1 = list.offsetHeight;
+    if (h0 === h1) return;                    // 높이가 같으면 건드리지 않는다
+
+    clearTimeout(recHeightTimer);
+    list.style.transition = 'none';
+    list.style.overflow = 'hidden';
+    list.style.height = h0 + 'px';
+    void list.offsetHeight;                   // 출발 높이를 «한 번 굳힌다» — 없으면 전환이 안 걸린다
+    list.style.transition = 'height var(--tMove) var(--ease)';
+    list.style.height = h1 + 'px';
+    recHeightTimer = setTimeout(function(){   // 끝나면 풀어 준다 — 목록이 늘어도 다시 auto 로 따라간다
+      list.style.height = ''; list.style.overflow = ''; list.style.transition = '';
+    }, 220);
   }
   // 상세: 그 시점 명단을 읽기 전용 목록으로 (본 화면처럼 시간대로 묶고 방문·취소 색). 복사는 단톡방 양식 그대로.
   function bkRosterHtml(items){
