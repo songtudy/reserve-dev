@@ -1043,6 +1043,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .bkrow{
     display:flex;align-items:center;gap:10px;position:relative;
     padding:12px 0;border-top:1px solid var(--line);cursor:pointer;
+    min-height:44px;   /* 여백 12+12 에 글자 19 라 43px 이었다 — 손가락 기준(44)에 1px 모자랐다.
+                          앱의 누르는 줄 중 여기만 미달이었다(2026-09-21 실측). 여백을 키우지 않고
+                          최소 높이로 받친다 — align-items:center 라 위아래가 그대로 대칭이고,
+                          눌림 칠(::after inset:0 -16px)도 늘어난 높이를 그대로 덮는다. */
   }
   /* ★눌림 칠은 시트 «끝에서 끝까지» 간다. 이 줄만 본문 여백(16) 안에 갇혀 네모가 가운데 떠 보였다 —
      앱의 다른 누르는 줄(.ghead·.dwitem·.qa .q)은 전부 제 여백을 안에 품고 있어 끝까지 칠해진다.
@@ -6197,7 +6201,15 @@ window.dispatchEvent(new Event('fb-ready'));
   });
   window.addEventListener('unhandledrejection', function(e){
     var r = e && e.reason;
-    errLog('약속', (r && (r.message || r.code)) || r, '');
+    var m = String((r && (r.message || r.code)) || r || '');
+    /* 앱이 백그라운드로 내려가면 진행 중이던 저장·요청이 라이브러리 쪽에서 끊기며 거부된다
+       (「Database is closing/hidden」 — 파이어베이스 세션 저장소가 화면이 숨을 때 닫는 것).
+       돌아오면 스스로 다시 붙으므로 사람이 할 일이 없는데, 「문제 기록」에 쌓여 오너가
+       «앱에 문제가 있나» 걱정하게 만들었다(2026-09-19 두 건, 같은 초에 나란히).
+       이 줄은 «내가 볼 진짜 문제»를 모으는 곳이라 중단 잡음은 안 담는다.
+       ★오류(uncaught)는 그대로 남긴다 — 그건 숨어서 나도 진짜 문제다. */
+    if (document.hidden || /closing|hidden|offline|interrupt|abort/i.test(m)) return;
+    errLog('약속', m, '');
   });
 
   /* ---------- 오프라인 실행(서비스워커) ----------
