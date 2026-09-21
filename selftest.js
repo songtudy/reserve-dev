@@ -598,6 +598,8 @@
     tru('아이폰 홈 화면 앱에서만 (navigator.standalone)', /navigator\.standalone\s*!==\s*true/.test(body));
     tru('★앱 안에서 여는 예비 window.open 이 없다', !/window\.open\s*\(/.test(body));
     tru('★예비 타이머가 없다', !/setTimeout\s*\(/.test(body));
+    // 계좌번호: 보여줄 땐 하이픈, 복사할 땐 숫자만 (오너 2026-09-21). 은행 앱 숫자 입력칸에 그대로 붙게.
+    tru('계좌번호는 숫자만 복사한다', /copyText\(\s*DONATE\.acc\.replace\(\s*\/\\D\/g/.test(src));
   })();
 
   group('스타일시트 — 주석·규칙 온전성');
