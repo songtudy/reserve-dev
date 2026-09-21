@@ -13,7 +13,16 @@
   function J(v){ try { return JSON.stringify(v); } catch(e){ return String(v); } }
 
   // 깊은 동등 비교 (undefined 필드도 구분)
+  // ★이건 «비교»만 한다 — 테스트를 남기는 건 check(name, got, want) 다.
+  //   eq('이름', 값, 기대) 로 쓰면 문자열과 값을 비교해 false 를 돌려주고 끝나 «아무것도 검사 안 한 채»
+  //   조용히 지나간다. 2026-09-21 에 9곳이 그렇게 몇 시간 동안 빈 테스트였다(추가한 7개 중 1개만 셈에 잡혀 드러남).
+  //   그래서 그렇게 불리면 실패로 크게 남긴다.
   function eq(a, b){
+    if (arguments.length === 3 && typeof a === 'string'){
+      (curGroup ? curGroup.rows : results).push({ name: '★eq 를 테스트처럼 씀 — check 로 바꿀 것: ' + a,
+        ok: false, got: 'eq(이름, 값, 기대)', want: 'check(이름, 값, 기대)' });
+      return false;
+    }
     if (a === b) return true;
     if (a && b && typeof a === 'object' && typeof b === 'object'){
       var ka = Object.keys(a), kb = Object.keys(b);
@@ -563,13 +572,31 @@
     }
     tru('MS 를 내보낸다', !!T.MS, T.MS);
     if (!T.MS) return;
-    eq('MS.move  = --tMove', T.MS.move, tok('--tMove'));
-    eq('MS.press = --tPress', T.MS.press, tok('--tPress'));
-    eq('MS.state = --tState', T.MS.state, tok('--tState'));
+    check('MS.move  = --tMove', T.MS.move, tok('--tMove'));
+    check('MS.press = --tPress', T.MS.press, tok('--tPress'));
+    check('MS.state = --tState', T.MS.state, tok('--tState'));
     // 초 단위(.2s)를 ms 로 옳게 읽었나 — 0.2 로 읽으면 행이 즉시 지워진다
     tru('초 단위를 ms 로 읽는다', T.MS.move > 50 && T.MS.move < 2000, T.MS.move);
     tru('--tPress < --tState < --tMove', T.MS.press < T.MS.state && T.MS.state < T.MS.move,
         T.MS.press + '/' + T.MS.state + '/' + T.MS.move);
+  })();
+
+  // 「만든 곳」 홈페이지 → 사파리. 사파리가 안 열렸을 때만 앱 안에서 연다.
+  // ★2026-09-21 버그: 사파리로 넘어가며 앱이 얼면 0.7초 타이머도 멈췄다가, «돌아올 때» 깨어나
+  //   「안 열렸네」로 잘못 판단해 앱 안에서도 홈페이지를 열었다. 늦게 깨어남 = 넘어갔었다는 증거.
+  group('만든 곳 — 사파리로 넘어갔는지 판정');
+  (function(){
+    var F = (window.__ixTest || {}).safariFallbackNeeded;
+    tru('판정 함수를 내보낸다', typeof F === 'function', typeof F);
+    if (typeof F !== 'function') return;
+    var ok = { gone:false, hidden:false, focused:true, elapsed:720 };
+    function w(o){ var r = {}; for (var k in ok) r[k] = ok[k]; for (var k2 in o) r[k2] = o[k2]; return r; }
+    check('아무 일 없이 제때 깨어남 → 앱 안에서 연다(사파리 안 열림)', F(ok), true);
+    check('★얼었다 깨어남(5초 뒤) → 안 연다 — 이게 그 버그', F(w({ elapsed:5000 })), false);
+    check('얼었다 깨어남(경계 1.6초) → 안 연다', F(w({ elapsed:1600 })), false);
+    check('blur/visibilitychange 가 왔다 → 안 연다', F(w({ gone:true })), false);
+    check('화면이 숨어 있다 → 안 연다', F(w({ hidden:true })), false);
+    check('초점을 잃었다(다른 앱이 앞) → 안 연다', F(w({ focused:false })), false);
   })();
 
   group('스타일시트 — 주석·규칙 온전성');
