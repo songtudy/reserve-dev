@@ -3758,6 +3758,21 @@ window.dispatchEvent(new Event('fb-ready'));
   // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
   // 「대기」 보기에서 방금 처리한 행 — 바로 지우면 「내가 뭘 눌렀지」가 된다.
   // 채워진 원을 LEAVE_MS 동안 보여준 뒤 흐려지며 빠진다. 그 사이 다시 누르면(체크 해제) 그대로 남는다.
+  /* CSS 의 시간 토큰을 JS 가 «읽어서» 쓴다. 예전엔 210·130 처럼 베껴 적어 뒀는데,
+     그 숫자들은 전부 「CSS 전환이 끝나기를 기다리는 시간」이라 --tMove/--tPress 를 고치면 말없이 어긋난다
+     (행이 덜 사라진 채 지워지거나, 잠금 화면이 번쩍인다). 값을 두 군데 적지 않는다. +10 은 전환이
+     확실히 끝난 뒤를 잡기 위한 여유 한 프레임 — 그 의도가 숫자에 드러나게 남겨 둔다. (2026-09-21) */
+  var MS = (function(){
+    var cs = getComputedStyle(document.documentElement);
+    function v(name, dflt){
+      var t = (cs.getPropertyValue(name) || '').trim();
+      if (!t) return dflt;
+      var n = parseFloat(t);
+      if (!isFinite(n)) return dflt;
+      return t.slice(-2) === 'ms' ? n : n * 1000;   // '.2s' → 200 · '1000ms' → 1000
+    }
+    return { move: v('--tMove', 200), press: v('--tPress', 120), state: v('--tState', 150) };
+  })();
   var LEAVE_MS = 2500;   // 900 → 1300 → 3000 → 2500 (오너 2026-09-20). 흐려지는 0.2초를 더해 눈에서 사라지기까지 2.7초
   function cancelLeave(id){
     if (leaveTimers[id]){ clearTimeout(leaveTimers[id]); delete leaveTimers[id]; }
@@ -3785,7 +3800,7 @@ window.dispatchEvent(new Event('fb-ready'));
         // 이미 높이 0 · 투명이라 이 시점의 다시 그리기는 눈에 안 보인다 — 자리만 정리한다.
         if (interactionActive()) backgroundRenderPending = true;
         else render();
-      }, 210);
+      }, MS.move + 10);
     }, LEAVE_MS);
   }
 
@@ -5342,12 +5357,14 @@ window.dispatchEvent(new Event('fb-ready'));
             if (myGen2 !== gen) return;
             var nm = result.querySelector('.rltnmin');
             if (!nm){ setResult(ns2[nw]); return; }
-            nm.classList.add('gone');                  // 전구 꺼지듯 0.62초 깜빡이다 사라진다 (아래 시간과 같아야 한다)
+            nm.classList.add('gone');                  // 전구 꺼지듯 깜빡이다 사라진다 (@keyframes nmFlick)
+            // 시간은 CSS 에서 읽는다 — 620 을 베껴 적어 뒀었는데 nmFlick 을 고치면 말없이 어긋난다.
+            var flick = parseFloat(getComputedStyle(nm).animationDuration) * 1000 || 620;
             setTimeout(function(){
               if (myGen2 !== gen) return;
               nm.textContent = ns2[nw];
               nm.classList.remove('gone');             // 애니메이션이 걷히면 그 자리에서 바로 또렷해진다
-            }, 620);
+            }, flick);
           }, 220);
           // ★날벼락 때 결과 글자의 흰빛 달굼(.hit)은 안 쓴다 — 색을 0.5초 동안 잡고 있어 「어두워지며 사그라듦」과 싸운다.
           //   뒤집힘을 보여 주는 일은 이제 사그라듦 → 딱 나타남이 맡는다(오너 2026-09-19).
@@ -6384,7 +6401,8 @@ window.dispatchEvent(new Event('fb-ready'));
       setState: function(s){ state = s; },
       setViewDate: function(d){ viewDate = d; },
       setCollapsed: function(c){ collapsed = c || {}; },
-      setTouched: function(t){ touched = t || {}; }
+      setTouched: function(t){ touched = t || {}; },
+      MS: MS
     };
     var st = document.createElement('script');
     st.src = 'selftest.js';
@@ -6455,7 +6473,7 @@ window.dispatchEvent(new Event('fb-ready'));
       lockEl.classList.remove('out');
       // data-authed 는 맨 마지막에 — 먼저 걸면 CSS 가 즉시 display:none 으로 만들어 페이드가 죽는다
       document.documentElement.setAttribute('data-authed', '1');
-    }, 210);
+    }, MS.move + 10);
   }
   function lockShow(msg){
     if (unlockTimer){ clearTimeout(unlockTimer); unlockTimer = null; }   // 위 경합 차단
@@ -6561,7 +6579,7 @@ window.dispatchEvent(new Event('fb-ready'));
       b.classList.add('dn'); dnKey = b;
       dnTimer = setTimeout(function(){
         b.classList.remove('dn'); dnTimer = null; dnKey = null;
-      }, 130);
+      }, MS.press + 10);
     }
     pad.addEventListener('pointerdown', function(e){
       var b = e.target.closest && e.target.closest('.lockkey');
