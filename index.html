@@ -309,11 +309,19 @@ window.addEventListener('pageshow', remeasureSbcut);
   .toprow .date{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:60%}
   .nav{display:flex;align-items:center;gap:0;margin-left:-10px;min-width:0}
   .nav button{
+    position:relative;
     width:40px;height:40px;flex:0 0 auto;padding:0;
     display:grid;place-items:center;
     background:none;border:0;color:var(--dim);
     line-height:0;cursor:pointer;border-radius:12px;
   }
+  /* 손가락이 닿는 범위만 44 로 — 보이는 크기(40)는 그대로다.
+     ★버튼 자체를 44 로 키우면 .toprow(min-height:40) 가 같이 커져 머리줄 전체가 내려앉는다.
+       이 버튼은 앱에서 가장 자주 누르는데 화면 «맨 구석»에 있어 44 미달이 실제로 불리했다
+       (2026-09-21 실측, 앱의 누르는 것 43개 중 이것·세그먼트·룰렛만 미달).
+       세그먼트(30)는 안 건드린다 — 애플 기본 세그먼티드 컨트롤이 32 라 관례 안이고,
+       잘못 눌러도 옆 칸으로 바뀔 뿐이다. */
+  .nav button::after{content:"";position:absolute;inset:-2px}
   .nav button svg{display:block}
   /* ── 누름 규칙 (앱 공통) ──
      ① 면 있는 버튼 → 면이 --press (채운 금색은 --waitHover)   ② 면 없는 글자·아이콘 → 흐려짐
