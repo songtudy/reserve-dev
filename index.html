@@ -835,13 +835,13 @@ window.addEventListener('pageshow', remeasureSbcut);
   .seg button[aria-pressed="true"]{color:var(--text)}   /* 선택 표시는 «aria-pressed 하나»로 통일(2026-09-16).
                                                             예전엔 .on 과 둘이 섞여 CSS·썸 스크립트가 매번 갈라졌고,
                                                             .on 쪽(테마·Wi-Fi)은 화면 낭독기에 선택 상태를 아예 안 알렸다. */
+  /* 시트 안에 통째로 깔리는 고르개 — 높이 34. 줄 안에 끼는 세그(30)보다 한 단 크되 글자는 «13 그대로».
+     ★40/14 였는데 기록에만 34/13 을 따로 줬더니 같은 부품이 시트마다 다른 활자를 쓰게 됐다.
+       이 앱의 활자 사다리는 17 · 14 · 13 이고 «고르개 글자»는 어디서나 13 하나면 된다(2026-09-21).
+       높이만 자리에 따라 30 / 34 로 갈린다. */
   .seg.wide{display:grid;margin:-2px 0 14px}
-  .seg.wide button{height:40px;font-size:14px}   /* 30 높이 세그(13)보다 한 단계 */
-  /* 기록의 갈래 고르개 — Wi-Fi(40)보다 한 단 낮춘 34. 밑에 오는 것이 «조용한 목록»이라
-     40 이면 고르개가 내용보다 커 보인다(Wi-Fi 는 밑에 QR 카드가 와서 40 이 맞는다).
-     아래 여백도 6 — 첫 머리글(.bkgroup)이 제 여백 15 를 이미 갖고 있다. */
-  .recseg.wide{margin:-2px 0 6px}   /* 위 여백은 .seg.wide(-2)와 같은 값 — 같은 부품이 시트마다 제목에서 다른 거리에 서면 안 된다(기록 10 / Wi-Fi 6 이었다) */
-  .recseg.wide button{height:34px;font-size:13px}
+  .seg.wide button{height:34px;font-size:13px}
+  .recseg.wide{margin:-2px 0 6px}   /* 기록은 밑이 목록이라 Wi-Fi(14)만큼 안 띄운다 — 첫 머리글이 제 여백 15 를 갖고 있다 */
   .dwtheme{display:flex;align-items:center;gap:10px;padding:6px 16px 2px}
   .dwthlab{font-size:13px;font-weight:600;color:var(--dim)}
   .dwtheme .seg{margin-left:auto}
@@ -973,7 +973,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   }
   .plat:last-child{margin-bottom:0}   /* 마지막 카드 밑 여백 안 쌓임 */
   .plat .ph{display:flex;align-items:center;gap:7px;margin-bottom:10px}
-  .plat .pn{font-size:14px;font-weight:800;letter-spacing:-.02em}
+  .plat .pn{font-size:14px;font-weight:700;letter-spacing:-.02em}   /* 700 — 같은 14 인 FAQ 질문과 같은 굵기. 800 은 17 짜리 제목에만 쓰는 값인데 여기만 14/800 이었다(2026-09-21) */
   /* 사이 10 — 같은 시트의 .wnet(라벨↔값)과 같은 값. 9 였는데 한 시트 안에서 같은 성격의 간격이
      9 와 10 으로 갈려 있었다(2026-09-21 전수 조사). 위 .plat .ph 의 gap 은 자식이 하나라 쓰이지 않는다. */
   .step{
@@ -1015,7 +1015,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   .lgk.off{color:var(--warn)}
   .lgs{flex:1;min-width:0;color:var(--dim);font-size:13px;
        overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .sheetMsg{font-size:14px;color:var(--dim);padding:6px 0 14px}
+  /* 시트 안의 «없습니다 / 못 불러왔습니다» 줄 — 13/400 으로 .sheetNote 와 같은 활자를 쓴다.
+     14 였는데, 같은 시트 안에서 안내는 13(.sheetNote) 인데 빈 상태만 14 라 한 시트에 설명 활자가 둘이었다.
+     (본문 .about 14 는 그대로 — 그건 «안내»가 아니라 「익순이란?」의 내용 자체다. 2026-09-21) */
+  .sheetMsg{font-size:13px;line-height:1.6;color:var(--dim);padding:6px 0 14px}
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
   .bklist{padding-top:2px}   /* 다른 시트처럼 제목 밑 선 없이 — 8px 뒤 바로 내용 */
