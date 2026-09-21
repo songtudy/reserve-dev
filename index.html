@@ -5524,11 +5524,17 @@ window.dispatchEvent(new Event('fb-ready'));
   function installHtml(){
     // 세 점 아이콘은 행 메뉴 버튼과 같은 dots3 — 아이폰은 가로(⋯), 갤럭시는 세로(⋮).
     var dotKey = function(vertical){ return '<span class="key">' + dots3(vertical) + '</span>'; };
+    // ★첫 단계는 «브라우저에서 열기»다. 카카오톡 같은 앱 안 브라우저에서 이 화면을 보고 있으면
+    //   「홈 화면에 추가」 자체가 없어서, 나머지 단계를 아무리 잘 적어도 따라 할 수가 없다.
+    //   가장 흔한 실패인데 어디에도 안 적혀 있었다(오너 2026-09-21). 카드마다 제 브라우저를 말한다 —
+    //   기기별로 갈라 놓은 이유가 「제 카드만 읽으면 된다」라서다.
     return plat('ios', '아이폰 · 사파리', [
+        '이 주소를 <b>사파리</b>에서 열기',
         '<b>공유</b> ' + '<span class="key">' + SHARE_SVG + '</span>',
         '<b>홈 화면에 추가</b>'
       ])
       + plat('and', '갤럭시 · 크롬', [
+        '이 주소를 <b>크롬</b>에서 열기',
         '화면 <b>위 오른쪽</b> ' + dotKey(true),
         '<b>홈 화면에 추가</b>',
         '<b>설치</b>'
