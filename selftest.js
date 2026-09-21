@@ -608,6 +608,18 @@
     tru('계좌번호는 숫자만 복사한다', /copyText\(\s*DONATE\.acc\.replace\(\s*\/\\D\/g/.test(src));
   })();
 
+  // 이름 검색 — 앱은 늘 「대기」로 열린다. 거기서 이미 방문·취소한 손님을 찾으면 개수는 「1건」인데 줄이 0 이었다(2026-09-21).
+  // 검색 중엔 「대기」 보기의 두 규칙(처리된 줄 숨김·체크하면 빠짐)을 멈춘다. 실측: 대기·전체가 같은 결과를 낸다.
+  group('이름 검색 — 「대기」에서도 다 보인다');
+  (function(){
+    var src = [].map.call(document.querySelectorAll('script:not([src])'), function(x){ return x.textContent; }).join('\n');
+    tru('검색 중엔 상태로 거르지 않는다', /viewMode === 'pending' && !q\)\s*\?\s*g\.items\.filter/.test(src));
+    tru('검색 중엔 체크해도 빠지기를 안 건다', /!searching\(\) && it\.status !== 'pending'\) scheduleLeave/.test(src));
+    tru('기다리던 빠지기도 검색이 시작되면 멈춘다', /viewMode !== 'pending' \|\| searching\(\)\)\{ cancelLeave\(id\)/.test(src));
+    var at = src.indexOf('function openSearch(){');
+    tru('검색을 열면 대기 중인 빠지기를 거둔다', at >= 0 && src.slice(at, at + 200).indexOf('cancelAllLeaves()') >= 0);
+  })();
+
   group('스타일시트 — 주석·규칙 온전성');
   (function(){
     var sheets = [].slice.call(document.styleSheets), rules = [], kf = {};
