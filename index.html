@@ -969,7 +969,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 기기 카드 — 면만. 왼쪽 색 띠는 뺐다(본 명단에서도 없앤 장식). 기기 구분은 제목 색이 한다. */
   .plat{
     background:var(--panel2);border-radius:12px;
-    padding:13px 14px 11px;margin:0 0 8px;   /* 8 = 형제 카드끼리의 간격(.wnet + .wnet 과 같은 값). 10 이었다 */
+    /* 가로 13 = .wnet 과 같은 값. 14 였는데, 바로 위에 붙는 링크 카드(.wnet, 왼쪽 13)와 1px 어긋나
+       두 카드의 글 시작점이 29 / 30 으로 달랐다(2026-09-21). 8 = 형제 카드끼리의 간격. */
+    padding:13px 13px 11px;margin:0 0 8px;
   }
   .plat:last-child{margin-bottom:0}   /* 마지막 카드 밑 여백 안 쌓임 */
   .plat .ph{display:flex;align-items:center;gap:7px;margin-bottom:10px}
@@ -3178,8 +3180,9 @@ window.dispatchEvent(new Event('fb-ready'));
      ★설치 안내에서 「하단 ⋯ 누르고 → 공유 누르고」로 풀어 쓰던 걸 이 기호 하나로 대신한다(오너 2026-09-21).
        사파리 배치 설정에 따라 공유 버튼이 도구막대에 바로 나오기도 하고 ⋯ 안에 들어가 있기도 해서,
        «어디를 눌러라»보다 «이 기호를 찾아라»가 어느 쪽에서나 맞는 말이다.
-     획 굵기 2 — 세 점(dots3)은 채운 원이라 굵기가 없고, 이건 선 아이콘이라 앱의 선 아이콘들과 같은 2를 쓴다. */
-  var SHARE_SVG = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"'
+     획 굵기 2 — 세 점(dots3)은 채운 원이라 굵기가 없고, 이건 선 아이콘이라 앱의 선 아이콘들과 같은 2를 쓴다.
+     크기 18 — 같은 .key 상자(26)에 들어가는 세 점과 같은 값. 17 이었는데 한 칸만 1px 작았다(2026-09-21). */
+  var SHARE_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"'
     + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
     + '<path d="M12 3.5 V14"/><path d="M8.6 6.9 L12 3.5 L15.4 6.9"/>'
     + '<path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v7A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 17.5 10H16"/></svg>';
