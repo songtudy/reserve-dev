@@ -992,7 +992,10 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:inline-grid;place-items:center;
     width:26px;height:26px;margin:0 1px;
     border:1px solid var(--line);border-radius:8px;background:var(--ink);
-    color:var(--text);line-height:0;vertical-align:middle;
+    color:var(--text);line-height:0;vertical-align:-0.30em;
+    /* middle 이 아닌 이유: middle 은 «라틴 x-height 의 절반» 을 기준으로 삼는다.
+       한글은 x-height 보다 위아래로 넓어서, 같은 줄의 한글 잉크 중심보다 칸이 1.6px 내려앉았다.
+       -0.30em 은 그 중심에 맞춘 값(오차 0.11px). px 이 아니라 em 이라 줄 글자 크기를 따라간다. */
   }
   .key svg{display:block}
   /* 시트 안 «한 줄 안내» — 제목 밑이든 덩이 사이든 이 하나를 쓴다.
