@@ -309,19 +309,11 @@ window.addEventListener('pageshow', remeasureSbcut);
   .toprow .date{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:60%}
   .nav{display:flex;align-items:center;gap:0;margin-left:-10px;min-width:0}
   .nav button{
-    position:relative;
     width:40px;height:40px;flex:0 0 auto;padding:0;
     display:grid;place-items:center;
     background:none;border:0;color:var(--dim);
     line-height:0;cursor:pointer;border-radius:12px;
   }
-  /* 손가락이 닿는 범위만 44 로 — 보이는 크기(40)는 그대로다.
-     ★버튼 자체를 44 로 키우면 .toprow(min-height:40) 가 같이 커져 머리줄 전체가 내려앉는다.
-       이 버튼은 앱에서 가장 자주 누르는데 화면 «맨 구석»에 있어 44 미달이 실제로 불리했다
-       (2026-09-21 실측, 앱의 누르는 것 43개 중 이것·세그먼트·룰렛만 미달).
-       세그먼트(30)는 안 건드린다 — 애플 기본 세그먼티드 컨트롤이 32 라 관례 안이고,
-       잘못 눌러도 옆 칸으로 바뀔 뿐이다. */
-  .nav button::after{content:"";position:absolute;inset:-2px}
   .nav button svg{display:block}
   /* ── 누름 규칙 (앱 공통) ──
      ① 면 있는 버튼 → 면이 --press (채운 금색은 --waitHover)   ② 면 없는 글자·아이콘 → 흐려짐
@@ -341,7 +333,9 @@ window.addEventListener('pageshow', remeasureSbcut);
   .tools{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   /* 검색 버튼은 상단에 없다(오너: 한 번도 안 씀) — 서랍의 「이름 검색」이 대신. */
   /* 헤더 아이콘 버튼(메뉴)은 보이는 크기가 40 인데 손가락 기준 권장치는 44 다.
-     보이는 크기·눌림 배경은 그대로 두고 «닿는 범위»만 투명하게 2px 씩 넓힌다 — 겉모습 무변화. */
+     보이는 크기·눌림 배경은 그대로 두고 «닿는 범위»만 투명하게 2px 씩 넓힌다 — 겉모습 무변화.
+     ★점검 도구가 getBoundingClientRect 만 보면 이 버튼을 «40×40 미달»로 잘못 잡는다. ::after 로
+       넓힌 범위를 같이 세야 한다 — 2026-09-21 에 그걸 놓쳐 같은 규칙을 한 번 더 덧댔다가 걷어냈다. */
   .nav button{position:relative}
   .nav button::after{content:"";position:absolute;inset:-2px}
   /* 실사용이 아닌 곳(테스트·로컬·복사본)에서만 뜨는 빨간 경고 배지.
