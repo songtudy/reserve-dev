@@ -550,6 +550,28 @@
      2026-09-19 주석을 닫는 기호를 잘못 넣어 설명글이 규칙 자리로 샌 적이 있는데,
      그때 이 셀프테스트는 144/144 로 통과했다 — 화면은 망가졌는데도. 그래서 넣는다.
      (설명글에 «주석 닫는 기호» 자체를 적지 말 것. 이 주석도 그것 때문에 한 번 깨졌다.) */
+  // CSS 의 시간 토큰과 JS 가 기다리는 시간이 «한 군데»에서 나오는지.
+  // 예전엔 JS 에 210·130·620 을 베껴 적어 뒀다 — 토큰을 고치면 말없이 어긋났다(2026-09-21).
+  group('움직임 — CSS 시간과 JS 시간이 한 군데인가');
+  (function(){
+    var T = window.__ixTest || {};
+    var cs = getComputedStyle(document.documentElement);
+    function tok(n){
+      var t = (cs.getPropertyValue(n) || '').trim();
+      var v = parseFloat(t);
+      return t.slice(-2) === 'ms' ? v : v * 1000;
+    }
+    tru('MS 를 내보낸다', !!T.MS, T.MS);
+    if (!T.MS) return;
+    eq('MS.move  = --tMove', T.MS.move, tok('--tMove'));
+    eq('MS.press = --tPress', T.MS.press, tok('--tPress'));
+    eq('MS.state = --tState', T.MS.state, tok('--tState'));
+    // 초 단위(.2s)를 ms 로 옳게 읽었나 — 0.2 로 읽으면 행이 즉시 지워진다
+    tru('초 단위를 ms 로 읽는다', T.MS.move > 50 && T.MS.move < 2000, T.MS.move);
+    tru('--tPress < --tState < --tMove', T.MS.press < T.MS.state && T.MS.state < T.MS.move,
+        T.MS.press + '/' + T.MS.state + '/' + T.MS.move);
+  })();
+
   group('스타일시트 — 주석·규칙 온전성');
   (function(){
     var sheets = [].slice.call(document.styleSheets), rules = [], kf = {};
