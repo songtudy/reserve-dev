@@ -1845,7 +1845,7 @@ window.addEventListener('pageshow', remeasureSbcut);
   <button type="button" class="dwitem" id="aboutBtn">익순이란?</button>
   <button type="button" class="dwitem" id="faqBtn">자주 묻는 질문</button>
   <button type="button" class="dwitem" id="installBtn">앱으로 설치하기</button>
-  <button type="button" class="dwitem" id="makerBtn">만든 곳 · 후원</button>
+  <button type="button" class="dwitem" id="makerBtn">만든 곳</button>
   <div class="dwsep"></div>
   <button type="button" class="dwitem danger" id="resetBtn">명단 초기화</button>
   <button type="button" class="dwitem" id="logoutBtn">로그아웃</button>
@@ -5521,7 +5521,9 @@ window.dispatchEvent(new Event('fb-ready'));
     if (cp) cp.onclick = function(){ copyText(appUrl(), '링크 복사됨'); };
   }
 
-  // 만든 곳·후원 — 여기 한 군데서만 고친다.
+  // 만든 곳 — 홈페이지와 후원 계좌. 여기 한 군데서만 고친다.
+  // 서랍 이름은 「만든 곳」 하나다 — 「만든 곳 · 후원」은 서랍에서 유일하게 가운뎃점이 든 항목이라
+  // 그 줄만 «두 개를 묶어 놨다»고 티가 났다. 안에 들어가면 후원 줄이 바로 보이니 문 이름이 둘 다 적을 이유가 없다.
   var SITE = 'https://juminlabs.pikaju.workers.dev';
   // 계좌는 다음 규칙을 지킨다:
   // ★보이는 글자 = 복사되는 글자. 하이픈을 떼고 복사하면 「왜 다르지」가 되고, 대조할 수도 없다.
@@ -5533,7 +5535,7 @@ window.dispatchEvent(new Event('fb-ready'));
     hideDrawer();
     // 홈페이지가 먼저, 후원이 뒤 — 「누가 만들었나」를 보고 나서 보탤지 정한다.
     // 예금주는 계좌보다 «위»에 둔다. 송금 화면에서 마지막에 대조하는 게 이름이라, 못 보고 보내면 돌이킬 수 없다.
-    openSheet('만든 곳 · 후원',
+    openSheet('만든 곳',
       '<div class="wnet"><span class="k">홈페이지</span>'
       +   '<a class="v site" href="' + SITE + '" target="_blank" rel="noopener noreferrer">'   // .url(13px) 을 안 붙인다 — 설치 안내의 주소는 «복사할 것»이라 작지만 여기 주소는 «누를 것»이고, 줄 높이도 옆 줄들과 같아야 한다
       +     SITE.replace(/^https?:\/\//, '') + '</a></div>'
