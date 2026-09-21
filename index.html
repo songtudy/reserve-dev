@@ -1023,7 +1023,10 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* 시트 안의 «없습니다 / 못 불러왔습니다» 줄 — 13/400 으로 .sheetNote 와 같은 활자를 쓴다.
      14 였는데, 같은 시트 안에서 안내는 13(.sheetNote) 인데 빈 상태만 14 라 한 시트에 설명 활자가 둘이었다.
      (본문 .about 14 는 그대로 — 그건 «안내»가 아니라 「익순이란?」의 내용 자체다. 2026-09-21) */
-  .sheetMsg{font-size:13px;line-height:1.6;color:var(--dim);padding:6px 0 14px}
+  /* margin:0 은 «있어야 한다» — 제 여백은 padding 으로 다 갖고 있고, 브라우저 기본 margin(13×2=26px)은
+     평소엔 부모 밖으로 접혀 안 보이다가 부모에 overflow 가 붙는 순간 높이에 더해진다.
+     기록에서 높이를 0.2s 로 움직일 때 그 26px 이 끝에서 «되튐»으로 보였다(2026-09-21). */
+  .sheetMsg{margin:0;font-size:13px;line-height:1.6;color:var(--dim);padding:6px 0 14px}
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
   .bklist{padding-top:2px}   /* 다른 시트처럼 제목 밑 선 없이 — 8px 뒤 바로 내용 */
@@ -3680,7 +3683,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (serial !== logWatchSerial || viewDate !== forDate
           || sheetScrim.classList.contains('hide') || !recTitled()) return;
       rememberLogRows(forDate, rows || []);
-      recRenderList();   // 변경만 갈아끼우지 않는다 — 스냅샷과 한 줄기라 순서가 다시 잡혀야 한다
+      recRefresh();   // 시트를 통째 다시 그리지 않는다 — 세그먼트가 새로 태어나면 썸이 «미끄러지지» 않는다
     }
     function failed(){
       if (serial === logWatchSerial && !sheetScrim.classList.contains('hide')){
@@ -5726,6 +5729,7 @@ window.dispatchEvent(new Event('fb-ready'));
      끊겨 있어도 바로 서고, 열자마자 빈 화면을 보여줄 일이 없다. */
   var recMode = 'log';   // 'log' 변경 내역 / 'snap' 지난 명단
   var recNote = '';      // 지난 명단을 못 가져왔을 때 한 줄. 변경 내역 쪽엔 안 보인다
+  var recLastHtml = '';  // 마지막으로 그린 목록 — 같은 내용이면 다시 안 그린다
   function recSegHtml(){
     return '<div class="seg wide recseg">'
       + '<button type="button" data-rec="log" aria-pressed="' + (recMode === 'log') + '">변경 내역</button>'
@@ -5777,7 +5781,8 @@ window.dispatchEvent(new Event('fb-ready'));
   function recRenderList(){
     document.getElementById('sheetTitle').textContent = '기록';
     var body = document.getElementById('sheetBody');
-    body.innerHTML = recSegHtml() + '<div id="recBody">' + recBodyHtml() + '</div>';
+    recLastHtml = recBodyHtml();
+    body.innerHTML = recSegHtml() + '<div id="recBody">' + recLastHtml + '</div>';
     recBindRows(body);
     [].forEach.call(body.querySelectorAll('.recseg button'), function(b){
       b.onclick = function(){ recSwap(b.getAttribute('data-rec')); };
@@ -5789,24 +5794,20 @@ window.dispatchEvent(new Event('fb-ready'));
   //   「썸이 미끄러지고 판이 따라 자란다」는 한 동작으로 읽힌다. 명단 행이 빠질 때와 같은 수법
   //   (auto 는 전환이 안 되니 픽셀로 박았다 풀어 준다. .row.leaving 참고).
   var recHeightTimer = null;
-  function recSwap(mode){
-    if (recMode === mode) return;
-    recMode = mode;
-    var body = document.getElementById('sheetBody');
-    [].forEach.call(body.querySelectorAll('.recseg button'), function(b){
-      b.setAttribute('aria-pressed', String(b.getAttribute('data-rec') === recMode));
-    });
+  // 목록만 갈아 끼운다 — 세그먼트는 건드리지 않고, 높이는 0.2s 로 따라간다.
+  // 칸 바꾸기·서버 응답·기록 감시가 전부 이 하나를 쓴다(예전엔 셋 다 recRenderList 로 시트를 통째 다시 그렸다).
+  function recSetBody(){
     var list = document.getElementById('recBody');
-    if (!list){ recRenderList(); return; }
-
+    if (!list) return false;
+    var html = recBodyHtml();
+    if (html === recLastHtml) return true;    // 바뀐 게 없으면 손대지 않는다 — 기록 감시는 몇 초마다 들어온다
     var motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
     var h0 = list.offsetHeight;
-    list.innerHTML = recBodyHtml();
+    list.innerHTML = html; recLastHtml = html;
     recBindRows(list);
-    if (!motion) return;                      // 움직임 줄이기 — 그냥 바뀐다
+    if (!motion) return true;                 // 움직임 줄이기 — 그냥 바뀐다
     var h1 = list.offsetHeight;
-    if (h0 === h1) return;                    // 높이가 같으면 건드리지 않는다
-
+    if (h0 === h1) return true;               // 높이가 같으면 건드리지 않는다
     clearTimeout(recHeightTimer);
     list.style.transition = 'none';
     list.style.overflow = 'hidden';
@@ -5817,6 +5818,22 @@ window.dispatchEvent(new Event('fb-ready'));
     recHeightTimer = setTimeout(function(){   // 끝나면 풀어 준다 — 목록이 늘어도 다시 auto 로 따라간다
       list.style.height = ''; list.style.overflow = ''; list.style.transition = '';
     }, 220);
+    return true;
+  }
+  // 칸 바꾸기 — 세그먼트는 그대로 두고 aria-pressed 만 옮긴다(썸이 미끄러진다) + 아래 목록만 다시 그린다
+  function recSwap(mode){
+    if (recMode === mode) return;
+    recMode = mode;
+    var body = document.getElementById('sheetBody');
+    [].forEach.call(body.querySelectorAll('.recseg button'), function(b){
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-rec') === recMode));
+    });
+    if (!recSetBody()) recRenderList();
+  }
+  // 늦게 온 것(서버 응답·안내 한 줄·기록 감시)이 «내용만» 바꿀 때. 상세 화면이면 아무것도 안 한다.
+  function recRefresh(){
+    if (!recTitled()) return;
+    if (!recSetBody()) recRenderList();
   }
   // 상세: 그 시점 명단을 읽기 전용 목록으로 (본 화면처럼 시간대로 묶고 방문·취소 색). 복사는 단톡방 양식 그대로.
   function bkRosterHtml(items){
@@ -5887,7 +5904,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 지난 명단을 못 가져왔을 때 한 줄. 「지난 명단」 쪽에만 붙는다(recBodyHtml).
     function note(msg){
       recNote = msg;
-      if (recTitled()) recRenderList();
+      recRefresh();
     }
     if (!connReady()){ note(MSG_OFF + ' — 연결된 뒤에 보입니다'); return; }
     var settled = false;
@@ -5911,7 +5928,7 @@ window.dispatchEvent(new Event('fb-ready'));
       var dm = res[1] || {};
       Object.keys(dm).forEach(function(k){ bkMap[k] = dm[k]; });
       recNote = '';
-      recRenderList();
+      recRefresh();
     }, fail);
   }
   document.getElementById('recBtn').addEventListener('click', function(){
