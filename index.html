@@ -1129,8 +1129,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     width:236px;box-sizing:border-box;
   }
   .qrcard svg{display:block;width:100%;height:auto}
+  /* ★높이를 못 박는다(54 = 32px 복사 버튼 + 위아래 11). 안 그러면 버튼이 있는 줄만 8px 높아져
+     세 줄 중 하나가 도드라진다(만든 곳·후원에서 45.8 / 45.8 / 54 로 드러남, 2026-09-21).
+     버튼을 줄이는 쪽은 안 된다 — 32 는 누르는 영역 48 을 만드는 값이다. */
   .wnet{
-    display:flex;align-items:center;gap:10px;padding:11px 13px;
+    display:flex;align-items:center;gap:10px;padding:11px 13px;min-height:54px;
     background:var(--panel2);border-radius:12px;
   }
   .wnet + .wnet{margin-top:8px}   /* 카드 사이만 — 마지막 카드 밑엔 여백 안 쌓임 */
@@ -1166,7 +1169,10 @@ window.addEventListener('pageshow', remeasureSbcut);
        돌아오려면 뒤로 가기를 찾아야 한다. _blank 면 사파리로 넘어가고 앱은 뒤에 그대로 남는다.
      음수 margin 으로 줄 전체(46px)를 누르게 한다 — 글자 줄만이면 24px 뿐이다. */
   .site{
-    display:block;padding:11px 0;margin:-11px 0;   /* .wnet 의 위아래 여백과 같은 값 — 줄을 꽉 채우되 넘치지는 않는다 */
+    /* 줄 «높이»를 따라 늘어난다(align-self:stretch). 고정 여백으로 맞춰 두면 .wnet 의 높이가 바뀔 때
+       누르는 영역만 뒤처진다 — 실제로 줄이 45.8→54 가 됐을 때 링크만 45.8 로 남았다(2026-09-21). */
+    display:flex;align-items:center;align-self:stretch;
+    padding:11px 0;margin:-11px 0;   /* .wnet 의 위아래 여백과 같은 값 — 줄을 꽉 채우되 넘치지는 않는다 */
     color:var(--text);text-decoration:underline;text-decoration-color:var(--off);
     text-underline-offset:3px;-webkit-tap-highlight-color:transparent;
   }
