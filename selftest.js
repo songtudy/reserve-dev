@@ -581,22 +581,23 @@
         T.MS.press + '/' + T.MS.state + '/' + T.MS.move);
   })();
 
-  // 「만든 곳」 홈페이지 → 사파리. 사파리가 안 열렸을 때만 앱 안에서 연다.
-  // ★2026-09-21 버그: 사파리로 넘어가며 앱이 얼면 0.7초 타이머도 멈췄다가, «돌아올 때» 깨어나
-  //   「안 열렸네」로 잘못 판단해 앱 안에서도 홈페이지를 열었다. 늦게 깨어남 = 넘어갔었다는 증거.
-  group('만든 곳 — 사파리로 넘어갔는지 판정');
+  // 「만든 곳」 홈페이지 → 아이폰 홈 화면 앱에서 진짜 사파리로.
+  // ★예비 장치(«안 넘어가면 앱 안에서 window.open»)는 없어야 한다. 시뮬레이터 실측으로 어떤 시간으로도
+  //   맞게 못 만든다는 게 드러났다 — 0.7초면 넘어가기 전에 울려 앱 안에서도 열리고(오너 제보 버그),
+  //   2.5초면 iOS 가 팝업으로 막는다. 누가 다시 넣으면 여기서 잡는다. (2026-09-21)
+  group('만든 곳 — 홈페이지는 사파리로만');
   (function(){
-    var F = (window.__ixTest || {}).safariFallbackNeeded;
-    tru('판정 함수를 내보낸다', typeof F === 'function', typeof F);
-    if (typeof F !== 'function') return;
-    var ok = { gone:false, hidden:false, focused:true, elapsed:720 };
-    function w(o){ var r = {}; for (var k in ok) r[k] = ok[k]; for (var k2 in o) r[k2] = o[k2]; return r; }
-    check('아무 일 없이 제때 깨어남 → 앱 안에서 연다(사파리 안 열림)', F(ok), true);
-    check('★얼었다 깨어남(5초 뒤) → 안 연다 — 이게 그 버그', F(w({ elapsed:5000 })), false);
-    check('얼었다 깨어남(경계 1.6초) → 안 연다', F(w({ elapsed:1600 })), false);
-    check('blur/visibilitychange 가 왔다 → 안 연다', F(w({ gone:true })), false);
-    check('화면이 숨어 있다 → 안 연다', F(w({ hidden:true })), false);
-    check('초점을 잃었다(다른 앱이 앞) → 안 연다', F(w({ focused:false })), false);
+    var src = [].map.call(document.querySelectorAll('script:not([src])'), function(x){ return x.textContent; }).join('\n');
+    var at = src.indexOf("querySelector('#sheetBody .site')");
+    tru('홈페이지 클릭 처리를 찾았다', at >= 0, at);
+    if (at < 0) return;
+    var body = src.slice(at, at + 2600);
+    var end = body.indexOf("getElementById('installBtn')");
+    if (end > 0) body = body.slice(0, end);
+    tru('사파리로 넘긴다 (x-safari-)', body.indexOf("'x-safari-'") >= 0);
+    tru('아이폰 홈 화면 앱에서만 (navigator.standalone)', /navigator\.standalone\s*!==\s*true/.test(body));
+    tru('★앱 안에서 여는 예비 window.open 이 없다', !/window\.open\s*\(/.test(body));
+    tru('★예비 타이머가 없다', !/setTimeout\s*\(/.test(body));
   })();
 
   group('스타일시트 — 주석·규칙 온전성');
