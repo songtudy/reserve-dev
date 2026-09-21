@@ -5537,7 +5537,7 @@ window.dispatchEvent(new Event('fb-ready'));
     // 예금주는 계좌보다 «위»에 둔다. 송금 화면에서 마지막에 대조하는 게 이름이라, 못 보고 보내면 돌이킬 수 없다.
     openSheet('만든 곳',
       '<div class="wnet"><span class="k">홈페이지</span>'
-      +   '<a class="v site" href="' + SITE + '" target="_blank" rel="noopener noreferrer">'   // .url(13px) 을 안 붙인다 — 설치 안내의 주소는 «복사할 것»이라 작지만 여기 주소는 «누를 것»이고, 줄 높이도 옆 줄들과 같아야 한다
+      +   '<a class="v url site" href="' + SITE + '" target="_blank" rel="noopener noreferrer">'   // .url = 13px. 주소는 «읽어서 외우는 값»이 아니라 «눌러서 가는 곳»이라 설치 안내와 같은 크기로 둔다 — 17 로 뒀더니 카드를 오른쪽 끝까지 꽉 채워 이 시트에서 제일 무거운 글자가 됐다(2026-09-21). 줄 높이는 .wnet 의 min-height 가 지킨다
       +     SITE.replace(/^https?:\/\//, '') + '</a></div>'
       + '<p class="about sec">후원은 커피 한 잔 값이면 충분합니다.</p>'
       + '<div class="wnet"><span class="k">예금주</span><span class="v">' + DONATE.name + '</span></div>'
