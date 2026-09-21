@@ -5617,16 +5617,6 @@ window.dispatchEvent(new Event('fb-ready'));
   // 서랍 이름은 「만든 곳」 하나다 — 「만든 곳 · 후원」은 서랍에서 유일하게 가운뎃점이 든 항목이라
   // 그 줄만 «두 개를 묶어 놨다»고 티가 났다. 안에 들어가면 후원 줄이 바로 보이니 문 이름이 둘 다 적을 이유가 없다.
   var SITE = 'https://juminlabs.pikaju.workers.dev';
-  // 「사파리로 안 넘어갔으니 앱 안에서라도 열까」 — 넷 중 하나라도 «떠났다»를 말하면 안 연다.
-  //   gone    : blur·visibilitychange·pagehide 중 하나가 왔다
-  //   hidden  : 지금 화면이 숨어 있다
-  //   focused : 이 문서가 초점을 쥐고 있다(없으면 다른 앱이 앞에 있다)
-  //   elapsed : 0.7초 타이머가 실제로 깨어나기까지 걸린 시간. 1.5초를 넘었으면 그 사이 앱이 «얼었다»
-  //             = 사파리로 넘어갔다 돌아왔다. 제때(~0.7초) 깨어난 경우만 «안 넘어갔다»로 본다.
-  var SAFARI_LATE_MS = 1500;
-  function safariFallbackNeeded(sig){
-    return !sig.gone && !sig.hidden && sig.focused !== false && sig.elapsed < SAFARI_LATE_MS;
-  }
   // 계좌는 다음 규칙을 지킨다:
   // ★보이는 글자 = 복사되는 글자. 하이픈을 떼고 복사하면 「왜 다르지」가 되고, 대조할 수도 없다.
   //   은행 앱은 하이픈이 있어도 알아서 떼고 받는다.
@@ -5653,31 +5643,21 @@ window.dispatchEvent(new Event('fb-ready'));
        «떠났는지»를 보고(visibilitychange/pagehide) 아무 일도 없었으면 원래 방식으로 되돌린다 —
        안 먹는 날에도 링크가 죽지는 않는다. 사파리에서 연 경우엔 손대지 않는다(새 탭이 정상 동작). */
     var lk = document.querySelector('#sheetBody .site');
+    /* 아이폰 홈 화면 앱에서만 진짜 사파리로 넘긴다. 그 밖(사파리 탭·안드로이드)은 링크 원래 동작 그대로.
+       navigator.standalone 은 iOS 사파리에만 있는 값이라 «아이폰 홈 화면 앱»만 정확히 고른다
+       (display-mode:standalone 은 안드로이드도 참이라 쓰면 안 된다 — 거기선 x-safari 가 없는 주소다).
+       ★예비 장치(«안 넘어가면 앱 안에서라도 연다»)는 «없는 게 맞다». 2026-09-21 시뮬레이터 홈 화면 앱 실측:
+         · 사파리로 넘어가는 데 0.9~1.0초 걸린다(blur·hidden 이 그때 온다).
+         · 0.7초 예비 → 넘어가기 «전에» 울려 앱 안에서도 열었다 = 오너가 본 「복귀해도 앱에도 열려 있다」.
+         · 2.5초 예비 → 겹치진 않지만 iOS 가 window.open 을 팝업으로 막는다(null) — 누른 지 오래돼서.
+           (0.7초 뒤 window.open 은 열린다. 누른 순간에서 멀어지면 막힌다.)
+         → «넘어간 뒤»와 «아직 열 수 있는 때»가 겹치지 않는다. 어떤 시간으로도 맞게 못 만든다.
+         x-safari 가 안 먹는 폰이면 iOS 가 스스로 「주소가 유효하지 않다」를 띄운다 — 예비가 있어도 거기선 막혔다.
+       다시 넣지 말 것. 셀프테스트가 이 자리에 window.open 이 돌아오면 잡는다. */
     if (lk) lk.addEventListener('click', function(e){
-      if (!isStandalone()) return;
+      if (window.navigator.standalone !== true) return;
       e.preventDefault();
-      var gone = false, t0 = Date.now();
-      var mark = function(){ gone = true; };
-      document.addEventListener('visibilitychange', mark);
-      window.addEventListener('pagehide', mark);
-      window.addEventListener('blur', mark);   // 앱이 앞자리를 내줄 때 가장 먼저 온다
-      try { location.href = 'x-safari-' + SITE; } catch(err){ gone = false; }
-      /* 사파리가 «안» 열렸을 때만 앱 안에서라도 연다.
-         ★예전엔 이게 «돌아올 때» 터졌다(오너 2026-09-21 「앱 복귀해도 앱도 홈페이지가 열려 있네」).
-           사파리로 넘어가는 순간 iOS 가 앱을 얼리는데, 사건(visibilitychange 등)이 오기 «전에» 얼면
-           gone 이 false 인 채로 타이머까지 멈춘다. 돌아오면 그 타이머가 그제서야 깨어나고, 그때는
-           화면도 보이는 상태라 「안 열렸네」로 잘못 판단해 앱 안에서도 홈페이지를 열었다.
-           → 타이머가 «늦게» 깨어났다는 것 자체가 얼었다 = 넘어갔었다는 증거다. 그걸 본다.
-           판정은 safariFallbackNeeded 한 곳 — 셀프테스트가 이 경우를 직접 잡는다. */
-      setTimeout(function(){
-        document.removeEventListener('visibilitychange', mark);
-        window.removeEventListener('pagehide', mark);
-        window.removeEventListener('blur', mark);
-        if (safariFallbackNeeded({ gone: gone, hidden: document.hidden,
-            focused: document.hasFocus ? document.hasFocus() : true, elapsed: Date.now() - t0 })){
-          window.open(SITE, '_blank', 'noopener');
-        }
-      }, 700);
+      location.href = 'x-safari-' + SITE;
     });
   });
   document.getElementById('installBtn').addEventListener('click', function(){
@@ -6440,8 +6420,7 @@ window.dispatchEvent(new Event('fb-ready'));
       setViewDate: function(d){ viewDate = d; },
       setCollapsed: function(c){ collapsed = c || {}; },
       setTouched: function(t){ touched = t || {}; },
-      MS: MS,
-      safariFallbackNeeded: safariFallbackNeeded
+      MS: MS
     };
     var st = document.createElement('script');
     st.src = 'selftest.js';
