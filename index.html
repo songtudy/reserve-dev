@@ -5618,8 +5618,10 @@ window.dispatchEvent(new Event('fb-ready'));
   // 그 줄만 «두 개를 묶어 놨다»고 티가 났다. 안에 들어가면 후원 줄이 바로 보이니 문 이름이 둘 다 적을 이유가 없다.
   var SITE = 'https://juminlabs.pikaju.workers.dev';
   // 계좌는 다음 규칙을 지킨다:
-  // ★보이는 글자 = 복사되는 글자. 하이픈을 떼고 복사하면 「왜 다르지」가 되고, 대조할 수도 없다.
-  //   은행 앱은 하이픈이 있어도 알아서 떼고 받는다.
+  // ★보여줄 땐 하이픈(읽기 좋게), 복사할 땐 «숫자만»(붙여넣기 좋게) — 오너 2026-09-21.
+  //   예전엔 「보이는 글자 = 복사되는 글자, 은행 앱은 하이픈을 알아서 뗀다」였는데 그 근거는 재 본 적 없는
+  //   짐작이었다. 숫자 키패드만 받는 계좌 입력칸은 하이픈이 섞이면 붙여넣기를 거부하거나 일부만 넣는다.
+  //   숫자만이면 어느 앱에서도 안 막힌다. 대조도 된다 — 숫자 순서는 같고 구분 기호만 빠진다.
   var DONATE = { name: '송주민', bank: '국민은행', acc: '410102-01-450720' };
   // 누르면 바로 연다 — 시트 한 겹을 더 두고 「열기」를 또 누르게 할 이유가 없다.
   // ★_blank 가 필수. 홈 화면 앱에서 같은 창에 열면 «앱 창 자체»가 홈페이지로 바뀐다.
@@ -5636,14 +5638,14 @@ window.dispatchEvent(new Event('fb-ready'));
       + '<div class="wnet cpy"><span class="k">' + DONATE.bank + '</span><span class="v">' + DONATE.acc + '</span>'
       +   '<button type="button" class="urlcopy" aria-label="계좌번호 복사">' + ICON_COPY + '</button></div>');
     var cp = document.querySelector('#sheetBody .urlcopy');
-    if (cp) cp.onclick = function(){ copyText(DONATE.acc, '계좌번호 복사됨'); };
-    /* 홈 화면 앱에서는 «진짜 사파리»로 넘긴다.
-       그냥 두면 iOS 가 앱 위에 덮이는 인앱 브라우저로 연다 — 앱은 뒤에 남지만 사파리가 아니다.
-       x-safari-https:// 는 애플이 문서로 밝힌 주소가 아니라서 언젠가 안 먹을 수 있다. 그래서
-       «떠났는지»를 보고(visibilitychange/pagehide) 아무 일도 없었으면 원래 방식으로 되돌린다 —
-       안 먹는 날에도 링크가 죽지는 않는다. 사파리에서 연 경우엔 손대지 않는다(새 탭이 정상 동작). */
+    // 복사는 «숫자만». 은행 앱 계좌 입력칸은 숫자 키패드라 하이픈이 섞이면 붙여넣기가 막히거나
+    // 일부만 들어간다. 화면에는 읽기 좋게 하이픈을 두고, 넘기는 값만 숫자로 (오너 2026-09-21).
+    if (cp) cp.onclick = function(){ copyText(DONATE.acc.replace(/\D/g, ''), '계좌번호 복사됨'); };
     var lk = document.querySelector('#sheetBody .site');
     /* 아이폰 홈 화면 앱에서만 진짜 사파리로 넘긴다. 그 밖(사파리 탭·안드로이드)은 링크 원래 동작 그대로.
+       그냥 두면 iOS 가 앱 위에 덮이는 인앱 브라우저로 연다 — 앱은 뒤에 남지만 사파리가 아니다.
+       ★x-safari-https:// 는 애플이 문서로 밝힌 주소가 아니라 언젠가 안 먹을 수 있다. 그날엔 iOS 가
+         「주소가 유효하지 않다」를 띄운다 — 그러면 이 분기를 빼고 링크 원래 동작(인앱 브라우저)으로 돌릴 것.
        navigator.standalone 은 iOS 사파리에만 있는 값이라 «아이폰 홈 화면 앱»만 정확히 고른다
        (display-mode:standalone 은 안드로이드도 참이라 쓰면 안 된다 — 거기선 x-safari 가 없는 주소다).
        ★예비 장치(«안 넘어가면 앱 안에서라도 연다»)는 «없는 게 맞다». 2026-09-21 시뮬레이터 홈 화면 앱 실측:
