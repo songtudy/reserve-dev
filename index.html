@@ -458,6 +458,11 @@ window.addEventListener('pageshow', remeasureSbcut);
     display:grid;place-items:center;line-height:0;padding:0;
   }
   .searchbar button svg{display:block}
+  /* 닿는 범위만 44 로 — 보이는 크기(36)는 그대로. 메뉴 버튼(.nav button::after)과 같은 수법.
+     36×36 은 가로세로가 «둘 다» 44 에 모자랐다(2026-09-21 — 검색이 닫혀 있어 앞선 점검에 안 잡혔다).
+     넓혀도 글자를 안 덮는다: 뒤로 버튼 오른쪽 끝과 글자 시작 사이 16 → 12 가 남는다.
+     지우기 쪽은 개수(「3건」)와 4 겹치지만 개수는 pointer-events:none 인 글자뿐이라 누를 거리가 아니다. */
+  .searchbar button::after{content:"";position:absolute;inset:-4px}
   .searchbar button:active, .searchbar button.dn{opacity:.4}   /* 면 없는 아이콘 = 흐려짐 (누름 규칙 ②) */
   mark{background:var(--mark);color:var(--text);-webkit-text-fill-color:var(--text);border-radius:3px;padding:0 1px}
 
@@ -3057,7 +3062,9 @@ window.dispatchEvent(new Event('fb-ready'));
       // ★나가는 중인 행은 남긴다. 상태만 보고 거르면, 먼저 체크한 행의 타이머가 목록을 다시 그리는 순간
       //   아직 제 시간이 안 된 «다른» 행들까지 같이 쓸려 나간다 — 연달아 체크하면 바로 사라졌다(오너 2026-09-20).
       //   서버에서 온 갱신·시간대 접힘 등 다른 이유로 다시 그릴 때도 마찬가지였다.
-      var rows = (viewMode === 'pending')
+      // ★검색 중엔 상태로 거르지 않는다(2026-09-21). 걸렀더니 기본 화면(대기)에서 이미 방문·취소한 손님을 찾으면
+      //   개수는 「1건」인데 줄은 0 이었다 — 「동현」은 3건이라 하고 2줄만 보였다. 앱은 늘 「대기」로 열린다.
+      var rows = (viewMode === 'pending' && !q)
         ? g.items.filter(function(it){ return it.status === 'pending' || leaveTimers[it.id]; })
         : g.items;
       if (viewMode === 'pending' && !rows.length) return;
@@ -3789,10 +3796,12 @@ window.dispatchEvent(new Event('fb-ready'));
     if (row && row.style.height) row.style.height = '';   // 접다 말고 되살아난 행 (체크 해제)
   }
   function cancelAllLeaves(){ Object.keys(leaveTimers).forEach(cancelLeave); }
+  // 검색 중이면 「대기」 보기의 규칙(처리된 줄 숨김·체크하면 빠짐)을 멈춘다 — 찾는 사람은 상태와 상관없이 다 보여야 한다.
+  function searching(){ return !!(query && query.trim()); }
   function scheduleLeave(id){
     cancelLeave(id);
     leaveTimers[id] = setTimeout(function(){
-      if (viewMode !== 'pending'){ cancelLeave(id); return; }   // 그새 「전체」로 갔으면 남는다
+      if (viewMode !== 'pending' || searching()){ cancelLeave(id); return; }   // 그새 「전체」로 갔거나 검색을 시작했으면 남는다
       leavingNow[id] = true;
       var row = rowForId(id);
       if (row){
@@ -3818,7 +3827,8 @@ window.dispatchEvent(new Event('fb-ready'));
 
     cancelLeave(it.id);
     row.className = 'row ' + it.status;
-    if (viewMode === 'pending' && it.status !== 'pending') scheduleLeave(it.id);
+    // 검색 중엔 안 뺀다 — 뺐다가는 검색이 다시 그리는 순간 도로 튀어나온다. 방금 체크한 결과(✓)가 그 자리에 보여야 한다.
+    if (viewMode === 'pending' && !searching() && it.status !== 'pending') scheduleLeave(it.id);
     var chk = row.querySelector('.check');
     if (chk){
       chk.innerHTML = it.status === 'arrived' ? ICON_GO
@@ -4575,6 +4585,7 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   }
   function openSearch(){
+    cancelAllLeaves();   // 체크하고 곧바로 검색을 열어도, 빠지던 줄이 검색 결과에서 사라지지 않게
     scrollBeforeSearch = wrapEl ? wrapEl.scrollTop : 0;
     searchbar.classList.remove('hide');
     if (wrapEl) wrapEl.scrollTop = 0;
