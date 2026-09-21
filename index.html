@@ -5723,8 +5723,11 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!list.length) return '<p class="sheetMsg">명단이 비어 있습니다</p>';
     // 본 명단의 축소판 — 머리글(시각 + 방문·취소 수, 아래 선) / 행(작은 상태 원 · 이름 · 인원).
     // 상태 색은 원에만, 글자 태그는 안 붙인다 (본 화면과 같은 규칙).
+    // 둘 다 14 — 본 명단이 ✓·✕ 를 같은 크기(17)로 두는 것과 같은 규칙. 여기선 원이 없어 표시만 뜨므로
+    // 한 단 작게 잡는다(.ck 칸이 14px). ✕ 만 12 로 더 줄여 놨었는데, ✕ 는 글리프 자체가 ✓ 보다 작아
+    // (획 범위 10 vs 14) 줄일수록 더 초라해졌다 — 크기를 맞춰야 둘이 같은 무게로 읽힌다(2026-09-21).
     var GO = ICON_GO.replace('width="17" height="17"', 'width="14" height="14"');
-    var OFF = ICON_OFF.replace('width="17" height="17"', 'width="12" height="12"');
+    var OFF = ICON_OFF.replace('width="17" height="17"', 'width="14" height="14"');
     return groupByTime(list.slice().sort(sortItems)).map(function(g){
       var t = tallyStatus(g.items);
       return '<div class="bkvt"><span>' + esc(g.time) + '</span><span class="bkvm">'
