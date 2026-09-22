@@ -637,6 +637,19 @@
     tru('목록이 비어 일찍 끝나도 접기 버튼을 맞춘다', em >= 0 && src.slice(em, em + 300).indexOf('paintFoldBtn(true, 0, q)') >= 0);
   })();
 
+  // 룰렛 날벼락 확률은 «주소»로 정해진다 — 같은 파일을 어디 올려도 맞게(2026-09-21, 로컬 1.00 이 실사용에 올라간 뒤).
+  group('룰렛 — 날벼락 확률은 주소로');
+  (function(){
+    var C = T.twistChance, D = T.computeDev;
+    tru('판정 함수를 내보낸다', typeof C === 'function' && typeof D === 'function');
+    if (typeof C !== 'function' || typeof D !== 'function') return;
+    check('실사용 주소 → 0.25', C(D('songtudy.github.io', '/reserve/')), 0.25);
+    check('실사용 주소(끝 / 없음) → 0.25', C(D('songtudy.github.io', '/reserve')), 0.25);
+    check('테스트앱 주소 → 1', C(D('songtudy.github.io', '/reserve-dev/')), 1);
+    check('로컬 → 1', C(D('localhost', '/app/index.html')), 1);
+    check('파일로 연 것 → 1', C(D('', '/Users/x/index.html')), 1);
+  })();
+
   group('스타일시트 — 주석·규칙 온전성');
   (function(){
     var sheets = [].slice.call(document.styleSheets), rules = [], kf = {};
