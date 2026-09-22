@@ -131,6 +131,7 @@ window.addEventListener('pageshow', remeasureSbcut);
        ★잠금·스플래시는 «창»이 아니라 화면 덮개라 여기서 뺐다. 걷히는 건 빠를수록 좋다. */
     --easeEven:cubic-bezier(.45,0,.55,1);
     --tPress:.12s;  --tState:.15s;  --tMove:.2s;
+    --holdms:1000ms;   /* 「길게 눌러 초기화」 시간. 다른 시간 토큰처럼 루트에 둔다 — 버튼 안에 두었더니 JS(MS.hold)가 못 읽고 기본값으로 우연히 맞고 있었다(2026-09-21) */
     /* 판이 «불투명해지는» 시간 = 이동 시간의 1/4(50ms). 독립된 네 번째 단계가 아니라 --tMove 에서 나온 값이다
        (세 단계 사다리는 그대로 셋). 들어올 때만 쓴다 — 나갈 때는 --tMove.
        ★절반(100ms)으로 뒀더니 «첫 프레임»이 40% 밖에 안 차서, 서랍 위에 룰렛창이 뜰 때 서랍 글자가 창을 뚫고 보였다
@@ -1467,7 +1468,6 @@ window.addEventListener('pageshow', remeasureSbcut);
      남기려고, 한 번의 탭·주머니 오작동으로는 안 되는 이 제스처로 바꿨다.
      색은 취소된 예약 태그와 같은 --warn 계열 (경보가 아니라 '주의'). */
   .dbtn #dlgYes{
-    --holdms:1000ms;                       /* 길게 누르기 시간 — JS 의 HOLD_MS 와 같아야 한다 */
     position:relative;overflow:hidden;
     background:var(--btnWarn);color:var(--onWarn);
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
@@ -2125,6 +2125,21 @@ window.dispatchEvent(new Event('fb-ready'));
     return !(host === 'songtudy.github.io' && /^\/reserve(\/|$)/.test(path));
   }
   var IS_DEV = computeDev(location.hostname, location.pathname);
+  /* CSS 의 시간 토큰을 JS 가 «읽어서» 쓴다. 예전엔 210·130 처럼 베껴 적어 뒀는데,
+     그 숫자들은 전부 「CSS 전환이 끝나기를 기다리는 시간」이라 --tMove/--tPress 를 고치면 말없이 어긋난다
+     (행이 덜 사라진 채 지워지거나, 잠금 화면이 번쩍인다). 값을 두 군데 적지 않는다. +10 은 전환이
+     확실히 끝난 뒤를 잡기 위한 여유 한 프레임 — 그 의도가 숫자에 드러나게 남겨 둔다. (2026-09-21) */
+  var MS = (function(){
+    var cs = getComputedStyle(document.documentElement);
+    function v(name, dflt){
+      var t = (cs.getPropertyValue(name) || '').trim();
+      if (!t) return dflt;
+      var n = parseFloat(t);
+      if (!isFinite(n)) return dflt;
+      return t.slice(-2) === 'ms' ? n : n * 1000;   // '.2s' → 200 · '1000ms' → 1000
+    }
+    return { move: v('--tMove', 200), press: v('--tPress', 120), state: v('--tState', 150), hold: v('--holdms', 1000) };
+  })();
   var DAY_ROLLOVER = 0; // 자정에 날짜가 바뀐다 (마감이 자정을 넘기면 이 값을 올릴 것)
   var wrapEl = document.querySelector('.wrap');   // 명단 스크롤 영역 (앱 셸의 유일한 스크롤러)
   var state = null;      // {date, items:[]}
@@ -2961,7 +2976,8 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!splashEl || hideSplash._done) return;
     hideSplash._done = true;
     splashEl.classList.add('out');
-    setTimeout(function(){ splashEl.classList.add('hide'); }, 300);
+    // 흐려짐(.splash.out 의 transition --tMove)이 끝난 뒤 숨긴다. 300 으로 박혀 있었다 — --tMove 를 올리면 흐려지다 잘린다.
+    setTimeout(function(){ splashEl.classList.add('hide'); }, MS.move + 100);
   }
   setTimeout(hideSplash, 12000);
 
@@ -3778,21 +3794,6 @@ window.dispatchEvent(new Event('fb-ready'));
   // 실패하면 false 를 돌려주고 호출한 쪽이 통째로 다시 그린다.
   // 「대기」 보기에서 방금 처리한 행 — 바로 지우면 「내가 뭘 눌렀지」가 된다.
   // 채워진 원을 LEAVE_MS 동안 보여준 뒤 흐려지며 빠진다. 그 사이 다시 누르면(체크 해제) 그대로 남는다.
-  /* CSS 의 시간 토큰을 JS 가 «읽어서» 쓴다. 예전엔 210·130 처럼 베껴 적어 뒀는데,
-     그 숫자들은 전부 「CSS 전환이 끝나기를 기다리는 시간」이라 --tMove/--tPress 를 고치면 말없이 어긋난다
-     (행이 덜 사라진 채 지워지거나, 잠금 화면이 번쩍인다). 값을 두 군데 적지 않는다. +10 은 전환이
-     확실히 끝난 뒤를 잡기 위한 여유 한 프레임 — 그 의도가 숫자에 드러나게 남겨 둔다. (2026-09-21) */
-  var MS = (function(){
-    var cs = getComputedStyle(document.documentElement);
-    function v(name, dflt){
-      var t = (cs.getPropertyValue(name) || '').trim();
-      if (!t) return dflt;
-      var n = parseFloat(t);
-      if (!isFinite(n)) return dflt;
-      return t.slice(-2) === 'ms' ? n : n * 1000;   // '.2s' → 200 · '1000ms' → 1000
-    }
-    return { move: v('--tMove', 200), press: v('--tPress', 120), state: v('--tState', 150) };
-  })();
   var LEAVE_MS = 2500;   // 900 → 1300 → 3000 → 2500 (오너 2026-09-20). 흐려지는 0.2초를 더해 눈에서 사라지기까지 2.7초
   function cancelLeave(id){
     if (leaveTimers[id]){ clearTimeout(leaveTimers[id]); delete leaveTimers[id]; }
@@ -4380,7 +4381,7 @@ window.dispatchEvent(new Event('fb-ready'));
   // 길게 눌러 확인하는 팝업. 입력칸(키보드)이 없다 — 한 번의 탭·주머니 오작동으로는 실행되지
   // 않고, HOLD_MS 동안 「초기화」를 누르고 있어야 완성된다. 누르다 손을 떼거나 버튼 밖으로
   // 밀면 처음으로 돌아간다.
-  var HOLD_MS = 1000;   // CSS 의 --holdms 와 반드시 같은 값
+  var HOLD_MS = MS.hold;   // CSS 의 --holdms 에서 읽는다 — 1000 을 두 군데 적어 두면 채움 막대와 실행 시점이 말없이 어긋난다(2026-09-21)
   // opts.hold: true 면 「길게 눌러」 실행(초기화 — 8/31 실수 방지). 아니면 평범한 탭(로그아웃 등).
   // 두 방식 모두 같은 창(#scrim/.dialog)·같은 취소/실행 배치를 쓴다 — 상호작용만 다르다.
   function confirmDlg(title, onYes, opts){
