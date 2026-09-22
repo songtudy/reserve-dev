@@ -620,6 +620,23 @@
     tru('검색을 열면 대기 중인 빠지기를 거둔다', at >= 0 && src.slice(at, at + 200).indexOf('cancelAllLeaves()') >= 0);
   })();
 
+  // 접기 — 보이는 것과 다른 기준으로 숨은 상태를 바꾸면, 눈엔 변화가 없는데 나중에 말없이 접혀 있다(2026-09-21 실측 셋).
+  //   A 검색 중 시간대 머리글  B 검색 중 「전체 접기」  C 「대기」에서 「전체 펼치기」가 두 번 눌러야 먹음
+  //   + 검색을 열자마자 0건이면 버튼이 켜진 채. 전부 tools/state-sweep.js 가 16가지 상태로 다시 잡는다.
+  group('접기 — 보이는 것과 같은 기준으로');
+  (function(){
+    var src = [].map.call(document.querySelectorAll('script:not([src])'), function(x){ return x.textContent; }).join('\n');
+    var ts = src.indexOf('function toggleSlot(time){');
+    tru('A 검색 중엔 시간대 머리글이 아무것도 안 바꾼다', ts >= 0 && src.slice(ts, ts + 400).indexOf('if (searching()) return;') >= 0);
+    var fb = src.indexOf("foldBtn.addEventListener('click'");
+    var fbody = fb < 0 ? '' : src.slice(fb, fb + 1400);
+    tru('B 검색 중엔 「전체 접기」가 아무것도 안 바꾼다', fbody.indexOf('if (searching()) return;') >= 0);
+    tru('B 검색 중엔 접기 버튼이 꺼진다', /foldBtnEl\.disabled = noGroups \|\| !!q/.test(src));
+    tru('C 접을지 펼칠지는 «보이는» 시간대로 정한다', fbody.indexOf("document.querySelector('#list .group:not(.shut)')") >= 0);
+    var em = src.indexOf('if (!items.length){');
+    tru('목록이 비어 일찍 끝나도 접기 버튼을 맞춘다', em >= 0 && src.slice(em, em + 300).indexOf('paintFoldBtn(true, 0, q)') >= 0);
+  })();
+
   group('스타일시트 — 주석·규칙 온전성');
   (function(){
     var sheets = [].slice.call(document.styleSheets), rules = [], kf = {};
