@@ -3254,6 +3254,10 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!it) return;
     keepSlotOpenForId(id);
     if (action === 'status'){
+      // 이미 취소된 줄에서 「취소」를 또 누르면 대기로 되돌린다(오너 2026-09-22).
+      // 예전엔 되돌릴 길이 없어 체크 원을 두 번 눌러 «방문»을 거쳐야 했고, 변경 내역에 오지도 않은
+      // 손님의 「방문」이 남았다. 체크 원이 방문↔대기를 오가는 것과 같은 방식이다.
+      if (status === 'cancelled' && it.status === 'cancelled') status = 'pending';
       setStatus(id, status);
       return;
     }
@@ -3901,11 +3905,16 @@ window.dispatchEvent(new Event('fb-ready'));
     if (!it) return;
     if (!canWrite()) return;        // 끊기면 체크도 막는다 (위 canWrite 주석)
     if (it.status !== st){
-      var kind = st === 'arrived' ? '방문' : st === 'cancelled' ? '취소' : '체크 해제';
+      var kind = st === 'arrived' ? '방문' : st === 'cancelled' ? '취소'
+               : it.status === 'cancelled' ? '취소 해제' : '체크 해제';   // 취소에서 대기로 = 「취소 해제」
       // 두 직원이 같은 행을 동시에 눌러도 한 줄. 2분 단위로 묶어 나중의 재-토글은 별도 줄로.
       // 버킷은 '서버 시계' 기준 — 두 폰 시각이 몇 분 달라도 같은 버킷 → 같은 id → 한 줄.
+      // ★「취소 해제」는 따로 센다 — 체크 해제와 둘 다 «대기로»라 같은 id 가 되어, 2분 안에 둘 다 하면
+      //   나중 것이 앞의 것을 덮어썼다(2026-09-22 실측: 취소 → 취소 해제 → 방문 → 체크 해제 가 3줄로 보였다).
+      //   두 직원이 같은 «취소 해제»를 동시에 누르면 여전히 같은 id → 한 줄.
+      var stKey = kind === '취소 해제' ? 'uncancel' : st;
       logAdd(kind, it.time + ' ' + it.name,
-             'st:' + id + ':' + st + ':' + Math.round(serverNow() / 120000));
+             'st:' + id + ':' + stKey + ':' + Math.round(serverNow() / 120000));
     }
     var ts = stampTs(it);
     it.status = st;
