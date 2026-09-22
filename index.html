@@ -2965,6 +2965,19 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   setTimeout(hideSplash, 12000);
 
+  // 하단 「전체 접기/펼치기」 — 라벨·모양·켜짐을 한 곳에서. render 의 두 갈래(목록 있음/비었음)가 모두 부른다.
+  // 시간대가 하나도 안 그려졌으면(대기 모드에서 다 처리됨·검색 0건) 접을 것도 펼칠 것도 없다 — 기본 라벨로 두고 꺼 둔다.
+  // 숨기면 알약이 2칸이 되어 모양이 바뀌므로 자리는 지킨다(iOS 툴바의 비활성 항목과 같은 처리).
+  function paintFoldBtn(noGroups, openCount, q){
+    var foldBtnEl = document.getElementById('foldBtn');
+    if (!foldBtnEl) return;
+    var showFold = noGroups || openCount;
+    var fl = foldBtnEl.querySelector('.foldlbl'), fp = foldBtnEl.querySelector('.foldp');
+    if (fl) fl.textContent = showFold ? '전체 접기' : '전체 펼치기';
+    if (fp) fp.setAttribute('d', showFold ? 'M6 10l6-6 6 6M6 20l6-6 6 6'    // 겹화살 위 = 접기 (시간바 .chev 와 같은 어휘)
+                                          : 'M6 4l6 6 6-6M6 14l6 6 6-6');   // 겹화살 아래 = 펼치기
+    foldBtnEl.disabled = noGroups || !!q;   // 검색 중엔 결과가 늘 다 펼쳐져 있어 접을 게 없다
+  }
   function render(){
     hideSplash();
     if (!interactionActive() && deferredState){
@@ -3006,6 +3019,9 @@ window.dispatchEvent(new Event('fb-ready'));
     var em = document.getElementById('emptyMsg');
     em.classList.remove('bear');   // 곰 화면을 지나온 뒤의 「검색 결과 없음」이 곰 여백(0)을 물려받지 않게
     if (!items.length){
+      // ★여기서 일찍 끝나도 접기 버튼은 맞춰 둔다 — 안 그러면 직전 상태가 남는다.
+      //   검색을 열자마자 0건이면 화면은 비었는데 「전체 접기」가 켜진 채였다(2026-09-21 실측).
+      paintFoldBtn(true, 0, q);
       if (q){
         em.classList.remove('hide');
         em.textContent = '「' + query.trim() + '」 검색 결과가 없습니다';
@@ -3117,18 +3133,7 @@ window.dispatchEvent(new Event('fb-ready'));
       if (closeLeftSec()) cdStart(); else cdStop();
     }
 
-    var foldBtnEl = document.getElementById('foldBtn');
-    if (foldBtnEl){
-      // 시간대가 하나도 안 그려졌으면(대기 모드에서 다 처리됨) 접을 것도 펼칠 것도 없다 — 기본 라벨로 두고 꺼 둔다.
-      // 숨기면 알약이 2칸이 되어 모양이 바뀌므로 자리는 지킨다(iOS 툴바의 비활성 항목과 같은 처리).
-      var noGroups = !list.querySelector('.group');
-      var showFold = noGroups || openCount;
-      var fl = foldBtnEl.querySelector('.foldlbl'), fp = foldBtnEl.querySelector('.foldp');
-      if (fl) fl.textContent = showFold ? '전체 접기' : '전체 펼치기';
-      if (fp) fp.setAttribute('d', showFold ? 'M6 10l6-6 6 6M6 20l6-6 6 6'    // 겹화살 위 = 접기 (시간바 .chev 와 같은 어휘)
-                                            : 'M6 4l6 6 6-6M6 14l6 6 6-6');   // 겹화살 아래 = 펼치기
-      foldBtnEl.disabled = noGroups;
-    }
+    paintFoldBtn(!list.querySelector('.group'), openCount, q);
 
     // paste-open 은 붙여넣기 화면 여부. 창 상태와 어긋나 헤더가 계속 숨는 걸 막는다.
     document.body.classList.toggle('paste-open', !panel.classList.contains('hide'));
@@ -3863,6 +3868,9 @@ window.dispatchEvent(new Event('fb-ready'));
   // 시간대 접기 / 펼치기
   function toggleSlot(time){
     if (!state) return;
+    // 검색 중엔 아무것도 바꾸지 않는다. 검색 결과는 늘 다 펼쳐 보이므로(render 의 shut = q ? false …)
+    // 눌러도 눈엔 변화가 없는데 뒤에서 접힘 상태만 바뀌어, 검색을 닫으면 그 시간대가 말없이 접혀 있었다(2026-09-21 실측).
+    if (searching()) return;
     var mine = itemsAt(time);
     if (!mine.length) return;
     var grp = slotEl(time);
@@ -4642,13 +4650,15 @@ window.dispatchEvent(new Event('fb-ready'));
   var foldBtn = document.getElementById('foldBtn');
   foldBtn.addEventListener('click', function(){
     if (!state || !state.items.length) return;
+    if (searching()) return;   // 검색 중엔 꺼져 있다(render). 눌려도 숨은 상태만 바뀌어 검색을 닫으면 전부 접혀 있었다.
     if (!panel.classList.contains('hide')) closePaste();
-    var slots = groupByTime(state.items.slice().sort(sortItems)), anyOpen = false;
-    var done = slots.map(function(g){
-      var d = tallyStatus(g.items).pend === 0;   // 대기가 비어 있는 시간대인지
-      if (!isCollapsed(g.time, d ? 0 : 1)) anyOpen = true;
-      return d;
-    });
+    var slots = groupByTime(state.items.slice().sort(sortItems));
+    var done = slots.map(function(g){ return tallyStatus(g.items).pend === 0; });   // 대기가 비어 있는 시간대인지
+    // ★접을지 펼칠지는 «눈에 보이는» 시간대로 정한다 — 라벨(render 의 openCount)과 같은 기준.
+    //   예전엔 숨은 시간대(대기 보기에서 처리가 끝나 안 보이는 것)까지 세서, 보이는 건 다 접혀 라벨이
+    //   「전체 펼치기」인데 숨은 하나가 펼쳐져 있으면 «접기»로 판단해 아무 일도 안 일어났다 —
+    //   두 번 눌러야 펼쳐졌다(2026-09-21 실측). 적용은 여전히 «전부»에 한다(「전체」 보기로 가도 맞게).
+    var anyOpen = !!document.querySelector('#list .group:not(.shut)');
     slots.forEach(function(g, i){ setCollapsed(g.time, anyOpen, done[i]); });
     if (anyOpen) openMenu = null;   // 전부 접을 땐 열린 메뉴도 닫는다
     render();
