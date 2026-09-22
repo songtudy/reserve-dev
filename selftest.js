@@ -575,6 +575,7 @@
     check('MS.move  = --tMove', T.MS.move, tok('--tMove'));
     check('MS.press = --tPress', T.MS.press, tok('--tPress'));
     check('MS.state = --tState', T.MS.state, tok('--tState'));
+    check('MS.hold  = --holdms (길게 눌러 초기화)', T.MS.hold, tok('--holdms'));
     // 초 단위(.2s)를 ms 로 옳게 읽었나 — 0.2 로 읽으면 행이 즉시 지워진다
     tru('초 단위를 ms 로 읽는다', T.MS.move > 50 && T.MS.move < 2000, T.MS.move);
     tru('--tPress < --tState < --tMove', T.MS.press < T.MS.state && T.MS.state < T.MS.move,
