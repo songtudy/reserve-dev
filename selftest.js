@@ -659,6 +659,29 @@
     tru('기록엔 「취소 해제」로 남는다', /it\.status === 'cancelled' \? '취소 해제'/.test(src));
   })();
 
+  // 업데이트 띠 — 두 번 물어 같은 답일 때만. 한 번 튄 답으로 띄우면 안 올린 날에도 뜬다(오너 2026-09-26).
+  group('업데이트 알림 — 두 번 확인');
+  (function(){
+    var F = (window.__ixTest || {}).updateConfirmed;
+    tru('판정 함수를 내보낸다', typeof F === 'function');
+    if (typeof F !== 'function') return;
+    var T2 = window.__ixTest || {};
+    function E(h, size){ return { etag: '"' + h + '-' + (size||'71752') + '"', lm: '' }; }
+    var old = E('6ab1e3d6'), neu = E('6ab2ffff'), older = E('6ab00000');
+    check('두 번 다 «새» 표식 → 알린다', F(old, neu, neu), true);
+    check('★한 번 튀고 원래대로 → 안 알린다', F(old, neu, old), false);
+    check('★두 번 다 다른 값(흔들림) → 안 알린다', F(old, neu, E('6ab3aaaa')), false);
+    check('★더 «오래된» 사본을 받음 → 안 알린다', F(old, older, older), false);
+    check('두 번째를 못 읽음 → 안 알린다', F(old, neu, null), false);
+    check('처음부터 같음 → 안 알린다', F(old, old, old), false);
+    // ★etag 가 있는 응답과 없는 응답을 섞어 비교하지 않는다 — 이게 「안 올렸는데 자꾸 뜨는」 유력한 원인이었다
+    var lmOnly = { etag: '', lm: 'Tue, 22 Sep 2026 02:11:34 GMT' };
+    check('★한쪽만 etag → 바뀐 걸로 보지 않는다', T2.tagChanged(old, lmOnly), false);
+    check('★한쪽만 last-modified → 바뀐 걸로 보지 않는다', T2.tagChanged(lmOnly, old), false);
+    check('last-modified 끼리 새것 → 바뀜', T2.tagChanged(lmOnly, { etag:'', lm:'Wed, 23 Sep 2026 02:11:34 GMT' }), true);
+    check('last-modified 끼리 옛것 → 안 바뀜', T2.tagChanged(lmOnly, { etag:'', lm:'Mon, 21 Sep 2026 02:11:34 GMT' }), false);
+  })();
+
   group('스타일시트 — 주석·규칙 온전성');
   (function(){
     var sheets = [].slice.call(document.styleSheets), rules = [], kf = {};
