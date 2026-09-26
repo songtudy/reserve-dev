@@ -6270,14 +6270,44 @@ window.dispatchEvent(new Event('fb-ready'));
   // 알림 띠 자체가 「업데이트」 버튼 — 누르면 새로 불러온다 (옛 하단 새로고침 버튼의 유일한 잔여 역할).
   if (updBar) updBar.addEventListener('click', function(){ doUpdate(); });
 
+  // 표식은 «두 가지를 따로» 들고 다닌다. 예전엔 etag || last-modified 로 하나만 가져왔는데,
+  // 한 응답엔 etag 가 있고 다른 응답엔 없으면 글자 모양이 통째로 달라져 무조건 「바뀌었다」가 됐다.
   function fetchTag(){
     if (!window.fetch) return Promise.resolve(null);
     return fetch(location.href, { method: 'HEAD', cache: 'no-store' })
       .then(function(r){
         if (!r.ok) return null;
-        return r.headers.get('etag') || r.headers.get('last-modified') || null;
+        return { etag: r.headers.get('etag') || '', lm: r.headers.get('last-modified') || '' };
       })
       .catch(function(){ return null; });
+  }
+  // 깃허브 페이지의 etag 는 "«바뀐시각16진수»-«크기16진수»" 꼴이다. 시각을 읽을 수 있으면 읽는다.
+  function tagTime(t){
+    var m = /^"?([0-9a-f]{6,})-/.exec(t || '');
+    return m ? parseInt(m[1], 16) : null;
+  }
+  // 「진짜 새 파일인가」 — 같은 종류끼리만 비교하고, «더 오래된» 값이면 무시한다(서버 한 대가 옛 사본을 줄 수 있다).
+  function tagChanged(a, b){
+    if (!a || !b) return false;
+    if (a.etag && b.etag){
+      if (a.etag === b.etag) return false;
+      var ta = tagTime(a.etag), tb = tagTime(b.etag);
+      if (ta != null && tb != null) return tb > ta;   // 새 것일 때만
+      return true;
+    }
+    if (a.lm && b.lm){
+      var da = Date.parse(a.lm), db = Date.parse(b.lm);
+      if (isNaN(da) || isNaN(db)) return false;
+      return db > da;
+    }
+    return false;   // 같은 종류로 견줄 수 없으면 «안 바뀜»으로 본다 — 섞어 비교하지 않는다
+  }
+  function tagText(t){ return !t ? '(못 읽음)' : (t.etag || ('lm:' + t.lm) || '(빈 응답)'); }
+  function tagSame(a, b){
+    if (!a || !b) return false;
+    if (a.etag && b.etag) return a.etag === b.etag;
+    if (a.lm && b.lm) return a.lm === b.lm;
+    return false;
   }
 
   function flagUpdate(){
@@ -6296,14 +6326,32 @@ window.dispatchEvent(new Event('fb-ready'));
     }
   } catch(e){}
 
+  // 새 버전인지 «두 번 물어» 정한다. 한 번만 달라도 띄웠더니, 실제로 올린 게 없는 날에도
+  // 업데이트 띠가 자꾸 떴다(오너 2026-09-26). 서버(깃허브) 쪽은 결백했다 — 네 대가 모두 같은
+  // 표식을 주고 파일 시각도 그대로였다. 남는 건 폰이 읽어 온 답이 한 번 튀는 경우라,
+  // UPD_CONFIRM_MS 뒤에 같은 답이 또 나올 때만 알린다. 튄 경우는 문제 기록에 남겨 원인을 본다.
+  var UPD_CONFIRM_MS = 20000;
+  var updNoted = false;   // 튄 기록은 한 판에 한 번만 남긴다 — 문제 기록이 같은 말로 차지 않게
+  function updateConfirmed(base, t1, t2){ return tagChanged(base, t1) && tagSame(t1, t2); }
   function checkUpdate(){
     if (updShown) return Promise.resolve(false);   // 이미 알렸으면 더 안 물어본다
     return fetchTag().then(function(tag){
       if (!tag) return false;
       if (!buildTag){ buildTag = tag; return false; }
       if (tag === buildTag) return false;
-      flagUpdate();
-      return true;
+      return new Promise(function(res){ setTimeout(res, UPD_CONFIRM_MS); })
+        .then(fetchTag)
+        .then(function(t2){
+          if (updShown) return false;
+          if (updateConfirmed(buildTag, tag, t2)){ flagUpdate(); return true; }
+          // 한 번 튄 것 — 알리지 않는다. 자꾸 뜨는 원인을 잡으려고 «한 번만» 기록해 둔다.
+          if (!updNoted){
+            updNoted = true;
+            errLog('업데이트', '표식이 튐 — 안 알림',
+                   tagText(buildTag) + ' → ' + tagText(tag) + ' → ' + tagText(t2));
+          }
+          return false;
+        });
     });
   }
   fetchTag().then(function(tag){ buildTag = tag; });
@@ -6429,7 +6477,8 @@ window.dispatchEvent(new Event('fb-ready'));
       setViewDate: function(d){ viewDate = d; },
       setCollapsed: function(c){ collapsed = c || {}; },
       setTouched: function(t){ touched = t || {}; },
-      MS: MS
+      MS: MS,
+      updateConfirmed: updateConfirmed, tagChanged: tagChanged, tagSame: tagSame
     };
     var st = document.createElement('script');
     st.src = 'selftest.js';
