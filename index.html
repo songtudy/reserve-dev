@@ -2375,6 +2375,28 @@ window.dispatchEvent(new Event('fb-ready'));
   }
 
   /* ---------- 파싱 ---------- */
+  /* 단톡방 글을 «통째로» 붙여넣을 수 있게 (오너 2026-09-28).
+     예전엔 예약 줄이 아닌 것은 전부 「못 읽은 줄」로 올려서, 날짜·집계 머리글 때문에 헛경고가 떴다.
+     그렇다고 아무 줄이나 조용히 버리면 «예약을 빠뜨리고도 모르는» 게 더 위험하다. 그래서 기준을 둘로 나눈다:
+       · 시각도 인원도 없다 → 머리글·집계·빈 줄. 조용히 버린다.
+       · 하나라도 있다      → 사람이 적은 예약 줄로 보고, 못 읽으면 «반드시» 알린다.
+     꼬리의 「N」처럼 예약 경로 표시는 버린다 — 이것 때문에 「12:00 Nicole 2명 N 방문」이 통째로 빠졌다(실측 ①에서 4건). */
+  var RE_TIME = /^(\d{1,2})\s*[:.시]\s*(\d{1,2})?\s*분?\s+/;
+  var RE_PAX  = /(\d+)\s*명/;
+  var RE_TAG  = /^(n|c|nv|ct|네이버|캐치|캐치테이블|naver|catch|catchtable)$/i;   // 예약 경로 표시 — 버린다
+  function looksLikeItem(line){ return RE_TIME.test(line) || RE_PAX.test(line); }
+  // 인원 뒤에 남은 말 → { status, memo }. 모르는 말은 «메모»로 남긴다 — 줄을 통째로 버리지 않는다(눈에 보이니 고칠 수 있다).
+  function readTail(tail){
+    var status = 'pending', rest = [];
+    (tail || '').split(' ').forEach(function(t){
+      if (!t) return;
+      if (t === '취소' || t === '캔슬') status = 'cancelled';
+      else if (t === '방문') status = 'arrived';
+      else if (RE_TAG.test(t)) return;
+      else rest.push(t);
+    });
+    return { status: status, memo: rest.join(' ') };
+  }
   function parse(text){
     var lines = String(text).split(/\r?\n/);
     var out = [], bad = [], seen = {};
@@ -2382,7 +2404,10 @@ window.dispatchEvent(new Event('fb-ready'));
       var line = lines[i].replace(/\s+/g,' ').trim();
       if (!line) continue;
       var m = line.match(/^(\d{1,2})\s*[:.시]\s*(\d{1,2})?\s*분?\s+(.+?)\s+(\d+)\s*명\s*(.*)$/);
-      if (!m){ bad.push({ no: i+1, text: line }); continue; }
+      if (!m){
+        if (looksLikeItem(line)) bad.push({ no: i+1, text: line });   // 예약처럼 생겼는데 못 읽음 → 알린다
+        continue;                                                      // 그 밖(머리글·집계)은 조용히 버린다
+      }
       var time = pad(+m[1]) + ':' + pad(+(m[2]||0));
       var name = m[3].trim();
       var pax  = parseInt(m[4],10);
@@ -2390,10 +2415,9 @@ window.dispatchEvent(new Event('fb-ready'));
       var memo = '';
       var mm2 = tail.match(/^(.*?)\s*\((.+)\)$/);   // 뒤에 붙은 (메모)
       if (mm2){ tail = mm2[1].trim(); memo = mm2[2].trim(); }
-      var status = 'pending';
-      if (tail === '취소') status = 'cancelled';
-      else if (tail === '방문') status = 'arrived';
-      else if (tail){ bad.push({ no: i+1, text: line }); continue; }  // 뒤에 붙은 알 수 없는 말
+      var rd = readTail(tail);
+      var status = rd.status;
+      if (rd.memo) memo = memo ? (memo + ' ' + rd.memo) : rd.memo;
       var hh = +m[1], mm = +(m[2]||0);
       if (hh > 23 || mm > 59 || pax < 1){ bad.push({ no: i+1, text: line }); continue; }
       var base = time + '|' + name + '|' + pax;
@@ -6457,7 +6481,7 @@ window.dispatchEvent(new Event('fb-ready'));
   if (/[?&]selftest\b/.test(location.search)) {
     if (splashEl) splashEl.classList.add('hide');   // 결과 화면을 가리지 않게
     window.__ixTest = {
-      parse: parse, normTime: normTime, sortItems: sortItems,
+      parse: parse, looksLikeItem: looksLikeItem, readTail: readTail, normTime: normTime, sortItems: sortItems,
       pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
       tallyStatus: tallyStatus, dayTally: dayTally,
       slotMin: slotMin, slotLive: slotLive, nowMin: nowMin, groupByTime: groupByTime, liveNowTime: liveNowTime,
