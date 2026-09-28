@@ -719,6 +719,13 @@
     var body = at < 0 ? '' : src.slice(at, at + 900);
     tru('공지를 띄울 때 표식을 «미리» 저장하지 않는다', body && body.indexOf('setItem') < 0);
     tru('잠겨 있거나 다른 창이 떠 있으면 안 띄운다', /data-authed|ovVisible/.test(body));
+    // ★명단 입력 창에서만 뜬다(오너 2026-09-28) — 아무 화면에서나 뜨면 그냥 방해다.
+    tru('명단 입력 창이 닫혀 있으면 안 띄운다', /panel\.classList\.contains\('hide'\)/.test(body));
+    tru('첫 그림에서 무조건 띄우던 길이 없다', src.indexOf('noticeTried') < 0);
+    var at2 = src.indexOf('function openPaste(');
+    var ob = at2 < 0 ? '' : src.slice(at2, at2 + 1200);
+    tru('입력 창을 열 때 부른다', /maybeNotice\(\)/.test(ob));
+    tru('공지가 뜨면 키보드는 안 올린다', /if \(!noticed\)[\s\S]{0,60}focus\(\)/.test(ob));
 
     // 시트(바닥에서 올라오는 것)가 아니라 «가운데 창» — 초기화 창과 같은 부품이어야 한다(오너 2026-09-28).
     var sc = document.getElementById('ntScrim');
