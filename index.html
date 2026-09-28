@@ -1036,6 +1036,19 @@ window.addEventListener('pageshow', remeasureSbcut);
   /* margin:0 — 제 여백은 padding 으로 다 갖고 있다. 브라우저 기본 margin(13×2=26px)은 의도한 값이 아니었고,
      부모에 overflow 가 붙는 순간 높이에 더해지는 함정이 있다(기록 높이를 움직이던 때 끝에서 «되튐»으로
      드러났다, 2026-09-21). 그 움직임은 뺐지만 이 값은 그대로 맞다 — 시뮬레이터로 여백 확인함. */
+  /* 공지 안의 «카톡 글 흉내» — 사진을 넣지 않는다(손님 이름이 들어 있고 용량도 앱만큼 크다).
+     걸러지는 줄은 흐리게·지움선, 들어가는 줄은 또렷하게. 글자는 13(시트 본문과 같은 단). */
+  .ntmock{
+    background:var(--field);border:1px solid var(--line);border-radius:12px;
+    padding:10px 12px;margin:10px 0 0;
+    font-size:13px;line-height:1.7;font-variant-numeric:tabular-nums;
+  }
+  .ntmock div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ntmock .off{color:var(--off);text-decoration:line-through}
+  .ntmock .on{color:var(--text);font-weight:600}
+  .ntmock .gap{height:6px}
+  .ntcap{display:flex;gap:6px;align-items:baseline;margin-top:8px;font-size:13px;color:var(--dim);line-height:1.6}
+  .ntcap b{color:var(--text);font-weight:700}
   .sheetMsg{margin:0;font-size:13px;line-height:1.6;color:var(--dim);padding:6px 0 14px}
 
   /* 「지난 명단」 시트 — 목록은 「최근 변경 내역」(.lgrow) 처럼 한 줄(시각·요약·›), 행을 누르면 상세. */
@@ -3011,6 +3024,7 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function render(){
     hideSplash();
+    if (!noticeTried){ noticeTried = true; setTimeout(maybeNotice, 1200); }   // 첫 그림이 자리 잡은 뒤 한 번
     if (!interactionActive() && deferredState){
       state = deferredState;
       deferredState = null;
@@ -5502,7 +5516,8 @@ window.dispatchEvent(new Event('fb-ready'));
   var sheetScrim = document.getElementById('sheetScrim');
   function sheetBtnsReset(){                 // 시트 전용 버튼(설치·지난명단상세)을 원상복구
     var nv = document.getElementById('sheetNever');
-    if (nv) nv.classList.add('hide');        // '다시 보지 않기' 는 설치 안내 전용
+    if (nv) nv.classList.add('hide');        // '다시 보지 않기' 는 그것을 쓰는 안내에서만 켠다
+    neverSave = null;
     var bc = document.querySelector('.sheetBtns .sheetCopy');
     if (bc) bc.remove();                     // 시트 전용 복사 버튼(지난 명단 상세의 '명단 복사')
   }
@@ -6054,12 +6069,16 @@ window.dispatchEvent(new Event('fb-ready'));
       }) || drawer.classList.contains('open');
       if (blocked) return;
       openInstallSheet();
-      sheetNever.classList.remove('hide');
+      sheetNeverFor(HINT_KEY, '1');
     }, 1200);
   }
   var sheetNever = document.getElementById('sheetNever');
+  // 「다시 보지 않기」는 안내 하나만의 것이 아니다 — 누른 시트가 무엇을 기억할지 여기서 정한다.
+  // 예전엔 설치 안내의 표식을 늘 저장해서, 다른 안내에 붙이면 엉뚱한 것이 꺼졌다.
+  var neverSave = null;
+  function sheetNeverFor(key, val){ neverSave = { key: key, val: val }; sheetNever.classList.remove('hide'); }
   sheetNever.addEventListener('click', function(){
-    try { localStorage.setItem(HINT_KEY, '1'); } catch(e){}
+    if (neverSave){ try { localStorage.setItem(neverSave.key, neverSave.val); } catch(e){} }
     closeSheet();
   });
 
@@ -6274,11 +6293,48 @@ window.dispatchEvent(new Event('fb-ready'));
     });
   })();
 
+  /* ---------- 한 번만 뜨는 공지 ---------- */
+  // 눈에 안 보이는 변화(붙여넣기 규칙 같은 것)는 아무도 모르고 지나간다. 기기마다 «한 번» 알린다.
+  // NOTICE_ID 를 바꾸면 새 공지가 다시 한 번 뜬다. 값은 «무엇에 대한 공지인지»가 드러나게 적는다.
+  var NOTICE_ID = 'paste-2026-09-28';
+  var NOTICE_KEY = 'ix-notice';
+  function noticeDue(saved, id){ return saved !== id; }
+  function noticeHtml(){
+    return '<p class="about"><b>단톡방 글을 통째로 붙여넣어도 됩니다.</b></p>'
+      + '<p class="about">예약 줄만 골라 담고, 날짜·집계 같은 앞부분은 알아서 걸러냅니다. '
+      +   '이제 필요한 줄만 골라 드래그하지 않아도 됩니다.</p>'
+      + '<div class="ntmock">'
+      +   '<div class="off">9월 27일</div>'
+      +   '<div class="off">내국인 12팀 / 외국인 21팀</div>'
+      +   '<div class="off">네이버 17팀 / 캐치테이블 16팀</div>'
+      +   '<div class="gap"></div>'
+      +   '<div class="on">14:00 아델린 4명</div>'
+      +   '<div class="on">15:00 reiko 2명</div>'
+      + '</div>'
+      + '<p class="ntcap"><b>줄 그어진 것</b><span>앱이 알아서 걸러냅니다</span></p>'
+      + '<p class="ntcap"><b>또렷한 것</b><span>예약으로 들어갑니다</span></p>'
+      + '<p class="sheetNote sec">예약처럼 생겼는데 못 읽은 줄은 예전처럼 알려 드립니다 — 빠뜨릴 일은 없습니다.</p>';
+  }
+  // 뭔가 떠 있거나 잠겨 있으면 다음 기회에 — 공지가 남의 창을 덮지 않게.
+  // 「다시 보지 않기」를 누를 때까지 앱을 켤 때마다 한 번씩 띄운다(오너 2026-09-28).
+  // 그냥 닫으면 다음에 또 뜬다 — 교대 근무라 한 사람만 보고 끝나면 소용이 없다.
+  function maybeNotice(){
+    var saved = null;
+    try { saved = localStorage.getItem(NOTICE_KEY); } catch(e){ return; }
+    if (!noticeDue(saved, NOTICE_ID)) return;
+    if (document.documentElement.getAttribute('data-authed') !== '1') return;
+    if (ovVisible('sheetScrim') || ovVisible('scrim') || ovVisible('rltScrim') || ovVisible('addPanel')) return;
+    if (drawer && drawer.classList.contains('open')) return;
+    openSheet('새로 바뀐 것', noticeHtml());
+    sheetNeverFor(NOTICE_KEY, NOTICE_ID);
+  }
+
   /* ---------- 새 버전 알림 ---------- */
   // 파일이 새로 올라갔는지 HEAD 요청으로 확인한다. 바뀌었으면 헤더 아래에
   // 하단에 「새 버전으로 업데이트」 알약을 띄운다 — 그걸 눌러야 새로 뜬다. 저절로는 안 바뀜.
   // 확인 시점: 앱으로 돌아올 때 · 켜 둔 채면 5분마다. (둘이 자정 케이스도 덮는다)
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
+  var noticeTried = false;
   var updShown = false;
   var updTimer = null;
   var updBar = document.getElementById('updBar');
@@ -6472,7 +6528,7 @@ window.dispatchEvent(new Event('fb-ready'));
   if (/[?&]selftest\b/.test(location.search)) {
     if (splashEl) splashEl.classList.add('hide');   // 결과 화면을 가리지 않게
     window.__ixTest = {
-      parse: parse, looksLikeItem: looksLikeItem, normTime: normTime, sortItems: sortItems,
+      parse: parse, looksLikeItem: looksLikeItem, noticeDue: noticeDue, NOTICE_ID: NOTICE_ID, normTime: normTime, sortItems: sortItems,
       pad: pad, ymd: ymd, parseYmd: parseYmd, shiftDate: shiftDate, dayGap: dayGap, bizDate: bizDate,
       tallyStatus: tallyStatus, dayTally: dayTally,
       slotMin: slotMin, slotLive: slotLive, nowMin: nowMin, groupByTime: groupByTime, liveNowTime: liveNowTime,
@@ -6564,6 +6620,7 @@ window.dispatchEvent(new Event('fb-ready'));
       lockEl.classList.remove('out');
       // data-authed 는 맨 마지막에 — 먼저 걸면 CSS 가 즉시 display:none 으로 만들어 페이드가 죽는다
       document.documentElement.setAttribute('data-authed', '1');
+      setTimeout(maybeNotice, 900);   // 잠금을 막 푼 경우 — 첫 그림 때는 잠겨 있어 건너뛰었다
     }, MS.move + 10);
   }
   function lockShow(msg){
