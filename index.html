@@ -3050,7 +3050,6 @@ window.dispatchEvent(new Event('fb-ready'));
   }
   function render(){
     hideSplash();
-    if (!noticeTried){ noticeTried = true; setTimeout(maybeNotice, 1200); }   // 첫 그림이 자리 잡은 뒤 한 번
     if (!interactionActive() && deferredState){
       state = deferredState;
       deferredState = null;
@@ -4174,10 +4173,13 @@ window.dispatchEvent(new Event('fb-ready'));
     fixTaHeight();
     panel.classList.remove('hide');
     document.body.classList.add('paste-open');
+    // 공지는 이 창에서만 뜬다. 뜨는 순간 키보드까지 올라오면 창 뒤가 반쯤 가려지니
+    // 그때는 자동 포커스를 접는다 — 읽고 닫은 뒤 입력칸을 직접 누르면 된다.
+    var noticed = maybeNotice();
     if (silent) return;
     // .wrap 을 카드로 부드럽게 스크롤 → 키보드가 올라와도 iOS 가 이어서 자연스럽게 조정
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(function(){ taEl.focus(); }, 200);
+    if (!noticed) setTimeout(function(){ taEl.focus(); }, 200);
   }
   function closePaste(){
     // 입력칸을 «보이는 동안» 손으로 푼다. 숨기기(.hide = display:none)만 해도 크롬은 blur·
@@ -6335,18 +6337,23 @@ window.dispatchEvent(new Event('fb-ready'));
   document.getElementById('ntClose').addEventListener('click', function(){ closeNotice(false); });
   document.getElementById('ntNever').addEventListener('click', function(){ closeNotice(true); });
   ntScrim.addEventListener('click', function(e){ if (e.target === ntScrim) closeNotice(false); });   // 막 바깥 탭 = 닫기
+  // ★«명단 입력 창(#pastePanel)이 열려 있을 때»만 띄운다 (오너 2026-09-28).
+  //   붙여넣기 이야기라 명단을 넣는 그 자리에서 봐야 바로 써먹는다 — 아무 때나 뜨면 그냥 방해다.
   // 뭔가 떠 있거나 잠겨 있으면 다음 기회에 — 공지가 남의 창을 덮지 않게.
-  // 「다시 보지 않기」를 누를 때까지 앱을 켤 때마다 한 번씩 띄운다(오너 2026-09-28).
-  // 그냥 닫으면 다음에 또 뜬다 — 교대 근무라 한 사람만 보고 끝나면 소용이 없다.
+  // 「다시 보지 않기」를 누를 때까지 그 창에 들어올 때마다 띄운다. 그냥 닫으면 다음에 또 뜬다 —
+  // 교대 근무라 한 사람만 보고 끝나면 소용이 없다.
+  // 띄웠으면 true 를 준다 — 부른 쪽이 키보드를 올릴지 말지 정한다.
   function maybeNotice(){
+    if (!panel || panel.classList.contains('hide')) return false;
     var saved = null;
-    try { saved = localStorage.getItem(NOTICE_KEY); } catch(e){ return; }
-    if (!noticeDue(saved, NOTICE_ID)) return;
-    if (document.documentElement.getAttribute('data-authed') !== '1') return;
-    if (ovVisible('sheetScrim') || ovVisible('scrim') || ovVisible('rltScrim') || ovVisible('addPanel') || ovVisible('ntScrim')) return;
-    if (drawer && drawer.classList.contains('open')) return;
+    try { saved = localStorage.getItem(NOTICE_KEY); } catch(e){ return false; }
+    if (!noticeDue(saved, NOTICE_ID)) return false;
+    if (document.documentElement.getAttribute('data-authed') !== '1') return false;
+    if (ovVisible('sheetScrim') || ovVisible('scrim') || ovVisible('rltScrim') || ovVisible('addPanel') || ovVisible('ntScrim')) return false;
+    if (drawer && drawer.classList.contains('open')) return false;
     ntScrim.classList.remove('hide');
     backOpen('notice', function(){ closeNotice(false); });
+    return true;
   }
 
   /* ---------- 새 버전 알림 ---------- */
@@ -6354,7 +6361,6 @@ window.dispatchEvent(new Event('fb-ready'));
   // 하단에 「새 버전으로 업데이트」 알약을 띄운다 — 그걸 눌러야 새로 뜬다. 저절로는 안 바뀜.
   // 확인 시점: 앱으로 돌아올 때 · 켜 둔 채면 5분마다. (둘이 자정 케이스도 덮는다)
   var buildTag = null;          // 지금 화면이 만들어질 때의 파일 표식
-  var noticeTried = false;
   var updShown = false;
   var updTimer = null;
   var updBar = document.getElementById('updBar');
@@ -6640,7 +6646,9 @@ window.dispatchEvent(new Event('fb-ready'));
       lockEl.classList.remove('out');
       // data-authed 는 맨 마지막에 — 먼저 걸면 CSS 가 즉시 display:none 으로 만들어 페이드가 죽는다
       document.documentElement.setAttribute('data-authed', '1');
-      setTimeout(maybeNotice, 900);   // 잠금을 막 푼 경우 — 첫 그림 때는 잠겨 있어 건너뛰었다
+      // 잠금을 막 푼 경우 — 입력 창은 잠겨 있는 동안 이미 열려서 openPaste 가 다시 안 불린다.
+      // maybeNotice 안에서 「입력 창이 열려 있나」를 보므로 다른 화면이면 조용히 지나간다.
+      setTimeout(maybeNotice, 900);
     }, MS.move + 10);
   }
   function lockShow(msg){
