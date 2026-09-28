@@ -66,11 +66,18 @@
     check('빈 줄·공백은 무시', T.parse('\n  \n14:00 홍길동 2명\n\n').length, 1);
     check('여러 줄', T.parse('12:00 A 2명\n13:00 B 3명').length, 2);
 
+    // ★2026-09-28 규칙 바뀜: 단톡방 글을 통째로 붙여넣을 수 있게, «시각도 인원도 없는 줄»은 조용히 버린다.
+    //   예약을 놓치는 건 위험하므로 «시각이나 인원이 하나라도 있는데» 못 읽으면 예전처럼 알린다.
     var bad = T.parse('이건 양식이 아님\n14:00 홍길동 2명\n15:00 없음');
-    check('오류 줄은 bad 로', bad.bad.map(function(b){ return b.no; }), [1, 3]);
-    check('오류 줄은 out 에서 제외', bad.length, 1);
+    check('머리글 같은 줄은 조용히 버린다', bad.bad.map(function(b){ return b.no; }), [3]);
+    check('못 읽은 줄은 out 에서 제외', bad.length, 1);
+    check('인원만 있고 시각이 없으면 알린다', T.parse('홍길동 2명').bad.length, 1);
+    check('시각만 있고 인원이 없으면 알린다', T.parse('15:00 홍길동').bad.length, 1);
 
-    check('알 수 없는 꼬리는 오류', T.parse('14:00 홍길동 2명 뭐임').bad.length, 1);
+    // 꼬리: 모르는 말은 버리지 않고 «메모»로 남긴다 — 줄을 통째로 잃는 것보다 눈에 보이는 편이 낫다
+    var t1 = T.parse('14:00 홍길동 2명 뭐임');
+    check('알 수 없는 꼬리 → 줄은 살린다', t1.length, 1);
+    check('알 수 없는 꼬리 → 메모로', t1[0] && t1[0].memo, '뭐임');
     check('24시 이상은 오류', T.parse('25:00 홍길동 2명').bad.length, 1);
     check('60분 이상은 오류', T.parse('14:70 홍길동 2명').bad.length, 1);
     check('0명은 오류', T.parse('14:00 홍길동 0명').bad.length, 1);
@@ -680,6 +687,28 @@
     check('★한쪽만 last-modified → 바뀐 걸로 보지 않는다', T2.tagChanged(lmOnly, old), false);
     check('last-modified 끼리 새것 → 바뀜', T2.tagChanged(lmOnly, { etag:'', lm:'Wed, 23 Sep 2026 02:11:34 GMT' }), true);
     check('last-modified 끼리 옛것 → 안 바뀜', T2.tagChanged(lmOnly, { etag:'', lm:'Mon, 21 Sep 2026 02:11:34 GMT' }), false);
+  })();
+
+  // 단톡방 글 통째 붙여넣기 (오너 2026-09-28). 실제로 올라온 글 모양으로 검사한다.
+  group('붙여넣기 — 단톡방 글 통째로');
+  (function(){
+    var msg = '9월 10일 목요일\n\n내국인 1팀 / 외국인 23팀\n네이버 4팀 / 캐치테이블 20팀\n\n'
+            + '12:00 Nicole 2명 N 방문\n\n14:00 Meryl Koh 4명 방문\n14:00 Lilian Ngay 2명 취소\n'
+            + '19:00 심예린 2명 N 방문\n19:00 Dorin Klein Luzon 6명 방문';
+    var r = T.parse(msg);
+    check('예약만 골라낸다', r.length, 5);
+    check('머리글 3줄은 경고 없이 버린다', r.bad.length, 0);
+    check('★「N 방문」 도 방문으로 (예전엔 줄째 버려졌다)', r[0] && r[0].status, 'arrived');
+    check('이름은 그대로', r[0] && r[0].name, 'Nicole');
+    check('공백 든 이름', r[4] && r[4].name, 'Dorin Klein Luzon');
+    check('취소도 읽는다', r[2] && r[2].status, 'cancelled');
+    check('경로 표시는 메모에 안 남긴다', r[0] && r[0].memo, '');
+    var rd = T.readTail;
+    check('꼬리 「N 방문」', rd('N 방문'), { status:'arrived', memo:'' });
+    check('꼬리 「네이버 취소」', rd('네이버 취소'), { status:'cancelled', memo:'' });
+    check('꼬리 「창가 요청」 → 메모', rd('창가 요청'), { status:'pending', memo:'창가 요청' });
+    tru('머리글은 예약처럼 안 보인다', !T.looksLikeItem('내국인 1팀 / 외국인 23팀') && !T.looksLikeItem('9월 10일 목요일'));
+    tru('시각이 있으면 예약처럼 본다', T.looksLikeItem('15:00 홍길동'));
   })();
 
   group('스타일시트 — 주석·규칙 온전성');
