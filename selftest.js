@@ -729,7 +729,7 @@
     check('제목', h3 && h3.textContent, '업데이트');
     var note = sc.querySelector('.dlgnote');
     tru('설명은 한 단락뿐', sc.querySelectorAll('.dlgnote').length === 1);
-    tru('설명이 짧다', note && note.textContent.length <= 45, note ? note.textContent.length + '자' : '없음');
+    tru('설명이 짧다(한 문장)', note && note.textContent.length <= 36 && (note.textContent.match(/\./g)||[]).length <= 1, note ? note.textContent.length + '자' : '없음');
     var bs = sc.querySelectorAll('.dbtn button');
     check('버튼 두 개', bs.length, 2);
     check('왼쪽 버튼', bs[0] && bs[0].textContent, '닫기');
