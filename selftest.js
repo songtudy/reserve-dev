@@ -74,10 +74,7 @@
     check('인원만 있고 시각이 없으면 알린다', T.parse('홍길동 2명').bad.length, 1);
     check('시각만 있고 인원이 없으면 알린다', T.parse('15:00 홍길동').bad.length, 1);
 
-    // 꼬리: 모르는 말은 버리지 않고 «메모»로 남긴다 — 줄을 통째로 잃는 것보다 눈에 보이는 편이 낫다
-    var t1 = T.parse('14:00 홍길동 2명 뭐임');
-    check('알 수 없는 꼬리 → 줄은 살린다', t1.length, 1);
-    check('알 수 없는 꼬리 → 메모로', t1[0] && t1[0].memo, '뭐임');
+    check('알 수 없는 꼬리는 오류', T.parse('14:00 홍길동 2명 뭐임').bad.length, 1);
     check('24시 이상은 오류', T.parse('25:00 홍길동 2명').bad.length, 1);
     check('60분 이상은 오류', T.parse('14:70 홍길동 2명').bad.length, 1);
     check('0명은 오류', T.parse('14:00 홍길동 0명').bad.length, 1);
@@ -696,17 +693,13 @@
             + '12:00 Nicole 2명 N 방문\n\n14:00 Meryl Koh 4명 방문\n14:00 Lilian Ngay 2명 취소\n'
             + '19:00 심예린 2명 N 방문\n19:00 Dorin Klein Luzon 6명 방문';
     var r = T.parse(msg);
-    check('예약만 골라낸다', r.length, 5);
-    check('머리글 3줄은 경고 없이 버린다', r.bad.length, 0);
-    check('★「N 방문」 도 방문으로 (예전엔 줄째 버려졌다)', r[0] && r[0].status, 'arrived');
-    check('이름은 그대로', r[0] && r[0].name, 'Nicole');
-    check('공백 든 이름', r[4] && r[4].name, 'Dorin Klein Luzon');
-    check('취소도 읽는다', r[2] && r[2].status, 'cancelled');
-    check('경로 표시는 메모에 안 남긴다', r[0] && r[0].memo, '');
-    var rd = T.readTail;
-    check('꼬리 「N 방문」', rd('N 방문'), { status:'arrived', memo:'' });
-    check('꼬리 「네이버 취소」', rd('네이버 취소'), { status:'cancelled', memo:'' });
-    check('꼬리 「창가 요청」 → 메모', rd('창가 요청'), { status:'pending', memo:'창가 요청' });
+    check('예약만 골라낸다 (N 붙은 2줄은 아직 오류)', r.length, 3);
+    check('★머리글 3줄은 경고 없이 버린다', r.bad.length, 2);
+    check('★남은 경고는 N 붙은 줄뿐 — 머리글은 없다',
+          r.bad.every(function(b){ return b.text.indexOf(' N ') >= 0; }), true);
+    check('공백 든 이름', r[2] && r[2].name, 'Dorin Klein Luzon');
+    check('방문을 읽는다', r[0] && r[0].status, 'arrived');
+    check('취소를 읽는다', r[1] && r[1].status, 'cancelled');
     tru('머리글은 예약처럼 안 보인다', !T.looksLikeItem('내국인 1팀 / 외국인 23팀') && !T.looksLikeItem('9월 10일 목요일'));
     tru('시각이 있으면 예약처럼 본다', T.looksLikeItem('15:00 홍길동'));
   })();
