@@ -719,6 +719,37 @@
     var body = at < 0 ? '' : src.slice(at, at + 900);
     tru('공지를 띄울 때 표식을 «미리» 저장하지 않는다', body && body.indexOf('setItem') < 0);
     tru('잠겨 있거나 다른 창이 떠 있으면 안 띄운다', /data-authed|ovVisible/.test(body));
+
+    // 시트(바닥에서 올라오는 것)가 아니라 «가운데 창» — 초기화 창과 같은 부품이어야 한다(오너 2026-09-28).
+    var sc = document.getElementById('ntScrim');
+    tru('가운데 창 부품을 쓴다', !!sc && sc.classList.contains('scrim') && !!sc.querySelector('.dialog'));
+    if (!sc) return;
+    tru('바닥 시트로 띄우지 않는다', body && body.indexOf('openSheet') < 0);
+    var h3 = sc.querySelector('h3');
+    check('제목', h3 && h3.textContent, '업데이트');
+    var note = sc.querySelector('.dlgnote');
+    tru('설명은 한 단락뿐', sc.querySelectorAll('.dlgnote').length === 1);
+    tru('설명이 짧다', note && note.textContent.length <= 45, note ? note.textContent.length + '자' : '없음');
+    var bs = sc.querySelectorAll('.dbtn button');
+    check('버튼 두 개', bs.length, 2);
+    check('왼쪽 버튼', bs[0] && bs[0].textContent, '닫기');
+    check('오른쪽 버튼', bs[1] && bs[1].textContent, '다시 보지 않기');
+    // 「다시 보지 않기」가 초기화 버튼과 같은 빨강이면 안 된다 — 지우는 일이 아니다.
+    // 토큰 문자열(#rrggbb)과 computed 값(rgb())은 모양이 달라 비교가 안 된다 → 실제 빨강 버튼과 견준다.
+    var red = document.getElementById('dlgYes');
+    var redBg = red ? getComputedStyle(red).backgroundColor : '';
+    tru('경고색(빨강) 버튼이 아니다', !!redBg && [].every.call(bs, function(b){
+      return getComputedStyle(b).backgroundColor !== redBg;
+    }), redBg);
+    var mock = sc.querySelector('.ntmock');
+    tru('걸러지는 줄엔 지움선이 그어져 있다', mock && /line-through/.test(getComputedStyle(mock.querySelector('.off')).textDecorationLine + getComputedStyle(mock.querySelector('.off')).textDecoration));
+    tru('예시 이름은 임동현·김동현', mock && /임동현/.test(mock.textContent) && /김동현/.test(mock.textContent));
+    var dots = mock && mock.querySelector('.ntdots');
+    tru('아래로 더 있다는 표시가 있다', !!dots);
+    // 이름이 겹치면 남의 규칙이 딸려 들어와 줄이 납작해진다 — «보이는지»까지 확인한다.
+    tru('그 표시가 실제로 보인다', !!dots && dots.getBoundingClientRect().height >= 14,
+        dots ? Math.round(dots.getBoundingClientRect().height) + 'px' : '없음');
+    tru('뒤로 가기 목록에 등록한다', /backOpen\('notice'/.test(body));
   })();
 
   group('스타일시트 — 주석·규칙 온전성');
