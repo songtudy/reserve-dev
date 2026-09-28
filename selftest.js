@@ -704,6 +704,23 @@
     tru('시각이 있으면 예약처럼 본다', T.looksLikeItem('15:00 홍길동'));
   })();
 
+  // 한 번만 뜨는 공지 — 「다시 보지 않기」를 누를 때까지 켤 때마다 뜬다(오너 2026-09-28).
+  group('공지 — 다시 보지 않기');
+  (function(){
+    var F = T.noticeDue, ID = T.NOTICE_ID;
+    tru('판정 함수와 공지 번호를 내보낸다', typeof F === 'function' && !!ID, ID);
+    if (typeof F !== 'function') return;
+    check('아직 안 껐으면 뜬다', F(null, ID), true);
+    check('그냥 닫았을 때(저장 안 함)도 다시 뜬다', F(null, ID), true);
+    check('다시 보지 않기 누른 뒤엔 안 뜬다', F(ID, ID), false);
+    check('새 공지 번호가 되면 다시 뜬다', F('paste-2026-09-28-old', ID), true);
+    var src = [].map.call(document.querySelectorAll('script:not([src])'), function(x){ return x.textContent; }).join('\n');
+    var at = src.indexOf('function maybeNotice()');
+    var body = at < 0 ? '' : src.slice(at, at + 900);
+    tru('공지를 띄울 때 표식을 «미리» 저장하지 않는다', body && body.indexOf('setItem') < 0);
+    tru('잠겨 있거나 다른 창이 떠 있으면 안 띄운다', /data-authed|ovVisible/.test(body));
+  })();
+
   group('스타일시트 — 주석·규칙 온전성');
   (function(){
     var sheets = [].slice.call(document.styleSheets), rules = [], kf = {};
