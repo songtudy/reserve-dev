@@ -1038,6 +1038,9 @@ window.addEventListener('pageshow', remeasureSbcut);
      드러났다, 2026-09-21). 그 움직임은 뺐지만 이 값은 그대로 맞다 — 시뮬레이터로 여백 확인함. */
   /* 공지(업데이트 창) 안의 «카톡 글 흉내» — 사진을 넣지 않는다(손님 이름이 들어 있고 용량도 앱만큼 크다).
      걸러지는 줄엔 지움선, 들어가는 줄은 또렷하게 — 그림 하나로 규칙이 보이게. 글자는 13(창 안내문과 같은 단). */
+  /* 한글은 기본값이 «아무 데서나» 끊긴다 — 「불필요한 줄 / 은」처럼 어절이 갈린다.
+     이 창만 어절 단위로 끊는다(초기화 창 문구는 짧아 건드릴 일이 없다). */
+  #ntScrim .dlgnote{word-break:keep-all}
   .ntmock{
     background:var(--field);border:1px solid var(--line);border-radius:12px;
     padding:10px 12px;margin:12px 0 0;
@@ -1935,7 +1938,7 @@ window.addEventListener('pageshow', remeasureSbcut);
 <div class="scrim hide" id="ntScrim">
   <div class="dialog">
     <h3>업데이트</h3>
-    <p class="dlgnote">단톡방 글을 통째로 붙여넣으면 불필요한 줄은 알아서 걸러냅니다.</p>
+    <p class="dlgnote">단톡방에 올라오는 명단을 통째로 붙여넣으면 불필요한 줄은 알아서 제외합니다.</p>
     <div class="ntmock">
       <div class="off">9월 27일</div>
       <div class="off">내국인 12팀 / 외국인 21팀</div>
