@@ -663,35 +663,33 @@
     tru('기록엔 「취소 해제」로 남는다', /it\.status === 'cancelled' \? '취소 해제'/.test(src));
   })();
 
-  // 업데이트 띠 — 두 번 물어 같은 답일 때만. 한 번 튄 답으로 띄우면 안 올린 날에도 뜬다(오너 2026-09-26).
-  group('업데이트 알림 — 두 번 확인');
+  // 업데이트 띠 — ★「안 올린 날에도 뜨던」 진짜 원인은 깃허브가 커밋 하나에도 사이트를 통째로
+  // 다시 펴내며 모든 파일의 etag·last-modified 를 새로 찍는 것이었다(2026-09-28 실측).
+  // 그래서 표식 전체가 아니라 «끝의 파일 크기»만 본다.
+  group('업데이트 알림 — 파일 크기로 본다');
   (function(){
-    var F = (window.__ixTest || {}).updateConfirmed;
-    tru('판정 함수를 내보낸다', typeof F === 'function');
-    if (typeof F !== 'function') return;
     var T2 = window.__ixTest || {};
-    function E(h, size){ return { etag: '"' + h + '-' + (size||'71752') + '"', lm: '' }; }
-    var old = E('6ab1e3d6'), neu = E('6ab2ffff'), older = E('6ab00000');
-    check('두 번 다 «새» 표식 → 알린다', F(old, neu, neu), true);
-    check('★한 번 튀고 원래대로 → 안 알린다', F(old, neu, old), false);
-    check('★두 번 다 다른 값(흔들림) → 안 알린다', F(old, neu, E('6ab3aaaa')), false);
-    check('★더 «오래된» 사본을 받음 → 안 알린다', F(old, older, older), false);
-    check('두 번째를 못 읽음 → 안 알린다', F(old, neu, null), false);
-    check('처음부터 같음 → 안 알린다', F(old, old, old), false);
-    // ★etag 가 있는 응답과 없는 응답을 섞어 비교하지 않는다 — 이게 「안 올렸는데 자꾸 뜨는」 유력한 원인이었다
-    var lmOnly = { etag: '', lm: 'Tue, 22 Sep 2026 02:11:34 GMT' };
-    check('★한쪽만 etag → 바뀐 걸로 보지 않는다', T2.tagChanged(old, lmOnly), false);
-    check('★한쪽만 last-modified → 바뀐 걸로 보지 않는다', T2.tagChanged(lmOnly, old), false);
-    check('last-modified 끼리 새것 → 바뀜', T2.tagChanged(lmOnly, { etag:'', lm:'Wed, 23 Sep 2026 02:11:34 GMT' }), true);
-    check('last-modified 끼리 옛것 → 안 바뀜', T2.tagChanged(lmOnly, { etag:'', lm:'Mon, 21 Sep 2026 02:11:34 GMT' }), false);
-
-    // ★돌아왔을 때 «사람이 기다릴 만큼»에 떠야 한다. 20초로 뒀더니 안 뜨는 걸로 보였다(오너 2026-09-28).
+    tru('판정 함수를 내보낸다', typeof T2.tagChanged === 'function' && typeof T2.tagSize === 'function');
+    if (typeof T2.tagSize !== 'function') return;
+    check('깃허브 표식에서 크기를 읽는다', T2.tagSize('"6aba252b-73f4a"'), 474954);
+    check('★gzip 이면 W/ 가 붙는다 — 그래도 읽는다', T2.tagSize('W/"6aba252b-73f4a"'), 474954);
+    check('모르는 모양이면 null', T2.tagSize('"abcdef"'), null);
+    check('빈 표식이면 null', T2.tagSize(''), null);
+    function E(h, size){ return { size: T2.tagSize('"' + h + '-' + size + '"'), etag: '', lm: '' }; }
+    var mine = E('6aba252b', '73f4a');
+    check('★다시 펴내기만 함(시각만 바뀜) → 안 알린다', T2.tagChanged(mine, E('6abb9999', '73f4a')), false);
+    check('크기가 커짐 → 알린다', T2.tagChanged(mine, E('6abb9999', '73f5a')), true);
+    check('크기가 작아짐 → 알린다', T2.tagChanged(mine, E('6abb9999', '73f0a')), true);
+    check('시각까지 그대로 → 안 알린다', T2.tagChanged(mine, E('6aba252b', '73f4a')), false);
+    check('크기를 못 읽으면 안 알린다', T2.tagChanged(mine, { size: null, etag: '', lm: '' }), false);
+    check('한쪽이 없으면 안 알린다', T2.tagChanged(mine, null), false);
     var src = [].map.call(document.querySelectorAll('script:not([src])'), function(x){ return x.textContent; }).join('\n');
-    var ms = /UPD_CONFIRM_MS\s*=\s*(\d+)/.exec(src);
-    tru('두 번째 확인까지 5초 안', ms && +ms[1] <= 5000, ms ? ms[1] + 'ms' : '못 읽음');
-    // ★표식은 객체다 — === 로 견주면 늘 «다름»이 되어, 안 바뀐 날에도 기다렸다가
-    //   문제 기록에 「표식이 튐」을 남긴다. 같은지는 tagSame 으로 본다.
-    tru('안 바뀌었으면 그 자리에서 끝낸다', /tagSame\(tag, buildTag\)/.test(src) && !/tag === buildTag/.test(src));
+    // ★기다렸다 알리면 「안 뜬다」가 된다 — 실측 21초(오너 2026-09-28). 덧댄 두 번 물어보기는 걷어냈다.
+    tru('알림을 미루지 않는다', src.indexOf('UPD_CONFIRM_MS') < 0 && src.indexOf('updateConfirmed') < 0);
+    // last-modified·etag 앞자리는 «펴낸 시각»이라 판단 근거로 쓰면 안 된다.
+    var at = src.indexOf('function tagChanged(');
+    var body = at < 0 ? '' : src.slice(at, at + 300);
+    tru('시각으로 판단하지 않는다', body && !/lm|Date\.parse|tagTime/.test(body));
   })();
 
   // 단톡방 글 통째 붙여넣기 (오너 2026-09-28). 실제로 올라온 글 모양으로 검사한다.
@@ -835,5 +833,3 @@
 
   function esc(s){ return String(s).replace(/[<>&]/g, function(c){ return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }); }
 })();
-
-// 표식 실험 1790584500
